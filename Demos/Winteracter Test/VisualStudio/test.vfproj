@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Console Application - Converted from CVF" Version="9.10" ProjectIdGuid="{65A928CA-CEB1-4631-A56F-CA673DC8B62D}">
+	<Platforms>
+		<Platform Name="Win32"/></Platforms>
+	<Configurations>
+		<Configuration Name="Release|Win32" OutputDirectory=".." DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" AdditionalIncludeDirectories="C:\wint\lib.if8" FixedFormLineLength="fixedLength132" WarnInterfaces="true" ExtendSinglePrecisionConstants="true" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" AssemblerListingLocation="$(INTDIR)/" Traceback="true" RuntimeLibrary="rtMultiThreadedDLL"/>
+				<Tool Name="VFLinkerTool" AdditionalOptions="/MACHINE:I386" OutputFile="$(OUTDIR)/test.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="..\..\..\lib\win32\Release_IVF;C:\wint\lib.if8" GenerateDebugInformation="true" SubSystem="subSystemConsole" AdditionalDependencies="winmm.lib kernel32.lib opengl32.lib glu32.lib winter.lib user32.lib gdi32.lib comdlg32.lib winspool.lib shell32.lib advapi32.lib OpenFrames.lib"/>
+				<Tool Name="VFResourceCompilerTool" PreprocessorDefinitions="NDEBUG" Culture="rcEnglishUS" AdditionalIncludeDirectories="C:\wint\include" ResourceOutputFileName="$(INTDIR)/$(InputName).res"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(OUTDIR)/test.tlb"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration>
+		<Configuration Name="Debug|Win32" OutputDirectory=".." DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="C:\wint\lib.if8" FixedFormLineLength="fixedLength132" ErrorLimit="10" WarnUnusedVariables="true" WarnInterfaces="true" ExtendSinglePrecisionConstants="true" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" AssemblerListingLocation="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" RuntimeLibrary="rtMultiThreadedDebugDLL"/>
+				<Tool Name="VFLinkerTool" AdditionalOptions="/MACHINE:I386" OutputFile="$(OUTDIR)/test_debug.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="..\..\..\lib\win32\Debug_IVF;C:\wint\lib.if8" ManifestFile="$(INTDIR)/$(TARGETNAME).intermediate.manifest" GenerateDebugInformation="true" SubSystem="subSystemConsole" ImportLibrary="" AdditionalDependencies="version.lib kernel32.lib winter.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib advapi32.lib opengl32.lib OpenFrames_debug.lib"/>
+				<Tool Name="VFResourceCompilerTool" PreprocessorDefinitions="NDEBUG" Culture="rcEnglishUS" AdditionalIncludeDirectories="C:\wint\include" ResourceOutputFileName="$(INTDIR)/$(InputName).res"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(OUTDIR)/test.tlb"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration></Configurations>
+	<Files>
+		<Filter Name="Header Files" Filter="h;hpp;hxx;hm;inl;fi;fd"/>
+		<Filter Name="Resource Files" Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+		<File RelativePath="..\resource.rc">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFResourceCompilerTool" AdditionalIncludeDirectories="\Program Files\OpenFrames\Demos\Winteracter Test"/></FileConfiguration>
+			<FileConfiguration Name="Release|Win32">
+				<Tool Name="VFResourceCompilerTool" AdditionalIncludeDirectories="\Program Files\OpenFrames\Demos\Winteracter Test"/></FileConfiguration></File></Filter>
+		<Filter Name="Source Files" Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;f90;for;f;fpp">
+		<File RelativePath="..\..\..\src\OpenFrames.f90"/>
+		<File RelativePath="..\RESOURCE.f90"/>
+		<File RelativePath="..\trivial.f90"/></Filter></Files>
+	<Globals/></VisualStudioProject>

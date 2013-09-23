@@ -1,0 +1,81 @@
+# Define the library name that we will create
+SET(LIB_NAME OpenFrames)
+
+# Define the headers used to compile
+INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include)
+SET(HEADER_PATH ${OpenFrames_SOURCE_DIR}/include/${LIB_NAME})
+SET(LIB_PUBLIC_HEADERS
+    ${HEADER_PATH}/CoordinateAxes
+    ${HEADER_PATH}/CurveArtist
+    ${HEADER_PATH}/DepthPartitionNode
+    ${HEADER_PATH}/DescendantTracker
+    ${HEADER_PATH}/DistanceAccumulator
+    ${HEADER_PATH}/DrawableTrajectory
+    ${HEADER_PATH}/Export
+    ${HEADER_PATH}/FrameManager
+    ${HEADER_PATH}/FramePathVerifier
+    ${HEADER_PATH}/FrameTracker
+    ${HEADER_PATH}/FrameTransform
+    ${HEADER_PATH}/FramerateLimiter
+    ${HEADER_PATH}/LatLonGrid
+    ${HEADER_PATH}/MarkerArtist
+    ${HEADER_PATH}/Model
+    ${HEADER_PATH}/OF_FORTRAN
+    ${HEADER_PATH}/RadialPlane
+    ${HEADER_PATH}/ReferenceFrame
+    ${HEADER_PATH}/RenderRectangle
+    ${HEADER_PATH}/SegmentArtist
+    ${HEADER_PATH}/Sphere
+    ${HEADER_PATH}/SubtreeTracker
+    ${HEADER_PATH}/Trajectory
+    ${HEADER_PATH}/TrajectoryArtist
+    ${HEADER_PATH}/TransformAccumulator
+    ${HEADER_PATH}/Vector
+    ${HEADER_PATH}/View
+    ${HEADER_PATH}/WindowProxy
+)
+
+# Define ALL the files needed to compile
+ADD_LIBRARY(${LIB_NAME} SHARED ${LIB_PUBLIC_HEADERS}
+    CoordinateAxes.cpp
+    CurveArtist.cpp
+    DepthPartitionNode.cpp
+    DescendantTracker.cpp
+    DistanceAccumulator.cpp
+    DrawableTrajectory.cpp
+    FramePathVerifier.cpp
+    FrameTracker.cpp
+    FrameTransform.cpp
+    FramerateLimiter.cpp
+    LatLonGrid.cpp
+    MarkerArtist.cpp
+    Model.cpp
+    OF_FORTRAN.cpp
+    RadialPlane.cpp
+    ReferenceFrame.cpp
+    RenderRectangle.cpp
+    SegmentArtist.cpp
+    Sphere.cpp
+    SubtreeTracker.cpp
+    Trajectory.cpp
+    TrajectoryArtist.cpp
+    TransformAccumulator.cpp
+    Vector.cpp
+    View.cpp
+    WindowProxy.cpp
+)
+
+# Specify dependencies for linking
+TARGET_LINK_LIBRARIES(${LIB_NAME} ${OPENGL_LIBRARIES} OpenThreads osg osgViewer osgGA osgDB osgText osgUtil osgParticle)
+
+# Specify where headers should be installed
+INSTALL(
+  FILES ${LIB_PUBLIC_HEADERS}
+  DESTINATION include/${LIB_NAME}
+  )
+
+# Specify where library should be installed
+INSTALL(
+  TARGETS ${LIB_NAME}
+  LIBRARY DESTINATION lib
+  )

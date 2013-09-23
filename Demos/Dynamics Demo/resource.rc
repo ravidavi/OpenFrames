@@ -1,0 +1,231 @@
+///////////////////////////////////////////////////
+//
+// THIS FILE SHOULD NOT BE EDITED USING A TEXT
+// EDITOR OR 3RD PARTY RESOURCE EDITOR, EXCEPT
+// WHEN SPECIFICALLY INSTRUCTED BY I.S.S.
+//
+///////////////////////////////////////////////////
+//
+// Winteracter resource script. 
+//
+// Modified : 13/Jul/2004 00:12:45
+//
+///////////////////////////////////////////////////
+//
+// Include files
+//
+#include "winparam.h"
+ 
+///////////////////////////////////////////////////
+//
+// Parameter Definitions
+//
+#define IDR_MENU1                       30001
+#define ID_GRAPHICS_MODEL               40001
+#define ID_EXIT                         40002
+#define ID_GRAPHICS_CONTROLS            40003
+#define ID_LEFT                         40100
+#define ID_LEFT_ROTATE                  40101
+#define ID_LEFT_PAN                     40102
+#define ID_LEFT_ZOOM                    40103
+#define ID_LEFT_X                       40104
+#define ID_LEFT_Y                       40105
+#define ID_LEFT_Z                       40106
+#define ID_RIGHT                        40200
+#define ID_RIGHT_ROTATE                 40201
+#define ID_RIGHT_PAN                    40202
+#define ID_RIGHT_ZOOM                   40203
+#define ID_RIGHT_X                      40204
+#define ID_RIGHT_Y                      40205
+#define ID_RIGHT_Z                      40206
+#define ID_CURSOR                       40300
+#define ID_CURSOR_ROTATE                40301
+#define ID_CURSOR_PAN                   40302
+#define ID_CURSOR_ZOOM                  40303
+#define ID_CURSOR_X                     40304
+#define ID_CURSOR_Y                     40305
+#define ID_CURSOR_Z                     40306
+#define ID_VIEW_POINTS                  40028
+#define ID_VIEW_WIREFRAME               40032
+#define ID_VIEW_SOLID                   40033
+#define ID_VIEW_RESET                   40007
+#define ID_VIEW_AXES                    40011
+#define ID_INITIAL_CONDITIONS           40004
+#define ID_RESET_DYNAMICS               40005
+#define IDD_DIALOG001                     101
+#define IDF_LABEL1                       1001
+#define IDF_LABEL2                       1002
+#define IDF_LABEL3                       1003
+#define IDF_LABEL4                       1004
+#define IDF_LABEL5                       1005
+#define IDF_LABEL9                       1006
+#define IDF_LABEL7                       1007
+#define IDF_LABEL8                       1008
+#define IDF_TIME_T0                      1009
+#define IDF_TIME_TF                      1010
+#define IDF_X_T0                         1011
+#define IDF_Y_T0                         1012
+#define IDF_VX_T0                        1013
+#define IDF_Z_T0                         1014
+#define IDF_VY_T0                        1015
+#define IDF_VZ_T0                        1016
+#define ID_SIMULATION                   40006
+#define ID_FILE_OPERATIONS              40008
+#define ID_ITEM36                       40009
+#define ID_DYNAMIC_MODEL_PARAMETERS     40010
+#define ID_ITEM41                       40015
+#define ID_ITEM42                       40016
+#define ID_ITEM43                       40017
+#define ID_ITEM44                       40018
+#define ID_ITEM45                       40019
+#define IDD_DIALOG002                     102
+#define IDF_GM                           1017
+
+///////////////////////////////////////////////////
+//
+// Dialogs
+//
+IDD_DIALOG001 DIALOG 0, 0,  300,  200
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT    8, "MS Sans Serif"
+CAPTION "Initial Conditions"
+BEGIN
+    CONTROL "T0 (sec)",IDF_LABEL1,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,   18,   30,   40,    8
+    CONTROL "TF (sec)",IDF_LABEL2,"STATIC",WS_CHILD | WS_VISIBLE | SS_LEFT,   18,   45,   40,    8
+    CONTROL "X (km)",IDF_LABEL4,"STATIC",WS_CHILD | WS_VISIBLE | SS_LEFT,   18,   70,   40,    8
+    CONTROL "Y (km)",IDF_LABEL5,"STATIC",WS_CHILD | WS_VISIBLE | SS_LEFT,   18,   85,   40,    8
+    CONTROL "Z (km)",IDF_LABEL3,"STATIC",WS_CHILD | WS_VISIBLE | SS_LEFT,   18,  100,   40,    8
+    CONTROL "VX (km/s)",IDF_LABEL9,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,   18,  115,   40,    8
+    CONTROL "VY (km/s)",IDF_LABEL7,"STATIC",WS_CHILD | WS_VISIBLE | SS_LEFT,   18,  130,   40,    8
+    CONTROL "VZ (km/s)",IDF_LABEL8,"STATIC",WS_CHILD | WS_VISIBLE | SS_LEFT,   18,  145,   40,    8
+    CONTROL "0.0000",IDF_TIME_T0,"DOUBLEEDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,  116,   30,   80,   12
+    CONTROL "0.0000",IDF_TIME_TF,"DOUBLEEDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,  116,   45,   80,   12
+    CONTROL "0.0000",IDF_X_T0,"DOUBLEEDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,  116,   70,   80,   12
+    CONTROL "0.0000",IDF_Y_T0,"DOUBLEEDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,  116,   85,   80,   12
+    CONTROL "0.0000",IDF_Z_T0,"DOUBLEEDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,  116,  100,   80,   12
+    CONTROL "0.0000",IDF_VX_T0,"DOUBLEEDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,  116,  115,   80,   12
+    CONTROL "0.0000",IDF_VY_T0,"DOUBLEEDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,  116,  130,   80,   12
+    CONTROL "0.0000",IDF_VZ_T0,"DOUBLEEDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,  116,  145,   80,   12
+END
+
+IDD_DIALOG001 RCDATA
+BEGIN
+"[Ranges] \n"
+"[Formats] \n"
+,0
+END
+
+IDD_DIALOG002 DIALOG 0, 0,  300,  200
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT    8, "MS Sans Serif"
+CAPTION "Dynamic Model Parameters"
+BEGIN
+    CONTROL "Central Body GM (km^3/s^2)",IDF_LABEL1,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,   20,   30,  100,    8
+    CONTROL "0.0000",IDF_GM,"DOUBLEEDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,  130,   30,   80,   14
+END
+
+IDD_DIALOG002 RCDATA
+BEGIN
+"[Ranges] \n"
+"[Formats] \n"
+,0
+END
+
+///////////////////////////////////////////////////
+//
+// Menus
+//
+IDR_MENU1 MENU
+BEGIN
+    POPUP "&File Operations"
+    BEGIN
+        MENUITEM "&New",                                     ID_ITEM44, GRAYED
+        MENUITEM "&Open",                                    ID_ITEM36, GRAYED
+        MENUITEM "&Save",                                    ID_ITEM41, GRAYED
+        MENUITEM "Save &As",                                 ID_ITEM42, GRAYED
+        MENUITEM "&Close",                                   ID_ITEM43, GRAYED
+    END
+    POPUP "&Simulation"
+    BEGIN
+        MENUITEM "&Algorithm Parameters",                    ID_ITEM45, GRAYED
+        MENUITEM "&Dynamic Model Parameters",                ID_DYNAMIC_MODEL_PARAMETERS
+        MENUITEM "&Initial Conditions",                      ID_INITIAL_CONDITIONS
+        MENUITEM "&Reset Dynamics",                          ID_RESET_DYNAMICS
+    END
+    POPUP "&Graphics Controls"
+    BEGIN
+        POPUP "&Left Button"
+        BEGIN
+            MENUITEM "&Rotate",                                  ID_LEFT_ROTATE, CHECKED
+            MENUITEM "&Pan",                                     ID_LEFT_PAN
+            MENUITEM "&Zoom",                                    ID_LEFT_ZOOM
+            MENUITEM "Scale &X",                                 ID_LEFT_X
+            MENUITEM "Scale &Z",                                 ID_LEFT_Z
+            MENUITEM "Scale &Y",                                 ID_LEFT_Y
+        END
+        POPUP "&Right Button"
+        BEGIN
+            MENUITEM "&Rotate",                                  ID_RIGHT_ROTATE
+            MENUITEM "&Pan",                                     ID_RIGHT_PAN
+            MENUITEM "&Zoom",                                    ID_RIGHT_ZOOM, CHECKED
+            MENUITEM "Scale &X",                                 ID_RIGHT_X
+            MENUITEM "Scale &Z",                                 ID_RIGHT_Z
+            MENUITEM "Scale &Y",                                 ID_RIGHT_Y
+        END
+        POPUP "&Cursor Keys"
+        BEGIN
+            MENUITEM "&Rotate",                                  ID_CURSOR_ROTATE
+            MENUITEM "&Pan",                                     ID_CURSOR_PAN, CHECKED
+            MENUITEM "&Zoom",                                    ID_CURSOR_ZOOM
+            MENUITEM "Scale &X",                                 ID_CURSOR_X
+            MENUITEM "Scale &Z",                                 ID_CURSOR_Z
+            MENUITEM "Scale &Y",                                 ID_CURSOR_Y
+        END
+    END
+    POPUP "&Graphics Model"
+    BEGIN
+        MENUITEM "&Solid",                                   ID_VIEW_SOLID, CHECKED
+        MENUITEM "&Wireframe",                               ID_VIEW_WIREFRAME
+        MENUITEM "&Points",                                  ID_VIEW_POINTS
+        MENUITEM SEPARATOR
+        MENUITEM "&Axes",                                    ID_VIEW_AXES, CHECKED
+        MENUITEM SEPARATOR
+        MENUITEM "&Reset",                                   ID_VIEW_RESET
+    END
+    MENUITEM "E&xit",                                    ID_EXIT
+END
+
+IDR_MENU1 RCDATA
+BEGIN
+ID_FILE_OPERATIONS,1,0
+ID_SIMULATION,2,0
+ID_GRAPHICS_CONTROLS,3,0
+ID_LEFT,3,1,0
+ID_RIGHT,3,2,0
+ID_CURSOR,3,3,0
+ID_GRAPHICS_MODEL,4,0
+0
+END
+
+///////////////////////////////////////////////////
+//
+// Icons
+//
+icon1                           ICON   DISCARDABLE "program.ico"
+
+///////////////////////////////////////////////////
+//
+// Winteracter Visual Tool Settings
+//
+//*WI* BASEMENU    30001
+//*WI* BASEITEM    40001
+//*WI* BASEDIALOG    101
+//*WI* BASEFIELD    1001
+//*WI* BASETOOLBAR 30101
+//*WI* BASEBUTTON  40101
+//*WI* BASEIMAGE    2001
+//*WI* F90MODULE   1
+//*WI* FILENAME    RESOURCE.F90
+//*WI* FMODNAME    RESOURCE
+//*WI* LASTTYPE        2
+//*WI* LASTRES         2

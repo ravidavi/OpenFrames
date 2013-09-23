@@ -1,0 +1,45 @@
+///////////////////////////////////////////////////
+//
+// THIS FILE SHOULD NOT BE EDITED USING A TEXT
+// EDITOR OR 3RD PARTY RESOURCE EDITOR, EXCEPT
+// WHEN SPECIFICALLY INSTRUCTED BY I.S.S.
+//
+///////////////////////////////////////////////////
+//
+// Winteracter resource script. 
+//
+// Modified : 12/Sep/2004 17:03:02
+//
+///////////////////////////////////////////////////
+//
+// Include files
+//
+#include "winparam.h"
+ 
+///////////////////////////////////////////////////
+//
+// Parameter Definitions
+//
+
+///////////////////////////////////////////////////
+//
+// Icons
+//
+icon1                           ICON   DISCARDABLE "program.ico"
+
+///////////////////////////////////////////////////
+//
+// Winteracter Visual Tool Settings
+//
+//*WI* BASEMENU    30001
+//*WI* BASEITEM    40001
+//*WI* BASEDIALOG    101
+//*WI* BASEFIELD    1001
+//*WI* BASETOOLBAR 30101
+//*WI* BASEBUTTON  40101
+//*WI* BASEIMAGE    2001
+//*WI* F90MODULE   1
+//*WI* FILENAME    RESOURCE.F90
+//*WI* FMODNAME    RESOURCE
+//*WI* LASTTYPE        4
+//*WI* LASTRES         1
