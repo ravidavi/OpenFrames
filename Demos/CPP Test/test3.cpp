@@ -68,7 +68,7 @@ int main()
 	osg::Quat att;
 	att.makeRotate(osg::Vec3d(0.0, 0.0, 1.0), osg::Vec3d(0.5, 0.5, 0.5));
 	plane2->setAttitude(att[0], att[1], att[2], att[3]);
-	plane2->setPosition(r_earth, r_earth, r_earth/10.0);
+	plane2->setPosition(r_earth/1.73, r_earth/1.73, r_earth/1.73);
 
 	  // Set texture
 	earth->setTextureMap("../Images/EarthTexture.bmp");
@@ -107,7 +107,7 @@ int main()
 	theWindow->startThread();
 
 	  // Compute and update sun's position
-	for(double t = 0.0; theWindow->isRunning(); t += M_PI/(1.0e8))
+	for(double t = 0.0; theWindow->isRunning(); t += M_PI/(1.0e9))
 	{
 	  sun->setPosition(AU*cos(t), AU*sin(t), 0);
 	}
