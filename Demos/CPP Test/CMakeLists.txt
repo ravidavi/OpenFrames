@@ -4,7 +4,7 @@ INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include ${OPENSCENEGRAPH_INCLUDE_DI
 # Specify tests that should be built
 SET( ALL_TESTS test1 test2 test3 )
 
-IF(BUILD_TESTS) # If user asked for test programs
+IF(OF_BUILD_TESTS) # If user asked for test programs
   FOREACH(curr_test ${ALL_TESTS})
     # Specify which file should be compiled for current test
     ADD_EXECUTABLE(${curr_test} ${curr_test}.cpp)
@@ -22,4 +22,4 @@ IF(BUILD_TESTS) # If user asked for test programs
       RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}
     )
   ENDFOREACH(curr_test)
-ENDIF(BUILD_TESTS)
+ENDIF(OF_BUILD_TESTS)

@@ -86,3 +86,21 @@ INSTALL(
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
 )
+
+# The Fortran module project
+IF(OF_FORTRAN_MODULE)
+
+  SET(FMODDIR ${CMAKE_BINARY_DIR}/modules)
+  SET(CMAKE_Fortran_MODULE_DIRECTORY ${FMODDIR})
+
+  ADD_LIBRARY(${LIB_NAME}_Fortran MODULE
+    OpenFrames.f90
+  )
+
+  # Specify where the Fortran module should be installed
+  INSTALL(
+    FILES ${FMODDIR}/OpenFrames.mod
+    DESTINATION lib
+  )
+
+ENDIF(OF_FORTRAN_MODULE)

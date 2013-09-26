@@ -6,10 +6,16 @@ PROJECT(OpenFrames)
 
 # Find OpenGL
 FIND_PACKAGE(OpenGL)
-FIND_PACKAGE(OpenSceneGraph 3.0.0 REQUIRED osgText osgGA osgDB osgUtil osgViewer)
+FIND_PACKAGE(OpenSceneGraph 3.0.0 REQUIRED osgText osgGA osgDB osgUtil osgViewer osgParticle)
 
-# User option to build test programs
-OPTION( BUILD_TESTS "Build Test Programs" ON )
+# User options
+OPTION( OF_BUILD_TESTS "Build Test Programs" ON )
+OPTION( OF_FORTRAN_MODULE "Compile Fortran Module" OFF )
+
+# This is a workaround to the broken OPTIONAL signature in CMake 2.8-10
+IF( OF_FORTRAN_MODULE )
+  ENABLE_LANGUAGE(Fortran OPTIONAL)
+ENDIF( OF_FORTRAN_MODULE )
 
 # Go to the src directory and look for CMake instructions there
 ADD_SUBDIRECTORY(src)
