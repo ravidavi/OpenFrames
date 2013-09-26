@@ -4,38 +4,8 @@ ADD_DEFINITIONS(-DOF_LIBRARY) # Needed to compile OpenFrames as a library
 SET(LIB_NAME ${PROJECT_NAME})
 
 # Define the headers used to compile
-INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include ${OPENSCENEGRAPH_INCLUDE_DIRS})
-SET(HEADER_PATH ${OpenFrames_SOURCE_DIR}/include/${LIB_NAME})
-SET(LIB_PUBLIC_HEADERS
-    ${HEADER_PATH}/CoordinateAxes
-    ${HEADER_PATH}/CurveArtist
-    ${HEADER_PATH}/DepthPartitionNode
-    ${HEADER_PATH}/DescendantTracker
-    ${HEADER_PATH}/DistanceAccumulator
-    ${HEADER_PATH}/DrawableTrajectory
-    ${HEADER_PATH}/Export
-    ${HEADER_PATH}/FrameManager
-    ${HEADER_PATH}/FramePathVerifier
-    ${HEADER_PATH}/FrameTracker
-    ${HEADER_PATH}/FrameTransform
-    ${HEADER_PATH}/FramerateLimiter
-    ${HEADER_PATH}/LatLonGrid
-    ${HEADER_PATH}/MarkerArtist
-    ${HEADER_PATH}/Model
-    ${HEADER_PATH}/OF_FORTRAN
-    ${HEADER_PATH}/RadialPlane
-    ${HEADER_PATH}/ReferenceFrame
-    ${HEADER_PATH}/RenderRectangle
-    ${HEADER_PATH}/SegmentArtist
-    ${HEADER_PATH}/Sphere
-    ${HEADER_PATH}/SubtreeTracker
-    ${HEADER_PATH}/Trajectory
-    ${HEADER_PATH}/TrajectoryArtist
-    ${HEADER_PATH}/TransformAccumulator
-    ${HEADER_PATH}/Vector
-    ${HEADER_PATH}/View
-    ${HEADER_PATH}/WindowProxy
-)
+SET(OF_HEADER_PATH ${OpenFrames_SOURCE_DIR}/include)
+INCLUDE_DIRECTORIES(${OF_HEADER_PATH} ${OPENSCENEGRAPH_INCLUDE_DIRS})
 
 # Define all the source files needed to compile
 ADD_LIBRARY(${LIB_NAME} SHARED
@@ -75,8 +45,8 @@ SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES DEBUG_POSTFIX "d")
 
 # Specify where headers should be installed
 INSTALL(
-  FILES ${LIB_PUBLIC_HEADERS}
-  DESTINATION include/${LIB_NAME}
+  DIRECTORY ${OF_HEADER_PATH}/
+  DESTINATION include
 )
 
 # Specify where library should be installed
@@ -90,17 +60,23 @@ INSTALL(
 # The Fortran module project
 IF(OF_FORTRAN_MODULE)
 
-  SET(FMODDIR ${CMAKE_BINARY_DIR}/modules)
-  SET(CMAKE_Fortran_MODULE_DIRECTORY ${FMODDIR})
+  SET(CMAKE_Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/modules)
 
-  ADD_LIBRARY(${LIB_NAME}_Fortran MODULE
+  ADD_LIBRARY(${LIB_NAME}_Fortran SHARED
     OpenFrames.f90
   )
 
   # Specify where the Fortran module should be installed
+  # This is currently kind of a hack: Different compilers will generate the
+  # .mod file in varying subdirectories, so we will copy all possible .mod
+  # file locations and tell CMake to ignore nonexistent ones
   INSTALL(
-    FILES ${FMODDIR}/OpenFrames.mod
+    FILES 
+    ${CMAKE_Fortran_MODULE_DIRECTORY}/OpenFrames.mod
+    ${CMAKE_Fortran_MODULE_DIRECTORY}/Debug/OpenFrames.mod
+    ${CMAKE_Fortran_MODULE_DIRECTORY}/Release/OpenFrames.mod
     DESTINATION lib
+    OPTIONAL
   )
 
 ENDIF(OF_FORTRAN_MODULE)
