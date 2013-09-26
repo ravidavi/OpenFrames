@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 PROJECT(OpenFrames)
 
 # Make the makefile output verbose (for compiler error checking)
@@ -6,6 +6,7 @@ PROJECT(OpenFrames)
 
 # Find OpenGL
 FIND_PACKAGE(OpenGL)
+FIND_PACKAGE(OpenSceneGraph 3.0.0 REQUIRED osgText osgGA osgDB osgUtil osgViewer)
 
 # User option to build test programs
 OPTION( BUILD_TESTS "Build Test Programs" ON )

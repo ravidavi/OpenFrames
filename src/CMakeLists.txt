@@ -1,8 +1,10 @@
+ADD_DEFINITIONS(-DOF_LIBRARY) # Needed to compile OpenFrames as a library
+
 # Define the library name that we will create
-SET(LIB_NAME OpenFrames)
+SET(LIB_NAME ${PROJECT_NAME})
 
 # Define the headers used to compile
-INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include)
+INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include ${OPENSCENEGRAPH_INCLUDE_DIRS})
 SET(HEADER_PATH ${OpenFrames_SOURCE_DIR}/include/${LIB_NAME})
 SET(LIB_PUBLIC_HEADERS
     ${HEADER_PATH}/CoordinateAxes
@@ -35,8 +37,8 @@ SET(LIB_PUBLIC_HEADERS
     ${HEADER_PATH}/WindowProxy
 )
 
-# Define ALL the files needed to compile
-ADD_LIBRARY(${LIB_NAME} SHARED ${LIB_PUBLIC_HEADERS}
+# Define all the source files needed to compile
+ADD_LIBRARY(${LIB_NAME} SHARED
     CoordinateAxes.cpp
     CurveArtist.cpp
     DepthPartitionNode.cpp
@@ -66,16 +68,21 @@ ADD_LIBRARY(${LIB_NAME} SHARED ${LIB_PUBLIC_HEADERS}
 )
 
 # Specify dependencies for linking
-TARGET_LINK_LIBRARIES(${LIB_NAME} ${OPENGL_LIBRARIES} OpenThreads osg osgViewer osgGA osgDB osgText osgUtil osgParticle)
+TARGET_LINK_LIBRARIES(${LIB_NAME} ${OPENGL_LIBRARIES} ${OPENSCENEGRAPH_LIBRARIES})
+
+# Specify debug library suffix
+SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES DEBUG_POSTFIX "d")
 
 # Specify where headers should be installed
 INSTALL(
   FILES ${LIB_PUBLIC_HEADERS}
   DESTINATION include/${LIB_NAME}
-  )
+)
 
 # Specify where library should be installed
 INSTALL(
   TARGETS ${LIB_NAME}
   LIBRARY DESTINATION lib
-  )
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+)

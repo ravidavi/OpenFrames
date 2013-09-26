@@ -21,3 +21,8 @@ Thumbs.db
 *.o
 *.swp
 *~
+
+# Compile-specific files #
+build/
+bin/
+lib/
