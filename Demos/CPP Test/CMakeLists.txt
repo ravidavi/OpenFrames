@@ -19,7 +19,18 @@ IF(OF_BUILD_TESTS) # If user asked for test programs
     # Necessary since models/images are located relative to here
     INSTALL(
       TARGETS ${curr_test}
-      RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}
+      RUNTIME DESTINATION bin
     )
+
+    INSTALL(
+      DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../Images
+      DESTINATION ${CMAKE_INSTALL_PREFIX}
+    )
+
+    INSTALL(
+      DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../Models
+      DESTINATION ${CMAKE_INSTALL_PREFIX}
+    )
+
   ENDFOREACH(curr_test)
 ENDIF(OF_BUILD_TESTS)

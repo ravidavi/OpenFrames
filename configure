@@ -1,0 +1,31 @@
+#! /bin/bash
+# Build and install OpenFrames
+
+# Get directory of this script
+# This is needed if the script was launched by the GUI
+BASEDIR=$(dirname $0)
+cd $BASEDIR
+BASEDIR=$(pwd)
+
+# Create the build tree for CMake
+mkdir -p $BASEDIR/build
+cd $BASEDIR/build
+
+# Create build system with CMake
+echo
+echo "Creating OpenFrames build system with CMake"
+cmake -DCMAKE_INSTALL_PREFIX=$BASEDIR/install -DCMAKE_BUILD_TYPE=Release ..
+
+# Build OpenFrames
+echo
+echo "Building release version of OpenFrames"
+make
+
+# Install OpenFrames
+echo
+echo "Installing OpenFrames in-place"
+make install
+
+echo ""
+echo "Done creating build files"
+read -p "Press return to finish..."
