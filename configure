@@ -12,20 +12,8 @@ mkdir -p $BASEDIR/build
 cd $BASEDIR/build
 
 # Create build system with CMake
+# The default install directory is OpenFramesDir/install, but this
+# can be changed by using the CMake GUI to set CMAKE_INSTALL_PREFIX
 echo
 echo "Creating OpenFrames build system with CMake"
 cmake -DCMAKE_INSTALL_PREFIX=$BASEDIR/install -DCMAKE_BUILD_TYPE=Release ..
-
-# Build OpenFrames
-echo
-echo "Building release version of OpenFrames"
-make
-
-# Install OpenFrames
-echo
-echo "Installing OpenFrames in-place"
-make install
-
-echo ""
-echo "Done creating build files"
-read -p "Press return to finish..."
