@@ -11,22 +11,25 @@ DEPENDENCIES
 
 *** Obtaining OSG:
 You can obtain the OpenSceneGraph libraries in two ways: 
-  (1) obtain prebuilt binaries for your system from the AlphaPixel website
-  (2) download the source code for a supported release from the OSG website, and build/install from their instructions
-If you choose to build the source yourself on Windows, make sure that you download the appropriate 3rd Party libraries for your system (also available on the OSG website).
+  (1) obtain prebuilt binaries for your system from the AlphaPixel website.
+  (2) download the source code for a supported release from the OSG website, and build/install from their instructions.
+
+If you choose to build the source yourself on Windows, make sure that you download the appropriate 3rd Party libraries for your system (also available on the OSG website). For Mac/Linux users, see the note below for restrictions on using prebuilt binaries.
 
 
 *** Installing OSG on Windows:
 Regardless of how you obtain OSG, the end result should be shared libraries and files in folders such as bin/, lib/, etc...
 
-1: Create a user environment variable called "OSG_DIR" (an existing OSG_ROOT variable will suffice). Set its value to the root OpenSceneGraph directory (that CONTAINS bin/, lib/, ...). This will be something like "C:\blahblah\OpenSceneGraph".
+1: Create a user environment variable called "OSG_DIR". Set its value to the root OpenSceneGraph directory (that CONTAINS bin/, lib/, ...). This will be something like "C:\blahblah\OpenSceneGraph".
+
+  - Note that if you already have an "OSG_ROOT" environment variable set to the correct path, then this will suffice. This may be true if you have a pre-existing install of OpenSceneGraph. Make sure that the variable's value is correct.
 
 2: Edit or create the "Path" user environment variable. Set its value to "%OSG_DIR%\bin" (without the quotes). Append to existing value if necessary. This step tells Windows where to find the OSG libraries when you launch an application.
 
 
 *** Installing OSG on Mac/Linux:
 IMPORTANT NOTES:
- - The AlphaPixel binaries for OSG3.0.1 do not work on MacOS 10.7 onwards, since they were compiled with the Carbon framework which is not supported. On MacOS 10.7+, please download more recent binaries or build from source.
+ - The AlphaPixel binaries for OSG3.0.1 do not work on MacOS 10.7 onwards, since they were compiled with the deprecated Carbon framework. On MacOS 10.7+, please download more recent binaries or build from source.
  - OpenFrames currently requires that OpenSceneGraph be built using the X11 windowing system. In CMake, set the OSG_WINDOWING_SYSTEM variable to "X11" before building OpenSceneGraph. This limitation is currently under investigation.
 
 Set the following environment variables in your .bash_profile (or equivalent login script), using appropriate paths for variables in [brackets]. Note that if you built/installed OSG from source, then it is probably installed in /usr/local.
@@ -47,11 +50,27 @@ INSTALLING OPENFRAMES
 ==========
 
 *** Installing OpenFrames on Windows:
-In progress...
+1: Open the CMake GUI program. In the "source code" field, enter the full path to the OpenFrames root directory (that contains src/, include/, etc...). In the "build binaries" field, enter that same path followed by "build". e.g., "C:/blahblah/OpenFrames/build".
+
+2: Click "Configure". Choose your desired build system generator, noting to choose the "VisuaStudio*_Win64" generator if you're using a 64-bit version of Windows or the "VisualStudio*" generator for 32-bit Windows. Keep "Use default native compilers" checked.
+
+  - Make sure that the various OpenSceneGraph libraries are loaded properly. If they aren't, then make sure that you set your "OSG_DIR" environment variable correctly and re-do this step.
+
+3: Set the "CMAKE_INSTALL_PREFIX" CMake variable to your desired install directory. e.g. "C:/blahblah/OpenFrames/install".
+
+4: Click "Configure" again. Assuming everything goes well, click "Generate" and the build files will be created. You can close CMake now.
+
+5: Go to the Build directory, and open the OpenFrames.sln file. It will open in your selected version of VisualStudio.
+
+6: Select the appropriate build type (Debug or Release) according to which version of OpenSceneGraph you have installed. If you downloaded OSG, then this will correspond to the version of OSG you downloaded.
+
+7: From the "Build" menu, select "Build Solution". Ensure that there are no build errors.
+
+8: Right-click on the "INSTALL" project and select "Build". This will install OpenFrames in the directory of your choice (from the CMAKE_INSTALL_PREFIX variable).
 
 
 *** Installing OpenFrames on Mac/Linux:
-Open a Terminal window, and change to the OpenFrames root directory (that contains src/, include/, etcâ€¦)
+Open a Terminal window, and change to the OpenFrames root directory (that contains src/, include/, etc…)
 Run the following commands:
      > ./configure
      > cd build
@@ -71,4 +90,4 @@ Linux:
 TESTING OPENFRAMES
 ==========
 
-To test OpenFrames, run the various test programs in the OpenFrames/install/bin directory. You can mess with the associated source code in OpenFrames/Demos/CPP Test/ .
+To test OpenFrames, run the various test programs in the OpenFrames/install/bin/ directory. You can mess with the associated source code in OpenFrames/Demos/CPP Test/ .
