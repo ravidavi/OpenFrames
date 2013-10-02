@@ -27,9 +27,8 @@ SET /p generator="Enter exact generator name: "
 echo.
 echo Please select a folder into which OpenFrames will be installed, or press [enter] for default install/ folder.
 SET /p instdir="Full folder path [enter = install\]: "
-echo %instdir%
 
-IF ("%instdir%") == () (
+IF ("%instdir%") == ("") (
   cmake -G "%generator%" -DCMAKE_INSTALL_PREFIX="%basedir%\install" ..
 ) ELSE (
   cmake -G "%generator%" -DCMAKE_INSTALL_PREFIX="%instdir%" ..
