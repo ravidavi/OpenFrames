@@ -4,10 +4,19 @@ OpenFrames Installation Instructions
 DEPENDENCIES
 ==========
 
+--- CMake
+--- Info: http://www.cmake.org
+--- Currently supported versions: 2.8.11+
+
+*** Installing CMake:
+
+When installing CMake, make sure to select the option to add CMake to the system path. This will allow CMake to be accessed from the command line on Mac/Linux/Windows.
+
+
 --- OpenSceneGraph (OSG) 
 --- Info: http://www.openscenegraph.org
 --- Pre-built Binaries: http://www.alphapixel.com/osg/downloads/free-openscenegraph-binary-downloads
---- Currently supported versions: 3.0.1, 3.2
+--- Currently supported versions: 3.0.1+
 
 *** Obtaining OSG:
 You can obtain the OpenSceneGraph libraries in two ways: 
@@ -50,44 +59,36 @@ INSTALLING OPENFRAMES
 ==========
 
 *** Installing OpenFrames on Windows:
-1: Open the CMake GUI program. In the "source code" field, enter the full path to the OpenFrames root directory (that contains src/, include/, etc...). In the "build binaries" field, enter that same path followed by "build". e.g., "C:/blahblah/OpenFrames/build".
+1: Run the "configure.bat" script in the root OpenFrames directory. Enter the desired Visual Studio generator name and the desired install location, and all build files will be created in the "build" directory.
 
-2: Click "Configure". Choose your desired build system generator, noting to choose the "VisuaStudio*_Win64" generator if you're using a 64-bit version of Windows or the "VisualStudio*" generator for 32-bit Windows. Keep "Use default native compilers" checked.
+2: Go to the "build" directory, and open the OpenFrames.sln file. It will open in your selected version of VisualStudio.
 
-  - Make sure that the various OpenSceneGraph libraries are loaded properly. If they aren't, then make sure that you set your "OSG_DIR" environment variable correctly and re-do this step.
+3: Select the appropriate build type (Debug or Release) according to which version of OpenSceneGraph you have installed. If you downloaded OSG, then this will correspond to the version of OSG you downloaded.
 
-3: Set the "CMAKE_INSTALL_PREFIX" CMake variable to your desired install directory. e.g. "C:/blahblah/OpenFrames/install".
+4: From the "Build" menu, select "Build Solution". Ensure that there are no build errors.
 
-4: Click "Configure" again. Assuming everything goes well, click "Generate" and the build files will be created. You can close CMake now.
-
-5: Go to the Build directory, and open the OpenFrames.sln file. It will open in your selected version of VisualStudio.
-
-6: Select the appropriate build type (Debug or Release) according to which version of OpenSceneGraph you have installed. If you downloaded OSG, then this will correspond to the version of OSG you downloaded.
-
-7: From the "Build" menu, select "Build Solution". Ensure that there are no build errors.
-
-8: Right-click on the "INSTALL" project and select "Build". This will install OpenFrames in the directory of your choice (from the CMAKE_INSTALL_PREFIX variable).
+5: Right-click on the "INSTALL" project and select "Build". This will install OpenFrames in the install directory of your choice.
 
 
 *** Installing OpenFrames on Mac/Linux:
-Open a Terminal window, and change to the OpenFrames root directory (that contains src/, include/, etc…)
-Run the following commands:
-     > ./configure
+Open a Terminal window, and change to the OpenFrames root directory (that contains src/, include/, etc)
+Run the following commands. When prompted, select a Debug or Release build type according to the version of OpenSceneGraph you have installed.
+     > ./configure (enter your desired build type and install location)
      > cd build
      > make
      > make install
-This will result in OpenFrames being compiled and installed to the OpenFrames/install directory. You can then point your environment variables to include these libraries as appropriate:
+This will result in OpenFrames being compiled and installed to your desired install directory. You can then point your environment variables to include these libraries as appropriate:
 
 Mac:
-     export OF_DIR=[OpenFramesPath]
+     export OF_DIR=[OpenFramesInstallPath]
      export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$OF_DIR/lib
 
 Linux:
-     export OF_DIR=[OpenFramesPath]
+     export OF_DIR=[OpenFramesInstallPath]
      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$OF_DIR/lib
 
 
 TESTING OPENFRAMES
 ==========
 
-To test OpenFrames, run the various test programs in the OpenFrames/install/bin/ directory. You can mess with the associated source code in OpenFrames/Demos/CPP Test/ .
+To test OpenFrames, run the various test programs in the [OpenFramesInstallPath]/bin/ directory. You can mess with the associated source code in the OpenFrames/Demos/CPP Test/ directory.
