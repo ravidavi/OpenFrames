@@ -52,7 +52,8 @@ typedef std::map<std::string, osg::ref_ptr<TrajectoryArtist> > ArtistMap;
 typedef std::map<std::string, osg::ref_ptr<View> > ViewMap;
 
 /** This class keeps track of all OpenFrames objects created using this
- * interface. It is implemented as a singleton. */
+ * interface. It is implemented as a singleton becuase it handles ALL
+ * OpenFrames objects and must not have multiple instances. */
 class OF_Objects : public osg::Referenced
 {
   public:
@@ -84,19 +85,9 @@ class OF_Objects : public osg::Referenced
 	  return _objs.get();
 	}
 
-  private:
-	OF_Objects() 
-	: _currFrame(NULL), _currWinProxy(NULL), _currTraj(NULL),
-	  _currFM(NULL), _currArtist(NULL), _currView(NULL), _intVal(0)
+	void cleanup()
 	{
-	  std::cout<< "OpenFrames: Initializing." << std::endl;
-	  _tmv = new TimeManagementVisitor;
-	}
-
-	~OF_Objects()
-	{
-	    // Shut down each WindowProxy's thread
-	  std::cout<< "OpenFrames: shutting down threads...";
+	  // Shut down each WindowProxy's thread
 	  for(WindowMap::iterator i = _winMap.begin(); i != _winMap.end(); ++i)
 	  {
 	    i->second->shutdown();
@@ -109,21 +100,44 @@ class OF_Objects : public osg::Referenced
 	  usleep(500000);
 #endif
 
-	  std::cout<< "cleaning up data...";
 	  _winMap.clear();
 	  _frameMap.clear();
 	  _fmMap.clear();
 	  _trajMap.clear();
 	  _artistMap.clear();
 	  _viewMap.clear();
-	  std::cout<< "cleaned up." << std::endl;
+
+	  _needsCleanup = false;
+	}
+
+  private:
+	bool _needsCleanup;
+
+	OF_Objects() 
+	: _currFrame(NULL), _currWinProxy(NULL), _currTraj(NULL),
+	  _currFM(NULL), _currArtist(NULL), _currView(NULL), _intVal(0),
+	  _needsCleanup(true)
+	{
+	  _tmv = new TimeManagementVisitor;
+	}
+
+	~OF_Objects()
+	{
+	  // Make sure the user called cleanup
+	  if(_needsCleanup)
+	    std::cerr<< "OpenFrames WARNING: of_cleanup() must be called before application exits!" << std::endl;
 	}
 };
-OF_Objects *_objs;
+OF_Objects *_objs = NULL;
 
 void FCN(of_initialize)()
 {
 	_objs = OF_Objects::instance();
+}
+
+void FCN(of_cleanup)()
+{
+	if(_objs) _objs->cleanup();
 }
 
 void FCN(of_getreturnedvalue)(int *val)

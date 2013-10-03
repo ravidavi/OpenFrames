@@ -70,6 +70,7 @@ public:
 	virtual void closeImplementation() {}
 	virtual void grabFocus() {}
 	virtual void grabFocusIfPointerInWindow() {}
+	virtual void raiseWindow() {}
 
 protected:
 	virtual ~EmbeddedGraphics();
@@ -151,6 +152,8 @@ class OF_EXPORT WindowProxy : public OpenThreads::Thread, public osg::Referenced
 	unsigned int getWindowWidth() const;
 	unsigned int getWindowHeight() const;
 
+	bool isEmbedded() const { return _isEmbedded; }
+
 	/** These functions should be called when keyboard/mouse input is
 	    recieved from your own Window Manager, or if you want to simulate
 	    user input to the WindowProxy.
@@ -194,7 +197,7 @@ class OF_EXPORT WindowProxy : public OpenThreads::Thread, public osg::Referenced
 	/** Get the RenderRectangle used for the given grid position */
 	RenderRectangle* getGridPosition(unsigned int row, unsigned int col);
 
-	/** Callback function for making the OpenGL context current (so it can be drawn on) */
+	/** Callback function for making the OpenGL context current */
 	void setMakeCurrentFunction(void (*fcn)(unsigned int *winID, bool *success));
 
 	/** Callback function for swapping the front/back buffers */
@@ -232,6 +235,7 @@ class OF_EXPORT WindowProxy : public OpenThreads::Thread, public osg::Referenced
 
 	void setupWindow();
 	void collectScenes();
+	void frame();
 
 	/** ID of this window. This will be used to identify this window to all
 	    user-defined callback functions */

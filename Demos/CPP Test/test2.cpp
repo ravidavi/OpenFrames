@@ -21,15 +21,22 @@
 
 using namespace OpenFrames;
 
+/** FCN script handles difference between Windows/UNIX function 
+  * naming conventions (gcc appends "__" to function names).
+**/
 #ifdef WIN32
 	#define FCN(name) name
 #else
 	#define FCN(name) name##__
 #endif
 
+/** This example shows how to use the Fortran/C interface. If calling from
+  * Fortran, then directly use the function names (no FCN macro)
+  * e.g. in C: FCN(of_initialize)()    in Fortran: of_initialize()
+**/
 int main()
 {
-	FCN(of_initialize)(); // Setup
+	FCN(of_initialize)(); // Setup to use Fortran/C Interface
 
 	// Create the interface that will draw a scene onto a window.
 	int winx = 30;
@@ -76,17 +83,23 @@ int main()
 	FCN(ofwin_setscene)(&id, &id);
 	FCN(ofwin_addview)(&id, &id);
 
-	  // Create the actual window, start event handling and animations
+	// Create the actual window, start event handling and animations
 	std::string winName = "Simple ReferenceFrame";
 	FCN(ofwin_start)();
+
+	// Example of polling the window status in a loop
 	unsigned int state;
 	FCN(ofwin_isrunning)(&state);
 	while(state == 1)
 	{
-	  OpenThreads::Thread::YieldCurrentThread(); 
-	  FCN(ofwin_isrunning)(&state);
+	  OpenThreads::Thread::YieldCurrentThread(); // Wait a bit
+	  FCN(ofwin_isrunning)(&state); // Check if window is still running
 	}
 
-	  // Go home and eat Rocky Road ice cream
+	// Always call the cleanup function after you're done using the
+	// OpenFrames Fortran/C interface
+	FCN(of_cleanup)();
+
+	// Go home and eat Rocky Road ice cream
 	return 0;
 }

@@ -22,7 +22,7 @@ echo
 echo "Creating OpenFrames build system with CMake"
 if [ -z "$instdir" ];
 then
-  cmake -DCMAKE_INSTALL_PREFIX="$BASEDIR/install" -DCMAKE_BUILD_TYPE=$buildtype ..
+  cmake -DCMAKE_INSTALL_PREFIX="$BASEDIR/install" -DCMAKE_BUILD_TYPE=$buildtype -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
 else
-  cmake -DCMAKE_INSTALL_PREFIX="$instdir" -DCMAKE_BUILD_TYPE=$buildtype ..
+  cmake -DCMAKE_INSTALL_PREFIX="$instdir" -DCMAKE_BUILD_TYPE=$buildtype -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
 fi

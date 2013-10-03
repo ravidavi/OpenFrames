@@ -32,49 +32,59 @@ using namespace OpenFrames;
 #define M_PI 3.14159265358979323846
 #endif
 
-double tscale = 1.0;
+double tscale = 1.0; // Animation speedup relative to real time
 Model *spacestation;
 CoordinateAxes *axes;
-osg::ref_ptr<TimeManagementVisitor> tmv;
-osg::ref_ptr<WindowProxy> theWindow;
+TimeManagementVisitor *tmv;
+WindowProxy *theWindow;
 
+/** The function called when the user presses a key */
 void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, char *key)
 {
 	static bool paused = false;
 	static bool stereo = false;
 
+	// Pause/unpause animation
 	if(*key == 'p')
 	{
 	  paused = !paused;
 	  tmv->setPauseState(true, paused);
-	  spacestation->getTransform()->accept(*(tmv.get()));
-	  axes->getTransform()->accept(*(tmv.get()));
+	  spacestation->getTransform()->accept(*tmv);
+	  axes->getTransform()->accept(*tmv);
 	  tmv->setPauseState(false, paused);
 	}
+
+	// Reset time to epoch. All ReferenceFrames that are following
+	// a Trajectory will return to their starting positions.
 	else if(*key == 'r')
 	{
 	  tmv->setReset(true);
-	  spacestation->getTransform()->accept(*(tmv.get()));
-	  axes->getTransform()->accept(*(tmv.get()));
+	  spacestation->getTransform()->accept(*tmv);
+	  axes->getTransform()->accept(*tmv);
 	  tmv->setReset(false);
 	}
+
+	// Speed up time
 	else if((*key == '+') || (*key == '='))
 	{
 	  tscale += 0.1;
 	  tmv->setTimeScale(true, tscale);
-	  spacestation->getTransform()->accept(*(tmv.get()));
-	  axes->getTransform()->accept(*(tmv.get()));
+	  spacestation->getTransform()->accept(*tmv);
+	  axes->getTransform()->accept(*tmv);
 	  tmv->setTimeScale(false, tscale);
 	}
+
+	// Slow down time
 	else if((*key == '-') || (*key == '_'))
 	{
 	  tscale -= 0.1;
 	  tmv->setTimeScale(true, tscale);
-	  spacestation->getTransform()->accept(*(tmv.get()));
-	  axes->getTransform()->accept(*(tmv.get()));
+	  spacestation->getTransform()->accept(*tmv);
+	  axes->getTransform()->accept(*tmv);
 	  tmv->setTimeScale(false, tscale);
 	}
 /*
+	// Turn on stereoscopic (3D) rendering
 	else if (*key == 's')
 	{
 	  stereo = !stereo;
@@ -87,16 +97,27 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
 */
 }
 
+/** This example shows how to create multiple subwindows, and have
+  * a ReferenceFrame follow a path defined by Trajectory points. It also
+  * shows how to use Artists to draw a single Trajectory in several
+  * different ways.
+**/
 int main()
 {
 	// Create the interface that will draw a scene onto a window.
-	theWindow = new WindowProxy(30, 30, 640, 480, 2, 1, false);
+	osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(30, 30, 640, 480, 2, 1, false);
+	theWindow = myWindow.get();
+
+	// Set the stereoscopic (3D) viewing distance
 	//osg::DisplaySettings *ds = theWindow->getGridPosition(0,0)->getSceneView()->getDisplaySettings();
 	//ds->setScreenDistance(2.0);
 	//ds = theWindow->getGridPosition(1,0)->getSceneView()->getDisplaySettings();
 	//ds->setScreenDistance(2.0);
 
-	tmv = new TimeManagementVisitor; // Create the object that will handle keyboard input (pausing/resetting/...)
+	// Create the object that will handle keyboard input 
+	// This includes pausing, resetting, modifying time, etc...
+	osg::ref_ptr<TimeManagementVisitor> mytmv = new TimeManagementVisitor; 
+	tmv = mytmv.get();
 
 	// Create the models that will populate the scene using
 	// Model(name, color(r,g,b,a))
@@ -315,9 +336,9 @@ int main()
 	// Specify the key press callback
 	theWindow->setKeyPressCallback(KeyPressCallback);
 
-	theWindow->startThread();
+	theWindow->startThread(); // Start window animation
 
-	theWindow->join();
+	theWindow->join(); // Wait for window animation to finish
 
 	return 0;
 }

@@ -34,11 +34,10 @@ EmbeddedGraphics::EmbeddedGraphics(int x, int y, int width, int height, WindowPr
 	_traits->y = y;
 	_traits->width = width;
 	_traits->height = height;
- 
-	// A State is an object that keeps track of the current OpenGL state for a graphics context
-	setState( new osg::State );
+
+	setState( new osg::State ); // State tracks current OpenGL state
 	getState()->setGraphicsContext(this);
-	getState()->setContextID( osg::GraphicsContext::createNewContextID() ); 
+	getState()->setContextID(osg::GraphicsContext::createNewContextID()); 
 }
 
 EmbeddedGraphics::~EmbeddedGraphics() {}
@@ -338,7 +337,13 @@ WindowProxy::WindowProxy( int x, int y, unsigned int width, unsigned int height,
 	setDesiredFramerate(30.0); // Framerate is in frames per second
 }
 
-WindowProxy::~WindowProxy() { }
+// WindowProxy destructor
+// Stop any animations and wait for the thread to join
+WindowProxy::~WindowProxy() 
+{
+	shutdown();
+	join();
+}
 
 void WindowProxy::cancelCleanup()
 {
@@ -586,19 +591,16 @@ void WindowProxy::run()
 	// Create the window
 	setupWindow();
 
-	  // Set the starting reference time
+	// Set the starting reference time
 	_startTime = osg::Timer::instance()->tick();
 
 	// Controls the framerate while graphics are paused
 	FramerateLimiter _pauseLimiter;
 	_pauseLimiter.setDesiredFramerate(5.0); // 5fps while paused
 
-	// Iterator to loop through all unique scenes
-	std::set<FrameManager*>::iterator sceneIter;
+	_isAnimating = true; // Indicate that we've started animating
 
-	_isAnimating = true;
-
-	  // Loop until the user asks us to quit
+	// Loop until the user asks us to quit
 	while(!_viewer->done())
 	{
 	  if(_pause) 
@@ -607,25 +609,42 @@ void WindowProxy::run()
 	    continue;
 	  }
 
+	  // Pause to achieve desired framerate
 	  _frameThrottle.frame();
 
-	  // Lock all scenes so that they aren't modified while being drawn
-	  for(sceneIter = _scenes.begin(); sceneIter != _scenes.end(); ++sceneIter)
-	  {
-	    (*sceneIter)->lock();
-	  }
-
-	  // Update, cull, and draw the scene
-	  _viewer->frame(osg::Timer::instance()->delta_s(_startTime, osg::Timer::instance()->tick()));
-
-	  // Unlock all scenes so that they aren't modified while being drawn
-	  for(sceneIter = _scenes.begin(); sceneIter != _scenes.end(); ++sceneIter)
-	  {
-	    (*sceneIter)->unlock();
-	  }
+	  // Do one update & event frame
+	  frame();
 	}
 
-	_isAnimating = false;
+	// Close the graphics context before exiting this thread. If this is
+	// not done, then the graphics context will be released when this
+	// WindowProxy is destructed. This could result in a seg fault if
+	// the context is already destroyed before OSG can release it.
+	_window->close();
+
+	_isAnimating = false; // Indicate that animation has stopped
+}
+
+/** Handle one frame of animation, including event handling */
+void WindowProxy::frame()
+{
+	// Iterator to loop through all unique scenes
+	std::set<FrameManager*>::iterator sceneIter;
+
+	// Lock all scenes so that they aren't modified while being drawn
+	for(sceneIter = _scenes.begin(); sceneIter != _scenes.end(); ++sceneIter)
+	{
+	  (*sceneIter)->lock();
+	}
+
+	// Update, cull, and draw the scene, and process queued events
+	_viewer->frame(osg::Timer::instance()->delta_s(_startTime, osg::Timer::instance()->tick()));
+
+	// Unlock all scenes so that they can be modified
+	for(sceneIter = _scenes.begin(); sceneIter != _scenes.end(); ++sceneIter)
+	{
+	  (*sceneIter)->unlock();
+	}
 }
 
 /** Print info about this window to std::cout */

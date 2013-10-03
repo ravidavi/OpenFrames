@@ -49,9 +49,13 @@ extern "C"
  * can be obtained by calling of_getreturnedvalue().
 **/
 
-  // Must be called before any other OpenFrames functions in this
-  // interface are called.
+  // Must be called before using OpenFrames
+  // Sets up all internal data
 OF_EXPORT void FCN(of_initialize)();
+
+  // Must be called when done using OpenFrames
+  // Cleans up all internal data
+OF_EXPORT void FCN(of_cleanup)();
 
   // Get the values returned by functions.
 OF_EXPORT void FCN(of_getreturnedvalue)(int *val);
