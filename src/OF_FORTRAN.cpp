@@ -57,8 +57,9 @@ typedef std::map<std::string, osg::ref_ptr<View> > ViewMap;
 class OF_Objects : public osg::Referenced
 {
   public:
-	  // The 'current' object of any type is the one acted upon by functions
-	  // that operate on that type.
+	// The 'current' object of any type is the one acted upon by functions
+	// that operate on that type. e.g. all ReferenceFrame functions
+	// will act on _currFrame, all View functions on _currView, etc...
 	ReferenceFrame *_currFrame;
 	WindowProxy *_currWinProxy;
 	Trajectory *_currTraj;
@@ -75,14 +76,24 @@ class OF_Objects : public osg::Referenced
 
 	osg::ref_ptr<TimeManagementVisitor> _tmv;
 
-	  // Value returned (if any) by last function call
+	// Value returned (if any) by last function call
 	int _intVal;
 
-	// Get an instance of the singleton.  If this is the first call, then the object will be created.
+	// Get an instance of the singleton
+	// If this is the first call, then the object will be created
 	static OF_Objects* instance()
 	{
-	  static osg::ref_ptr<OF_Objects> _objs = new OF_Objects;
-	  return _objs.get();
+	  static osg::ref_ptr<OF_Objects> _objsref = new OF_Objects;
+
+	  // If cleanup has already happened, then delete this instance of
+	  // OF_Objects (release all references) and create a new one
+	  if(!_objsref->_needsCleanup)
+	  {
+	    _objsref = NULL;
+	    _objsref = new OF_Objects;
+	  }
+
+	  return _objsref.get();
 	}
 
 	void cleanup()
@@ -100,14 +111,26 @@ class OF_Objects : public osg::Referenced
 	  usleep(500000);
 #endif
 
-	  _winMap.clear();
+	  // Reset all internal pointers
+	  _currFrame = NULL;
+	  _currWinProxy = NULL;
+	  _currTraj = NULL;
+	  _currFM = NULL;
+	  _currArtist = NULL;
+	  _currView = NULL;
+
+	  // Delete all references to objects
+	  // The objects wil be deleted automatically
+	  _winMap.clear(); // Each running WindowProxy will be shut down
 	  _frameMap.clear();
 	  _fmMap.clear();
 	  _trajMap.clear();
 	  _artistMap.clear();
 	  _viewMap.clear();
 
-	  _needsCleanup = false;
+	  _intVal = 0;
+
+	  _needsCleanup = false; // Indicate that cleanup is complete
 	}
 
   private:
@@ -125,7 +148,9 @@ class OF_Objects : public osg::Referenced
 	{
 	  // Make sure the user called cleanup
 	  if(_needsCleanup)
-	    std::cerr<< "OpenFrames WARNING: of_cleanup() must be called before application exits!" << std::endl;
+	  {
+	    std::cerr<< "OpenFrames WARNING: of_cleanup() must be called before the application exits!" << std::endl;
+	  }
 	}
 };
 OF_Objects *_objs = NULL;
@@ -137,7 +162,16 @@ void FCN(of_initialize)()
 
 void FCN(of_cleanup)()
 {
-	if(_objs) _objs->cleanup();
+	if(_objs) 
+	{
+	  // Clean up all OpenFrames objects
+	  _objs->cleanup();
+
+	  // Reset the main OpenFrames object pointer, which will require
+	  // a call to of_initialize() before using OpenFrames again
+	  _objs = NULL;
+	}
+	else std::cerr<< "OpenFrames WARNING: Must call of_initialize() before calling of_cleanup()" << std::endl;
 }
 
 void FCN(of_getreturnedvalue)(int *val)
@@ -170,11 +204,11 @@ void FCN(ofwin_createproxy)(int *x, int *y,
                             unsigned int *nrow, unsigned int *ncol,
                             bool *embedded, unsigned int *id)
 {
-	  // Create the new WindowProxy with the given ID
+	// Create the new WindowProxy with the given ID
 	WindowProxy* wp = new WindowProxy(*x, *y, *width, *height, *nrow, *ncol, *embedded);
 	wp->setID(*id);
 
-	  // If a WindowProxy already exists with the same id, stop its thread
+	// If a WindowProxy already exists with the same id, stop its thread
 	WindowMap::iterator i = _objs->_winMap.find(*id);
 	if(i != _objs->_winMap.end())
 	{
@@ -182,7 +216,7 @@ void FCN(ofwin_createproxy)(int *x, int *y,
 	  while(i->second->isRunning()){}
 	}
 
-	  // Add the new WindowProxy to the map, replacing any previous one
+	// Add the new WindowProxy to the map, replacing any previous one
 	_objs->_winMap[*id] = wp;
 	_objs->_currWinProxy = wp;
 }
@@ -275,7 +309,8 @@ void FCN(ofwin_waitforstop)()
 	  FramerateLimiter waitLimiter;
 	  waitLimiter.setDesiredFramerate(1.0); // Check once per second
 
-	  // Lazily wait for the WindowProxy to stop animating
+	  // Lazily wait for the WindowProxy to stop animating on its own
+	  // This will happen if the user presses 'esc' or closes the window
 	  while(_objs->_currWinProxy->isRunning())
 	  {
 		waitLimiter.frame();
@@ -300,8 +335,8 @@ OF_EXPORT void FCN(ofwin_isrunning)(unsigned int *state)
 	else *state = 0;
 }
 
-  // Set the scene at the specified grid position.  A scene is specified by
-  // the currently active FrameManager.
+// Set the scene at the specified grid position
+// A scene is specified by the currently active FrameManager
 void FCN(ofwin_setscene)(unsigned int *row, unsigned int *col)
 {
 	if(_objs->_currWinProxy)
@@ -329,7 +364,7 @@ void FCN(ofwin_setstereo)(unsigned int *row, unsigned int *col, bool *enable,
 	}
 }
 
-  // Set the background color of the specified grid position
+// Set the background color of the specified grid position
 void FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col, 
                                    float *r, float *g, float *b)
 {
@@ -356,7 +391,7 @@ void FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col,
 	}
 }
 
-  // Set the callback functions for swapping buffers and making a context current
+// Set the callback functions for swapping buffers and making a context current
 void FCN(ofwin_setswapbuffersfunction)(void (*fcn)(unsigned int *winID))
 {
 	if(_objs->_currWinProxy) 
@@ -510,10 +545,10 @@ void FCN(offm_unlock)()
 
 void FCN(offrame_activate)(const char *name, int len)
 {
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
-	  // If requested frame does not exist, raise the error flag  
+	// If requested frame does not exist, raise the error flag  
 	FrameMap::iterator i = _objs->_frameMap.find(temp);
 	if(i == _objs->_frameMap.end()) 
 	{
@@ -529,7 +564,7 @@ void FCN(offrame_activate)(const char *name, int len)
 
 void FCN(offrame_create)(const char *name, int len)
 {
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
   
 	FrameMap::iterator i = _objs->_frameMap.find(temp);
@@ -552,7 +587,7 @@ void FCN(offrame_addchild)(const char *name, int len)
 {
 	if(_objs->_currFrame)
 	{
-	    // Convert given character string and length to a proper C string
+	  // Convert given character string and length to a proper C string
 	  std::string temp(name, len);
 
 	  // Find desired child frame in frame map
@@ -571,10 +606,10 @@ void FCN(offrame_removechild)(const char *name, int len)
 {
 	if(_objs->_currFrame)
 	{
-	    // Convert given character string and length to a proper C string
+	  // Convert given character string and length to a proper C string
 	  std::string temp(name, len);
 
-	  	  // Find desired child frame in frame map
+	  // Find desired child frame in frame map
 	  FrameMap::iterator i = _objs->_frameMap.find(temp);
 	  if(i == _objs->_frameMap.end()) _objs->_intVal = 1; // Not found, so raise error
 	  else
@@ -830,7 +865,7 @@ void FCN(offrame_printframestring)()
 
 void FCN(ofsphere_create)(const char *name, int len)
 {
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
 	_objs->_currFrame = new Sphere(temp);
@@ -848,11 +883,11 @@ void FCN(ofsphere_setradius)(double *radius)
 
 void FCN(ofsphere_settexturemap)(const char *fname, int len)
 {
-	  // Make sure that the currently active ReferenceFrame is a Sphere
+	// Make sure that the currently active ReferenceFrame is a Sphere
 	Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
 	if(sphere == NULL) return;
 
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(fname, len);
 	sphere->setTextureMap(temp);
 }
@@ -872,7 +907,7 @@ void FCN(ofsphere_setautolod)(bool *lod)
 
 void FCN(ofmodel_create)(const char *name, int len)
 {
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
 	_objs->_currFrame = new Model(temp);
@@ -881,11 +916,11 @@ void FCN(ofmodel_create)(const char *name, int len)
 
 void FCN(ofmodel_setmodel)(const char *fname, int len)
 {
-	  // Make sure that the currently active ReferenceFrame is a Model
+	// Make sure that the currently active ReferenceFrame is a Model
 	Model *model = dynamic_cast<Model*>(_objs->_currFrame);
 	if(model)
 	{
-	    // Convert given character string and length to a proper C string
+	  // Convert given character string and length to a proper C string
 	  std::string temp(fname, len);
 	  _objs->_intVal = model->setModel(temp);
 	}
@@ -972,7 +1007,7 @@ void FCN(ofmodel_getmodelsize)(double *size)
 
 void FCN(ofdrawtraj_create)(const char *name, int len)
 {
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
 	_objs->_currFrame = new DrawableTrajectory(temp);
@@ -981,13 +1016,13 @@ void FCN(ofdrawtraj_create)(const char *name, int len)
 
 void FCN(ofdrawtraj_addartist)(const char *name, int len)
 {
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
-	  // Make sure that the current ReferenceFrame is a DrawableTrajectory
+	// Make sure that the current ReferenceFrame is a DrawableTrajectory
 	DrawableTrajectory *drawtraj = dynamic_cast<DrawableTrajectory*>(_objs->_currFrame);
 
-	  // Make sure that requested TrajectoryArtist exists
+	// Make sure that requested TrajectoryArtist exists
 	ArtistMap::iterator i = _objs->_artistMap.find(temp);
 
 	if(drawtraj && (i != _objs->_artistMap.end())) 
@@ -1001,13 +1036,13 @@ void FCN(ofdrawtraj_addartist)(const char *name, int len)
   // Remove specified artist from the current DrawableTrajectory
 OF_EXPORT void FCN(ofdrawtraj_removeartist)(const char *name, int len)
 {
-  	  // Convert given character string and length to a proper C string
+  	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
-	  // Make sure that the current ReferenceFrame is a DrawableTrajectory
+	// Make sure that the current ReferenceFrame is a DrawableTrajectory
 	DrawableTrajectory *drawtraj = dynamic_cast<DrawableTrajectory*>(_objs->_currFrame);
 
-	  // Make sure that requested TrajectoryArtist exists
+	// Make sure that requested TrajectoryArtist exists
 	ArtistMap::iterator i = _objs->_artistMap.find(temp);
 
 	if(drawtraj && (i != _objs->_artistMap.end())) 
@@ -1018,10 +1053,10 @@ OF_EXPORT void FCN(ofdrawtraj_removeartist)(const char *name, int len)
 	else _objs->_intVal = 1;
 }
 
-  // Remove all artists from the current DrawableTrajectory
+// Remove all artists from the current DrawableTrajectory
 OF_EXPORT void FCN(ofdrawtraj_removeallartists)()
 {
-  	  // Make sure that the current ReferenceFrame is a DrawableTrajectory
+  	// Make sure that the current ReferenceFrame is a DrawableTrajectory
 	DrawableTrajectory *drawtraj = dynamic_cast<DrawableTrajectory*>(_objs->_currFrame);
 	if(drawtraj) 
 	{
@@ -1092,7 +1127,7 @@ OF_EXPORT void FCN(ofcoordaxes_settickimage)( const char *fname, int len )
 	CoordinateAxes *ca = dynamic_cast<CoordinateAxes*>(_objs->_currFrame);
 	if(ca)
 	{
-	    // Convert given character string and length to a proper C string
+	  // Convert given character string and length to a proper C string
 	  std::string temp(fname, len);
 	  _objs->_intVal = !ca->setTickImage(temp);
 	}
@@ -1174,7 +1209,7 @@ void FCN(ofradialplane_setlinecolor)(float *r, float *g, float *b, float *a)
 
 void FCN(oftraj_activate)(const char *name, int len)
 {
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
 	TrajectoryMap::iterator i = _objs->_trajMap.find(temp);
@@ -1198,7 +1233,7 @@ void FCN(oftraj_create)(const char *name, int len,
                         unsigned int *dof, unsigned int *numopt)
 #endif
 {
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
 	_objs->_currTraj = new Trajectory(*dof, *numopt);
@@ -1285,7 +1320,7 @@ void FCN(oftraj_autoinformartists)(bool *autoinform)
 
 void FCN(oftrajartist_activate)(const char *name, int len)
 {
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
 	ArtistMap::iterator i = _objs->_artistMap.find(temp);
@@ -1314,7 +1349,7 @@ void FCN(oftrajartist_settrajectory)()
 
 void FCN(ofcurveartist_create)(const char *name, int len)
 {
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
 	_objs->_currArtist = new CurveArtist;
@@ -1324,7 +1359,7 @@ void FCN(ofcurveartist_create)(const char *name, int len)
 void FCN(ofcurveartist_setxdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
-	  // Make sure source is within range (see Trajectory::SourceType enum)
+	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
 	  _objs->_intVal = 1;
@@ -1348,7 +1383,7 @@ void FCN(ofcurveartist_setxdata)(int *src, unsigned int *element,
 void FCN(ofcurveartist_setydata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
-	  // Make sure source is within range (see Trajectory::SourceType enum)
+	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
 	  _objs->_intVal = 1;
@@ -1372,7 +1407,7 @@ void FCN(ofcurveartist_setydata)(int *src, unsigned int *element,
 void FCN(ofcurveartist_setzdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
-	  // Make sure source is within range (see Trajectory::SourceType enum)
+	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
 	  _objs->_intVal = 1;
@@ -1420,7 +1455,7 @@ void FCN(ofcurveartist_setpattern)(int *factor, unsigned short *pattern)
 
 void FCN(ofsegmentartist_create)(const char *name, int len)
 {
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
 	_objs->_currArtist = new SegmentArtist;
@@ -1430,7 +1465,7 @@ void FCN(ofsegmentartist_create)(const char *name, int len)
 void FCN(ofsegmentartist_setstartxdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
-	  // Make sure source is within range (see Trajectory::SourceType enum)
+	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
 	  _objs->_intVal = 1;
@@ -1454,7 +1489,7 @@ void FCN(ofsegmentartist_setstartxdata)(int *src, unsigned int *element,
 void FCN(ofsegmentartist_setstartydata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
-	  // Make sure source is within range (see Trajectory::SourceType enum)
+	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
 	  _objs->_intVal = 1;
@@ -1478,7 +1513,7 @@ void FCN(ofsegmentartist_setstartydata)(int *src, unsigned int *element,
 void FCN(ofsegmentartist_setstartzdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
-	  // Make sure source is within range (see Trajectory::SourceType enum)
+	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
 	  _objs->_intVal = 1;
@@ -1502,7 +1537,7 @@ void FCN(ofsegmentartist_setstartzdata)(int *src, unsigned int *element,
 void FCN(ofsegmentartist_setendxdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
-	  // Make sure source is within range (see Trajectory::SourceType enum)
+	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
 	  _objs->_intVal = 1;
@@ -1526,7 +1561,7 @@ void FCN(ofsegmentartist_setendxdata)(int *src, unsigned int *element,
 void FCN(ofsegmentartist_setendydata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
-	  // Make sure source is within range (see Trajectory::SourceType enum)
+	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
 	  _objs->_intVal = 1;
@@ -1550,7 +1585,7 @@ void FCN(ofsegmentartist_setendydata)(int *src, unsigned int *element,
 void FCN(ofsegmentartist_setendzdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
-	  // Make sure source is within range (see Trajectory::SourceType enum)
+	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
 	  _objs->_intVal = 1;
@@ -1608,10 +1643,10 @@ void FCN(ofsegmentartist_setpattern)(int *factor, unsigned short *pattern)
 	MarkerArtist Functions
 *****************************************************************/
 
-  // Create a MarkerArtist with the specified ID.
+// Create a MarkerArtist with the specified ID.
 OF_EXPORT void FCN(ofmarkerartist_create)(const char *name, int len)
 {
-	  // Convert given character string and length to a proper C string
+	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
 	_objs->_currArtist = new MarkerArtist;
@@ -1621,7 +1656,7 @@ OF_EXPORT void FCN(ofmarkerartist_create)(const char *name, int len)
 void FCN(ofmarkerartist_setxdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
-	  // Make sure source is within range (see Trajectory::SourceType enum)
+	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
 	  _objs->_intVal = 1;
@@ -1645,7 +1680,7 @@ void FCN(ofmarkerartist_setxdata)(int *src, unsigned int *element,
 void FCN(ofmarkerartist_setydata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
-	  // Make sure source is within range (see Trajectory::SourceType enum)
+	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
 	  _objs->_intVal = 1;
@@ -1669,7 +1704,7 @@ void FCN(ofmarkerartist_setydata)(int *src, unsigned int *element,
 void FCN(ofmarkerartist_setzdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
-	  // Make sure source is within range (see Trajectory::SourceType enum)
+	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
 	  _objs->_intVal = 1;
@@ -1690,7 +1725,8 @@ void FCN(ofmarkerartist_setzdata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-  // Define which markers should be plotted.  See DrawnMarkers enum in MarkerArtist class.
+// Define which markers should be plotted
+// See DrawnMarkers enum in MarkerArtist class
 OF_EXPORT void FCN(ofmarkerartist_setmarkers)( unsigned int *markers )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
@@ -1702,7 +1738,7 @@ OF_EXPORT void FCN(ofmarkerartist_setmarkers)( unsigned int *markers )
 	else _objs->_intVal = 1;
 }
 
-  // Set color for markers
+// Set color for markers
 OF_EXPORT void FCN(ofmarkerartist_setmarkercolor)( unsigned int *markers, float *r, float *g, float *b )
 {
   	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
@@ -1714,13 +1750,14 @@ OF_EXPORT void FCN(ofmarkerartist_setmarkercolor)( unsigned int *markers, float 
 	else _objs->_intVal = 1;
 }
 
-  // Set image used as marker.  If an empty string is given, then use default OpenGL point.
+// Set image used as marker
+// If an empty string is given, then use default OpenGL point
 OF_EXPORT void FCN(ofmarkerartist_setmarkerimage)( const char *fname, int len )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
 	if(artist)
 	{
-	    // Convert given character string and length to a proper C string
+	  // Convert given character string and length to a proper C string
 	  std::string temp(fname, len);
 	  _objs->_intVal = !artist->setMarkerImage(temp);
 	}
@@ -1793,7 +1830,7 @@ OF_EXPORT void FCN(ofmarkerartist_setautoattenuate)( bool *autoattenuate )
 
 void FCN(ofview_activate)(const char *name, int len)
 {
-  	  // Convert given character string and length to a proper C string
+  	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
 	ViewMap::iterator i = _objs->_viewMap.find(temp);
@@ -1811,7 +1848,7 @@ void FCN(ofview_activate)(const char *name, int len)
 
 void FCN(ofview_create)(const char *name, int len)
 {
-  	  // Convert given character string and length to a proper C string
+  	// Convert given character string and length to a proper C string
 	std::string temp(name, len);
 
 	_objs->_currView = new View;
@@ -1848,22 +1885,22 @@ void FCN(ofview_setviewframe)(const char *root, int rlen, const char *frame, int
 	  std::string rname(root, rlen);
 	  std::string fname(frame, flen);
 
-	    // Find root and viewed frames in the FrameMap
+	  // Find root and viewed frames in the FrameMap
 	  FrameMap::iterator i = _objs->_frameMap.find(rname);
 	  FrameMap::iterator j = _objs->_frameMap.find(fname);
 	  ReferenceFrame *rootFrame, *viewFrame;
 
-	    // Set dummy reference to root frame
+	  // Set dummy reference to root frame
 	  if(i == _objs->_frameMap.end()) rootFrame = NULL;
 	  else rootFrame = i->second.get();
 
-	    // Set dummy reference to view frame
+	  // Set dummy reference to view frame
 	  if(j == _objs->_frameMap.end()) viewFrame = NULL;
 	  else viewFrame = j->second.get();
 
-	    // Tell current view to find and remember the path from the
-	    // root -> view frame.  If the path doesn't exist, then
-	    // the ofview_isvalid() function will raise a flag.
+	  // Tell current view to find and remember the path from the
+	  // root -> view frame. If the path doesn't exist, then
+	  // the ofview_isvalid() function will raise a flag.
 	  _objs->_currView->setViewFrame(rootFrame, viewFrame);
 	}
 }

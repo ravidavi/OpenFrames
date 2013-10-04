@@ -59,10 +59,20 @@
 
 	INTERFACE
 
+! Sets up all internal OpenFrames Fortran/C interface variables
 ! Must be called before other OpenFrames calls
 
 	SUBROUTINE of_initialize()
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: of_initialize
+	END SUBROUTINE
+
+! Cleans up all internal OpenFrames Fortran/C interface variables
+! Must be called when done using OpenFrames
+! Afterwards, the only way to continue using OpenFrames is to
+! first make another call to of_initialize() 
+
+	SUBROUTINE of_cleanup()
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: of_cleanup
 	END SUBROUTINE
 
 ! Retrieve the result of the last function call

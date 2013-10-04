@@ -157,6 +157,7 @@ bool WindowEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActi
 	    break;
 	  }
 
+	  // Mouse was moved
 	  case(osgGA::GUIEventAdapter::MOVE):
 	  {
 	    // Call the mouse move callback
@@ -175,6 +176,7 @@ bool WindowEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActi
 	    break;
 	  }
 
+	  // A keyboard key was pressed
 	  case(osgGA::GUIEventAdapter::KEYDOWN):
 	  {
 	    int key = ea.getKey();
@@ -198,9 +200,19 @@ bool WindowEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActi
 	    break;
 	  }
 
+	  // The window was resized
 	  case(osgGA::GUIEventAdapter::RESIZE):
 	  {
 	    _window->setupGrid(ea.getWindowWidth(), ea.getWindowHeight());
+	    break;
+	  }
+
+	  // The window was closed
+	  case(osgGA::GUIEventAdapter::CLOSE_WINDOW):
+	  case(osgGA::GUIEventAdapter::QUIT_APPLICATION):
+	  {
+	    _window->shutdown();
+	    _window->join();
 	    break;
 	  }
 

@@ -36,11 +36,21 @@ using namespace OpenFrames;
 **/
 int main()
 {
+  // We will show a window multiple times. This shows how OpenFrames
+  // can be initialized and cleaned up, then used again safely.
+  // With each turn, the ReferenceFrame will get farther from the origin.
+  int maxturn = 3;
+  std::cout<< "Running " << maxturn << " times. Press escape or close the window to end the current turn." << std::endl;
+
+  for(int turn = 0; turn < maxturn; ++turn)
+  {
+	std::cout<< "Running turn " << turn << std::endl;
+
 	FCN(of_initialize)(); // Setup to use Fortran/C Interface
 
 	// Create the interface that will draw a scene onto a window.
-	int winx = 30;
-	int winy = 30;
+	int winx = 300;
+	int winy = 300;
 	unsigned int width = 640;
 	unsigned int height = 480;
 	unsigned int gridx = 1;
@@ -53,7 +63,7 @@ int main()
 	FCN(ofdrawtraj_create)("Artists", 7);
 
 	// Offset and resize the DrawableTrajectory's axes 
-	double pos[3] = {1.0, 0.0, 0.0}; // Base position for axes
+	double pos[3] = {turn, 0.0, 0.0}; // Base position for axes
 	double length = 2.0, headRatio = 0.4; // headRatio = head/total length
 	double bodyRadius = 0.1, headRadius = 0.4;
 	FCN(offrame_movexaxis)(pos, &length, &headRatio, &bodyRadius, &headRadius);
@@ -99,6 +109,8 @@ int main()
 	// Always call the cleanup function after you're done using the
 	// OpenFrames Fortran/C interface
 	FCN(of_cleanup)();
+
+  } // current turn
 
 	// Go home and eat Rocky Road ice cream
 	return 0;
