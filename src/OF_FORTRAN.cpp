@@ -269,7 +269,6 @@ OF_EXPORT void FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG))
 	}
 }
 
-  // Start animation by spawning a new thread
 void FCN(ofwin_start)()
 {
 	if(_objs->_currWinProxy) 
@@ -335,8 +334,6 @@ OF_EXPORT void FCN(ofwin_isrunning)(unsigned int *state)
 	else *state = 0;
 }
 
-// Set the scene at the specified grid position
-// A scene is specified by the currently active FrameManager
 void FCN(ofwin_setscene)(unsigned int *row, unsigned int *col)
 {
 	if(_objs->_currWinProxy)
@@ -364,7 +361,6 @@ void FCN(ofwin_setstereo)(unsigned int *row, unsigned int *col, bool *enable,
 	}
 }
 
-// Set the background color of the specified grid position
 void FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col, 
                                    float *r, float *g, float *b)
 {
@@ -375,7 +371,6 @@ void FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col,
 	}
 }
 
-// Set the background texture of the specified grid position
 void FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col, 
                                      const char* fname, int len)
 {
@@ -391,7 +386,6 @@ void FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col,
 	}
 }
 
-// Set the callback functions for swapping buffers and making a context current
 void FCN(ofwin_setswapbuffersfunction)(void (*fcn)(unsigned int *winID))
 {
 	if(_objs->_currWinProxy) 
@@ -699,15 +693,12 @@ void FCN(offrame_setnamelabel)(const char *name, int len)
 	}
 }
 
-// If using Intel Visual Fortran, then string lengths are passed
-// after all other arguments.
 #ifdef IVF_CALLS
 void FCN(offrame_setaxeslabels)(const char *xlabel,
                                 const char *ylabel,
                                 const char *zlabel, 
                                 int xlen, int ylen, int zlen)
 
-// Otherwise, string lengths are passed after each string argument.
 #else
 void FCN(offrame_setaxeslabels)(const char *xlabel, int xlen,
                                 const char *ylabel, int ylen,
@@ -1033,7 +1024,6 @@ void FCN(ofdrawtraj_addartist)(const char *name, int len)
 	else _objs->_intVal = 1;
 }
 
-  // Remove specified artist from the current DrawableTrajectory
 OF_EXPORT void FCN(ofdrawtraj_removeartist)(const char *name, int len)
 {
   	// Convert given character string and length to a proper C string
@@ -1053,7 +1043,6 @@ OF_EXPORT void FCN(ofdrawtraj_removeartist)(const char *name, int len)
 	else _objs->_intVal = 1;
 }
 
-// Remove all artists from the current DrawableTrajectory
 OF_EXPORT void FCN(ofdrawtraj_removeallartists)()
 {
   	// Make sure that the current ReferenceFrame is a DrawableTrajectory
@@ -1161,7 +1150,6 @@ void FCN(oflatlongrid_setparameters)(double *radius, double *latSpace, double *l
 	RadialPlane Functions
 ***********************************************/
 
-// Creat a new RadialPlane, and make it the active ReferenceFrame.
 void FCN(ofradialplane_create)(const char *name, int len)
 {
 	std::string temp(name, len);
@@ -1643,7 +1631,6 @@ void FCN(ofsegmentartist_setpattern)(int *factor, unsigned short *pattern)
 	MarkerArtist Functions
 *****************************************************************/
 
-// Create a MarkerArtist with the specified ID.
 OF_EXPORT void FCN(ofmarkerartist_create)(const char *name, int len)
 {
 	// Convert given character string and length to a proper C string
@@ -1725,8 +1712,6 @@ void FCN(ofmarkerartist_setzdata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-// Define which markers should be plotted
-// See DrawnMarkers enum in MarkerArtist class
 OF_EXPORT void FCN(ofmarkerartist_setmarkers)( unsigned int *markers )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
@@ -1738,7 +1723,6 @@ OF_EXPORT void FCN(ofmarkerartist_setmarkers)( unsigned int *markers )
 	else _objs->_intVal = 1;
 }
 
-// Set color for markers
 OF_EXPORT void FCN(ofmarkerartist_setmarkercolor)( unsigned int *markers, float *r, float *g, float *b )
 {
   	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
@@ -1750,8 +1734,6 @@ OF_EXPORT void FCN(ofmarkerartist_setmarkercolor)( unsigned int *markers, float 
 	else _objs->_intVal = 1;
 }
 
-// Set image used as marker
-// If an empty string is given, then use default OpenGL point
 OF_EXPORT void FCN(ofmarkerartist_setmarkerimage)( const char *fname, int len )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
@@ -1764,7 +1746,6 @@ OF_EXPORT void FCN(ofmarkerartist_setmarkerimage)( const char *fname, int len )
 	else _objs->_intVal = 1;
 }
 
-// Specify how intermediate markers should be drawn
 OF_EXPORT void FCN(ofmarkerartist_setintermediatetype)( unsigned int *type )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
@@ -1776,7 +1757,6 @@ OF_EXPORT void FCN(ofmarkerartist_setintermediatetype)( unsigned int *type )
 	else _objs->_intVal = 1;
 }
 
-// Specify spacing used for intermediate markers
 OF_EXPORT void FCN(ofmarkerartist_setintermediatespacing)( double *spacing )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
@@ -1788,7 +1768,6 @@ OF_EXPORT void FCN(ofmarkerartist_setintermediatespacing)( double *spacing )
 	else _objs->_intVal = 1;
 }
 
-// Specify drawing direction (from start or end) for intermediate markers
 OF_EXPORT void FCN(ofmarkerartist_setintermediatedirection)( unsigned int *direction )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
@@ -1800,7 +1779,6 @@ OF_EXPORT void FCN(ofmarkerartist_setintermediatedirection)( unsigned int *direc
 	else _objs->_intVal = 1;
 }
 
-// Specify size used for markers in pixels
 OF_EXPORT void FCN(ofmarkerartist_setmarkersize)( unsigned int *size )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
@@ -1812,7 +1790,6 @@ OF_EXPORT void FCN(ofmarkerartist_setmarkersize)( unsigned int *size )
 	else _objs->_intVal = 1;
 }
 
-// Specify auto attenuation of markers
 OF_EXPORT void FCN(ofmarkerartist_setautoattenuate)( bool *autoattenuate )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);

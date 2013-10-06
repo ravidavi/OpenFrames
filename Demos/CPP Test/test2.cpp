@@ -81,7 +81,18 @@ int main()
 
 	// Create a view
 	FCN(ofview_create)("view", 4);
+
+// This is only done because we're calling setviewframe() from C, where
+// we have to specify string lengths. If calling from Fortran, the
+// correct function signature would be automatically chosen and the
+// ifdef would be unnecessary.
+#ifdef IVF_CALLS
+	FCN(ofview_setviewframe)("Artists", "Artists", 7, 7);
+#else
 	FCN(ofview_setviewframe)("Artists", 7, "Artists", 7);
+#endif
+
+	// Reset the view to start out
 	FCN(ofview_reset)();
 
 	// Create a frame manager that will allow access to the scene

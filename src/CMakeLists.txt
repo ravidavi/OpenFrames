@@ -1,5 +1,12 @@
 ADD_DEFINITIONS(-DOF_LIBRARY) # Needed to compile OpenFrames as a library
 
+# Intel Visual Fortran requires a special flag
+IF( OF_FORTRAN_MODULE )
+  IF(Fortran_COMPILER_NAME MATCHES "ifort.*")
+    ADD_DEFINITIONS(-DIVF_CALLS)
+  ENDIF(Fortran_COMPILER_NAME MATCHES "ifort.*")
+ENDIF( OF_FORTRAN_MODULE )
+
 # Define the library name that we will create
 SET(LIB_NAME ${PROJECT_NAME})
 

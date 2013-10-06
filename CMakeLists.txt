@@ -15,6 +15,7 @@ OPTION( OF_FORTRAN_MODULE "Compile Fortran Module" OFF )
 # This is a workaround to the broken OPTIONAL signature in CMake 2.8-10
 IF( OF_FORTRAN_MODULE )
   ENABLE_LANGUAGE(Fortran OPTIONAL)
+  GET_FILENAME_COMPONENT(Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 ENDIF( OF_FORTRAN_MODULE )
 
 # Go to the src directory and look for CMake instructions there
