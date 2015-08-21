@@ -23,7 +23,7 @@ Thumbs.db
 *~
 
 # Compile-specific files #
-build/
+*build*/
 bin/
 lib/
-install/
+*install*/

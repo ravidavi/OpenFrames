@@ -15,6 +15,7 @@
 ***********************************/
 
 #include <OpenFrames/SegmentArtist>
+#include <climits>
 
 namespace OpenFrames
 {

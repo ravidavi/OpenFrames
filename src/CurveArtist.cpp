@@ -15,6 +15,7 @@
 ***********************************/
 
 #include <OpenFrames/CurveArtist>
+#include <climits>
 
 namespace OpenFrames
 {

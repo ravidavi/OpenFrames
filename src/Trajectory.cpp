@@ -17,6 +17,7 @@
 #include <OpenFrames/Trajectory>
 #include <OpenFrames/TrajectoryArtist>
 #include <math.h>
+#include <climits>
 
 namespace OpenFrames {
 

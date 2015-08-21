@@ -59,6 +59,10 @@ public:
 	/** Callback function for making the OpenGL context current (so it can be drawn on) */
 	void setMakeCurrentFunction(void (*fcn)(unsigned int *winID, bool *success));
 
+	/** Callback function for updating the OpenGL context after qualifying events. Currently this includes resize. */
+	void setUpdateContextFunction(void (*fcn)(unsigned int *winID, bool *success));
+	bool updateContextImplementation();
+
 	/** Callback function for swapping the front/back buffers */
 	void setSwapBuffersFunction(void (*fcn)(unsigned int *winID));
 
@@ -77,6 +81,7 @@ protected:
 
 	/** Context management callback functions. */
 	void (*_makeCurrent)(unsigned int *winID, bool *success);
+	void (*_updateContext)(unsigned int *winID, bool *success);
 	void (*_swapBuffers)(unsigned int *winID);
 
 	WindowProxy *_window; // Pointer to the WindowProxy that represents the window
@@ -157,8 +162,8 @@ class OF_EXPORT WindowProxy : public OpenThreads::Thread, public osg::Referenced
 	/** These functions should be called when keyboard/mouse input is
 	    recieved from your own Window Manager, or if you want to simulate
 	    user input to the WindowProxy.
-	    Note that wherever they occur, the x and y coordinates should be in the range
-	    [0, width] for x coord and [0, height] for y coord, representing the extents of the window. */
+	    Note that x and y coordinates should be in the range
+	    [0, width] and [0, height] respectively, representing the extents of the window. */
 	void keyPress(unsigned int key);
 	void mouseMotion(float x, float y);
 	void buttonPress(float x, float y, unsigned int button);
@@ -199,6 +204,11 @@ class OF_EXPORT WindowProxy : public OpenThreads::Thread, public osg::Referenced
 
 	/** Callback function for making the OpenGL context current */
 	void setMakeCurrentFunction(void (*fcn)(unsigned int *winID, bool *success));
+
+	/** Callback function to update the OpenGL context. Called whenever
+	    a renderer or geometry-changing event is handled.
+	    e.g. on OSX/Cocoa this is required on each resize event */
+	void setUpdateContextFunction(void (*fcn)(unsigned int *winID, bool *success));
 
 	/** Callback function for swapping the front/back buffers */
 	void setSwapBuffersFunction(void (*fcn)(unsigned int *winID));

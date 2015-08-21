@@ -19,6 +19,7 @@
 #include <osg/Transform>
 #include <osg/Projection>
 #include <algorithm> // Needed for std::swap on Win32
+#include <climits>
 
 namespace OpenFrames
 {

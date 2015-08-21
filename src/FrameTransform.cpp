@@ -17,6 +17,7 @@
 #include <OpenFrames/FrameTransform>
 #include <osgUtil/CullVisitor>
 #include <iostream>
+#include <climits>
 
 namespace OpenFrames
 {

@@ -63,7 +63,7 @@ int main()
 	FCN(ofdrawtraj_create)("Artists", 7);
 
 	// Offset and resize the DrawableTrajectory's axes 
-	double pos[3] = {turn, 0.0, 0.0}; // Base position for axes
+	double pos[3] = {(double)turn, 0.0, 0.0}; // Base position for axes
 	double length = 2.0, headRatio = 0.4; // headRatio = head/total length
 	double bodyRadius = 0.1, headRadius = 0.4;
 	FCN(offrame_movexaxis)(pos, &length, &headRatio, &bodyRadius, &headRadius);

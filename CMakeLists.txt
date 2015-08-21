@@ -6,7 +6,7 @@ PROJECT(OpenFrames)
 
 # Find OpenGL
 FIND_PACKAGE(OpenGL)
-FIND_PACKAGE(OpenSceneGraph 3.0.0 REQUIRED osgText osgGA osgDB osgUtil osgViewer osgParticle)
+FIND_PACKAGE(OpenSceneGraph 3.0.0 REQUIRED osg osgText osgGA osgDB osgUtil osgViewer osgParticle)
 
 # User options
 OPTION( OF_BUILD_TESTS "Build Test Programs" ON )
@@ -18,8 +18,14 @@ IF( OF_FORTRAN_MODULE )
   GET_FILENAME_COMPONENT(Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 ENDIF( OF_FORTRAN_MODULE )
 
+# Use libstdc++ since that's what OpenSceneGraph uses
+IF( APPLE )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++ -std=c++11")
+ENDIF()
+
 # Go to the src directory and look for CMake instructions there
 ADD_SUBDIRECTORY(src)
 
 # Go to the test directory and look for CMake instructions there
 ADD_SUBDIRECTORY("Demos/CPP Test")
+ADD_SUBDIRECTORY("Demos/wxWidgets Test")

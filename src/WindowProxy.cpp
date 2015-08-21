@@ -26,7 +26,7 @@ namespace OpenFrames
 
 /** This is the GraphicsWindow that is used for embedded graphics */
 EmbeddedGraphics::EmbeddedGraphics(int x, int y, int width, int height, WindowProxy *window)
-: _makeCurrent(NULL), _swapBuffers(NULL), _window(window)
+: _makeCurrent(NULL), _swapBuffers(NULL), _updateContext(NULL), _window(window)
 {
 	// Specify traits for this graphics context
 	_traits = new GraphicsContext::Traits;
@@ -57,7 +57,7 @@ bool EmbeddedGraphics::makeCurrentImplementation()
 	}
 
 	unsigned int winID = _window->getID();
-	bool success;
+	bool success = false;
 	_makeCurrent(&winID, &success);	// Perform the custom MakeCurrent callback, and get its result
 
 	return success;
@@ -84,6 +84,25 @@ void EmbeddedGraphics::swapBuffersImplementation()
 void EmbeddedGraphics::setMakeCurrentFunction(void (*fcn)(unsigned int *winID, bool *success))
 {
 	_makeCurrent = fcn;
+}
+
+void EmbeddedGraphics::setUpdateContextFunction(void (*fcn)(unsigned int *winID, bool *success))
+{
+	_updateContext = fcn;
+}
+
+bool EmbeddedGraphics::updateContextImplementation()
+{
+	if(_updateContext)
+	{
+	  unsigned int winID = _window->getID();
+	  bool success = false;
+
+	  // Perform the custom UpdateContext callback, and get its result
+	  _updateContext(&winID, &success);
+	  return success;
+	}
+	else return true;
 }
 
 void EmbeddedGraphics::setSwapBuffersFunction(void (*fcn)(unsigned int *winID))
@@ -122,15 +141,14 @@ bool WindowEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActi
 	    // Call the button press callback
 	    if(_buttonPressCallback) 
 	    {
-		  // Get normalized (in range [-1, +1]) x and y coordinates of the mouse, within
-		  // the current sub-window
-		  float xnorm = ea.getXnormalized();
-		  float ynorm = ea.getYnormalized();
+	      // Get normalized (in range [-1, +1]) x and y coordinates of the mouse, within the current sub-window
+	      float xnorm = ea.getXnormalized();
+	      float ynorm = ea.getYnormalized();
 
 	      unsigned int id = _window->getID(); // Get the window's ID
 	      unsigned int button = ea.getButton(); // Get the ID of the button that was pressed
 
-		  // Call the user's button press callback
+	      // Call the user's button press callback
 	      _buttonPressCallback(&id, &_currentRow, &_currentCol, &xnorm, &ynorm, &button);
 	    }
 
@@ -203,11 +221,19 @@ bool WindowEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActi
 	  // The window was resized
 	  case(osgGA::GUIEventAdapter::RESIZE):
 	  {
+	    EmbeddedGraphics* eg = dynamic_cast<EmbeddedGraphics*>(aa.asView()->getCamera()->getGraphicsContext());
+
+	    if(eg)
+	    {
+	      bool success = eg->updateContextImplementation();
+	      if(!success) std::cerr<< "WindowEventHandler::handle WARNING: OpenGL context was not properly updated during RESIZE event. Rendering artifacts may occur." << std::endl;
+	    }
+
 	    _window->setupGrid(ea.getWindowWidth(), ea.getWindowHeight());
 	    break;
 	  }
 
-	  // The window was closed
+	  // The window was closed or application quit
 	  case(osgGA::GUIEventAdapter::CLOSE_WINDOW):
 	  case(osgGA::GUIEventAdapter::QUIT_APPLICATION):
 	  {
@@ -560,7 +586,12 @@ void WindowProxy::setGridSize(unsigned int row, unsigned int col)
 /** Set the scene contained in the given FrameManager at the given location. */
 void WindowProxy::setScene(FrameManager *newfm, unsigned int row, unsigned int col)
 {
-	if(row >= _nRow || col >= _nCol) return; // Location out of bounds
+	// Location out of bounds
+	if(row >= _nRow || col >= _nCol) 
+	{
+	  std::cerr<< "WindowProxy::setScene ERROR: Grid position (" << row << "," << col << ") out of bounds." << std::endl;
+	  return;
+	}
 
 	unsigned int loc = row*_nCol + col;
 	FrameManager *oldfm = _renderList[loc]->getFrameManager();
@@ -591,6 +622,11 @@ RenderRectangle* WindowProxy::getGridPosition(unsigned int row, unsigned int col
 void WindowProxy::setMakeCurrentFunction(void (*fcn)(unsigned int *winID, bool *success))
 {
 	_embeddedGraphics->setMakeCurrentFunction(fcn);
+}
+
+void WindowProxy::setUpdateContextFunction(void (*fcn)(unsigned int *winID, bool *success))
+{
+	_embeddedGraphics->setUpdateContextFunction(fcn);
 }
 
 void WindowProxy::setSwapBuffersFunction(void (*fcn)(unsigned int *winID))
@@ -630,7 +666,7 @@ void WindowProxy::run()
 
 	// Close the graphics context before exiting this thread. If this is
 	// not done, then the graphics context will be released when this
-	// WindowProxy is destructed. This could result in a seg fault if
+	// WindowProxy is destroyed. This could result in a seg fault if
 	// the context is already destroyed before OSG can release it.
 	_window->close();
 
