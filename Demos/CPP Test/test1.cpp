@@ -39,7 +39,7 @@ TimeManagementVisitor *tmv;
 WindowProxy *theWindow;
 
 /** The function called when the user presses a key */
-void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, char *key)
+void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
 {
 	static bool paused = false;
 	static bool stereo = false;

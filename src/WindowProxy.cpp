@@ -116,7 +116,6 @@ WindowEventHandler::WindowEventHandler(WindowProxy *window)
 {
 	_currentRow = _currentCol = 0;
 	_keyPressCallback = NULL;
-	_specialKeyPressCallback = NULL;
 	_mouseMotionCallback = NULL;
 	_buttonPressCallback = NULL;
 	_buttonReleaseCallback = NULL;
@@ -200,10 +199,16 @@ bool WindowEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActi
 	    int key = ea.getKey();
 
 	    // 'v' switches to next view
-	    if(key == 'v') _window->getGridPosition(_currentRow, _currentCol)->nextView();
+	    if(key == 'v') 
+	    {
+	      _window->getGridPosition(_currentRow, _currentCol)->nextView();
+	    }
 
 	    // 'V' switches to previous view
-	    else if(key == 'V') _window->getGridPosition(_currentRow, _currentCol)->previousView();
+	    else if(key == 'V') 
+	    {
+	      _window->getGridPosition(_currentRow, _currentCol)->previousView();
+	    }
 
 	    // Spacebar resets current view
 	    else if(key == osgGA::GUIEventAdapter::KEY_Space)
@@ -211,8 +216,7 @@ bool WindowEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActi
 
 	    // Call the keypress callback
 	    unsigned int id = _window->getID();
-	    char ckey = (char)key;
-	    if(_keyPressCallback) _keyPressCallback(&id, &_currentRow, &_currentCol, &ckey);
+	    if(_keyPressCallback) _keyPressCallback(&id, &_currentRow, &_currentCol, &key);
 
 	    return true; // Indicate that we've handled the event
 	    break;
@@ -271,7 +275,6 @@ void WindowEventHandler::windowModified()
 	
 	// Now select the current RenderRectangle
 	_window->getGridPosition(_currentRow, _currentCol)->setSelected(true);
-
 }
 
 /** Get the RenderRectangle at the (x,y) coordinates of the window. Note that
@@ -416,6 +419,9 @@ void WindowProxy::setupWindow()
 	  _window->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	  _window->getState()->setCheckForGLErrors(osg::State::ONCE_PER_ATTRIBUTE);
+
+	  // Initialize event processing system's input window
+	  _window->getEventQueue()->syncWindowRectangleWithGraphcisContext();
 	}
 	else
 	{
@@ -471,7 +477,7 @@ unsigned int WindowProxy::getWindowHeight() const
 }
 
 /** Create a key pressed event */
-void WindowProxy::keyPress(unsigned int key)
+void WindowProxy::keyPress(int key)
 {
 	_window->getEventQueue()->keyPress(key);
 }

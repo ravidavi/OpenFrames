@@ -105,11 +105,6 @@
 	EXTERNAL :: fcn
 	END SUBROUTINE
 
-	SUBROUTINE ofwin_setspecialkeypresscallback(fcn)
-	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setspecialkeypresscallback
-	EXTERNAL :: fcn
-	END SUBROUTINE
-
 	SUBROUTINE ofwin_setmousemotioncallback(fcn)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setmousemotioncallback
 	EXTERNAL :: fcn

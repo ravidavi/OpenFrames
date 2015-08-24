@@ -27,7 +27,7 @@
 
 // Define shortcuts for callback function signatures
 #define BASIC_CALLBACK_SIG unsigned int *winID, unsigned int *row, unsigned int *col
-#define KEYPRESS_SIG BASIC_CALLBACK_SIG, char *key
+#define KEYPRESS_SIG BASIC_CALLBACK_SIG, int *key
 #define MOUSEMOTION_SIG BASIC_CALLBACK_SIG, float *x, float *y
 #define BUTTON_SIG MOUSEMOTION_SIG, unsigned int *button
 
@@ -82,7 +82,6 @@ OF_EXPORT void FCN(ofwin_setgridsize)(int *nrow, int *ncol);
 
 // Set event handling callbacks
 OF_EXPORT void FCN(ofwin_setkeypresscallback)(void (*fcn)(KEYPRESS_SIG));
-OF_EXPORT void FCN(ofwin_setspecialkeypresscallback)(void (*fcn)(KEYPRESS_SIG));
 OF_EXPORT void FCN(ofwin_setmousemotioncallback)(void (*fcn)(MOUSEMOTION_SIG));
 OF_EXPORT void FCN(ofwin_setbuttonpresscallback)(void (*fcn)(BUTTON_SIG));
 OF_EXPORT void FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG));  

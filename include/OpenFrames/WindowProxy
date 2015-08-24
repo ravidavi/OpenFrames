@@ -32,7 +32,7 @@
 
 // Define shortcuts for callback function signatures
 #define BASIC_CALLBACK_SIG unsigned int *winID, unsigned int *row, unsigned int *col
-#define KEYPRESS_SIG BASIC_CALLBACK_SIG, char *key
+#define KEYPRESS_SIG BASIC_CALLBACK_SIG, int *key
 #define MOUSEMOTION_SIG BASIC_CALLBACK_SIG, float *x, float *y
 #define BUTTON_SIG MOUSEMOTION_SIG, unsigned int *button
 
@@ -104,9 +104,6 @@ class OF_EXPORT WindowEventHandler : public osgGA::GUIEventHandler
 	void setKeyPressCallback(void (*fcn)(KEYPRESS_SIG)) // Keyboard key press callback
 	{ _keyPressCallback = fcn; }
 
-	void setSpecialKeyPressCallback(void (*fcn)(KEYPRESS_SIG)) // Keyboard special key (shift etc...) press callback
-	{ _specialKeyPressCallback = fcn; }
-
 	void setMouseMotionCallback(void (*fcn)(MOUSEMOTION_SIG)) // Mouse moved callback
 	{ _mouseMotionCallback = fcn; }
 
@@ -126,7 +123,6 @@ class OF_EXPORT WindowEventHandler : public osgGA::GUIEventHandler
 	unsigned int _currentRow, _currentCol;
 
 	void (*_keyPressCallback)(KEYPRESS_SIG);
-	void (*_specialKeyPressCallback)(KEYPRESS_SIG);
 	void (*_mouseMotionCallback)(MOUSEMOTION_SIG);
 	void (*_buttonPressCallback)(BUTTON_SIG);
 	void (*_buttonReleaseCallback)(BUTTON_SIG);
@@ -164,7 +160,7 @@ class OF_EXPORT WindowProxy : public OpenThreads::Thread, public osg::Referenced
 	    user input to the WindowProxy.
 	    Note that x and y coordinates should be in the range
 	    [0, width] and [0, height] respectively, representing the extents of the window. */
-	void keyPress(unsigned int key);
+	void keyPress(int key);
 	void mouseMotion(float x, float y);
 	void buttonPress(float x, float y, unsigned int button);
 	void buttonRelease(float x, float y, unsigned int button);
@@ -216,9 +212,6 @@ class OF_EXPORT WindowProxy : public OpenThreads::Thread, public osg::Referenced
 	/** Set callback functions for events */
 	void setKeyPressCallback(void (*fcn)(KEYPRESS_SIG))
 	{ _eventHandler->setKeyPressCallback(fcn); }
-
-	void setSpecialKeyPressCallback(void (*fcn)(KEYPRESS_SIG))
-	{ _eventHandler->setSpecialKeyPressCallback(fcn); }
 
 	void setMouseMotionCallback(void (*fcn)(MOUSEMOTION_SIG))
 	{ _eventHandler->setMouseMotionCallback(fcn); }

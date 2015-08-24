@@ -237,14 +237,6 @@ OF_EXPORT void FCN(ofwin_setkeypresscallback)(void (*fcn)(KEYPRESS_SIG))
 	}
 }
 
-OF_EXPORT void FCN(ofwin_setspecialkeypresscallback)(void (*fcn)(KEYPRESS_SIG))
-{
-	if(_objs->_currWinProxy) 
-	{
-	  _objs->_currWinProxy->setSpecialKeyPressCallback(fcn);
-	}
-}
-
 OF_EXPORT void FCN(ofwin_setmousemotioncallback)(void (*fcn)(MOUSEMOTION_SIG))
 {
 	if(_objs->_currWinProxy) 
