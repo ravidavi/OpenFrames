@@ -229,7 +229,7 @@ void CurveArtist::dataAdded()
 	dirtyDisplayList();
 }
 
-osg::BoundingBox CurveArtist::computeBound() const
+osg::BoundingBox CurveArtist::computeBoundingBox() const
 {
 	// Set up bounding box
 	_boundingBox.init();

@@ -240,7 +240,7 @@ void DistanceAccumulator::apply(osg::Geode &geode)
       {
         drawable = geode.getDrawable(i);
 
-        const osg::BoundingBox &bb = drawable->getBound();
+		const osg::BoundingBox &bb = drawable->getBoundingBox();
         if(bb.valid())
         {
           // Make sure drawable will be visible in the scene

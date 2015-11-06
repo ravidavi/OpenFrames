@@ -564,7 +564,7 @@ void MarkerArtist::computeAttenuation()
 }
 
 /** Compute the bounding box that encompasses all of the markers */
-osg::BoundingBox MarkerArtist::computeBound() const
+osg::BoundingBox MarkerArtist::computeBoundingBox() const
 {
 	// Set up bounding box
 	_boundingBox.init();

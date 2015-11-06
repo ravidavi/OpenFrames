@@ -16,6 +16,7 @@
 
 #include <OpenFrames/SegmentArtist>
 #include <climits>
+#include <algorithm>
 
 namespace OpenFrames
 {
@@ -272,7 +273,7 @@ void SegmentArtist::dataAdded()
 	dirtyDisplayList();
 }
 
-osg::BoundingBox SegmentArtist::computeBound() const
+osg::BoundingBox SegmentArtist::computeBoundingBox() const
 {
 	// Set up bounding box
 	_boundingBox.init();

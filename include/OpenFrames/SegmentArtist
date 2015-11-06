@@ -76,7 +76,8 @@ class OF_EXPORT SegmentArtist : public TrajectoryArtist
   protected:
 	virtual ~SegmentArtist();
 
-	virtual osg::BoundingBox computeBound() const;
+	/** Inhereted from TrajectoryArtist */
+	virtual osg::BoundingBox computeBoundingBox() const;
 
 	void verifyData() const;
 

@@ -47,7 +47,7 @@ void TrajectoryArtist::setTrajectory(const Trajectory *traj)
 	if(_traj.valid()) _traj->addArtist(this);
 }
 
-osg::BoundingBox TrajectoryArtist::computeBound() const
+osg::BoundingBox TrajectoryArtist::computeBoundingBox() const
 {
 	_boundingBox.init();
 	_boundingBoxComputed = true;

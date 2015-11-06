@@ -19,6 +19,13 @@ IF(OF_BUILD_TESTS) # If user asked for test programs
     # Specify debug library suffix
     SET_TARGET_PROPERTIES(${curr_test} PROPERTIES DEBUG_POSTFIX "d")
 
+	# Specify to use Subsystem:Windows on VisualStudio
+	IF(WIN32)
+	  IF(MSVC)
+	    SET_TARGET_PROPERTIES(${curr_test} PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
+	  ENDIF(MSVC)
+	ENDIF(WIN32)
+
     # Install test in current directory, not in CMAKE_INSTALL_PREFIX directory
     # Necessary since models/images are located relative to here
     INSTALL(

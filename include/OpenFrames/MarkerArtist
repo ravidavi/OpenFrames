@@ -112,7 +112,7 @@ class OF_EXPORT MarkerArtist : public TrajectoryArtist
 	virtual ~MarkerArtist();
 
 	/** Inherited from TrajectoryArtist. */
-	virtual osg::BoundingBox computeBound() const;
+	virtual osg::BoundingBox computeBoundingBox() const;
 
 	/** Verify whether the requested data is valid. */
 	void verifyData() const;

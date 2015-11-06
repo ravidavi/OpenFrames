@@ -21,6 +21,8 @@
 #include <osg/Depth>
 #include <osg/BlendFunc>
 
+#include <algorithm> // For std::min
+
 namespace OpenFrames
 {
   

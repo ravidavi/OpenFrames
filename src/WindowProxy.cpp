@@ -242,7 +242,6 @@ bool WindowEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActi
 	  case(osgGA::GUIEventAdapter::QUIT_APPLICATION):
 	  {
 	    _window->shutdown();
-	    _window->join();
 	    break;
 	  }
 
@@ -421,7 +420,7 @@ void WindowProxy::setupWindow()
 	  _window->getState()->setCheckForGLErrors(osg::State::ONCE_PER_ATTRIBUTE);
 
 	  // Initialize event processing system's input window
-	  _window->getEventQueue()->syncWindowRectangleWithGraphcisContext();
+	  _window->getEventQueue()->syncWindowRectangleWithGraphicsContext();
 	}
 	else
 	{

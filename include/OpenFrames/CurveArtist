@@ -73,7 +73,8 @@ class OF_EXPORT CurveArtist : public TrajectoryArtist
   protected:
 	virtual ~CurveArtist();
 
-	virtual osg::BoundingBox computeBound() const;
+	/** Inhereted from TrajectoryArtist */
+	virtual osg::BoundingBox computeBoundingBox() const;
 
 	void verifyData() const;
 
