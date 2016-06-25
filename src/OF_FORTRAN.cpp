@@ -34,11 +34,15 @@
 #include <string>
 #include <iostream>
 
-#ifdef WIN32
+#ifdef IVF_CALLS
 	#define FCN(name) name
-	#include <windows.h>
 #else
 	#define FCN(name) name##__
+#endif
+
+#ifdef WIN32
+	#include <windows.h>
+#else
 	#include <unistd.h>
 #endif
 

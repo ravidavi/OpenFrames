@@ -2,7 +2,12 @@
 INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include ${OPENSCENEGRAPH_INCLUDE_DIRS})
 
 # Find wxWidgets
-FIND_PACKAGE(wxWidgets REQUIRED net gl core base)
+FIND_PACKAGE(wxWidgets COMPONENTS net gl core base)
+IF(NOT wxWidgets_FOUND)
+  MESSAGE("wxWidgets not found: will not build wxWidgets demo.")
+  RETURN()
+ENDIF()
+
 INCLUDE(${wxWidgets_USE_FILE})
 
 # Specify tests that should be built

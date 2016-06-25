@@ -19,7 +19,7 @@
 
 #include <OpenFrames/Export>
 
-#ifdef WIN32
+#ifdef IVF_CALLS
 	#define FCN(name) name // Function names stay as they are on Windows
 #else
 	#define FCN(name) name##__ // Append "__" to function names for other OS's

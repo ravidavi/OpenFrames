@@ -1,13 +1,6 @@
 # Specify that we should look for headers locally
 INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include ${OPENSCENEGRAPH_INCLUDE_DIRS})
 
-# Intel Visual Fortran requires a special flag
-IF( OF_FORTRAN_MODULE )
-  IF(Fortran_COMPILER_NAME MATCHES "ifort.*")
-    ADD_DEFINITIONS(-DIVF_CALLS)
-  ENDIF(Fortran_COMPILER_NAME MATCHES "ifort.*")
-ENDIF( OF_FORTRAN_MODULE )
-
 # Specify tests that should be built
 SET( ALL_TESTS test1 test2 test3 )
 

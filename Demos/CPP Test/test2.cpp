@@ -24,7 +24,7 @@ using namespace OpenFrames;
 /** FCN script handles difference between Windows/UNIX function 
   * naming conventions (gcc appends "__" to function names).
 **/
-#ifdef WIN32
+#ifdef IVF_CALLS
 	#define FCN(name) name
 #else
 	#define FCN(name) name##__
