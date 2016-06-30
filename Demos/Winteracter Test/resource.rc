@@ -8,7 +8,7 @@
 //
 // Winteracter resource script. 
 //
-// Modified : 12/Sep/2004 17:03:02
+// Modified : 13/Apr/2014 12:50:18
 //
 ///////////////////////////////////////////////////
 //
@@ -39,7 +39,8 @@ icon1                           ICON   DISCARDABLE "program.ico"
 //*WI* BASEBUTTON  40101
 //*WI* BASEIMAGE    2001
 //*WI* F90MODULE   1
-//*WI* FILENAME    RESOURCE.F90
-//*WI* FMODNAME    RESOURCE
+//*WI* FORTSAVE    1
+//*WI* FILENAME    resid.f90
+//*WI* FMODNAME    RESID
 //*WI* LASTTYPE        4
 //*WI* LASTRES         1

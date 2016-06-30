@@ -201,6 +201,11 @@
 	EXTERNAL :: fcn
 	END SUBROUTINE
 
+	SUBROUTINE ofwin_setupdatecontextfunction(fcn)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setupdatecontextfunction
+	EXTERNAL :: fcn
+	END SUBROUTINE
+
 	SUBROUTINE ofwin_resizewindow(x, y, width, height)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_resizewindow
 	INTEGER, INTENT(IN) :: x, y, width, height

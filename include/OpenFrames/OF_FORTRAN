@@ -111,6 +111,7 @@ OF_EXPORT void FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *
 // Set the callback functions for swapping buffers and making a context current
 OF_EXPORT void FCN(ofwin_setswapbuffersfunction)(void (*fcn)(unsigned int *winID));
 OF_EXPORT void FCN(ofwin_setmakecurrentfunction)(void (*fcn)(unsigned int *winID, bool *success));
+OF_EXPORT void FCN(ofwin_setupdatecontextfunction)(void (*fcn)(unsigned int *winID, bool *success));
 
 // Inform the WindowProxy that an event occured
 OF_EXPORT void FCN(ofwin_resizewindow)(int *x, int *y, unsigned int *width, unsigned int *height);

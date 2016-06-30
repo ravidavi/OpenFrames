@@ -1,3 +1,7 @@
+	MODULE GLOBALVARS
+	  INTEGER:: IWIDTH, IHEIGHT
+	END MODULE
+
 !-------------------------------------------
 	SUBROUTINE MakeCurrent(id, success)
 	USE WINTERACTER
@@ -22,18 +26,32 @@
 
 	END SUBROUTINE SwapBuffers
 
+!-------------------------------------------
+	SUBROUTINE UpdateViewport(id, success)
+	USE OPENGL
+	USE GLOBALVARS
+	IMPLICIT NONE
+	!DEC$ ATTRIBUTES C,REFERENCE :: UpdateViewport
+	integer, intent(in) :: id
+	logical(1), intent(out) :: success
+
+	CALL glViewPort(0, 0, IWIDTH, IHEIGHT)
+	success = .true.
+
+	END SUBROUTINE UpdateViewport
 !--------------------------------------------
 
 	PROGRAM TRIVIAL
 
 	USE WINTERACTER
 	USE OpenFrames
+	USE RESID
+	USE GLOBALVARS
 
 	IMPLICIT NONE
 
 	TYPE(WIN_MESSAGE)   :: MESSAGE
 	INTEGER		    :: ITYPE
-	INTEGER    :: IWIDTH, IHEIGHT
 	REAL		    :: MX, MY
 	DOUBLE PRECISION :: X, Y, Z, T
 	DOUBLE PRECISION, PARAMETER :: PI = 3.14159265358979323846
@@ -48,21 +66,28 @@
 	CALL WInitialise()
 	CALL OF_Initialize()
 
+	! Create a Winteracter window
+	IWIDTH = 800
+	IHEIGHT = 600
+
 ! Create a WindowProxy which will draw onto the window
-	CALL OFWin_CreateProxy(0, 0, 800, 600, 1, 1, .TRUE., 0)
+	CALL OFWin_CreateProxy(0, 0, IWIDTH, IHEIGHT, 1, 1, .TRUE., 0)
+	CALL WindowOpen(X=20, Y=20, WIDTH=IWIDTH, HEIGHT=IHEIGHT, TITLE='Trivial OpenGL Example')
 	
 	CALL OFTraj_Create("Trajectory", 3, 0)
 	
 	CALL OFCurveArtist_Create("CurveArtist")
 	CALL OFTrajArtist_SetTrajectory()
-	CALL OFTrajArtist_SetColor(1.0, 0.0, 0.0, 1.0)
+	CALL OFCurveArtist_SetColor(1.0, 0.0, 0.0)
 	CALL OFCurveArtist_SetXData(OF_POSOPT, OF_X, 0, 1.0)
 	CALL OFCurveArtist_SetYData(OF_POSOPT, OF_Y, 0, 1.0)
 	CALL OFCurveArtist_SetZData(OF_POSOPT, OF_Z, 0, 1.0)
 	
 ! Create a ReferenceFrame that will follow along the trajectory
 	CALL OFFrame_Create("Follower")
-	CALL OFFrame_FollowTrajectory(OFFOLLOW_LOOP, src, element, opt, scale)
+	CALL OFFrame_FollowTrajectory("Trajectory")
+	CALL OFFrame_FollowType(OFFOLLOW_POSITION, OFFOLLOW_LOOP)
+	CALL OFFrame_FollowPosition(src, element, opt, scale)
 
 ! Create a DrawableTrajectory that will contain the artists as well as the following frame
 	CALL OFDrawTraj_Create("DrawTraj")
@@ -78,17 +103,26 @@
 
 	!DEC$ ATTRIBUTES C,REFERENCE :: MakeCurrent
 	!DEC$ ATTRIBUTES C,REFERENCE :: SwapBuffers
+	!DEC$ ATTRIBUTES C,REFERENCE :: UpdateViewport
 	CALL OFWin_SetSwapBuffersFunction(SwapBuffers)
 	CALL OFWin_SetMakeCurrentFunction(MakeCurrent)
+	CALL OFWin_SetUpdateContextFunction(UpdateViewport)
 		
 	!CALL OFWin_SetBackgroundTexture(0, 0, "../Images/StarMap.tif")
 
 	CALL OFWin_SetScene(0, 0)
-	
-	! Create a Winteracter window
-	IWIDTH = 800
-	IHEIGHT = 600
-	CALL WindowOpen(X=20, Y=20, WIDTH=IWIDTH, HEIGHT=IHEIGHT, TITLE='Trivial OpenGL Example')
+
+	    T = 0.0D0
+	    DO WHILE(T < 2.0D0*PI)
+	      X = DSIN(T)
+	      Y = DCOS(T)
+	      Z = 0.0D0
+
+	      CALL OFTraj_AddTime(T)
+	      CALL OFTraj_AddPosition(X, Y, Z)
+
+	      T = T + PI/360.0D0
+	    END DO
 		
 ! Start animation
 	CALL OFWin_Start()
@@ -127,26 +161,13 @@
 		    EXIT
 	    END SELECT
 	    	    
-	    CALL OFTraj_Clear()
-	    
-	    T = 0.0D0
-	    DO WHILE(T < 2.0D0*PI)
-		  X = DSIN(T)
-		  Y = DCOS(T)
-		  Z = 0.0D0
-		  
-		  CALL OFTraj_AddTime(T)
-		  CALL OFTraj_AddPosition(X, Y, Z)
-		  
-		  T = T + PI/360.0D0
-	    END DO
-	    
 	END DO
 !
 !  Terminate Open-GL and Winteracter
 !
 	CALL WglSelect(0)
 	CALL WindowClose()
+	CALL OF_Cleanup()
 !
 	STOP
 

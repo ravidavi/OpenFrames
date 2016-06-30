@@ -394,6 +394,12 @@ void FCN(ofwin_setmakecurrentfunction)(void (*fcn)(unsigned int *winID, bool *su
 	  _objs->_currWinProxy->setMakeCurrentFunction(fcn);
 }
 
+void FCN(ofwin_setupdatecontextfunction)(void (*fcn)(unsigned int *winID, bool *success))
+{
+	if(_objs->_currWinProxy) 
+	  _objs->_currWinProxy->setUpdateContextFunction(fcn);
+}
+
 void FCN(ofwin_resizewindow)(int *x, int *y, unsigned int *width, unsigned int *height)
 {
 	if(_objs->_currWinProxy) 
