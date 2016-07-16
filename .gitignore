@@ -27,3 +27,4 @@ Thumbs.db
 bin/
 lib/
 *install*/
+*Darwin*/

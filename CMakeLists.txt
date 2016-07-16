@@ -1,19 +1,44 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.5.2)
 PROJECT(OpenFrames)
+
+# Set default installation location
+# Can be overridden by using "-DCMAKE_INSTALL_PREFIX=/foo/bar" 
+# at command line 
+IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  SET(CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/OpenFrames-${CMAKE_SYSTEM_NAME}" CACHE PATH "OpenFrames installation location" FORCE)
+ENDIF()
 
 # Make the makefile output verbose (for compiler error checking)
 #SET(CMAKE_VERBOSE_MAKEFILE on)
 
-# Find OpenGL
-FIND_PACKAGE(OpenGL)
-
 # Find OpenSceneGraph
-FIND_PACKAGE(OpenSceneGraph 3.0.0 COMPONENTS osg osgText osgGA osgDB osgUtil osgViewer osgParticle)
+FIND_PACKAGE(OpenSceneGraph 3.4.0 COMPONENTS osg osgText osgGA osgDB osgUtil osgViewer osgParticle)
 
 # Give user a hint if OSG was not found
 IF(NOT OPENSCENEGRAPH_FOUND)
   MESSAGE(FATAL_ERROR "OpenSceneGraph NOT FOUND: Please set OSG_DIR variable to the OpenSceneGraph path and re-configure.")
 ENDIF()
+
+# Find OpenGL
+IF(APPLE)
+  # On Mac, check if OSG is X11-based
+  EXECUTE_PROCESS(
+    COMMAND otool -L "${OSGVIEWER_LIBRARY}"
+    COMMAND grep libX11
+    RESULT_VARIABLE OF_USE_X11
+    OUTPUT_QUIET ERROR_QUIET
+    )
+
+  # If OSG uses X11, then we should also use X11 OpenGL
+  IF(OF_USE_X11 EQUAL 0)
+    FIND_PACKAGE(X11 REQUIRED)
+    GET_FILENAME_COMPONENT(X11LIBDIR ${X11_X11_LIB} DIRECTORY)
+    SET(OPENGL_gl_LIBRARY ${X11LIBDIR}/libGL.dylib CACHE PATH "OSX X11 libGL")
+    SET(OPENGL_glu_LIBRARY ${X11LIBDIR}/libGLU.dylib CACHE PATH "OSX X11 libGLU")
+    SET(OPENGL_INCLUDE_DIR ${X11_INCLUDE_DIR} CACHE PATH "OSX X11 OpenGL Includes")
+  ENDIF()
+ENDIF()
+FIND_PACKAGE(OpenGL)
 
 # User options
 OPTION( OF_BUILD_TESTS "Build Test Programs" ON )
@@ -24,7 +49,9 @@ IF( OF_FORTRAN_MODULE )
   ENABLE_LANGUAGE(Fortran OPTIONAL)
   GET_FILENAME_COMPONENT(Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
   IF(Fortran_COMPILER_NAME MATCHES "ifort.*")
-    ADD_DEFINITIONS(-DIVF_CALLS)
+    SET(OF_FORTRAN_IVF TRUE)
+  ELSE()
+    SET(OF_FORTRAN_IVF FALSE)
   ENDIF()
 ENDIF( OF_FORTRAN_MODULE )
 

@@ -5,7 +5,6 @@ SET(LIB_NAME ${PROJECT_NAME})
 
 # Define the headers used to compile
 SET(OF_HEADER_PATH ${OpenFrames_SOURCE_DIR}/include)
-INCLUDE_DIRECTORIES(${OF_HEADER_PATH} ${OPENSCENEGRAPH_INCLUDE_DIRS})
 
 # Define all the source files needed to compile
 ADD_LIBRARY(${LIB_NAME} SHARED
@@ -37,11 +36,22 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     WindowProxy.cpp
 )
 
+# Specify include directories for compiling
+TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC ${OF_HEADER_PATH} PRIVATE ${OPENSCENEGRAPH_INCLUDE_DIRS})
+
 # Specify dependencies for linking
-TARGET_LINK_LIBRARIES(${LIB_NAME} ${OPENGL_LIBRARIES} ${OPENSCENEGRAPH_LIBRARIES})
+TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE ${OPENGL_LIBRARIES} ${OPENSCENEGRAPH_LIBRARIES})
 
 # Specify debug library suffix
 SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES DEBUG_POSTFIX "d")
+
+# Specify IVF for Fortran source files
+IF(OF_FORTRAN_IVF)
+  SET_SOURCE_FILES_PROPERTIES(
+    OF_FORTRAN.cpp
+    PROPERTIES COMPILE_DEFINITIONS IVF_CALLS
+    )
+ENDIF()
 
 # Specify where headers should be installed
 INSTALL(
