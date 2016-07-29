@@ -623,8 +623,6 @@ osg::BoundingBox MarkerArtist::computeBoundingBox() const
 	// Indiate that we need to recompute attenuation parameters
 	_shouldAttenuate = true;
 
-	// Indicate that the bounding box is now computed
-	_boundingBoxComputed = true;
 	return _boundingBox;
 }
 

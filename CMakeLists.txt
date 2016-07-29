@@ -20,17 +20,26 @@ IF(NOT OPENSCENEGRAPH_FOUND)
 ENDIF()
 
 # Find OpenGL
+# On Mac, check if OSG is X11-based. This is required because CMake's
+# FindOpenGL module does not look for X11/GL itself
 IF(APPLE)
-  # On Mac, check if OSG is X11-based
   EXECUTE_PROCESS(
     COMMAND otool -L "${OSGVIEWER_LIBRARY}"
     COMMAND grep libX11
-    RESULT_VARIABLE OF_USE_X11
+    RESULT_VARIABLE OSG_USE_X11
     OUTPUT_QUIET ERROR_QUIET
     )
+  IF(OSG_USE_X11 EQUAL 0)
+    SET(OF_USE_X11 TRUE)
+  ELSE()
+    SET(OF_USE_X11 FALSE)
+  ENDIF()
 
   # If OSG uses X11, then we should also use X11 OpenGL
-  IF(OF_USE_X11 EQUAL 0)
+  UNSET(OPENGL_gl_LIBRARY CACHE)
+  UNSET(OPENGL_glu_LIBRARY CACHE)
+  UNSET(OPENGL_INCLUDE_DIR CACHE)
+  IF(OF_USE_X11)
     FIND_PACKAGE(X11 REQUIRED)
     GET_FILENAME_COMPONENT(X11LIBDIR ${X11_X11_LIB} DIRECTORY)
     SET(OPENGL_gl_LIBRARY ${X11LIBDIR}/libGL.dylib CACHE PATH "OSX X11 libGL")
@@ -55,14 +64,10 @@ IF( OF_FORTRAN_MODULE )
   ENDIF()
 ENDIF( OF_FORTRAN_MODULE )
 
-# Use libstdc++ since that's what OpenSceneGraph uses
-IF( APPLE )
-  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++ -std=c++11")
-ENDIF()
-
 # Go to the src directory and look for CMake instructions there
 ADD_SUBDIRECTORY(src)
 
 # Go to the test directory and look for CMake instructions there
 ADD_SUBDIRECTORY("Demos/CPP Test")
 ADD_SUBDIRECTORY("Demos/wxWidgets Test")
+ADD_SUBDIRECTORY("Demos/Winteracter Test")

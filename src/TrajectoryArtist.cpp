@@ -50,7 +50,6 @@ void TrajectoryArtist::setTrajectory(const Trajectory *traj)
 osg::BoundingBox TrajectoryArtist::computeBoundingBox() const
 {
 	_boundingBox.init();
-	_boundingBoxComputed = true;
 	return _boundingBox;
 }
 

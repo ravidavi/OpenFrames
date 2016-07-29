@@ -34,6 +34,10 @@
 #include <string>
 #include <iostream>
 
+#ifdef OF_USE_X11
+        #include <X11/Xlib.h>
+#endif
+
 #ifdef IVF_CALLS
 	#define FCN(name) name
 #else
@@ -87,6 +91,12 @@ class OF_Objects : public osg::Referenced
 	// If this is the first call, then the object will be created
 	static OF_Objects* instance()
 	{
+#ifdef OF_USE_X11
+          // It's likely that a 3rd-party GUI toolkit (like Winteracter)
+          // might use X11, so we need to init X11 threads
+          XInitThreads();
+#endif
+
 	  static osg::ref_ptr<OF_Objects> _objsref = new OF_Objects;
 
 	  // If cleanup has already happened, then delete this instance of

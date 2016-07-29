@@ -304,7 +304,6 @@ osg::BoundingBox SegmentArtist::computeBoundingBox() const
 	  _traj->unlockData();
 	}
 
-	_boundingBoxComputed = true;
 	return _boundingBox;
 }
 

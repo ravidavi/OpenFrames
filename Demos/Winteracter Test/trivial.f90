@@ -26,19 +26,6 @@
 
 	END SUBROUTINE SwapBuffers
 
-!-------------------------------------------
-	SUBROUTINE UpdateViewport(id, success)
-	USE OPENGL
-	USE GLOBALVARS
-	IMPLICIT NONE
-	!DEC$ ATTRIBUTES C,REFERENCE :: UpdateViewport
-	integer, intent(in) :: id
-	logical(1), intent(out) :: success
-
-	CALL glViewPort(0, 0, IWIDTH, IHEIGHT)
-	success = .true.
-
-	END SUBROUTINE UpdateViewport
 !--------------------------------------------
 
 	PROGRAM TRIVIAL
@@ -62,8 +49,8 @@
 	scale = (/1.0, 1.0, 1.0/) ! Unity scaling for positions
 
 ! Initialise Winteracter and OpenFrames
-	CALL WInitialise()
 	CALL OF_Initialize()
+	CALL WInitialise()
 
 	! Create a Winteracter window
 	IWIDTH = 800
@@ -102,10 +89,8 @@
 
 	!DEC$ ATTRIBUTES C,REFERENCE :: MakeCurrent
 	!DEC$ ATTRIBUTES C,REFERENCE :: SwapBuffers
-	!DEC$ ATTRIBUTES C,REFERENCE :: UpdateViewport
 	CALL OFWin_SetSwapBuffersFunction(SwapBuffers)
 	CALL OFWin_SetMakeCurrentFunction(MakeCurrent)
-	CALL OFWin_SetUpdateContextFunction(UpdateViewport)
 		
 	!CALL OFWin_SetBackgroundTexture(0, 0, "../Images/StarMap.tif")
 
@@ -130,7 +115,8 @@
 	CALL WMessageEnable(MouseButUp,1)
 	CALL WMessageEnable(MouseMove, 1)
 	DO
-	    CALL WMessagePeek(ITYPE, MESSAGE)
+	    !CALL WMessagePeek(ITYPE, MESSAGE)
+	    CALL WMessage(ITYPE, MESSAGE)
 	    SELECT CASE (ITYPE)
 		CASE (MouseButDown)
 			MX = REAL(MESSAGE%X)/9999.0*REAL(IWIDTH)

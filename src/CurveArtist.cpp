@@ -257,7 +257,6 @@ osg::BoundingBox CurveArtist::computeBoundingBox() const
 	  _traj->unlockData();
 	}
 
-	_boundingBoxComputed = true;
 	return _boundingBox;
 }
 
