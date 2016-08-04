@@ -23,6 +23,7 @@
 #include <OpenFrames/Model>
 #include <OpenFrames/RadialPlane>
 #include <OpenFrames/SegmentArtist>
+#include <OpenFrames/Sphere>
 #include <OpenFrames/Trajectory>
 #include <OpenFrames/WindowProxy>
 
@@ -33,7 +34,7 @@ using namespace OpenFrames;
 #endif
 
 double tscale = 1.0; // Animation speedup relative to real time
-Model *spacestation;
+Sphere *earth;
 CoordinateAxes *axes;
 TimeManagementVisitor *tmv;
 WindowProxy *theWindow;
@@ -49,7 +50,7 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
 	{
 	  paused = !paused;
 	  tmv->setPauseState(true, paused);
-	  spacestation->getTransform()->accept(*tmv);
+	  earth->getTransform()->accept(*tmv);
 	  axes->getTransform()->accept(*tmv);
 	  tmv->setPauseState(false, paused);
 	}
@@ -59,7 +60,7 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
 	else if(*key == 'r')
 	{
 	  tmv->setReset(true);
-	  spacestation->getTransform()->accept(*tmv);
+	  earth->getTransform()->accept(*tmv);
 	  axes->getTransform()->accept(*tmv);
 	  tmv->setReset(false);
 	}
@@ -69,7 +70,7 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
 	{
 	  tscale += 0.1;
 	  tmv->setTimeScale(true, tscale);
-	  spacestation->getTransform()->accept(*tmv);
+	  earth->getTransform()->accept(*tmv);
 	  axes->getTransform()->accept(*tmv);
 	  tmv->setTimeScale(false, tscale);
 	}
@@ -79,7 +80,7 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
 	{
 	  tscale -= 0.1;
 	  tmv->setTimeScale(true, tscale);
-	  spacestation->getTransform()->accept(*tmv);
+	  earth->getTransform()->accept(*tmv);
 	  axes->getTransform()->accept(*tmv);
 	  tmv->setTimeScale(false, tscale);
 	}
@@ -119,14 +120,19 @@ int main()
 	osg::ref_ptr<TimeManagementVisitor> mytmv = new TimeManagementVisitor; 
 	tmv = mytmv.get();
 
-	// Create the models that will populate the scene using
+	// Create the objects that will populate the scene using
+        // Sphere(name, color(r,g,b,a))
 	// Model(name, color(r,g,b,a))
-	spacestation = new Model("Space Station", 0, 1, 0, 0.9);
+	earth = new Sphere("Earth", 0, 1, 0, 0.9);
 	Model *hubble = new Model("Hubble", 1, 0, 0, 0.9);
 
-	// Set the 3D models
-	spacestation->setModel("../Models/SpaceStation.3ds");
+        // Set Earth parameters
+        earth->setRadius(6371.0);
+        earth->setTextureMap("../Images/EarthTexture.bmp");
+
+	// Set the spacecraft parameters
 	hubble->setModel("../Models/Hubble.3ds");
+        hubble->setModelScale(0.001, 0.001, 0.001); // 1-meter size
 
 	// Create the trajectory using
 	// Trajectory(DOF, number of optionals)
@@ -184,7 +190,7 @@ int main()
 	data._element = 2; // Use Z position for Y coordinate
 	ca->setYData(data);
 	data._src = Trajectory::TIME; // Use time for Z coordinate
-	data._scale = 1.0; // Don't scale time
+	data._scale = 100.0; // Scale since time << distance
 	ca->setZData(data);
 	timehist->addArtist(ca);
 
@@ -204,7 +210,7 @@ int main()
 	data._element = 2; // Use Z position for Y coordinate
 	ma->setYData(data);
 	data._src = Trajectory::TIME; // Use time for Z coordinate
-	data._scale = 1.0; // Don't scale time
+	data._scale = 100.0; // Scale since time << distance
 	ma->setZData(data);
 	timehist->addArtist(ma);
 
@@ -220,7 +226,7 @@ int main()
 
 	// Draw markers at equally spaced distances
 	ma->setIntermediateType(MarkerArtist::DISTANCE);
-	ma->setIntermediateSpacing(10.0); // Every 10 distance units
+	ma->setIntermediateSpacing(1000.0); // Every 1000 km
 	ma->setIntermediateDirection(MarkerArtist::END); // From end of trajectory
 
 	// Create a set of Coordinate Axes for time history plot
@@ -258,8 +264,8 @@ int main()
 	rp->setParameters(10.0, 2.5, 60.0*M_PI/180.0);
 
 	// Set up reference frame heirarchies.
-	spacestation->addChild(drawtraj);
-	spacestation->addChild(hubble);
+	earth->addChild(drawtraj);
+	earth->addChild(hubble);
 	axes->addChild(timehist);
 	axes->addChild(trace);
 	trace->addChild(drawcenter);
@@ -281,7 +287,7 @@ int main()
 	data._element = 2; // Use Z position for Y coordinate
 	tf->setYData(data);
 	data._src = Trajectory::TIME; // Use time for Z coordinate
-	data._scale = 1.0;
+	data._scale = 100.0;
 	tf->setZData(data);
 	trace->getTransform()->setUpdateCallback(tf);
 
@@ -293,14 +299,14 @@ int main()
 	rp->setPosition(0.0, 0.0, 0.0);
 
 	// Create views
-	View *view = new View(spacestation, spacestation);
-	View *view2 = new View(spacestation, hubble);
+	View *view = new View(earth, earth);
+	View *view2 = new View(earth, hubble);
 	View *view3 = new View(axes, axes);
 	View *view4 = new View(axes, trace);
 
 	// Create a manager to handle the spatial scene
 	FrameManager* fm = new FrameManager;
-	fm->setFrame(spacestation);
+	fm->setFrame(earth);
 
 	// Create a manager to handle the time history scene
 	FrameManager* fm2 = new FrameManager;
@@ -319,10 +325,11 @@ int main()
 	osg::Quat att; // Quaternion for attitude transformations
 	double pos[3], vel[3];
 	pos[1] = vel[1] = 0.0;
+        double rmag = 100000.0;
 	for(double t = 0.0; t <= 2.0*M_PI; t += M_PI/90.0)
 	{
-	  pos[0] = 500.0*sin(t);
-	  pos[2] = 500.0*cos(t);
+	  pos[0] = rmag*sin(t);
+	  pos[2] = rmag*cos(t);
 	  vel[0] = pos[0] + 0.5*pos[2];
 	  vel[2] = pos[2] - 0.5*pos[0];
 	  att.makeRotate(t, 0, 1, 0);

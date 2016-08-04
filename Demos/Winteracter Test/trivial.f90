@@ -126,8 +126,8 @@
 
 	T = 0.0D0
 	DO WHILE(T < 2.0D0*PI)
-	  X = 10000.0d0*DSIN(T)
-	  Y = 10000.0d0*DCOS(T)
+	  X = 100000.0d0*DSIN(T)
+	  Y = 100000.0d0*DCOS(T)
 	  Z = 0.0D0
 
 	  CALL OFTraj_AddTime(T*10.0d0)
