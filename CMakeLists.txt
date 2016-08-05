@@ -4,6 +4,13 @@ PROJECT(OpenFrames)
 # Make the makefile output verbose (for compiler error checking)
 #SET(CMAKE_VERBOSE_MAKEFILE on)
 
+# Set default installation location
+# Can be overridden by using "-DCMAKE_INSTALL_PREFIX=/foo/bar" 
+# at command line 
+IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  SET(CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/OpenFrames-${CMAKE_SYSTEM_NAME}-install" CACHE PATH "OpenFrames installation location" FORCE)
+ENDIF()
+
 # Find OpenSceneGraph
 FIND_PACKAGE(OpenSceneGraph 3.4.0 COMPONENTS osg osgText osgGA osgDB osgUtil osgViewer osgParticle)
 
@@ -41,21 +48,6 @@ IF(APPLE)
   ENDIF()
 ENDIF()
 FIND_PACKAGE(OpenGL)
-
-# Set default installation location
-# Can be overridden by using "-DCMAKE_INSTALL_PREFIX=/foo/bar" 
-# at command line 
-IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  IF(APPLE)
-    IF(OF_USE_X11)
-      SET(CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/OpenFrames-${CMAKE_SYSTEM_NAME}-X11" CACHE PATH "OpenFrames installation location" FORCE)
-    ELSE()
-      SET(CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/OpenFrames-${CMAKE_SYSTEM_NAME}-Cocoa" CACHE PATH "OpenFrames installation location" FORCE)
-    ENDIF()
-  ELSE()
-    SET(CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/OpenFrames-${CMAKE_SYSTEM_NAME}" CACHE PATH "OpenFrames installation location" FORCE)
-  ENDIF()
-ENDIF()
 
 # User options
 OPTION( OF_BUILD_TESTS "Build Test Programs" ON )
