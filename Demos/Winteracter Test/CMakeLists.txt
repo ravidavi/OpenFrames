@@ -6,10 +6,24 @@ ENDIF()
 # Find Winteracter
 SET(WINTER_ROOT "$ENV{WINTER}" CACHE PATH "Root directory of Winteracter installation")
 IF(NOT WINTER_ROOT)
-  MESSAGE(FATAL_ERROR "Winteracter root directory not found. Please set WINTER_ROOT variable")
+  MESSAGE(WARNING "Winteracter root directory not found. Please set WINTER_ROOT variable. Will not build Winteracter example.")
+  RETURN()
 ENDIF()
 SET(WINTER_INCLUDE_DIR "${WINTER_ROOT}/lib.ifi64")
 LINK_DIRECTORIES(${WINTER_INCLUDE_DIR} ${X11LIBDIR})
+
+# Find Open Motif
+IF(APPLE)
+  FIND_LIBRARY(WINTER_MOTIF_LIB
+    Xm
+    PATHS ${WINTER_INCLUDE_DIR} ${X11LIBDIR}
+    )
+  IF(NOT WINTER_MOTIF_LIB)
+    MESSAGE(WARNING "Open Motif NOT FOUND. Please add the directory containing libXm to CMAKE_LIBRARY_PATH. Will not build Winteracter example.")
+    RETURN()
+  ENDIF()
+ENDIF()
+
 
 # Custom step to build resource.rc file using Winteracter's rc compiler
 # Disabled for now
@@ -21,7 +35,7 @@ LINK_DIRECTORIES(${WINTER_INCLUDE_DIR} ${X11LIBDIR})
 
 SET(TARGET_NAME wint_trivial)
 ADD_EXECUTABLE(wint_trivial trivial.f90)
-TARGET_LINK_LIBRARIES(wint_trivial ${PROJECT_NAME} ${X11_X11_LIB} ${X11_Xext_LIB} ${X11_Xmu_LIB} ${X11_Xft_LIB} wint wintGL Xm winticonv Xt fontconfig iconv ${OPENGL_LIBRARIES})
+TARGET_LINK_LIBRARIES(wint_trivial ${PROJECT_NAME} ${X11_X11_LIB} ${X11_Xext_LIB} ${X11_Xmu_LIB} ${X11_Xft_LIB} ${WINTER_MOTIF_LIB} wint wintGL winticonv Xt fontconfig iconv ${OPENGL_LIBRARIES})
 SET_TARGET_PROPERTIES(wint_trivial PROPERTIES LINK_FLAGS "-arch x86_64")
 TARGET_INCLUDE_DIRECTORIES(wint_trivial PUBLIC "${WINTER_INCLUDE_DIR}" ${PROJECT_BINARY_DIR}/modules)
 
