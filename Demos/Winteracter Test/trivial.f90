@@ -48,7 +48,10 @@
 	element = (/OF_X, OF_Y, OF_Z/) ! Use first/second/third elements from position group for X/Y/Z position
 	scale = (/1.0, 1.0, 1.0/) ! Unity scaling for positions
 
-! Initialise Winteracter and OpenFrames
+! Initialise OpenFrames then Winteracter
+! Note that OF_Initialize must be called first because it sets up X11
+! threads (among other things), which must be done before Winterater
+! does its own X11 initialization
 	CALL OF_Initialize()
 	CALL WInitialise()
 
