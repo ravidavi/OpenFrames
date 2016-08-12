@@ -31,7 +31,7 @@ namespace OpenFrames
 
 /** A cull callback that sets the detail level of a Sphere based on how far
     away it is from the eye point. */
-struct SphereLODCallback : public osg::Drawable::CullCallback
+struct SphereLODCallback : public osg::DrawableCullCallback
 {
 	SphereLODCallback(const osg::Sphere& sphere, osg::TessellationHints& hints) 
 	: _sphere(sphere), _hints(hints), _currentLOD(0) {}
@@ -42,6 +42,7 @@ struct SphereLODCallback : public osg::Drawable::CullCallback
 	  if(cv)
 	  {
 	    // Get the eye point in the Sphere's local coordinates
+            // Can't use cv->getEyeLocal() since Vec3=Vec3f
 	    osg::Vec3d eye = osg::Matrix::inverse(*cv->getModelViewMatrix()).getTrans();
 
 	    // Compute the ratio of distance to sphere radius

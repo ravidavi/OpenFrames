@@ -66,6 +66,10 @@ class OF_EXPORT TrajectoryArtist : public osg::Drawable
 	/** Inherited from osg::Drawable */
 	virtual osg::BoundingBox computeBoundingBox() const;
 
+        /** Convert double vector to two float vectors and submit
+            to OpenGL using rendering relative to the eye. */
+        void RTE_glVertex(osg::Vec3d &point) const;
+
 	osg::ref_ptr<const Trajectory> _traj; // Trajectory to be drawn
 };
 

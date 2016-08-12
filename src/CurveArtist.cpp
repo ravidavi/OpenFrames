@@ -188,8 +188,6 @@ void CurveArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 
 	osg::Vec3d currPoint;  // Coordinates to plot
 
-	GLint size = (_dataSource[2]._src == Trajectory::ZERO)?2:3; // 2D or 3D points
-
 	// Set the drawing color; width & pattern are already set by the State
 	glColor3fv(_lineColor);
 
@@ -201,10 +199,7 @@ void CurveArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	  if(_dataZero) currPoint.set(0, 0, 0);
 	  else _traj->getPoint(i, _dataSource, currPoint._v); // Get current point
 
-	  if(size == 3) // 3D trajectory
-	    glVertex3dv(currPoint._v);
-	  else // 2D trajectory
-	    glVertex2dv(currPoint._v);
+          RTE_glVertex(currPoint);
 	}
 
 	glEnd(); // GL_LINE_STRIP

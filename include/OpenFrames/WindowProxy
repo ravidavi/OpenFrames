@@ -236,7 +236,7 @@ class OF_EXPORT WindowProxy : public OpenThreads::Thread, public osg::Referenced
   protected:
 	virtual ~WindowProxy();
 
-	void setupWindow();
+	bool setupWindow();
 	void collectScenes();
 	void frame();
 

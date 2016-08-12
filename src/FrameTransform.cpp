@@ -145,8 +145,8 @@ bool FrameTransform::computeLocalToWorldMatrix(osg::Matrix& matrix, osg::NodeVis
 	    osgUtil::CullVisitor* cv = dynamic_cast<osgUtil::CullVisitor*>(nv);
 	    if(cv)
 	    {
+              // Can't use cv->getEyeLocal() since Vec3=Vec3f
 	      osg::Vec3d eye = osg::Matrix::inverse(*cv->getModelViewMatrix()).getTrans();
-	      //osg::Vec3d eye = cv->getEyeLocal();
 	      matrix.preMultTranslate(eye);
 	    }
 	  }

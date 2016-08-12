@@ -15,7 +15,9 @@
 ***********************************/
 
 #include <OpenFrames/DepthPartitionNode>
+#include <osg/io_utils>
 #include <osgUtil/CullVisitor>
+#include <iostream>
 
 namespace OpenFrames
 {
@@ -94,7 +96,7 @@ void DepthPartitionNode::traverse(osg::NodeVisitor &nv)
 	// current modelview and projection matrices and viewport.
 	osg::RefMatrix *modelview = cv->getModelViewMatrix();
 	osg::RefMatrix *projection = cv->getProjectionMatrix();
-	osg::Viewport* viewport = cv->getViewport();
+	osg::Viewport *viewport = cv->getViewport();
 
 	// Prepare for scene traversal.
 	_distAccumulator->setMatrices(*modelview, *projection);
@@ -130,6 +132,8 @@ void DepthPartitionNode::traverse(osg::NodeVisitor &nv)
 	    // Set the modelview matrix and viewport of the camera
 	    currCam->setViewMatrix(*modelview);
 	    currCam->setViewport(viewport);
+
+            //std::cout<< currCam->getName() << " projection:\n" << currCam->getProjectionMatrix() << std::endl;
 
 	    // Redirect the CullVisitor to the current camera
 	    currCam->accept(nv);
@@ -219,6 +223,7 @@ osg::Camera* DepthPartitionNode::createOrReuseCamera(const osg::Matrix& proj,
 	  }
 
 	  _cameraList[camNum] = camera;
+          camera->setName(std::string("DPNCamera") + std::to_string(camNum));
 	}
 
 	osg::Matrixd &projection = camera->getProjectionMatrix();
@@ -228,6 +233,8 @@ osg::Camera* DepthPartitionNode::createOrReuseCamera(const osg::Matrix& proj,
 	// extremes being clipped out.
 	near *= 0.999;
 	far *= 1.001;
+
+        //std::cout<< camera->getName() << " near = " << near << ", far = " << far << std::endl;
 
 	// Clamp the projection matrix z values to the range (near, far)
 	double epsilon = 1.0e-6;

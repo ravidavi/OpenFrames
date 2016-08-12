@@ -328,7 +328,7 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	  glColor3fv(_startColor);
 	  if(_dataZero) currPoint.set(0, 0, 0);
 	  else _traj->getPoint(0, _dataSource, currPoint._v);
-	  glVertex3dv(currPoint._v);
+	  RTE_glVertex(currPoint);
 	}
 
 	// Draw last point if requested and available
@@ -336,7 +336,7 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	{
 	  glColor3fv(_endColor);
 	  _traj->getPoint(numPoints-1, _dataSource, currPoint._v);
-	  glVertex3dv(currPoint._v);
+	  RTE_glVertex(currPoint);
 	}
 
 	// Draw intermediate points
@@ -393,7 +393,7 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 		currPoint = prevPoint + (currPoint - prevPoint)*frac;
 	      }
 
-	      glVertex3dv(currPoint._v); // Plot the interpolated point
+	      RTE_glVertex(currPoint); // Plot the interpolated point
 	    }
 	  }
 
@@ -451,7 +451,8 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 		frac = (target_d - prev_d)/(curr_d - prev_d);
 
 		// Extrapolate the data point to be plotted
-		glVertex3dv((prevPoint + (currPoint - prevPoint)*frac)._v);
+                osg::Vec3d temp = prevPoint + (currPoint - prevPoint)*frac;
+                RTE_glVertex(temp);
 
 		target_d += _intermediateSpacing;
 	      }
@@ -492,7 +493,7 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	    for(int i = start; direction*i < end; i += spacing)
 	    {
 	      _traj->getPoint(i, _dataSource, currPoint._v);
-	      glVertex3dv(currPoint._v);
+	      RTE_glVertex(currPoint);
 	    }
 	  }
 	}

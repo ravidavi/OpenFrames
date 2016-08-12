@@ -319,7 +319,7 @@ void WindowEventHandler::selectRenderRectangle( unsigned int row, unsigned int c
 	  }
 	}
 	else
-	  std::cerr<< "WindowEventHandler ERROR: invalid grid location (row " << row << ", col " << col << ")" << std::endl;
+	  std::cerr<< "OpenFrames::WindowEventHandler ERROR: invalid grid location (row " << row << ", col " << col << ")" << std::endl;
 }
 
 /** The CheckPrerequisites class checks whether certain necessary OpenGL components exist. If they don't,
@@ -336,7 +336,7 @@ public:
 	  osg::GraphicsContext *gc = dynamic_cast<osg::GraphicsContext*>(obj);
 	  if(!gc)
 	  {
-		std::cerr<< "WindowProxy ERROR: GraphicsContext not valid" << std::endl;
+		std::cerr<< "OpenFrames::WindowProxy ERROR: GraphicsContext not valid" << std::endl;
 		return;
 	  }
 
@@ -391,7 +391,7 @@ void WindowProxy::cancelCleanup()
 	shutdown();
 }
 
-void WindowProxy::setupWindow()
+bool WindowProxy::setupWindow()
 {
 	if(_isEmbedded) // For embedded windows, just set the window to our embedded GraphicsContext
 	{
@@ -421,11 +421,14 @@ void WindowProxy::setupWindow()
 
 	  // Initialize event processing system's input window
 	  _window->getEventQueue()->syncWindowRectangleWithGraphicsContext();
+
+          // Allow shaders to access osg_* uniforms
+          _window->getState()->setUseModelViewAndProjectionUniforms(true);
 	}
 	else
 	{
 	  std::cerr<< "WindowProxy ERROR: Graphics Window couldn't be created." << std::endl;
-	  return;
+	  return false;
 	}
 
 	// Set the graphics context for each RenderRectangle
@@ -439,6 +442,7 @@ void WindowProxy::setupWindow()
 	int width = _embeddedGraphics->getTraits()->width;
 	int height = _embeddedGraphics->getTraits()->height;
 	setupGrid(width, height);
+        return true;
 }
 
 /** Gather all the displayed scenes, each one being one FrameManager */
@@ -642,7 +646,7 @@ void WindowProxy::setSwapBuffersFunction(void (*fcn)(unsigned int *winID))
 void WindowProxy::run()
 {
 	// Create the window
-	setupWindow();
+	if(!setupWindow()) return;
 
 	// Set the starting reference time
 	_startTime = osg::Timer::instance()->tick();

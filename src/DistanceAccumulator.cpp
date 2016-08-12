@@ -24,8 +24,8 @@
 namespace OpenFrames
 {
 
-/** Function that sees whether one DistancePair should come before another in
-    an sorted list. Used to sort the vector of DistancePairs. */
+/** Determine whether one DistancePair should come before another in
+    a sorted list. Used to sort the vector of DistancePairs. */
 bool precedes(const DistanceAccumulator::DistancePair &a, 
               const DistanceAccumulator::DistancePair &b)
 {
@@ -78,12 +78,8 @@ void DistanceAccumulator::pushDistancePair(double zNear, double zFar)
 {
     if(zFar > 0.0) // Make sure some of drawable is visible
     {
-      // Make sure near plane is in front of viewpoint.
-      if(zNear <= 0.0)
-      {
-        zNear = zFar*_nearFarRatio;
-        if(zNear >= 1.0) zNear = 1.0; // 1.0 limit chosen arbitrarily!
-      }
+      double minNear = 0.001;
+      if(zNear <= 0) zNear = std::min(minNear, zFar*_nearFarRatio);
 
       // Add distance pair for current drawable
       _distancePairs.push_back(DistancePair(zNear, zFar));
@@ -329,7 +325,7 @@ void DistanceAccumulator::computeCameraPairs()
     // Compute the (near,far) distance pairs for each camera.
     // Each of these distance pairs is called a "view segment".
     double currNearLimit, numSegs, new_ratio;
-    double ratio_invlog = 1.0/log(_nearFarRatio);
+    const double ratio_invlog = 1.0/log(_nearFarRatio);
     unsigned int temp;
     for(i = combinedPairs.begin(); i != combinedPairs.end(); ++i)
     {
@@ -345,7 +341,7 @@ void DistanceAccumulator::computeCameraPairs()
 
         // Compute the near plane of the last view segment
         //currNearLimit *= pow(_nearFarRatio, -floor(-numSegs) - 1);
-        for(temp = (unsigned int)(-floor(-numSegs)); temp > 1; temp--)
+        for(temp = (unsigned int)(-floor(-numSegs)); temp > 1; --temp)
         {
           currNearLimit *= _nearFarRatio;
         }
