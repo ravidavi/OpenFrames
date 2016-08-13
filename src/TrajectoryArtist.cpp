@@ -59,7 +59,7 @@ void TrajectoryArtist::RTE_glVertex(osg::Vec3d &point) const
         osg::Vec3f low = point - osg::Vec3d(high);
 
         glVertex3fv(high._v);
-        glNormal3fv(low._v);
+        glVertexAttrib3fv(1, low._v);
 }
 
 } //!namespace OpenFrames

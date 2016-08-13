@@ -17,8 +17,6 @@
 #include <OpenFrames/DrawableTrajectory>
 #include <osgUtil/CullVisitor>
 #include <sstream>
-#include <iostream>
-#include <osg/io_utils>
 
 #ifdef _OF_VERBOSE_
 #include <iostream>
@@ -43,17 +41,24 @@ class UniformCallback : public osg::NodeCallback
 	  osgUtil::CullVisitor *cv = dynamic_cast<osgUtil::CullVisitor*>(nv);
 	  if(cv)
 	  {
-	    // Extract translation from ModelView matrix and store it in
-            // two single-precision floats
+            // Get ModelView matrix
             osg::Matrixd mvmat = *(cv->getModelViewMatrix());
+
+            // Invert to get eye point
+            // Note that we can't use cv->getEyeLocal since Vec3=Vec3f
             osg::Matrixd mvmatinv;
-            mvmatinv.invert(mvmat); // Can't use cv->getEyeLocal() since Vec3=Vec3f
+            mvmatinv.invert(mvmat);
             osg::Vec3d eye = mvmatinv.getTrans();
-            //std::cout<< nv->getTraversalNumber() << " mvmat=\n" << mvmat << std::endl;
-            //std::cout<< nv->getTraversalNumber() << " mvmatinv=\n" << mvmatinv << std::endl;
+
+            // Convert eye point to 2 single-precision values
             osg::Vec3f eyeHigh = eye;
             osg::Vec3f eyeLow = eye - osg::Vec3d(eyeHigh);
+
+            // Zero out translation since it will be directly applied
+            // in the vertex shader
             mvmat.setTrans(0.0, 0.0, 0.0);
+
+            // Apply new ModelView matrix and eye point shader Uniforms
             _mvmat.set(mvmat);
             _eyeHigh.set(eyeHigh);
             _eyeLow.set(eyeLow);
@@ -66,18 +71,19 @@ class UniformCallback : public osg::NodeCallback
         osg::Uniform &_mvmat, &_eyeHigh, &_eyeLow;
 };
 
+// Implement the shader portion of Rendering Relative to Eye using GPU
 static const char *VertSource = {
   "#version 120\n"
   "uniform mat4 osg_ProjectionMatrix;\n"
-  "uniform mat4 osg_ModelViewProjectionMatrix;\n"
   "uniform mat4 of_RTEModelViewMatrix;\n"
   "uniform vec3 of_ModelViewEyeHigh;\n"
   "uniform vec3 of_ModelViewEyeLow;\n"
+  "attribute vec4 of_VertexLow;\n"
   "void main(void)\n"
   "{\n"
-  "  vec3 t1 = gl_Normal.xyz - of_ModelViewEyeLow;\n"
-  "  vec3 e = t1 - gl_Normal.xyz;\n"
-  "  vec3 t2 = ((-of_ModelViewEyeLow - e) + (gl_Normal.xyz - (t1 - e))) + gl_Vertex.xyz - of_ModelViewEyeHigh;\n"
+  "  vec3 t1 = of_VertexLow.xyz - of_ModelViewEyeLow;\n"
+  "  vec3 e = t1 - of_VertexLow.xyz;\n"
+  "  vec3 t2 = ((-of_ModelViewEyeLow - e) + (of_VertexLow.xyz - (t1 - e))) + gl_Vertex.xyz - of_ModelViewEyeHigh;\n"
   "  vec3 diffHigh = t1 + t2;\n"
   "  vec3 diffLow = t2 - (diffHigh - t1);\n"
   "  gl_Position = osg_ProjectionMatrix*of_RTEModelViewMatrix*vec4(diffHigh+diffLow, 1.0);\n"
@@ -134,6 +140,7 @@ void DrawableTrajectory::_init()
         osg::Program *program = new osg::Program;
         program->setName("OFDrawableTrajectory_Shader");
         program->addShader(new osg::Shader(osg::Shader::VERTEX, VertSource));
+        program->addBindAttribLocation("of_VertexLow", 1);
         stateset->setAttributeAndModes(program, osg::StateAttribute::ON);
 
         // Add contained artists to this frame's transform

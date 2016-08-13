@@ -43,7 +43,7 @@ struct AttenuateUpdater : public osg::Drawable::UpdateCallback
 };
 
 MarkerArtist::MarkerArtist(const Trajectory *traj)
-: _markers(START | END), _intermediateType(TIME), _intermediateSpacing(1.0),
+: _markers(START | END), _intermediateType(DATA), _intermediateSpacing(1.0),
   _intermediateDirection(START), _dataValid(true), _dataZero(true), _shouldAttenuate(false)
 {
 	setTrajectory(traj); // Set the specified trajectory
@@ -331,14 +331,6 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	  RTE_glVertex(currPoint);
 	}
 
-	// Draw last point if requested and available
-	if((_markers & END) && (numPoints > 1))
-	{
-	  glColor3fv(_endColor);
-	  _traj->getPoint(numPoints-1, _dataSource, currPoint._v);
-	  RTE_glVertex(currPoint);
-	}
-
 	// Draw intermediate points
 	if((_markers & INTERMEDIATE) && (numPoints > 1))
 	{
@@ -498,6 +490,14 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	  }
 	}
 
+	// Draw last point if requested and available
+	if((_markers & END) && (numPoints > 1))
+	{
+	  glColor3fv(_endColor);
+	  _traj->getPoint(numPoints-1, _dataSource, currPoint._v);
+	  RTE_glVertex(currPoint);
+	}
+
 	glEnd(); // GL_POINTS
 
 	if(!_dataZero) _traj->unlockData();
@@ -572,7 +572,7 @@ osg::BoundingBox MarkerArtist::computeBoundingBox() const
 
 	if(_dataZero) // Just the zero point
 	{
-	  _boundingBox.expandBy(0, 0, 0);
+          _boundingBox.expandBy(0.0, 0.0, 0.0);
 	}
 	else if(_dataValid)
 	{

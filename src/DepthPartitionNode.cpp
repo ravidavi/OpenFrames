@@ -17,7 +17,6 @@
 #include <OpenFrames/DepthPartitionNode>
 #include <osg/io_utils>
 #include <osgUtil/CullVisitor>
-#include <iostream>
 
 namespace OpenFrames
 {
@@ -133,8 +132,6 @@ void DepthPartitionNode::traverse(osg::NodeVisitor &nv)
 	    currCam->setViewMatrix(*modelview);
 	    currCam->setViewport(viewport);
 
-            //std::cout<< currCam->getName() << " projection:\n" << currCam->getProjectionMatrix() << std::endl;
-
 	    // Redirect the CullVisitor to the current camera
 	    currCam->accept(nv);
 	  }
@@ -233,8 +230,6 @@ osg::Camera* DepthPartitionNode::createOrReuseCamera(const osg::Matrix& proj,
 	// extremes being clipped out.
 	near *= 0.999;
 	far *= 1.001;
-
-        //std::cout<< camera->getName() << " near = " << near << ", far = " << far << std::endl;
 
 	// Clamp the projection matrix z values to the range (near, far)
 	double epsilon = 1.0e-6;

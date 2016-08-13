@@ -28,9 +28,9 @@ namespace OpenFrames
 /**********************************************************
  * Ravi Mathur
  * OpenFrames API, class CurveArtist
- * This class draws a series of points connected by lines.  The x,y,z
+ * Draws a series of Trajectory points connected by lines.  The x,y,z
  * components of the points can be independently specified to be any
- * elements of the specified Trajectory.
+ * elements of the Trajectory.
 **********************************************************/
 class OF_EXPORT CurveArtist : public TrajectoryArtist
 {
@@ -78,7 +78,8 @@ class OF_EXPORT CurveArtist : public TrajectoryArtist
 
 	void verifyData() const;
 
-	Trajectory::DataSource _dataSource[3]; // Data sources for x, y, and z
+        // Data sources for x, y, and z coordinates
+	Trajectory::DataSource _dataSource[3];
 
 	/** Line width, stipple pattern, and color. */
 	osg::ref_ptr<osg::LineWidth> _lineWidth; 

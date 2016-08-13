@@ -117,7 +117,8 @@ class OF_EXPORT MarkerArtist : public TrajectoryArtist
 	/** Verify whether the requested data is valid. */
 	void verifyData() const;
 
-	Trajectory::DataSource _dataSource[3]; // X/Y/Z component data source
+        // Data sources for x, y, and z components
+	Trajectory::DataSource _dataSource[3];
 
 	unsigned int _markers; // Which points to draw as markers
 

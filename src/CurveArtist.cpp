@@ -23,45 +23,40 @@ namespace OpenFrames
 CurveArtist::CurveArtist(const Trajectory *traj)
 : _dataValid(false), _dataZero(false)
 {
+	setTrajectory(traj); // Set the specified trajectory
+
+	unsigned int dof = 0;
+	if(_traj.valid()) dof = _traj->getDOF();
+
+        // By default, the CurveArtist will draw a line between
+        // successive points in the trajectory.
+	Trajectory::DataSource data;
+        data._src = Trajectory::POSOPT;
+
+	if(dof >= 1)
+	{
+	  data._element = 0;
+          setXData(data);
+	}
+
+	if(dof >= 2)
+	{
+	  data._element = 1;
+          setYData(data);
+	}
+
+	if(dof >= 3)
+	{
+	  data._element = 2;
+          setZData(data);
+	}
+
   	// Set line width and pattern. Actual values will be specified later
 	_lineWidth = new osg::LineWidth;
 	_linePattern = new osg::LineStipple;
 	osg::StateSet* stateset = getOrCreateStateSet();
 	stateset->setAttribute(_lineWidth.get());
 	stateset->setAttributeAndModes(_linePattern.get());
-
-	setTrajectory(traj);
-
-	unsigned int dof = 0;
-	if(_traj.valid()) dof = _traj->getDOF();
-
-	Trajectory::DataSource data;
-
-	if(dof >= 1)
-	{
-	  data._src = Trajectory::POSOPT;
-	  data._element = 0;
-	}
-	else data._src = Trajectory::ZERO;
-	setXData(data);
-
-	if(dof >= 2)
-	{
-	  data._src = Trajectory::POSOPT;
-	  data._element = 1;
-	}
-	else data._src = Trajectory::ZERO;
-	setYData(data);
-
-	if(dof >= 3)
-	{
-	  data._src = Trajectory::POSOPT;
-	  data._element = 2;
-	}
-	else data._src = Trajectory::ZERO;
-	setZData(data);
-
-	verifyData();
 }
 
 // Not using the copy constructor
@@ -161,50 +156,40 @@ void CurveArtist::setPattern( GLint factor, GLushort pattern )
 void CurveArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 {
 	// Make sure trajectory's data is valid
-	if(!_dataValid) return;
+	if(!_dataValid || _dataZero) return;
 
-	renderInfo.getState()->checkGLErrors("start of CurveArtist::drawImplementation");
+        renderInfo.getState()->checkGLErrors("start of CurveArtist::drawImplementation");
 
-	unsigned int numPoints; // Number of points to draw
-	if(_dataZero)
-	{
-	  numPoints = 1;
-	}
-	else
-	{
-	  _traj->lockData();
+        unsigned int numPoints; // Number of points to draw
+        _traj->lockData();
 
-	  // Compute number of drawable points
-	  numPoints = _traj->getNumPoints(_dataSource);
-	  if(numPoints == UINT_MAX) numPoints = 1;
-	  else if(numPoints == 0) // Make sure something needs to be drawn
-	  {
-	    _traj->unlockData();
-		renderInfo.getState()->checkGLErrors("end of CurveArtist::drawImplementation with no points");
+        // Make sure there are at least 2 drawable points
+        numPoints = _traj->getNumPoints(_dataSource);
+        if(numPoints < 2 || numPoints == UINT_MAX)
+        {
+          _traj->unlockData();
+          renderInfo.getState()->checkGLErrors("end of CurveArtist::drawImplementation with no points");
 
-	    return;
-	  }
-	}
+          return;
+        }
 
-	osg::Vec3d currPoint;  // Coordinates to plot
+        osg::Vec3d currPoint;  // Coordinates to plot
 
-	// Set the drawing color; width & pattern are already set by the State
-	glColor3fv(_lineColor);
+        // Set the drawing color; width & pattern are already set by the State
+        glColor3fv(_lineColor); // One color for all lines
 
 	glBegin(GL_LINE_STRIP); // Begin plotting line strips
 
-	  // Iterate through each point to be drawn
+        // Iterate through each point to be drawn
 	for(unsigned int i = 0; i < numPoints; ++i)
 	{
-	  if(_dataZero) currPoint.set(0, 0, 0);
-	  else _traj->getPoint(i, _dataSource, currPoint._v); // Get current point
-
+          _traj->getPoint(i, _dataSource, currPoint._v); // Get current point
           RTE_glVertex(currPoint);
 	}
 
 	glEnd(); // GL_LINE_STRIP
 
-	if(!_dataZero) _traj->unlockData();
+	_traj->unlockData();
 
 	renderInfo.getState()->checkGLErrors("end of CurveArtist::drawImplementation");
 
