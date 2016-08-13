@@ -223,10 +223,6 @@ void SegmentArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	if(_startDataZero) startPoint.set(0, 0, 0);
 	if(_endDataZero) endPoint.set(0, 0, 0);
 
-	// 2D or 3D trajectory
-	bool type3D = (_startSource[2]._src != Trajectory::ZERO) || 
-	              (_endSource[2]._src != Trajectory::ZERO);
-
 	// Set the drawing color; width & pattern are already set by the State
 	glColor3fv(_lineColor);
 
@@ -240,17 +236,9 @@ void SegmentArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	  if(!_endDataZero) // Get end point
 	    _traj->getPoint(i, _endSource, endPoint._v);
 
-	  // Send starting point of current segment to OpenGL.
-	  if(type3D) // 3D trajectory
-	  {
-	    glVertex3dv(startPoint._v);
-	    glVertex3dv(endPoint._v);
-	  }
-	  else // 2D trajectory
-	  {
-	    glVertex2dv(startPoint._v);
-	    glVertex2dv(endPoint._v);
-	  }
+	  // Send start/end points of current segment to OpenGL.
+          RTE_glVertex(startPoint);
+          RTE_glVertex(endPoint);
 	}
 
 	glEnd(); // GL_LINES

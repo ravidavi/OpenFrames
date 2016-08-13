@@ -69,6 +69,21 @@ class UniformCallback : public osg::NodeCallback
 
   private:
         osg::Uniform &_mvmat, &_eyeHigh, &_eyeLow;
+
+        // Simulate the VertSource vertex shader, useful for debugging
+        osg::Vec3f simulate_vertsource(
+            osg::Vec3f vertexhigh, osg::Vec3f vertexlow,
+            osg::Vec3f eyehigh, osg::Vec3f eyelow,
+            osg::Matrixf mv, osg::Matrixf proj)
+        {
+          osg::Vec3f t1 = vertexlow - eyelow;
+          osg::Vec3f e = t1 - vertexlow;
+          osg::Vec3f t2 = ((-eyelow - e) + (vertexlow - (t1 - e))) + vertexhigh - eyehigh;
+          osg::Vec3f diffHigh = t1 + t2;
+          osg::Vec3f diffLow = t2 - (diffHigh - t1);
+          osg::Vec3f gl_Position = (diffHigh+diffLow)*mv*proj;
+          return gl_Position;
+        }
 };
 
 // Implement the shader portion of Rendering Relative to Eye using GPU

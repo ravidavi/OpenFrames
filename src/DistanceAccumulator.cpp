@@ -78,8 +78,12 @@ void DistanceAccumulator::pushDistancePair(double zNear, double zFar)
 {
     if(zFar > 0.0) // Make sure some of drawable is visible
     {
-      double minNear = 0.001;
-      if(zNear <= 0) zNear = std::min(minNear, zFar*_nearFarRatio);
+      // Near plane must be in front of camera. Here, "in front" is defined
+      // using small epsilon relative to the chosen distance unit.
+      // This won't present problems with huge/tiny scenes as long as the
+      // distance unit is chosen properly for the visualized system.
+      const double epsilon = 1.0e-6;
+      if(zNear < epsilon) zNear = epsilon;
 
       // Add distance pair for current drawable
       _distancePairs.push_back(DistancePair(zNear, zFar));

@@ -2,7 +2,7 @@
 INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include ${OPENSCENEGRAPH_INCLUDE_DIRS})
 
 # Specify tests that should be built
-SET( ALL_TESTS test1 test2 test3 )
+SET( ALL_TESTS test1 test2 test3 test_jitter)
 
 IF(OF_BUILD_TESTS) # If user asked for test programs
   # Specify IVF for Fortran source files
