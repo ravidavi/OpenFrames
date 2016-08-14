@@ -15,6 +15,8 @@
 ***********************************/
 
 #include <OpenFrames/TrajectoryArtist>
+#include <iostream>
+#include <osg/io_utils>
 
 namespace OpenFrames
 {
@@ -55,8 +57,16 @@ osg::BoundingBox TrajectoryArtist::computeBoundingBox() const
 
 void TrajectoryArtist::RTE_glVertex(osg::Vec3d &point) const
 {
-        osg::Vec3f high = point;
-        osg::Vec3f low = point - osg::Vec3d(high);
+        osg::Vec3f high, low;
+        OpenFrames::Double_to_Floats(point, high, low);
+
+        /*
+        std::cout<< className() 
+          << "\n  point = " << point 
+          << "\n  sum   = " << osg::Vec3d(high) + osg::Vec3d(low) 
+          << "\n  high  = " << high 
+          << "\n  low   = " << low << std::endl;
+        */
 
         glVertex3fv(high._v);
         glVertexAttrib3fv(1, low._v);

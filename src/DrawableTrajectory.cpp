@@ -51,8 +51,8 @@ class UniformCallback : public osg::NodeCallback
             osg::Vec3d eye = mvmatinv.getTrans();
 
             // Convert eye point to 2 single-precision values
-            osg::Vec3f eyeHigh = eye;
-            osg::Vec3f eyeLow = eye - osg::Vec3d(eyeHigh);
+            osg::Vec3f eyeHigh, eyeLow;
+            OpenFrames::Double_to_Floats(eye, eyeHigh, eyeLow);
 
             // Zero out translation since it will be directly applied
             // in the vertex shader
@@ -94,11 +94,12 @@ static const char *VertSource = {
   "uniform vec3 of_ModelViewEyeHigh;\n"
   "uniform vec3 of_ModelViewEyeLow;\n"
   "attribute vec4 of_VertexLow;\n"
+  "attribute vec4 osg_Vertex;\n"
   "void main(void)\n"
   "{\n"
   "  vec3 t1 = of_VertexLow.xyz - of_ModelViewEyeLow;\n"
   "  vec3 e = t1 - of_VertexLow.xyz;\n"
-  "  vec3 t2 = ((-of_ModelViewEyeLow - e) + (of_VertexLow.xyz - (t1 - e))) + gl_Vertex.xyz - of_ModelViewEyeHigh;\n"
+  "  vec3 t2 = ((-of_ModelViewEyeLow - e) + (of_VertexLow.xyz - (t1 - e))) + osg_Vertex.xyz - of_ModelViewEyeHigh;\n"
   "  vec3 diffHigh = t1 + t2;\n"
   "  vec3 diffLow = t2 - (diffHigh - t1);\n"
   "  gl_Position = osg_ProjectionMatrix*of_RTEModelViewMatrix*vec4(diffHigh+diffLow, 1.0);\n"
