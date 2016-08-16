@@ -334,18 +334,37 @@ public:
 	{
 	  // Get the GraphicsContext to be tested
 	  osg::GraphicsContext *gc = dynamic_cast<osg::GraphicsContext*>(obj);
+          osg::State *state = gc->getState();
+          osg::GLExtensions *glext = state->get<osg::GLExtensions>();
+
 	  if(!gc)
 	  {
 		std::cerr<< "OpenFrames::WindowProxy ERROR: GraphicsContext not valid" << std::endl;
 		return;
 	  }
 
+          // Report OpenGL version info
+          char *glVersionString = (char*)glGetString(GL_VERSION);
+          if(glVersionString)
+            std::cout<< "OpenFrames using OpenGL " << glVersionString << std::endl;
+          else
+          {
+            std::cerr<< "OpenFrames::WindowProxy ERROR: Could not load a valid OpenGL implementation." << std::endl;
+            return;
+          }
+
 	  // Check if PointSprites are supported
 	  osg::ref_ptr<osg::PointSprite> ps = new osg::PointSprite;
 	  if(!ps->checkValidityOfAssociatedModes(*(gc->getState())))
 	  {
-		std::cerr<< "WindowProxy ERROR: OpenGL PointSprite extension not supported." << std::endl;
+            std::cerr<< "OpenFrames::WindowProxy ERROR: OpenGL PointSprite extension not supported." << std::endl;
 	  }
+
+          // Check for glVertexAttrib
+          if(!glext->glVertexAttrib3fv)
+          {
+            std::cerr<< "OpenFrames::WindowProxy ERROR: OpenGL glVertexAttrib3fv not found." << std::endl;
+          }
 
 	  // Other OpenGL extension checks can go here
 	}

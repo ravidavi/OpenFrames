@@ -318,6 +318,7 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	  }
 	}
 
+        osg::GLExtensions *glext = renderInfo.getState()->get<osg::GLExtensions>();
 	osg::Vec3d currPoint, prevPoint;  // Coordinates to plot
 
 	glBegin(GL_POINTS); // Begin plotting points
@@ -328,7 +329,7 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	  glColor3fv(_startColor);
 	  if(_dataZero) currPoint.set(0, 0, 0);
 	  else _traj->getPoint(0, _dataSource, currPoint._v);
-	  RTE_glVertex(currPoint);
+	  RTE_glVertex(currPoint, *glext);
 	}
 
 	// Draw intermediate points
@@ -385,7 +386,7 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 		currPoint = prevPoint + (currPoint - prevPoint)*frac;
 	      }
 
-	      RTE_glVertex(currPoint); // Plot the interpolated point
+	      RTE_glVertex(currPoint, *glext); // Plot the interpolated point
 	    }
 	  }
 
@@ -444,7 +445,7 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 
 		// Extrapolate the data point to be plotted
                 osg::Vec3d temp = prevPoint + (currPoint - prevPoint)*frac;
-                RTE_glVertex(temp);
+                RTE_glVertex(temp, *glext);
 
 		target_d += _intermediateSpacing;
 	      }
@@ -485,7 +486,7 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	    for(int i = start; direction*i < end; i += spacing)
 	    {
 	      _traj->getPoint(i, _dataSource, currPoint._v);
-	      RTE_glVertex(currPoint);
+	      RTE_glVertex(currPoint, *glext);
 	    }
 	  }
 	}
@@ -495,7 +496,7 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	{
 	  glColor3fv(_endColor);
 	  _traj->getPoint(numPoints-1, _dataSource, currPoint._v);
-	  RTE_glVertex(currPoint);
+	  RTE_glVertex(currPoint, *glext);
 	}
 
 	glEnd(); // GL_POINTS

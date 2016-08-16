@@ -55,7 +55,7 @@ osg::BoundingBox TrajectoryArtist::computeBoundingBox() const
 	return _boundingBox;
 }
 
-void TrajectoryArtist::RTE_glVertex(osg::Vec3d &point) const
+void TrajectoryArtist::RTE_glVertex(osg::Vec3d &point, osg::GLExtensions &glext) const
 {
         osg::Vec3f high, low;
         OpenFrames::Double_to_Floats(point, high, low);
@@ -69,7 +69,7 @@ void TrajectoryArtist::RTE_glVertex(osg::Vec3d &point) const
         */
 
         glVertex3fv(high._v);
-        glVertexAttrib3fv(1, low._v);
+        glext.glVertexAttrib3fv(1, low._v);
 }
 
 } //!namespace OpenFrames

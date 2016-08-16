@@ -217,6 +217,7 @@ void SegmentArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	  }
 	}
 
+        osg::GLExtensions *glext = renderInfo.getState()->get<osg::GLExtensions>();
 	osg::Vec3d startPoint, endPoint;  // Coordinates to plot
 
 	// If starting or ending data point is zero, just set it now
@@ -237,8 +238,8 @@ void SegmentArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	    _traj->getPoint(i, _endSource, endPoint._v);
 
 	  // Send start/end points of current segment to OpenGL.
-          RTE_glVertex(startPoint);
-          RTE_glVertex(endPoint);
+          RTE_glVertex(startPoint, *glext);
+          RTE_glVertex(endPoint, *glext);
 	}
 
 	glEnd(); // GL_LINES

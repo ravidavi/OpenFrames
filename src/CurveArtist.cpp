@@ -158,8 +158,6 @@ void CurveArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	// Make sure trajectory's data is valid
 	if(!_dataValid || _dataZero) return;
 
-        renderInfo.getState()->checkGLErrors("start of CurveArtist::drawImplementation");
-
         unsigned int numPoints; // Number of points to draw
         _traj->lockData();
 
@@ -168,11 +166,11 @@ void CurveArtist::drawImplementation(osg::RenderInfo& renderInfo) const
         if(numPoints < 2 || numPoints == UINT_MAX)
         {
           _traj->unlockData();
-          renderInfo.getState()->checkGLErrors("end of CurveArtist::drawImplementation with no points");
 
           return;
         }
 
+        osg::GLExtensions *glext = renderInfo.getState()->get<osg::GLExtensions>();
         osg::Vec3d currPoint;  // Coordinates to plot
 
         // Set the drawing color; width & pattern are already set by the State
@@ -184,15 +182,12 @@ void CurveArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	for(unsigned int i = 0; i < numPoints; ++i)
 	{
           _traj->getPoint(i, _dataSource, currPoint._v); // Get current point
-          RTE_glVertex(currPoint);
+          RTE_glVertex(currPoint, *glext);
 	}
 
 	glEnd(); // GL_LINE_STRIP
 
 	_traj->unlockData();
-
-	renderInfo.getState()->checkGLErrors("end of CurveArtist::drawImplementation");
-
 }
 
 void CurveArtist::dataCleared()

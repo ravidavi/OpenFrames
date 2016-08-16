@@ -174,7 +174,6 @@ int main()
 	pos[2] = 0.0;
         const double rmag = 1000000000.0*km;
         const int numPoints = 360;
-        std::cout<< "First point: (" << rmag*std::cos(0.0) << ", " << rmag*std::sin(0.0) << ")" << std::endl;
         for(int i = 0; i <= numPoints; ++i)
 	{
           t = ((double)i)*2.0*osg::PI/((double)numPoints);
@@ -186,7 +185,6 @@ int main()
 	  traj->addPosition(pos);
 	  traj->addAttitude(att[0], att[1], att[2], att[3]);
 	}
-        std::cout<< "Last point: (" << pos[0] << ", " << pos[1] << ")" << std::endl;
 
 	// Specify the key press callback
 	theWindow->setKeyPressCallback(KeyPressCallback);
