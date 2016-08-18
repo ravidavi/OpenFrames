@@ -15,6 +15,7 @@
 ***********************************/
 
 #include <OpenFrames/TrajectoryArtist>
+#include <OpenFrames/DoubleSingleUtils>
 #include <iostream>
 #include <osg/io_utils>
 
@@ -58,7 +59,7 @@ osg::BoundingBox TrajectoryArtist::computeBoundingBox() const
 void TrajectoryArtist::RTE_glVertex(osg::Vec3d &point, osg::GLExtensions &glext) const
 {
         osg::Vec3f high, low;
-        OpenFrames::Double_to_Floats(point, high, low);
+        OpenFrames::DS_Split(point, high, low);
 
         /*
         std::cout<< className() 

@@ -26,12 +26,6 @@
 namespace OpenFrames
 {
 
-static inline void Double_to_Floats(const osg::Vec3d &point, osg::Vec3f &high, osg::Vec3f &low)
-{
-        high = osg::Vec3f(point);
-        low = osg::Vec3f(point - osg::Vec3d(high));
-}
-
 /***********************************************************
  * Ravi Mathur
  * OpenFrames API, class TrajectoryArtist

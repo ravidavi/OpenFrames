@@ -333,7 +333,7 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	}
 
 	// Draw intermediate points
-	if((_markers & INTERMEDIATE) && (numPoints > 1))
+	if((_markers & INTERMEDIATE) && (numPoints > 2))
 	{
 	  glColor3fv(_intermediateColor);
 

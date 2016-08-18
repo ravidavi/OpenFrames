@@ -15,6 +15,7 @@
 ***********************************/
 
 #include <OpenFrames/DrawableTrajectory>
+#include <OpenFrames/DoubleSingleUtils>
 #include <osgUtil/CullVisitor>
 #include <sstream>
 
@@ -52,7 +53,7 @@ class UniformCallback : public osg::NodeCallback
 
             // Convert eye point to 2 single-precision values
             osg::Vec3f eyeHigh, eyeLow;
-            OpenFrames::Double_to_Floats(eye, eyeHigh, eyeLow);
+            OpenFrames::DS_Split(eye, eyeHigh, eyeLow);
 
             // Zero out translation since it will be directly applied
             // in the vertex shader
