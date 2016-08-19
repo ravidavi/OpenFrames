@@ -55,6 +55,7 @@ static inline void DS_Subtract(const osg::Vec3f &a_high,
   c_low = t2 - (c_high - t1);
   result = c_high + c_low;
 }
+
 }
 
 #endif

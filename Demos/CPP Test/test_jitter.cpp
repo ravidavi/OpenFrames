@@ -111,9 +111,10 @@ int main()
         earth->setTextureMap("../Images/EarthTexture.bmp");
 
 	// Set the spacecraft parameters
+        // Scale model down to 1cm
 	hubble->setModel("../Models/Hubble.3ds");
-        double modelSize = 0.00001*km;
-        hubble->setModelScale(modelSize, modelSize, modelSize);
+        double modelScale = 0.00001*km/hubble->getModel()->getBound()._radius;
+        hubble->setModelScale(modelScale, modelScale, modelScale);
 
 	// Create the trajectory using
 	// Trajectory(DOF, number of optionals)
@@ -135,7 +136,7 @@ int main()
         ma->setMarkerColor(MarkerArtist::INTERMEDIATE, 1, 1, 0);
         ma->setMarkerImage("../Images/fuzzyparticle.tiff");
         ma->setMarkerSize(20); // In pixels
-        //drawtraj->addArtist(ma);
+        drawtraj->addArtist(ma);
 
 	// Create a CurveArtist for the trajectory.  By default the CurveArtist
 	// will use x/y/z positions from the trajectory for plotting.

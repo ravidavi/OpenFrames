@@ -59,18 +59,14 @@ osg::BoundingBox TrajectoryArtist::computeBoundingBox() const
 void TrajectoryArtist::RTE_glVertex(osg::Vec3d &point, osg::GLExtensions &glext) const
 {
         osg::Vec3f high, low;
+
+        // Split input point into high and low portions
         OpenFrames::DS_Split(point, high, low);
 
-        /*
-        std::cout<< className() 
-          << "\n  point = " << point 
-          << "\n  sum   = " << osg::Vec3d(high) + osg::Vec3d(low) 
-          << "\n  high  = " << high 
-          << "\n  low   = " << low << std::endl;
-        */
-
-        glVertex3fv(high._v);
+        // Submit to OpenGL
+        // Note that vertex attribute must be specified BEFORE glVertex
         glext.glVertexAttrib3fv(1, low._v);
+        glVertex3fv(high._v);
 }
 
 } //!namespace OpenFrames
