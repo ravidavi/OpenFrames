@@ -17,7 +17,7 @@
 #ifndef _OF_VECTOR_
 #define _OF_VECTOR_
 
-#include <OpenFrames/Export>
+#include <OpenFrames/Export.h>
 
 #include <osg/ShapeDrawable>
 #include <osg/Referenced>

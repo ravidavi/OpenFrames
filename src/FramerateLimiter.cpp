@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/FramerateLimiter>
+#include <OpenFrames/FramerateLimiter.hpp>
 #include <math.h>
 
 #ifdef WIN32

@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/SegmentArtist>
+#include <OpenFrames/SegmentArtist.hpp>
 #include <climits>
 #include <algorithm>
 

@@ -17,7 +17,8 @@
 #ifndef _OF_SUBTREETRACKER_
 #define _OF_SUBTREETRACKER_
 
-#include <OpenFrames/FrameTracker>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/FrameTracker.hpp>
 #include <osg/ref_ptr>
 #include <map>
 

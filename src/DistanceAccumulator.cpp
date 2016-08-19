@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/DistanceAccumulator>
+#include <OpenFrames/DistanceAccumulator.hpp>
 #include <osg/Geode>
 #include <osg/Transform>
 #include <osg/Projection>

@@ -17,8 +17,8 @@
 #ifndef _OF_COORDINATEAXES_
 #define _OF_COORDINATEAXES_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/ReferenceFrame>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Geometry>
 #include <osg/ref_ptr>
 

@@ -14,8 +14,8 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/ReferenceFrame>
-#include <OpenFrames/DescendantTracker>
+#include <OpenFrames/ReferenceFrame.hpp>
+#include <OpenFrames/DescendantTracker.hpp>
 
 #ifdef _OF_VERBOSE_
 #include <iostream>

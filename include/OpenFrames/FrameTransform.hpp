@@ -17,8 +17,8 @@
 #ifndef _OF_FRAMETRANSFORM_
 #define _OF_FRAMETRANSFORM_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/Trajectory>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/Trajectory.hpp>
 #include <osg/Transform>
 #include <osg/NodeCallback>
 #include <osg/NodeVisitor>

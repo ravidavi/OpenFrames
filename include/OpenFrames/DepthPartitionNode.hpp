@@ -17,8 +17,8 @@
 #ifndef _OF_DEPTHPARTITIONNODE_
 #define _OF_DEPTHPARTITIONNODE_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/DistanceAccumulator>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/DistanceAccumulator.hpp>
 #include <osg/Camera>
 
 namespace OpenFrames

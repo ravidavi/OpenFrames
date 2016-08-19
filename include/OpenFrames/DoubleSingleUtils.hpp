@@ -17,11 +17,9 @@
 #ifndef _OF_DOUBLESINGLEUTILS_
 #define _OF_DOUBLESINGLEUTILS_
 
-#include <OpenFrames/Export>
+#include <OpenFrames/Export.h>
 #include <osg/Vec3d>
 #include <osg/Vec3f>
-#include <iostream>
-#include <osg/io_utils>
 
 /***********************************************************
  * Ravi Mathur

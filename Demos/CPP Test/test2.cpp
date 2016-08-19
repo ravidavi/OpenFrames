@@ -14,9 +14,9 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/OF_FORTRAN>
-#include <OpenFrames/WindowProxy>
-#include <OpenFrames/MarkerArtist>
+#include <OpenFrames/OF_FORTRAN.hpp>
+#include <OpenFrames/WindowProxy.hpp>
+#include <OpenFrames/MarkerArtist.hpp>
 #include <iostream>
 
 using namespace OpenFrames;

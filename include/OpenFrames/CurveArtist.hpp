@@ -14,11 +14,11 @@
    limitations under the License.
 ***********************************/
 
-#ifndef _OF_SEGMENTARTIST_
-#define _OF_SEGMENTARTIST_
+#ifndef _OF_CURVEARTIST_
+#define _OF_CURVEARTIST_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/TrajectoryArtist>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/TrajectoryArtist.hpp>
 #include <osg/LineStipple>
 #include <osg/LineWidth>
 
@@ -27,40 +27,37 @@ namespace OpenFrames
 
 /**********************************************************
  * Ravi Mathur
- * OpenFrames API, class SegmentArtist
+ * OpenFrames API, class CurveArtist
+ * Draws a series of Trajectory points connected by lines.  The x,y,z
+ * components of the points can be independently specified to be any
+ * elements of the Trajectory.
 **********************************************************/
-class OF_EXPORT SegmentArtist : public TrajectoryArtist
+class OF_EXPORT CurveArtist : public TrajectoryArtist
 {
   public:
-	SegmentArtist( const Trajectory *traj = NULL );
+
+	CurveArtist( const Trajectory *traj = NULL );
 
 	// Copy constructor
-	SegmentArtist( const SegmentArtist &ca,
+	CurveArtist( const CurveArtist &ca,
 	               const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY );
 
 	/** Standard OSG node methods. */
-	virtual Object* cloneType() const { return new SegmentArtist(); }
-	virtual Object* clone(const osg::CopyOp& copyop) const { return new SegmentArtist(*this,copyop); }
-	virtual bool isSameKindAs(const osg::Object* obj) const { return dynamic_cast<const SegmentArtist*>(obj)!=NULL; }
+	virtual Object* cloneType() const { return new CurveArtist(); }
+	virtual Object* clone(const osg::CopyOp& copyop) const { return new CurveArtist(*this,copyop); }
+	virtual bool isSameKindAs(const osg::Object* obj) const { return dynamic_cast<const CurveArtist*>(obj)!=NULL; }
 	virtual const char* libraryName() const { return "OpenFrames"; }
-	virtual const char* className() const { return "SegmentArtist"; }
+	virtual const char* className() const { return "CurveArtist"; }
 
 	/** Set the trajectory to be drawn. */
 	virtual void setTrajectory(const Trajectory *traj);
 
 	/** Set the data to be used for plotting x/y/z components */
-	bool setStartXData(const Trajectory::DataSource &src);
-	bool setEndXData(  const Trajectory::DataSource &src);
-	bool setStartYData(const Trajectory::DataSource &src);
-	bool setEndYData(  const Trajectory::DataSource &src);
-	bool setStartZData(const Trajectory::DataSource &src);
-	bool setEndZData(  const Trajectory::DataSource &src);
+	bool setXData(const Trajectory::DataSource &src);
+	bool setYData(const Trajectory::DataSource &src);
+	bool setZData(const Trajectory::DataSource &src);
 
-	/** Set/get the offset between consecutive drawn points */
-	void setStride(unsigned int stride);
-	inline unsigned int getStride() const { return _stride; }
-
-	/** Specify line attributes that should be used. */
+		/** Specify line attributes that should be used. */
 	void setColor(float r, float g, float b);
 	void setWidth( float width );
 	void setPattern( GLint factor, GLushort pattern );
@@ -68,23 +65,21 @@ class OF_EXPORT SegmentArtist : public TrajectoryArtist
 	/** Do the actual drawing */
 	virtual void drawImplementation(osg::RenderInfo& renderInfo) const;
 
-	/** Data was cleared from or added to the Trajectory. Inherited 
+	/** Data was cleared from or added to the trajectory. Inherited
 	    from TrajectoryArtist */
 	virtual void dataCleared();
 	virtual void dataAdded();
 
   protected:
-	virtual ~SegmentArtist();
+	virtual ~CurveArtist();
 
 	/** Inhereted from TrajectoryArtist */
 	virtual osg::BoundingBox computeBoundingBox() const;
 
 	void verifyData() const;
 
-	Trajectory::DataSource _startSource[3]; // Data sources for starting point
-	Trajectory::DataSource _endSource[3]; // Data sources for ending point
-
-	unsigned int _stride; // Minimum offset between sucessive drawn points
+        // Data sources for x, y, and z coordinates
+	Trajectory::DataSource _dataSource[3];
 
 	/** Line width, stipple pattern, and color. */
 	osg::ref_ptr<osg::LineWidth> _lineWidth; 
@@ -92,8 +87,7 @@ class OF_EXPORT SegmentArtist : public TrajectoryArtist
 	float _lineColor[3];
 
 	mutable bool _dataValid; // If trajectory supports required data
-	mutable bool _startDataZero;
-	mutable bool _endDataZero;
+	mutable bool _dataZero; // If we are just drawing at the origin
 };
 
 }

@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/MarkerArtist>
+#include <OpenFrames/MarkerArtist.hpp>
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
 #include <osg/Point>

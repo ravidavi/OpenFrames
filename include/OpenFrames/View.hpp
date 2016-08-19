@@ -17,8 +17,8 @@
 #ifndef _OF_VIEW_
 #define _OF_VIEW_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/TransformAccumulator>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/TransformAccumulator.hpp>
 #include <osg/Matrixd>
 #include <osg/Referenced>
 #include <osg/ref_ptr>

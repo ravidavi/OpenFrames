@@ -14,8 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/DepthPartitionNode>
-#include <osg/io_utils>
+#include <OpenFrames/DepthPartitionNode.hpp>
 #include <osgUtil/CullVisitor>
 
 namespace OpenFrames

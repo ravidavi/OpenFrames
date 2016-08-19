@@ -17,7 +17,8 @@
 #ifndef _OF_DESCENDANTTRACKER_
 #define _OF_DESCENDANTTRACKER_
 
-#include <OpenFrames/FrameTracker>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/FrameTracker.hpp>
 #include <vector>
 
 namespace OpenFrames {

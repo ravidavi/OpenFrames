@@ -14,8 +14,8 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/Trajectory>
-#include <OpenFrames/TrajectoryArtist>
+#include <OpenFrames/Trajectory.hpp>
+#include <OpenFrames/TrajectoryArtist.hpp>
 #include <math.h>
 #include <climits>
 

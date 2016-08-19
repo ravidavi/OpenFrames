@@ -17,7 +17,7 @@
 #ifndef _OF_FORTRAN_
 #define _OF_FORTRAN_
 
-#include <OpenFrames/Export>
+#include <OpenFrames/Export.h>
 
 #ifdef IVF_CALLS
 	#define FCN(name) name // Function names stay as they are on Windows

@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/Model>
+#include <OpenFrames/Model.hpp>
 #include <osg/Geode>
 #include <osg/Shape>
 #include <osg/ShapeDrawable>

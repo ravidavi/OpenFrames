@@ -17,7 +17,7 @@
 #ifndef _OF_TRAJECTORY_
 #define _OF_TRAJECTORY_
 
-#include <OpenFrames/Export>
+#include <OpenFrames/Export.h>
 #include <osg/Referenced>
 #include <OpenThreads/ReadWriteMutex>
 #include <vector>

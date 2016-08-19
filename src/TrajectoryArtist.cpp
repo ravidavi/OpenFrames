@@ -14,10 +14,8 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/TrajectoryArtist>
-#include <OpenFrames/DoubleSingleUtils>
-#include <iostream>
-#include <osg/io_utils>
+#include <OpenFrames/TrajectoryArtist.hpp>
+#include <OpenFrames/DoubleSingleUtils.hpp>
 
 namespace OpenFrames
 {

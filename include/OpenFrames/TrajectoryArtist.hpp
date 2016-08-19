@@ -17,8 +17,8 @@
 #ifndef _OF_TRAJECTORYARTIST_
 #define _OF_TRAJECTORYARTIST_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/Trajectory>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/Trajectory.hpp>
 #include <osg/Drawable>
 #include <osg/ref_ptr>
 #include <vector>

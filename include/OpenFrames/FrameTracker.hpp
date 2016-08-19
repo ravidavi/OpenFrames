@@ -17,7 +17,7 @@
 #ifndef _OF_FRAMETRACKER_
 #define _OF_FRAMETRACKER_
 
-#include <OpenFrames/Export>
+#include <OpenFrames/Export.h>
 
 #include <osg/ref_ptr>
 #include <osg/Referenced>

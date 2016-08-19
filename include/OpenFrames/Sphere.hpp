@@ -17,8 +17,8 @@
 #ifndef _OF_SPHERE_
 #define _OF_SPHERE_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/ReferenceFrame>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Geode>
 #include <string>
 

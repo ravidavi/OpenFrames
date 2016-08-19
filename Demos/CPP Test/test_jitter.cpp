@@ -14,18 +14,18 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/CoordinateAxes>
-#include <OpenFrames/CurveArtist>
-#include <OpenFrames/DrawableTrajectory>
-#include <OpenFrames/FrameManager>
-#include <OpenFrames/FrameTransform>
-#include <OpenFrames/MarkerArtist>
-#include <OpenFrames/Model>
-#include <OpenFrames/RadialPlane>
-#include <OpenFrames/SegmentArtist>
-#include <OpenFrames/Sphere>
-#include <OpenFrames/Trajectory>
-#include <OpenFrames/WindowProxy>
+#include <OpenFrames/CoordinateAxes.hpp>
+#include <OpenFrames/CurveArtist.hpp>
+#include <OpenFrames/DrawableTrajectory.hpp>
+#include <OpenFrames/FrameManager.hpp>
+#include <OpenFrames/FrameTransform.hpp>
+#include <OpenFrames/MarkerArtist.hpp>
+#include <OpenFrames/Model.hpp>
+#include <OpenFrames/RadialPlane.hpp>
+#include <OpenFrames/SegmentArtist.hpp>
+#include <OpenFrames/Sphere.hpp>
+#include <OpenFrames/Trajectory.hpp>
+#include <OpenFrames/WindowProxy.hpp>
 #include <iostream>
 #include <cmath>
 #include <osg/Math>

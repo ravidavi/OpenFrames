@@ -14,8 +14,8 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/DrawableTrajectory>
-#include <OpenFrames/DoubleSingleUtils>
+#include <OpenFrames/DrawableTrajectory.hpp>
+#include <OpenFrames/DoubleSingleUtils.hpp>
 #include <osgUtil/CullVisitor>
 #include <sstream>
 

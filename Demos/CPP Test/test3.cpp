@@ -14,12 +14,12 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/WindowProxy>
-#include <OpenFrames/FrameManager>
-#include <OpenFrames/Sphere>
-#include <OpenFrames/LatLonGrid>
-#include <OpenFrames/RadialPlane>
-#include <OpenFrames/FramerateLimiter>
+#include <OpenFrames/WindowProxy.hpp>
+#include <OpenFrames/FrameManager.hpp>
+#include <OpenFrames/Sphere.hpp>
+#include <OpenFrames/LatLonGrid.hpp>
+#include <OpenFrames/RadialPlane.hpp>
+#include <OpenFrames/FramerateLimiter.hpp>
 #include <iostream>
 
 #include <osgDB/ReadFile>

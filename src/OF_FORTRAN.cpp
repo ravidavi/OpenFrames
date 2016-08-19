@@ -14,21 +14,21 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/OF_FORTRAN>
-#include <OpenFrames/CoordinateAxes>
-#include <OpenFrames/CurveArtist>
-#include <OpenFrames/DrawableTrajectory>
-#include <OpenFrames/FrameManager>
-#include <OpenFrames/FrameTransform>
-#include <OpenFrames/LatLonGrid>
-#include <OpenFrames/MarkerArtist>
-#include <OpenFrames/Model>
-#include <OpenFrames/RadialPlane>
-#include <OpenFrames/ReferenceFrame>
-#include <OpenFrames/SegmentArtist>
-#include <OpenFrames/Sphere>
-#include <OpenFrames/TrajectoryArtist>
-#include <OpenFrames/WindowProxy>
+#include <OpenFrames/OF_FORTRAN.hpp>
+#include <OpenFrames/CoordinateAxes.hpp>
+#include <OpenFrames/CurveArtist.hpp>
+#include <OpenFrames/DrawableTrajectory.hpp>
+#include <OpenFrames/FrameManager.hpp>
+#include <OpenFrames/FrameTransform.hpp>
+#include <OpenFrames/LatLonGrid.hpp>
+#include <OpenFrames/MarkerArtist.hpp>
+#include <OpenFrames/Model.hpp>
+#include <OpenFrames/RadialPlane.hpp>
+#include <OpenFrames/ReferenceFrame.hpp>
+#include <OpenFrames/SegmentArtist.hpp>
+#include <OpenFrames/Sphere.hpp>
+#include <OpenFrames/TrajectoryArtist.hpp>
+#include <OpenFrames/WindowProxy.hpp>
 #include <OpenThreads/Thread>
 #include <map>
 #include <string>

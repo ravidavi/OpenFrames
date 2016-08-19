@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/Sphere>
+#include <OpenFrames/Sphere.hpp>
 #include <osg/Vec3d>
 #include <osg/Quat>
 #include <osg/Geode>

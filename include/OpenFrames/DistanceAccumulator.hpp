@@ -17,7 +17,7 @@
 #ifndef _OF_DISTANCEACCUMULATOR_
 #define _OF_DISTANCEACCUMULATOR_
 
-#include <OpenFrames/Export>
+#include <OpenFrames/Export.h>
 #include <osg/Group>
 #include <osg/NodeVisitor>
 #include <osg/Polytope>

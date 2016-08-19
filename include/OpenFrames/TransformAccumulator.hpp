@@ -17,8 +17,8 @@
 #ifndef _OF_TRANSFORMACCUMULATOR_
 #define _OF_TRANSFORMACCUMULATOR_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/DescendantTracker>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/DescendantTracker.hpp>
 
 #include <osg/Matrix>
 #include <osg/NodeVisitor>

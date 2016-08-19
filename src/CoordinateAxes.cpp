@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/CoordinateAxes>
+#include <OpenFrames/CoordinateAxes.hpp>
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
 #include <osg/Point>

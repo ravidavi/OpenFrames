@@ -14,10 +14,10 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/ReferenceFrame>
-#include <OpenFrames/FrameTransform>
-#include <OpenFrames/DescendantTracker>
-#include <OpenFrames/Vector>
+#include <OpenFrames/ReferenceFrame.hpp>
+#include <OpenFrames/FrameTransform.hpp>
+#include <OpenFrames/DescendantTracker.hpp>
+#include <OpenFrames/Vector.hpp>
 
 #include <osg/Geode>
 #include <osg/PolygonMode>

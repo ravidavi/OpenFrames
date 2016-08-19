@@ -17,7 +17,7 @@
 #ifndef _OF_FRAMERATELIMITER_
 #define _OF_FRAMERATELIMITER_
 
-#include <OpenFrames/Export>
+#include <OpenFrames/Export.h>
 #include <osg/Timer>
 
 namespace OpenFrames{

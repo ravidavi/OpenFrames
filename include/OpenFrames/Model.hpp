@@ -17,8 +17,8 @@
 #ifndef _OF_MODEL_
 #define _OF_MODEL_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/ReferenceFrame>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Node>
 #include <osg/ref_ptr>
 #include <string>

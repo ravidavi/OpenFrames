@@ -17,8 +17,8 @@
 #ifndef _OF_FRAMEPATHVERIFIER_
 #define _OF_FRAMEPATHVERIFIER_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/FrameTracker>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/FrameTracker.hpp>
 #include <vector>
 
 namespace OpenFrames

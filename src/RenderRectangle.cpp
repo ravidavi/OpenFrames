@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/RenderRectangle>
+#include <OpenFrames/RenderRectangle.hpp>
 #include <osg/Geometry>
 #include <osg/Group>
 #include <osg/LineWidth>

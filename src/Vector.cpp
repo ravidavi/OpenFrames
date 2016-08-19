@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/Vector>
+#include <OpenFrames/Vector.hpp>
 #include <osg/ShapeDrawable>
 #include <osg/BlendFunc>
 

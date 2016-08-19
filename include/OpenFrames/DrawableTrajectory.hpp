@@ -17,8 +17,9 @@
 #ifndef _OF_DRAWABLETRAJECTORY_
 #define _OF_DRAWABLETRAJECTORY_
 
-#include <OpenFrames/TrajectoryArtist>
-#include <OpenFrames/ReferenceFrame>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/TrajectoryArtist.hpp>
+#include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/ref_ptr>
 
 namespace OpenFrames

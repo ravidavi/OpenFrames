@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/CurveArtist>
+#include <OpenFrames/CurveArtist.hpp>
 #include <climits>
 
 namespace OpenFrames

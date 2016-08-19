@@ -14,8 +14,8 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/WindowProxy>
-#include <OpenFrames/FramerateLimiter>
+#include <OpenFrames/WindowProxy.hpp>
+#include <OpenFrames/FramerateLimiter.hpp>
 #include <osg/GraphicsContext>
 #include <osg/PointSprite>
 #include <osgGA/GUIEventHandler>

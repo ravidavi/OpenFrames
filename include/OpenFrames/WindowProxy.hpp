@@ -17,9 +17,9 @@
 #ifndef _OF_WINDOWPROXY_
 #define _OF_WINDOWPROXY_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/RenderRectangle>
-#include <OpenFrames/FramerateLimiter>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/RenderRectangle.hpp>
+#include <OpenFrames/FramerateLimiter.hpp>
 #include <OpenThreads/Thread>
 #include <osg/FrameStamp>
 #include <osg/Timer>

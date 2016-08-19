@@ -17,11 +17,11 @@
 #ifndef _OF_RENDERRECTANGLE_
 #define _OF_RENDERRECTANGLE_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/DepthPartitionNode>
-#include <OpenFrames/FrameManager>
-#include <OpenFrames/Sphere>
-#include <OpenFrames/View>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/DepthPartitionNode.hpp>
+#include <OpenFrames/FrameManager.hpp>
+#include <OpenFrames/Sphere.hpp>
+#include <OpenFrames/View.hpp>
 #include <osg/Camera>
 #include <osg/Referenced>
 #include <osg/ref_ptr>

@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/RadialPlane>
+#include <OpenFrames/RadialPlane.hpp>
 #include <osg/Geometry>
 #include <osg/LineWidth>
 #include <osg/PolygonOffset>

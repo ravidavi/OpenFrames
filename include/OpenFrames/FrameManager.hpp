@@ -17,8 +17,8 @@
 #ifndef _OF_FRAMEMANAGER_
 #define _OF_FRAMEMANAGER_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/ReferenceFrame>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenThreads/Mutex>
 #include <osg/Referenced>
 #include <osg/ref_ptr>

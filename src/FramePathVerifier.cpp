@@ -14,8 +14,8 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/FramePathVerifier>
-#include <OpenFrames/ReferenceFrame>
+#include <OpenFrames/FramePathVerifier.hpp>
+#include <OpenFrames/ReferenceFrame.hpp>
 
 namespace OpenFrames
 {

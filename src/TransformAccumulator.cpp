@@ -14,10 +14,10 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/TransformAccumulator>
-#include <OpenFrames/ReferenceFrame>
-#include <OpenFrames/FrameTransform>
-#include <OpenFrames/DescendantTracker>
+#include <OpenFrames/TransformAccumulator.hpp>
+#include <OpenFrames/ReferenceFrame.hpp>
+#include <OpenFrames/FrameTransform.hpp>
+#include <OpenFrames/DescendantTracker.hpp>
 #include <osg/Matrix>
 
 namespace OpenFrames {

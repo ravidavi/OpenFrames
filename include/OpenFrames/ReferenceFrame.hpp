@@ -17,9 +17,9 @@
 #ifndef _OF_REFERENCEFRAME_
 #define _OF_REFERENCEFRAME_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/FrameTransform> 
-#include <OpenFrames/Vector>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/FrameTransform.hpp> 
+#include <OpenFrames/Vector.hpp>
 
 #include <osg/Geode>
 #include <osgText/Text>

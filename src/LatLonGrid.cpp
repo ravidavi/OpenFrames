@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/LatLonGrid>
+#include <OpenFrames/LatLonGrid.hpp>
 #include <osg/LineWidth>
 #include <osg/Math>
 

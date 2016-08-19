@@ -17,8 +17,8 @@
 #ifndef _OF_RADIALPLANE_
 #define _OF_RADIALPLANE_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/ReferenceFrame>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/ReferenceFrame.hpp>
 
 namespace OpenFrames
 {

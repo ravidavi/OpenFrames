@@ -14,8 +14,8 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/View>
-#include <OpenFrames/ReferenceFrame>
+#include <OpenFrames/View.hpp>
+#include <OpenFrames/ReferenceFrame.hpp>
 #include <osgViewer/View>
 
 namespace OpenFrames

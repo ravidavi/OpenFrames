@@ -17,8 +17,8 @@
 #ifndef _OF_MARKERARTIST_
 #define _OF_MARKERARTIST_
 
-#include <OpenFrames/Export>
-#include <OpenFrames/TrajectoryArtist>
+#include <OpenFrames/Export.h>
+#include <OpenFrames/TrajectoryArtist.hpp>
 
 namespace OpenFrames
 {

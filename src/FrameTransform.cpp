@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/FrameTransform>
+#include <OpenFrames/FrameTransform.hpp>
 #include <osgUtil/CullVisitor>
 #include <iostream>
 #include <climits>
