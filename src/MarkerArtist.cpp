@@ -15,7 +15,6 @@
 ***********************************/
 
 #include <OpenFrames/MarkerArtist.hpp>
-#include <osg/AlphaFunc>
 #include <osg/BlendFunc>
 #include <osg/Point>
 #include <osg/PointSprite>
@@ -75,14 +74,19 @@ MarkerArtist::MarkerArtist(const Trajectory *traj)
 	  setZData(data);
 	}
 
-	// Remove the nearly-transparent pixels from the markers
-	osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
-	alphaFunc->setFunction(osg::AlphaFunc::GEQUAL, 0.05f);
-	getOrCreateStateSet()->setAttributeAndModes(alphaFunc);
-	
-	// Add the Point parameter to the marker
-	getOrCreateStateSet()->setAttribute(new osg::Point);
+        osg::StateSet *ss = getOrCreateStateSet();
 
+	// Add the Point parameter to the marker
+        // Setting the osg::Point mode enables GL_POINT_SMOOTH
+	ss->setAttributeAndModes(new osg::Point);
+
+        // Set up blending so markers look nice
+        osg::BlendFunc *fn = new osg::BlendFunc();
+        fn->setFunction(osg::BlendFunc::SRC_ALPHA, 
+                        osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+        ss->setAttributeAndModes(fn);
+
+        // Set default marker color and size
 	setMarkerColor(_markers, 1, 0, 0);
 	setMarkerSize(10);
 	
@@ -209,7 +213,6 @@ bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
 
 	if(fname.length() == 0) // Use default OpenGL point as marker
 	{
-	  ss->removeAttribute(osg::StateAttribute::BLENDFUNC);
 	  ss->removeTextureAttribute(0, osg::StateAttribute::POINTSPRITE);
 	  ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
 	  return true;
@@ -224,12 +227,6 @@ bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
 	osg::Image *image = osgDB::readImageFile(fname); // Load image from file
 	if(image)
 	{
-	  // Set up blending so marker looks nice
-	  osg::BlendFunc *fn = new osg::BlendFunc();
-	  fn->setFunction(osg::BlendFunc::SRC_ALPHA, 
-	                  osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
-	  ss->setAttributeAndModes(fn);
-
 	  // Set up point sprite
 	  osg::PointSprite *sprite = new osg::PointSprite();
 	  ss->setTextureAttributeAndModes(0, sprite);
