@@ -436,7 +436,13 @@ bool WindowProxy::setupWindow()
 	  // Specify that we want to clear both color & depth buffers at every frame
 	  _window->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	  _window->getState()->setCheckForGLErrors(osg::State::ONCE_PER_ATTRIBUTE);
+#ifdef OF_DEBUG
+          // Check GL errors often in debug builds
+          _window->getState()->setCheckForGLErrors(osg::State::ONCE_PER_ATTRIBUTE);
+#else
+          // Check GL errors sparingly in release builds
+          _window->getState()->setCheckForGLErrors(osg::State::ONCE_PER_FRAME);
+#endif
 
 	  // Initialize event processing system's input window
 	  _window->getEventQueue()->syncWindowRectangleWithGraphicsContext();

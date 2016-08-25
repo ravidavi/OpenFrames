@@ -4,6 +4,17 @@ PROJECT(OpenFrames)
 # Make the makefile output verbose (for compiler error checking)
 #SET(CMAKE_VERBOSE_MAKEFILE on)
 
+# Default to Release configuration on single-config generators
+# e.g. make, but not VisualStudio or XCode
+# Note that CMAKE_BUILD_TYPE is initialized to "" on the initial cmake
+# run, so we check for that and set the default appropriately
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE Release CACHE STRING "Build Configuration (Release, Debug, RelWithDebInfo, or MinSizeRel" FORCE)
+endif()
+
+# Set debug preprocessor define
+SET_PROPERTY(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:OF_DEBUG>)
+
 # Set default installation location
 # Can be overridden by using "-DCMAKE_INSTALL_PREFIX=/foo/bar" 
 # at command line 
