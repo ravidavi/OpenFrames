@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/OF_FORTRAN.hpp>
+#include <OpenFrames/OF_Interface.h>
 #include <OpenFrames/CoordinateAxes.hpp>
 #include <OpenFrames/CurveArtist.hpp>
 #include <OpenFrames/DrawableTrajectory.hpp>
@@ -1225,7 +1225,7 @@ void OF_FCN(oftraj_activate)(OF_CHARARG(name))
 
 #if defined(IFORT_CALLS)
 void OF_FCN(oftraj_create)(const char *name, unsigned int *dof,
-                        unsigned int *numopt, int namelen)
+                        unsigned int *numopt, unsigned int namelen)
 
 #else
 void OF_FCN(oftraj_create)(OF_CHARARG(name), unsigned int *dof,

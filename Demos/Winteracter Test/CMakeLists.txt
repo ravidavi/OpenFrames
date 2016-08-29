@@ -24,7 +24,6 @@ IF(APPLE)
   ENDIF()
 ENDIF()
 
-
 # Custom step to build resource.rc file using Winteracter's rc compiler
 # Disabled for now
 #ADD_CUSTOM_TARGET(trivial_rc 
@@ -35,8 +34,11 @@ ENDIF()
 
 SET(TARGET_NAME wint_trivial)
 ADD_EXECUTABLE(wint_trivial trivial.f90)
-TARGET_LINK_LIBRARIES(wint_trivial ${PROJECT_NAME} ${X11_X11_LIB} ${X11_Xext_LIB} ${X11_Xmu_LIB} ${X11_Xft_LIB} ${WINTER_MOTIF_LIB} wint wintGL winticonv Xt fontconfig iconv ${OPENGL_LIBRARIES})
-SET_TARGET_PROPERTIES(wint_trivial PROPERTIES LINK_FLAGS "-arch x86_64")
+TARGET_LINK_LIBRARIES(wint_trivial OpenFrames_Interface_IFORT ${X11_X11_LIB} ${X11_Xext_LIB} ${X11_Xmu_LIB} ${X11_Xft_LIB} ${WINTER_MOTIF_LIB} wint wintGL winticonv Xt fontconfig iconv ${OPENGL_LIBRARIES})
+SET_TARGET_PROPERTIES(wint_trivial PROPERTIES 
+  LINK_FLAGS "-arch x86_64"
+  DEBUG_POSTFIX "d"
+  )
 TARGET_INCLUDE_DIRECTORIES(wint_trivial PUBLIC "${WINTER_INCLUDE_DIR}" ${PROJECT_BINARY_DIR}/modules)
 
 INSTALL(

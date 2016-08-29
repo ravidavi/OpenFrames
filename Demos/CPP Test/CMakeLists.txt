@@ -10,7 +10,11 @@ IF(OF_BUILD_TESTS) # If user asked for test programs
     ADD_EXECUTABLE(${curr_test} ${curr_test}.cpp)
 
     # Tell linker to link against OpenFrames library
-    TARGET_LINK_LIBRARIES(${curr_test} ${PROJECT_NAME} ${OPENSCENEGRAPH_LIBRARIES})
+    IF(curr_test MATCHES test2)
+      TARGET_LINK_LIBRARIES(${curr_test} OpenFrames_Interface_C ${OPENSCENEGRAPH_LIBRARIES})
+    ELSE()
+      TARGET_LINK_LIBRARIES(${curr_test} OpenFrames ${OPENSCENEGRAPH_LIBRARIES})
+    ENDIF()
 
     # Specify debug library suffix
     SET_TARGET_PROPERTIES(${curr_test} PROPERTIES DEBUG_POSTFIX "d")

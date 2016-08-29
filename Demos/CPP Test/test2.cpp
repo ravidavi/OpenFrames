@@ -14,7 +14,7 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/OF_FORTRAN.hpp>
+#include <OpenFrames/OF_Interface.h>
 #include <OpenThreads/Thread>
 #include <iostream>
 

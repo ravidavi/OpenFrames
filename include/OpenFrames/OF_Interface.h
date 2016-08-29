@@ -592,7 +592,7 @@ OF_EXPORT void OF_FCN(ofview_setaspectmultiplier)(double *mult);
 // 'frame' input should be set to whatever frame you want to view. Note that
 // this function does NOT use or modify the currently active ReferenceFrame.
 #if defined(IFORT_CALLS)
-OF_EXPORT void OF_FCN(ofview_setviewframe)(const char *root, const char *frame, int rlen, int flen);
+OF_EXPORT void OF_FCN(ofview_setviewframe)(const char *root, const char *frame, unsigned int rootlen, unsigned int framelen);
 #else
 OF_EXPORT void OF_FCN(ofview_setviewframe)(OF_CHARARG(root),
                                            OF_CHARARG(frame));
