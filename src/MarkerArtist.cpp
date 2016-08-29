@@ -15,6 +15,7 @@
 ***********************************/
 
 #include <OpenFrames/MarkerArtist.hpp>
+#include <osg/AlphaFunc>
 #include <osg/BlendFunc>
 #include <osg/Point>
 #include <osg/PointSprite>
@@ -213,6 +214,7 @@ bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
 
 	if(fname.length() == 0) // Use default OpenGL point as marker
 	{
+          ss->removeAttribute(osg::StateAttribute::ALPHAFUNC);
 	  ss->removeTextureAttribute(0, osg::StateAttribute::POINTSPRITE);
 	  ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
 	  return true;
@@ -235,6 +237,11 @@ bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
 	  osg::Texture2D *tex = new osg::Texture2D();
 	  tex->setImage(image);
 	  ss->setTextureAttributeAndModes(0, tex);
+
+          // Set alpha filtering
+          osg::AlphaFunc *alphaFunc = new osg::AlphaFunc;
+          alphaFunc->setFunction(osg::AlphaFunc::GEQUAL, 0.05f);
+          ss->setAttributeAndModes(alphaFunc, osg::StateAttribute::ON);
 
 	  return true;
 	}
