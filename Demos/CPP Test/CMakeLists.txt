@@ -5,14 +5,6 @@ INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include ${OPENSCENEGRAPH_INCLUDE_DI
 SET( ALL_TESTS test1 test2 test3 test_jitter)
 
 IF(OF_BUILD_TESTS) # If user asked for test programs
-  # Specify IVF for Fortran source files
-  IF(OF_FORTRAN_IVF)
-    SET_SOURCE_FILES_PROPERTIES(
-      test2.cpp
-      PROPERTIES COMPILE_DEFINITIONS IVF_CALLS
-      )
-  ENDIF()
-
   FOREACH(curr_test ${ALL_TESTS})
     # Specify which file should be compiled for current test
     ADD_EXECUTABLE(${curr_test} ${curr_test}.cpp)

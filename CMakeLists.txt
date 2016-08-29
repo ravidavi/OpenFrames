@@ -68,11 +68,6 @@ OPTION( OF_FORTRAN_MODULE "Compile Fortran Module" OFF )
 IF( OF_FORTRAN_MODULE )
   ENABLE_LANGUAGE(Fortran OPTIONAL)
   GET_FILENAME_COMPONENT(Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
-  IF(Fortran_COMPILER_NAME MATCHES "ifort.*")
-    SET(OF_FORTRAN_IVF TRUE)
-  ELSE()
-    SET(OF_FORTRAN_IVF FALSE)
-  ENDIF()
 ENDIF( OF_FORTRAN_MODULE )
 
 # Go to the src directory and look for CMake instructions there

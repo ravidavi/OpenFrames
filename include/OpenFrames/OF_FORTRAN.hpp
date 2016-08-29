@@ -19,10 +19,24 @@
 
 #include <OpenFrames/Export.h>
 
-#ifdef IVF_CALLS
-	#define FCN(name) name // Function names stay as they are on Windows
+// Macro to handle compiler function name mangling
+#if defined(GFORTRAN_CALLS)
+        // GFortran appends underscores to function names
+	#define OF_FCN(name) name##__ 
 #else
-	#define FCN(name) name##__ // Append "__" to function names for other OS's
+        // Function names stay as they are on all other interfaces
+        // This includes Intel Fortran and C compilers
+	#define OF_FCN(name) name 
+#endif
+
+// Macros to handle Fortran hidden string length arguments
+#if defined(GFORTRAN_CALLS) || defined(IFORT_CALLS)
+        // Fortran compilers pass hidden char array lengths
+        #define OF_CHARARG(name) const char *name, unsigned int name##len
+        #define OF_STRING(name) name, name##len
+#else
+        #define OF_CHARARG(name) const char *name
+        #define OF_STRING(name) name
 #endif
 
 // Define shortcuts for callback function signatures
@@ -31,8 +45,12 @@
 #define MOUSEMOTION_SIG BASIC_CALLBACK_SIG, float *x, float *y
 #define BUTTON_SIG MOUSEMOTION_SIG, unsigned int *button
 
+// Make sure this header can be used by "pure" C compilers (e.g. Matlab)
+#ifdef __cplusplus
 extern "C"
 {
+#endif
+
 /** All functions have a prefix indicating what they operate on:
  * ofwin: Acts on the currently active WindowProxy
  * offm: Acts on the specified FrameManager.
@@ -51,184 +69,181 @@ extern "C"
 
 // Must be called before using OpenFrames
 // Sets up all internal data
-OF_EXPORT void FCN(of_initialize)();
+OF_EXPORT void OF_FCN(of_initialize)();
 
 // Must be called when done using OpenFrames
 // Cleans up all internal data
-OF_EXPORT void FCN(of_cleanup)();
+OF_EXPORT void OF_FCN(of_cleanup)();
 
 // Get the values returned by functions.
-OF_EXPORT void FCN(of_getreturnedvalue)(int *val);
+OF_EXPORT void OF_FCN(of_getreturnedvalue)(int *val);
 
 /***********************************************************************
 	Window Functions
 ***********************************************************************/
-namespace OpenFrames
-{
-class WindowProxy;
-}
-
 // Set the current active WindowProxy
-OF_EXPORT void FCN(ofwin_activate)(unsigned int *id);
+OF_EXPORT void OF_FCN(ofwin_activate)(unsigned int *id);
 
 // Create a new WindowProxy that will manage drawing onto a window.
 // This new WindowProxy will also become the current active one.
-OF_EXPORT void FCN(ofwin_createproxy)(int *x, int *y,
+OF_EXPORT void OF_FCN(ofwin_createproxy)(int *x, int *y,
                                       unsigned int *width, unsigned int *height,
                                       unsigned int *nrow, unsigned int *ncol,
                                       bool *embedded, unsigned int *id);
 
-OF_EXPORT void FCN(ofwin_setgridsize)(int *nrow, int *ncol);
+OF_EXPORT void OF_FCN(ofwin_setgridsize)(int *nrow, int *ncol);
 
 // Set event handling callbacks
-OF_EXPORT void FCN(ofwin_setkeypresscallback)(void (*fcn)(KEYPRESS_SIG));
-OF_EXPORT void FCN(ofwin_setmousemotioncallback)(void (*fcn)(MOUSEMOTION_SIG));
-OF_EXPORT void FCN(ofwin_setbuttonpresscallback)(void (*fcn)(BUTTON_SIG));
-OF_EXPORT void FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG));  
+OF_EXPORT void OF_FCN(ofwin_setkeypresscallback)(void (*fcn)(KEYPRESS_SIG));
+OF_EXPORT void OF_FCN(ofwin_setmousemotioncallback)(void (*fcn)(MOUSEMOTION_SIG));
+OF_EXPORT void OF_FCN(ofwin_setbuttonpresscallback)(void (*fcn)(BUTTON_SIG));
+OF_EXPORT void OF_FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG));  
 
 // Start/stop animation
-OF_EXPORT void FCN(ofwin_start)(); // Start animation
-OF_EXPORT void FCN(ofwin_stop)();  // Force animation to stop
-OF_EXPORT void FCN(ofwin_waitforstop)(); // Wait for user to exit animation
-OF_EXPORT void FCN(ofwin_pauseanimation)(bool *pause);
-OF_EXPORT void FCN(ofwin_isrunning)(unsigned int *state);
+OF_EXPORT void OF_FCN(ofwin_start)(); // Start animation
+OF_EXPORT void OF_FCN(ofwin_stop)();  // Force animation to stop
+OF_EXPORT void OF_FCN(ofwin_waitforstop)(); // Wait for user to exit animation
+OF_EXPORT void OF_FCN(ofwin_pauseanimation)(bool *pause);
+OF_EXPORT void OF_FCN(ofwin_isrunning)(unsigned int *state);
 
 // Set the scene at the specified grid position
 // A scene is specified by the currently active FrameManager
-OF_EXPORT void FCN(ofwin_setscene)(unsigned int *row, unsigned int *col);
+OF_EXPORT void OF_FCN(ofwin_setscene)(unsigned int *row, unsigned int *col);
 
 // Set the 3D stereo mode for the specified grid position
-OF_EXPORT void FCN(ofwin_setstereo)(unsigned int *row, unsigned int *col, bool *enable, float *eyeseparation, float *width, float *height, float *distance);
+OF_EXPORT void OF_FCN(ofwin_setstereo)(unsigned int *row, unsigned int *col, bool *enable, float *eyeseparation, float *width, float *height, float *distance);
 
 // Set the background color of the specified grid position
-OF_EXPORT void FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col,
+OF_EXPORT void OF_FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col,
                                              float *r, float *g, float *b);
 
 // Set the background texture of the specified grid position
-OF_EXPORT void FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col,
-                                               const char* fname, int len);
+OF_EXPORT void OF_FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col, OF_CHARARG(fname));
                                                
 // Set the callback functions for swapping buffers and making a context current
-OF_EXPORT void FCN(ofwin_setswapbuffersfunction)(void (*fcn)(unsigned int *winID));
-OF_EXPORT void FCN(ofwin_setmakecurrentfunction)(void (*fcn)(unsigned int *winID, bool *success));
-OF_EXPORT void FCN(ofwin_setupdatecontextfunction)(void (*fcn)(unsigned int *winID, bool *success));
+OF_EXPORT void OF_FCN(ofwin_setswapbuffersfunction)(void (*fcn)(unsigned int *winID));
+OF_EXPORT void OF_FCN(ofwin_setmakecurrentfunction)(void (*fcn)(unsigned int *winID, bool *success));
+OF_EXPORT void OF_FCN(ofwin_setupdatecontextfunction)(void (*fcn)(unsigned int *winID, bool *success));
 
 // Inform the WindowProxy that an event occured
-OF_EXPORT void FCN(ofwin_resizewindow)(int *x, int *y, unsigned int *width, unsigned int *height);
-OF_EXPORT void FCN(ofwin_keypress)(unsigned int *key);
-OF_EXPORT void FCN(ofwin_buttonpress)(float *x, float *y, unsigned int *button);
-OF_EXPORT void FCN(ofwin_buttonrelease)(float *x, float *y, unsigned int *button);
-OF_EXPORT void FCN(ofwin_mousemotion)(float *x, float *y);
+OF_EXPORT void OF_FCN(ofwin_resizewindow)(int *x, int *y, unsigned int *width, unsigned int *height);
+OF_EXPORT void OF_FCN(ofwin_keypress)(unsigned int *key);
+OF_EXPORT void OF_FCN(ofwin_buttonpress)(float *x, float *y, unsigned int *button);
+OF_EXPORT void OF_FCN(ofwin_buttonrelease)(float *x, float *y, unsigned int *button);
+OF_EXPORT void OF_FCN(ofwin_mousemotion)(float *x, float *y);
 
 // Set the desired framerate (in frames/second)
-OF_EXPORT void FCN(ofwin_setdesiredframerate)(double *fps);
+OF_EXPORT void OF_FCN(ofwin_setdesiredframerate)(double *fps);
 
 // Control views in any given grid position
-OF_EXPORT void FCN(ofwin_addview)(unsigned int *row, unsigned int *col);
-OF_EXPORT void FCN(ofwin_removeview)(unsigned int *row, unsigned int *col);
-OF_EXPORT void FCN(ofwin_removeallviews)(unsigned int *row, unsigned int *col);
-OF_EXPORT void FCN(ofwin_selectview)(unsigned int *row, unsigned int *col);
+OF_EXPORT void OF_FCN(ofwin_addview)(unsigned int *row, unsigned int *col);
+OF_EXPORT void OF_FCN(ofwin_removeview)(unsigned int *row, unsigned int *col);
+OF_EXPORT void OF_FCN(ofwin_removeallviews)(unsigned int *row, unsigned int *col);
+OF_EXPORT void OF_FCN(ofwin_selectview)(unsigned int *row, unsigned int *col);
 
 /******************************************************************
 	FrameManger Functions
 ******************************************************************/
 
 // Set the currently active FrameManager
-OF_EXPORT void FCN(offm_activate)(int *id);
+OF_EXPORT void OF_FCN(offm_activate)(int *id);
 
 // Create a new FrameManager with the given ID
-OF_EXPORT void FCN(offm_create)(int *id);
+OF_EXPORT void OF_FCN(offm_create)(int *id);
 
 // Assign the currently active ReferenceFrame to the currently active FrameManager
-OF_EXPORT void FCN(offm_setframe)();
+OF_EXPORT void OF_FCN(offm_setframe)();
 
 // Lock the current FrameManager. This should be done before the
 // FrameManager's scene is modified.
-OF_EXPORT void FCN(offm_lock)();
+OF_EXPORT void OF_FCN(offm_lock)();
 
 // Unlock the current FrameManager. This should be done after the
 // FrameManager's scene is modified.
-OF_EXPORT void FCN(offm_unlock)();
+OF_EXPORT void OF_FCN(offm_unlock)();
 
 /******************************************************************
 	ReferenceFrame Functions
 ******************************************************************/
 
 // Set the currently active reference frame
-OF_EXPORT void FCN(offrame_activate)(const char *name, int len);
+OF_EXPORT void OF_FCN(offrame_activate)(OF_CHARARG(name));
 
 // Create a new ReferenceFrame with the given name and activate it
-OF_EXPORT void FCN(offrame_create)(const char *name, int len);
+OF_EXPORT void OF_FCN(offrame_create)(OF_CHARARG(name));
 
 // Set the color of the current frame
-OF_EXPORT void FCN(offrame_setcolor)(float *r, float *g, float *b, float *a);
+OF_EXPORT void OF_FCN(offrame_setcolor)(float *r, float *g, float *b, float *a);
 
 // Add/remove the given frame as a child to/from the currently active frame. 
 // The currently active frame will remain active.
-OF_EXPORT void FCN(offrame_addchild)(const char *name, int len);
-OF_EXPORT void FCN(offrame_removechild)(const char *name, int len);
+OF_EXPORT void OF_FCN(offrame_addchild)(OF_CHARARG(name));
+OF_EXPORT void OF_FCN(offrame_removechild)(OF_CHARARG(name));
 
 // Remove all children from the currently active frame
-OF_EXPORT void FCN(offrame_removeallchildren)();
-OF_EXPORT void FCN(offrame_getnumchildren)(int *numchildren);
+OF_EXPORT void OF_FCN(offrame_removeallchildren)();
+OF_EXPORT void OF_FCN(offrame_getnumchildren)(int *numchildren);
 
 // Set/get the current frame's position (3 element vector)
-OF_EXPORT void FCN(offrame_setposition)(double *x, double *y, double *z);
-OF_EXPORT void FCN(offrame_getposition)(double *x, double *y, double *z);
+OF_EXPORT void OF_FCN(offrame_setposition)(double *x, double *y, double *z);
+OF_EXPORT void OF_FCN(offrame_getposition)(double *x, double *y, double *z);
 
 // Set/get the current frame's attitude (4 element quaternion)
-OF_EXPORT void FCN(offrame_setattitude)(double *rx, double *ry, double *rz, double *angle);
-OF_EXPORT void FCN(offrame_getattitude)(double *rx, double *ry, double *rz, double *angle);
+OF_EXPORT void OF_FCN(offrame_setattitude)(double *rx, double *ry, double *rz, double *angle);
+OF_EXPORT void OF_FCN(offrame_getattitude)(double *rx, double *ry, double *rz, double *angle);
 
 // Show/hide the current frame's coordinate axes or labels
-OF_EXPORT void FCN(offrame_showaxes)(unsigned int *axes);
-OF_EXPORT void FCN(offrame_shownamelabel)(bool *namelabel);
-OF_EXPORT void FCN(offrame_showaxeslabels)(unsigned int *labels);
+OF_EXPORT void OF_FCN(offrame_showaxes)(unsigned int *axes);
+OF_EXPORT void OF_FCN(offrame_shownamelabel)(bool *namelabel);
+OF_EXPORT void OF_FCN(offrame_showaxeslabels)(unsigned int *labels);
 
 // Change the name label for the current ReferenceFrame. Note that it will
 // still be referred to using the name assigned to it at creation.
-OF_EXPORT void FCN(offrame_setnamelabel)(const char *name, int len);
+OF_EXPORT void OF_FCN(offrame_setnamelabel)(OF_CHARARG(name));
 
 // Change axis labels
-// If using Intel Visual Fortran, string lengths are passed
-// after all other arguments.
-#ifdef IVF_CALLS
-OF_EXPORT void FCN(offrame_setaxeslabels)(const char *xlabel,
-                                          const char *ylabel,
-                                          const char *zlabel, 
-                                          int xlen, int ylen, int zlen);
-							          
-// Otherwise, string lengths are passed after each string argument.
+// Intel Fortran passes string lengths after all arguments
+#if defined(IFORT_CALLS)
+OF_EXPORT void OF_FCN(offrame_setaxeslabels)(const char *xlabel,
+                                             const char *ylabel,
+                                             const char *zlabel, 
+                                             unsigned int xlabellen, 
+                                             unsigned int ylabellen, 
+                                             unsigned int zlabellen);
+
+// GFortran passes string lengths after each argument
+// C doesn't need string lengths
+// Both these cases are handled by the OF_CHARARG() macro
 #else
-OF_EXPORT void FCN(offrame_setaxeslabels)(const char *xlabel, int xlen,
-                                          const char *ylabel, int ylen,
-                                          const char *zlabel, int zlen);
+OF_EXPORT void OF_FCN(offrame_setaxeslabels)(OF_CHARARG(xlabel),
+                                             OF_CHARARG(ylabel),
+                                             OF_CHARARG(zlabel));
 #endif
 
 // Reposition axes
-OF_EXPORT void FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius);
-OF_EXPORT void FCN(offrame_moveyaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius);
-OF_EXPORT void FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius);
+OF_EXPORT void OF_FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius);
+OF_EXPORT void OF_FCN(offrame_moveyaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius);
+OF_EXPORT void OF_FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius);
 
 // Have this frame follow the specified trajectory
-OF_EXPORT void FCN(offrame_followtrajectory)(const char *name, int len);
+OF_EXPORT void OF_FCN(offrame_followtrajectory)(OF_CHARARG(name));
 
 // Follow the trajectory's position, attitude, or both
-OF_EXPORT void FCN(offrame_followtype)(int *data, int *mode);
+OF_EXPORT void OF_FCN(offrame_followtype)(int *data, int *mode);
 
 // Set the elements to follow position. Each of src, element, opt, and scale
 // must be 3-element arrays, with one element for each x/y/z source.
-OF_EXPORT void FCN(offrame_followposition)(int src[], unsigned int element[],
+OF_EXPORT void OF_FCN(offrame_followposition)(int src[], unsigned int element[],
                                            unsigned int opt[], double scale[]);
 
 // Change how this frame follows a trajectory
-OF_EXPORT void FCN(offrame_managetime)(bool *affectChildren, bool *reset,
+OF_EXPORT void OF_FCN(offrame_managetime)(bool *affectChildren, bool *reset,
                                        bool *changePauseState, bool *pauseState,
                                        bool *changeOffsetTime, double *offsetTime,
                                        bool *changeTimeScale, double *timeScale);
 
 // Print (to std::out) a formatted string of the current ReferenceFrame's descendant heirarchy.
-OF_EXPORT void FCN(offrame_printframestring)();
+OF_EXPORT void OF_FCN(offrame_printframestring)();
 
 /******************************************************************
 	Sphere Functions
@@ -239,17 +254,17 @@ offrame_activate() (just like for any other ReferenceFrame).
 ******************************************************************/
 
 // Create a new Sphere, and make it the currently active ReferenceFrame
-OF_EXPORT void FCN(ofsphere_create)(const char *name, int len);
+OF_EXPORT void OF_FCN(ofsphere_create)(OF_CHARARG(name));
 
 // Set the radius of the sphere
-OF_EXPORT void FCN(ofsphere_setradius)(double *radius);
+OF_EXPORT void OF_FCN(ofsphere_setradius)(double *radius);
   
 // Set the image file used as the texture map for the sphere. See
 // the OpenSceneGraph documentation for supported file types.
-OF_EXPORT void FCN(ofsphere_settexturemap)(const char *fname, int len);
+OF_EXPORT void OF_FCN(ofsphere_settexturemap)(OF_CHARARG(fname));
 
 // Enable/disable auto level of detailing for the sphere.
-OF_EXPORT void FCN(ofsphere_setautolod)(bool *lod);
+OF_EXPORT void OF_FCN(ofsphere_setautolod)(bool *lod);
 
 /******************************************************************
 	Model Functions
@@ -262,27 +277,27 @@ offrame_activate() (just like for any other ReferenceFrame).
 ******************************************************************/
 
 // Create a new Model, and make it the currently active ReferenceFrame
-OF_EXPORT void FCN(ofmodel_create)(const char *name, int len);
+OF_EXPORT void OF_FCN(ofmodel_create)(OF_CHARARG(name));
 
 // Set the 3D model to be displayed. See the OpenSceneGraph documentation
 // for supported model types.
-OF_EXPORT void FCN(ofmodel_setmodel)(const char *fname, int len);
+OF_EXPORT void OF_FCN(ofmodel_setmodel)(OF_CHARARG(fname));
 
 // Set/get the model position wrt the local origin
-OF_EXPORT void FCN(ofmodel_setmodelposition)(double *x, double *y, double *z);
-OF_EXPORT void FCN(ofmodel_getmodelposition)(double *x, double *y, double *z);
+OF_EXPORT void OF_FCN(ofmodel_setmodelposition)(double *x, double *y, double *z);
+OF_EXPORT void OF_FCN(ofmodel_getmodelposition)(double *x, double *y, double *z);
 
 // Set/get the model scale wrt the pivot point
-OF_EXPORT void FCN(ofmodel_setmodelscale)(double *sx, double *sy, double *sz);
-OF_EXPORT void FCN(ofmodel_getmodelscale)(double *sx, double *sy, double *sz);
+OF_EXPORT void OF_FCN(ofmodel_setmodelscale)(double *sx, double *sy, double *sz);
+OF_EXPORT void OF_FCN(ofmodel_getmodelscale)(double *sx, double *sy, double *sz);
 
 // Set/get the model pivot point wrt the local origin. This is the point
 // about which all rotations and scales take place.
-OF_EXPORT void FCN(ofmodel_setmodelpivot)(double *px, double *py, double *pz);
-OF_EXPORT void FCN(ofmodel_getmodelpivot)(double *px, double *py, double *pz);
+OF_EXPORT void OF_FCN(ofmodel_setmodelpivot)(double *px, double *py, double *pz);
+OF_EXPORT void OF_FCN(ofmodel_getmodelpivot)(double *px, double *py, double *pz);
 
 // Get the size of the model. This is the radius of the model's bounding sphere
-OF_EXPORT void FCN(ofmodel_getmodelsize)(double *size);
+OF_EXPORT void OF_FCN(ofmodel_getmodelsize)(double *size);
 
 /******************************************************************
 	DrawableTrajectory Functions
@@ -294,17 +309,17 @@ offrame_activate() (just like for any other ReferenceFrame).
 ******************************************************************/
 
 // Create a new DrawableTrajectory, and make it the active ReferenceFrame.
-OF_EXPORT void FCN(ofdrawtraj_create)(const char *name, int len);
+OF_EXPORT void OF_FCN(ofdrawtraj_create)(OF_CHARARG(name));
 
 // Allow specified TrajectoryArtist to draw using this DrawableTrajectory.
 // Note that the currently active TrajectoryArtist will NOT be changed.
-OF_EXPORT void FCN(ofdrawtraj_addartist)(const char *name, int len);
+OF_EXPORT void OF_FCN(ofdrawtraj_addartist)(OF_CHARARG(name));
 
 // Remove specified artist from the current DrawableTrajectory
-OF_EXPORT void FCN(ofdrawtraj_removeartist)(const char *name, int len);
+OF_EXPORT void OF_FCN(ofdrawtraj_removeartist)(OF_CHARARG(name));
 
 // Remove all artists from the current DrawableTrajectory
-OF_EXPORT void FCN(ofdrawtraj_removeallartists)();
+OF_EXPORT void OF_FCN(ofdrawtraj_removeallartists)();
 
 
 /******************************************************************
@@ -314,13 +329,13 @@ and allows for variably spaced major and minor tick marks.
 ******************************************************************/
 
 // Create a new CoordinateAxes, and make it the active ReferenceFrame.
-OF_EXPORT void FCN(ofcoordaxes_create)(const char *name, int len);
+OF_EXPORT void OF_FCN(ofcoordaxes_create)(OF_CHARARG(name));
 
-OF_EXPORT void FCN(ofcoordaxes_setaxislength)(double *len);
-OF_EXPORT void FCN(ofcoordaxes_setdrawaxes)(unsigned int *axes);
-OF_EXPORT void FCN(ofcoordaxes_settickspacing)(double *major, double *minor);
-OF_EXPORT void FCN(ofcoordaxes_setticksize)(unsigned int *major, unsigned int *minor);
-OF_EXPORT void FCN(ofcoordaxes_settickimage)( const char *fname, int len );
+OF_EXPORT void OF_FCN(ofcoordaxes_setaxislength)(double *len);
+OF_EXPORT void OF_FCN(ofcoordaxes_setdrawaxes)(unsigned int *axes);
+OF_EXPORT void OF_FCN(ofcoordaxes_settickspacing)(double *major, double *minor);
+OF_EXPORT void OF_FCN(ofcoordaxes_setticksize)(unsigned int *major, unsigned int *minor);
+OF_EXPORT void OF_FCN(ofcoordaxes_settickimage)(OF_CHARARG(fname));
 
 /******************************************************************
 	LatLonGrid Functions
@@ -329,9 +344,9 @@ grid with specified radius and line spacings.
 ******************************************************************/
 
 // Create a new LatLonGrid, and make it the active ReferenceFrame.
-OF_EXPORT void FCN(oflatlongrid_create)(const char *name, int len);
+OF_EXPORT void OF_FCN(oflatlongrid_create)(OF_CHARARG(name));
 
-OF_EXPORT void FCN(oflatlongrid_setparameters)(double *radius,
+OF_EXPORT void OF_FCN(oflatlongrid_setparameters)(double *radius,
                                                double *latSpace,
                                                double *lonSpace);
 
@@ -342,16 +357,16 @@ specified radius, radial circle distance, and longitude line spacing.
 ******************************************************************/
 
 // Creat a new RadialPlane, and make it the active ReferenceFrame
-OF_EXPORT void FCN(ofradialplane_create)(const char *name, int len);
+OF_EXPORT void OF_FCN(ofradialplane_create)(OF_CHARARG(name));
 
-OF_EXPORT void FCN(ofradialplane_setparameters)(double *radius,
+OF_EXPORT void OF_FCN(ofradialplane_setparameters)(double *radius,
                                                 double *radSpace,
                                                 double *lonSpace);
 
-OF_EXPORT void FCN(ofradialplane_setplanecolor)(float *r, float *g,
+OF_EXPORT void OF_FCN(ofradialplane_setplanecolor)(float *r, float *g,
                                                 float *b, float *a);
 
-OF_EXPORT void FCN(ofradialplane_setlinecolor)(float *r, float *g,
+OF_EXPORT void OF_FCN(ofradialplane_setlinecolor)(float *r, float *g,
                                                float *b, float *a);
 
 /******************************************************************
@@ -359,57 +374,58 @@ OF_EXPORT void FCN(ofradialplane_setlinecolor)(float *r, float *g,
 ******************************************************************/
 
 // Make the specified Trajectory the currently active one
-OF_EXPORT void FCN(oftraj_activate)(const char *name, int len);
+OF_EXPORT void OF_FCN(oftraj_activate)(OF_CHARARG(name));
 
 // Create a new Trajectory, and make it the currently active one
-#ifdef IVF_CALLS
-OF_EXPORT void FCN(oftraj_create)(const char *name, unsigned int *dof,
-                                  unsigned int *numopt, int len);                                  
+#if defined(IFORT_CALLS)
+OF_EXPORT void OF_FCN(oftraj_create)(const char *name, unsigned int *dof,
+                                     unsigned int *numopt, 
+                                     unsigned int namelen); 
 #else
-OF_EXPORT void FCN(oftraj_create)(const char *name, int len,
-                                  unsigned int *dof, unsigned int *numopt);
+OF_EXPORT void OF_FCN(oftraj_create)(OF_CHARARG(name), unsigned int *dof,
+                                     unsigned int *numopt);
 #endif                                  
                                   
 // Change the number of optionals for the currently active Trajectory.
-OF_EXPORT void FCN(oftraj_setnumoptionals)(unsigned int *nopt);
+OF_EXPORT void OF_FCN(oftraj_setnumoptionals)(unsigned int *nopt);
 
 // Change the degrees of freedom for the currently active Trajectory.
-OF_EXPORT void FCN(oftraj_setdof)(unsigned int *dof);
+OF_EXPORT void OF_FCN(oftraj_setdof)(unsigned int *dof);
 
 // Add a time to the end of the currently active Trajectory.
-OF_EXPORT void FCN(oftraj_addtime)(const double *t);
+OF_EXPORT void OF_FCN(oftraj_addtime)(const double *t);
 
 // Add a position as long as the new number of positions will not exceed
 // the current number of times. Note that for 2D trajectories, the z
 // component will be ignored.
-OF_EXPORT void FCN(oftraj_addposition)(const double *x, const double *y,
+OF_EXPORT void OF_FCN(oftraj_addposition)(const double *x, const double *y,
                                        const double *z);
 
 // Same as above, but the position is given as a 2 or 3 element vector
-OF_EXPORT void FCN(oftraj_addpositionvec)(const double pos[]);
+OF_EXPORT void OF_FCN(oftraj_addpositionvec)(const double pos[]);
 
 // Add an attitude to the currently active Trajectory. Ignored if the new
 // number of attitudes will exceed the current number of times.
 // The attitude is given as a 4-element quaternion.
-OF_EXPORT void FCN(oftraj_addattitude)(const double *x, const double *y,
+OF_EXPORT void OF_FCN(oftraj_addattitude)(const double *x, const double *y,
                                        const double *z, const double *w);
 
 // Same as above, but the attitude is given as a 4 element vector
-OF_EXPORT void FCN(oftraj_addattitudevec)(const double att[]);
+OF_EXPORT void OF_FCN(oftraj_addattitudevec)(const double att[]);
 
 // Set the optional with the given index, for the most recently added position.
 // The index must be in the range [0, num optionals - 1]
-OF_EXPORT void FCN(oftraj_setoptional)(unsigned int *index, const double *x,
+OF_EXPORT void OF_FCN(oftraj_setoptional)(unsigned int *index, const double *x,
                                        const double *y, const double *z);
 
 // Same as above, but the optional is given as a 2 or 3 element vector
-OF_EXPORT void FCN(oftraj_setoptionalvec)(unsigned int *index, const double opt[]);
+OF_EXPORT void OF_FCN(oftraj_setoptionalvec)(unsigned int *index, const double opt[]);
 
 // Clear all points from the currently active Trajectory
-OF_EXPORT void FCN(oftraj_clear)();
+OF_EXPORT void OF_FCN(oftraj_clear)();
 
-OF_EXPORT void FCN(oftraj_informartists)();
-OF_EXPORT void FCN(oftraj_autoinformartists)(bool *autoinform);
+OF_EXPORT void OF_FCN(oftraj_informartists)();
+OF_EXPORT void OF_FCN(oftraj_autoinformartists)(bool *autoinform);
 
 /******************************************************************
 	TrajectoryArtist Functions
@@ -421,10 +437,10 @@ of its derived types (eg CurveArtist etc...).
 ******************************************************************/
 
 // Make the specified TrajectoryArtist active.
-OF_EXPORT void FCN(oftrajartist_activate)(const char *name, int len);
+OF_EXPORT void OF_FCN(oftrajartist_activate)(OF_CHARARG(name));
 
 // Tell the active artist to draw the active Trajectory.
-OF_EXPORT void FCN(oftrajartist_settrajectory)();
+OF_EXPORT void OF_FCN(oftrajartist_settrajectory)();
 
 /*****************************************************************
 	CurveArtist Functions
@@ -435,24 +451,24 @@ available to it.
 *****************************************************************/
 
 // Create a CurveArtist with the specified ID.
-OF_EXPORT void FCN(ofcurveartist_create)(const char *name, int len);
+OF_EXPORT void OF_FCN(ofcurveartist_create)(OF_CHARARG(name));
 
 // Set the data used for X coordinates of each point
-OF_EXPORT void FCN(ofcurveartist_setxdata)(int *src, unsigned int *element,
+OF_EXPORT void OF_FCN(ofcurveartist_setxdata)(int *src, unsigned int *element,
                                            unsigned int *opt, double *scale);
 
 // Set the data used for Y coordinates of each point
-OF_EXPORT void FCN(ofcurveartist_setydata)(int *src, unsigned int *element,
+OF_EXPORT void OF_FCN(ofcurveartist_setydata)(int *src, unsigned int *element,
                                            unsigned int *opt, double *scale);
 
 // Set the data used for Z coordinates of each point
-OF_EXPORT void FCN(ofcurveartist_setzdata)(int *src, unsigned int *element,
+OF_EXPORT void OF_FCN(ofcurveartist_setzdata)(int *src, unsigned int *element,
                                            unsigned int *opt, double *scale);
 
 // Set line attributes
-OF_EXPORT void FCN(ofcurveartist_setcolor)(float *r, float *g, float *b);
-OF_EXPORT void FCN(ofcurveartist_setwidth)(float *width);
-OF_EXPORT void FCN(ofcurveartist_setpattern)(int *factor, unsigned short *pattern);
+OF_EXPORT void OF_FCN(ofcurveartist_setcolor)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofcurveartist_setwidth)(float *width);
+OF_EXPORT void OF_FCN(ofcurveartist_setpattern)(int *factor, unsigned short *pattern);
 
 /*****************************************************************
 	SegmentArtist Functions
@@ -463,39 +479,39 @@ available to it.
 *****************************************************************/
 
 // Create a SegmentArtist with the specified ID.
-OF_EXPORT void FCN(ofsegmentartist_create)(const char *name, int len);
+OF_EXPORT void OF_FCN(ofsegmentartist_create)(OF_CHARARG(name));
 
 // Set the data used for starting X coordinate of each segment
-OF_EXPORT void FCN(ofsegmentartist_setstartxdata)(int *src, unsigned int *element,
+OF_EXPORT void OF_FCN(ofsegmentartist_setstartxdata)(int *src, unsigned int *element,
                                            unsigned int *opt, double *scale);
 
 // Set the data used for starting Y coordinate of each segment
-OF_EXPORT void FCN(ofsegmentartist_setstartydata)(int *src, unsigned int *element,
+OF_EXPORT void OF_FCN(ofsegmentartist_setstartydata)(int *src, unsigned int *element,
                                            unsigned int *opt, double *scale);
 
 // Set the data used for starting Z coordinate of each segment
-OF_EXPORT void FCN(ofsegmentartist_setstartzdata)(int *src, unsigned int *element,
+OF_EXPORT void OF_FCN(ofsegmentartist_setstartzdata)(int *src, unsigned int *element,
                                            unsigned int *opt, double *scale);
 
 // Set the data used for ending X coordinate of each segment
-OF_EXPORT void FCN(ofsegmentartist_setendxdata)(int *src, unsigned int *element,
+OF_EXPORT void OF_FCN(ofsegmentartist_setendxdata)(int *src, unsigned int *element,
                                            unsigned int *opt, double *scale);
 
 // Set the data used for ending Y coordinate of each segment
-OF_EXPORT void FCN(ofsegmentartist_setendydata)(int *src, unsigned int *element,
+OF_EXPORT void OF_FCN(ofsegmentartist_setendydata)(int *src, unsigned int *element,
                                            unsigned int *opt, double *scale);
 
 // Set the data used for ending Z coordinate of each segment
-OF_EXPORT void FCN(ofsegmentartist_setendzdata)(int *src, unsigned int *element,
+OF_EXPORT void OF_FCN(ofsegmentartist_setendzdata)(int *src, unsigned int *element,
                                            unsigned int *opt, double *scale);
 
 // Set the offset between drawn points
-OF_EXPORT void FCN(ofsegmentartist_setstride)(unsigned int *stride);
+OF_EXPORT void OF_FCN(ofsegmentartist_setstride)(unsigned int *stride);
 
 // Set line attributes
-OF_EXPORT void FCN(ofsegmentartist_setcolor)(float *r, float *g, float *b);
-OF_EXPORT void FCN(ofsegmentartist_setwidth)(float *width);
-OF_EXPORT void FCN(ofsegmentartist_setpattern)(int *factor, unsigned short *pattern);
+OF_EXPORT void OF_FCN(ofsegmentartist_setcolor)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofsegmentartist_setwidth)(float *width);
+OF_EXPORT void OF_FCN(ofsegmentartist_setpattern)(int *factor, unsigned short *pattern);
 
 /*****************************************************************
 	MarkerArtist Functions
@@ -504,45 +520,45 @@ start/end of a trajectory. The marker style can be customized.
 *****************************************************************/
 
 // Create a MarkerArtist with the specified ID
-OF_EXPORT void FCN(ofmarkerartist_create)(const char *name, int len);
+OF_EXPORT void OF_FCN(ofmarkerartist_create)(OF_CHARARG(name));
 
 // Set the data used for X coordinates of each point
-OF_EXPORT void FCN(ofmarkerartist_setxdata)(int *src, unsigned int *element,
+OF_EXPORT void OF_FCN(ofmarkerartist_setxdata)(int *src, unsigned int *element,
                                            unsigned int *opt, double *scale);
 
 // Set the data used for Y coordinates of each point
-OF_EXPORT void FCN(ofmarkerartist_setydata)(int *src, unsigned int *element,
+OF_EXPORT void OF_FCN(ofmarkerartist_setydata)(int *src, unsigned int *element,
                                            unsigned int *opt, double *scale);
                                            
 // Set the data used for Z coordinates of each point
-OF_EXPORT void FCN(ofmarkerartist_setzdata)(int *src, unsigned int *element,
+OF_EXPORT void OF_FCN(ofmarkerartist_setzdata)(int *src, unsigned int *element,
                                            unsigned int *opt, double *scale);
 
 // Define which markers should be plotted
 // See DrawnMarkers enum in MarkerArtist class
-OF_EXPORT void FCN(ofmarkerartist_setmarkers)( unsigned int *markers );
+OF_EXPORT void OF_FCN(ofmarkerartist_setmarkers)( unsigned int *markers );
 
 // Set color for markers
-OF_EXPORT void FCN(ofmarkerartist_setmarkercolor)( unsigned int *markers, float *r, float *g, float *b );
+OF_EXPORT void OF_FCN(ofmarkerartist_setmarkercolor)( unsigned int *markers, float *r, float *g, float *b );
 
 // Set image used as marker
 // If an empty string is given, then use default OpenGL point
-OF_EXPORT void FCN(ofmarkerartist_setmarkerimage)( const char *fname, int len );
+OF_EXPORT void OF_FCN(ofmarkerartist_setmarkerimage)(OF_CHARARG(name));
   
 // Specify which type of intermediate markers should be drawn
-OF_EXPORT void FCN(ofmarkerartist_setintermediatetype)( unsigned int *type );
+OF_EXPORT void OF_FCN(ofmarkerartist_setintermediatetype)( unsigned int *type );
 
 // Specify the spacing used for intermediate markers
-OF_EXPORT void FCN(ofmarkerartist_setintermediatespacing)( double *spacing );
+OF_EXPORT void OF_FCN(ofmarkerartist_setintermediatespacing)( double *spacing );
 
 // Specify the drawing direction (from start or end) of intermediate markers
-OF_EXPORT void FCN(ofmarkerartist_setintermediatedirection)( unsigned int *direction );
+OF_EXPORT void OF_FCN(ofmarkerartist_setintermediatedirection)( unsigned int *direction );
 
 // Specify the marker size in pixels
-OF_EXPORT void FCN(ofmarkerartist_setmarkersize)( unsigned int *size );
+OF_EXPORT void OF_FCN(ofmarkerartist_setmarkersize)( unsigned int *size );
 
 // Specify whether marker size should be automatically attenuated
-OF_EXPORT void FCN(ofmarkerartist_setautoattenuate)( bool *autoattenuate );
+OF_EXPORT void OF_FCN(ofmarkerartist_setautoattenuate)( bool *autoattenuate );
 
 /*****************************************************************
 	View Functions
@@ -553,46 +569,48 @@ and multiple Views are allowed for each grid position.
 *****************************************************************/
 
 // Activate the specified View
-OF_EXPORT void FCN(ofview_activate)(const char *name, int len);
+OF_EXPORT void OF_FCN(ofview_activate)(OF_CHARARG(name));
 
 // Create a new View and make it the currently active one
-OF_EXPORT void FCN(ofview_create)(const char *name, int len);
+OF_EXPORT void OF_FCN(ofview_create)(OF_CHARARG(name));
 
 // Set the current view to use an orthographic projection with the given bounds.
-OF_EXPORT void FCN(ofview_setorthographic)(double *left, double *right,
+OF_EXPORT void OF_FCN(ofview_setorthographic)(double *left, double *right,
                                            double *bottom, double *top);
 
 // Set the current view to use a symmetric perspective projection
 // with the given vertical field of view (in degrees) and x/y aspect ratio.
-OF_EXPORT void FCN(ofview_setperspective)(double *fov, double *ratio);
+OF_EXPORT void OF_FCN(ofview_setperspective)(double *fov, double *ratio);
 
 // Set the constant multiplier that all aspect ratios are multiplied by
 // before a perspective view is created. This can be used to stretch/squeeze
 // the image by a constant amount.
-OF_EXPORT void FCN(ofview_setaspectmultiplier)(double *mult);
+OF_EXPORT void OF_FCN(ofview_setaspectmultiplier)(double *mult);
 
 // Set the default view that the current transform will show. The 'root'
 // input should be set to the root of the ReferenceFrame heirarchy, and the
 // 'frame' input should be set to whatever frame you want to view. Note that
 // this function does NOT use or modify the currently active ReferenceFrame.
-#ifdef IVF_CALLS  
-OF_EXPORT void FCN(ofview_setviewframe)(const char *root, const char *frame, int rlen, int flen);
+#if defined(IFORT_CALLS)
+OF_EXPORT void OF_FCN(ofview_setviewframe)(const char *root, const char *frame, int rlen, int flen);
 #else
-OF_EXPORT void FCN(ofview_setviewframe)(const char *root, int rlen, const char *frame, int flen);
+OF_EXPORT void OF_FCN(ofview_setviewframe)(OF_CHARARG(root),
+                                           OF_CHARARG(frame));
 #endif
 
 // Set the default view distance. A value <= 0.0 means the distance should be auto-computed
-OF_EXPORT void FCN(ofview_setdefaultviewdistance)(double *distance);
+OF_EXPORT void OF_FCN(ofview_setdefaultviewdistance)(double *distance);
 
 // Check if the view frame for the current View is valid. One reason for an
 // invalid view is if the frame to be viewed is not a child of the specified
 // root frame.
-OF_EXPORT void FCN(ofview_isvalid)(bool *valid);
+OF_EXPORT void OF_FCN(ofview_isvalid)(bool *valid);
 
 // Reset the view to its default state
-OF_EXPORT void FCN(ofview_reset)();
-}
+OF_EXPORT void OF_FCN(ofview_reset)();
 
-#undef FCN
+#ifdef __cplusplus
+}
+#endif
 
 #endif

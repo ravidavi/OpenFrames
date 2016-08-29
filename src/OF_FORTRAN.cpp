@@ -38,12 +38,6 @@
         #include <X11/Xlib.h>
 #endif
 
-#ifdef IVF_CALLS
-	#define FCN(name) name
-#else
-	#define FCN(name) name##__
-#endif
-
 #ifdef WIN32
 	#include <windows.h>
 #else
@@ -169,12 +163,12 @@ class OF_Objects : public osg::Referenced
 };
 OF_Objects *_objs = NULL;
 
-void FCN(of_initialize)()
+void OF_FCN(of_initialize)()
 {
 	_objs = OF_Objects::instance();
 }
 
-void FCN(of_cleanup)()
+void OF_FCN(of_cleanup)()
 {
 	if(_objs) 
 	{
@@ -188,7 +182,7 @@ void FCN(of_cleanup)()
 	else std::cerr<< "OpenFrames WARNING: Must call of_initialize() before calling of_cleanup()" << std::endl;
 }
 
-void FCN(of_getreturnedvalue)(int *val)
+void OF_FCN(of_getreturnedvalue)(int *val)
 {
 	*val = _objs->_intVal;
 }
@@ -197,7 +191,7 @@ void FCN(of_getreturnedvalue)(int *val)
 	Window Functions
 ***********************************************/
 
-void FCN(ofwin_activate)(unsigned int *id)
+void OF_FCN(ofwin_activate)(unsigned int *id)
 {
 	WindowMap::iterator i = _objs->_winMap.find(*id); // Find the WindowProxy with the requested id
 
@@ -213,7 +207,7 @@ void FCN(ofwin_activate)(unsigned int *id)
 	}
 }
 
-void FCN(ofwin_createproxy)(int *x, int *y,
+void OF_FCN(ofwin_createproxy)(int *x, int *y,
                             unsigned int *width, unsigned int *height,
                             unsigned int *nrow, unsigned int *ncol,
                             bool *embedded, unsigned int *id)
@@ -235,7 +229,7 @@ void FCN(ofwin_createproxy)(int *x, int *y,
 	_objs->_currWinProxy = wp;
 }
 
-OF_EXPORT void FCN(ofwin_setgridsize)(int *nrow, int *ncol)
+OF_EXPORT void OF_FCN(ofwin_setgridsize)(int *nrow, int *ncol)
 {
 	if(_objs->_currWinProxy)
 	{
@@ -243,7 +237,7 @@ OF_EXPORT void FCN(ofwin_setgridsize)(int *nrow, int *ncol)
 	}
 }
 
-OF_EXPORT void FCN(ofwin_setkeypresscallback)(void (*fcn)(KEYPRESS_SIG))
+OF_EXPORT void OF_FCN(ofwin_setkeypresscallback)(void (*fcn)(KEYPRESS_SIG))
 {
 	if(_objs->_currWinProxy) 
 	{
@@ -251,7 +245,7 @@ OF_EXPORT void FCN(ofwin_setkeypresscallback)(void (*fcn)(KEYPRESS_SIG))
 	}
 }
 
-OF_EXPORT void FCN(ofwin_setmousemotioncallback)(void (*fcn)(MOUSEMOTION_SIG))
+OF_EXPORT void OF_FCN(ofwin_setmousemotioncallback)(void (*fcn)(MOUSEMOTION_SIG))
 {
 	if(_objs->_currWinProxy) 
 	{
@@ -259,7 +253,7 @@ OF_EXPORT void FCN(ofwin_setmousemotioncallback)(void (*fcn)(MOUSEMOTION_SIG))
 	}
 }
 
-OF_EXPORT void FCN(ofwin_setbuttonpresscallback)(void (*fcn)(BUTTON_SIG))
+OF_EXPORT void OF_FCN(ofwin_setbuttonpresscallback)(void (*fcn)(BUTTON_SIG))
 {
 	if(_objs->_currWinProxy) 
 	{
@@ -267,7 +261,7 @@ OF_EXPORT void FCN(ofwin_setbuttonpresscallback)(void (*fcn)(BUTTON_SIG))
 	}
 }
 
-OF_EXPORT void FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG))
+OF_EXPORT void OF_FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG))
 {
 	if(_objs->_currWinProxy) 
 	{
@@ -275,7 +269,7 @@ OF_EXPORT void FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG))
 	}
 }
 
-void FCN(ofwin_start)()
+void OF_FCN(ofwin_start)()
 {
 	if(_objs->_currWinProxy) 
 	{
@@ -291,7 +285,7 @@ void FCN(ofwin_start)()
 	}
 }
 
-void FCN(ofwin_stop)()
+void OF_FCN(ofwin_stop)()
 {
 	if(_objs->_currWinProxy) 
 	{
@@ -307,7 +301,7 @@ void FCN(ofwin_stop)()
 	}
 }
 
-void FCN(ofwin_waitforstop)()
+void OF_FCN(ofwin_waitforstop)()
 {
 	if(_objs->_currWinProxy)
 	{
@@ -323,7 +317,7 @@ void FCN(ofwin_waitforstop)()
 	}
 }
 
-OF_EXPORT void FCN(ofwin_pauseanimation)(bool *pause)
+OF_EXPORT void OF_FCN(ofwin_pauseanimation)(bool *pause)
 {
 	if(_objs->_currWinProxy)
 	{
@@ -331,7 +325,7 @@ OF_EXPORT void FCN(ofwin_pauseanimation)(bool *pause)
 	}
 }
 
-OF_EXPORT void FCN(ofwin_isrunning)(unsigned int *state)
+OF_EXPORT void OF_FCN(ofwin_isrunning)(unsigned int *state)
 {
 	if(_objs->_currWinProxy)
 	{
@@ -340,13 +334,13 @@ OF_EXPORT void FCN(ofwin_isrunning)(unsigned int *state)
 	else *state = 0;
 }
 
-void FCN(ofwin_setscene)(unsigned int *row, unsigned int *col)
+void OF_FCN(ofwin_setscene)(unsigned int *row, unsigned int *col)
 {
 	if(_objs->_currWinProxy)
 	  _objs->_currWinProxy->setScene(_objs->_currFM, *row, *col);
 }
 
-void FCN(ofwin_setstereo)(unsigned int *row, unsigned int *col, bool *enable,
+void OF_FCN(ofwin_setstereo)(unsigned int *row, unsigned int *col, bool *enable,
                           float *eyeseparation, float *width, float *height, float *distance)
 {
 	if(_objs->_currWinProxy)
@@ -367,7 +361,7 @@ void FCN(ofwin_setstereo)(unsigned int *row, unsigned int *col, bool *enable,
 	}
 }
 
-void FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col, 
+void OF_FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col, 
                                    float *r, float *g, float *b)
 {
 	if(_objs->_currWinProxy)
@@ -377,8 +371,7 @@ void FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col,
 	}
 }
 
-void FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col, 
-                                     const char* fname, int len)
+void OF_FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col, OF_CHARARG(fname))
 {
 	if(_objs->_currWinProxy)
 	{
@@ -386,67 +379,67 @@ void FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col,
 	  if(rr) 
 	  {
 	    // Convert given character string and length to a proper C string
-	    std::string temp(fname, len);
+	    std::string temp(OF_STRING(fname));
 	    rr->setSkySphereTexture(temp);
 	  }
 	}
 }
 
-void FCN(ofwin_setswapbuffersfunction)(void (*fcn)(unsigned int *winID))
+void OF_FCN(ofwin_setswapbuffersfunction)(void (*fcn)(unsigned int *winID))
 {
 	if(_objs->_currWinProxy) 
 	  _objs->_currWinProxy->setSwapBuffersFunction(fcn);
 }
 
-void FCN(ofwin_setmakecurrentfunction)(void (*fcn)(unsigned int *winID, bool *success))
+void OF_FCN(ofwin_setmakecurrentfunction)(void (*fcn)(unsigned int *winID, bool *success))
 {
 	if(_objs->_currWinProxy) 
 	  _objs->_currWinProxy->setMakeCurrentFunction(fcn);
 }
 
-void FCN(ofwin_setupdatecontextfunction)(void (*fcn)(unsigned int *winID, bool *success))
+void OF_FCN(ofwin_setupdatecontextfunction)(void (*fcn)(unsigned int *winID, bool *success))
 {
 	if(_objs->_currWinProxy) 
 	  _objs->_currWinProxy->setUpdateContextFunction(fcn);
 }
 
-void FCN(ofwin_resizewindow)(int *x, int *y, unsigned int *width, unsigned int *height)
+void OF_FCN(ofwin_resizewindow)(int *x, int *y, unsigned int *width, unsigned int *height)
 {
 	if(_objs->_currWinProxy) 
 	  _objs->_currWinProxy->resizeWindow(*x, *y, *width, *height);
 }
 
-void FCN(ofwin_keypress)(unsigned int *key)
+void OF_FCN(ofwin_keypress)(unsigned int *key)
 {
 	if(_objs->_currWinProxy)
 	  _objs->_currWinProxy->keyPress(*key);
 }
 
-void FCN(ofwin_buttonpress)(float *x, float *y, unsigned int *button)
+void OF_FCN(ofwin_buttonpress)(float *x, float *y, unsigned int *button)
 {
 	if(_objs->_currWinProxy)
 	  _objs->_currWinProxy->buttonPress(*x, *y, *button);
 }
 	
-void FCN(ofwin_buttonrelease)(float *x, float *y, unsigned int *button)
+void OF_FCN(ofwin_buttonrelease)(float *x, float *y, unsigned int *button)
 {
 	if(_objs->_currWinProxy)
 	  _objs->_currWinProxy->buttonRelease(*x, *y, *button);
 }
 
-void FCN(ofwin_mousemotion)(float *x, float *y)
+void OF_FCN(ofwin_mousemotion)(float *x, float *y)
 {
 	if(_objs->_currWinProxy)
 	  _objs->_currWinProxy->mouseMotion(*x, *y);
 }
 
-void FCN(ofwin_setdesiredframerate)(double *fps)
+void OF_FCN(ofwin_setdesiredframerate)(double *fps)
 {
 	if(_objs->_currWinProxy)
 	  _objs->_currWinProxy->setDesiredFramerate(*fps);
 }
 
-void FCN(ofwin_addview)(unsigned int *row, unsigned int *col)
+void OF_FCN(ofwin_addview)(unsigned int *row, unsigned int *col)
 {
 	if(_objs->_currWinProxy && _objs->_currView)
 	{
@@ -460,7 +453,7 @@ void FCN(ofwin_addview)(unsigned int *row, unsigned int *col)
 	}
 }
 
-void FCN(ofwin_removeview)(unsigned int *row, unsigned int *col)
+void OF_FCN(ofwin_removeview)(unsigned int *row, unsigned int *col)
 {
 	if(_objs->_currWinProxy && _objs->_currView)
 	{
@@ -474,7 +467,7 @@ void FCN(ofwin_removeview)(unsigned int *row, unsigned int *col)
 	}
 }
 
-void FCN(ofwin_removeallviews)(unsigned int *row, unsigned int *col)
+void OF_FCN(ofwin_removeallviews)(unsigned int *row, unsigned int *col)
 {
 	if(_objs->_currWinProxy && _objs->_currView)
 	{
@@ -488,7 +481,7 @@ void FCN(ofwin_removeallviews)(unsigned int *row, unsigned int *col)
 	}
 }
 
-void FCN(ofwin_selectview)(unsigned int *row, unsigned int *col)
+void OF_FCN(ofwin_selectview)(unsigned int *row, unsigned int *col)
 {
 	if(_objs->_currWinProxy && _objs->_currView)
 	{
@@ -506,7 +499,7 @@ void FCN(ofwin_selectview)(unsigned int *row, unsigned int *col)
 	FrameManager Functions
 *******************************************/
 
-void FCN(offm_activate)(int *id)
+void OF_FCN(offm_activate)(int *id)
 {
 	FMMap::iterator i = _objs->_fmMap.find(*id);
 	if(i == _objs->_fmMap.end())
@@ -521,25 +514,25 @@ void FCN(offm_activate)(int *id)
 	}
 }
 
-void FCN(offm_create)(int *id)
+void OF_FCN(offm_create)(int *id)
 {
 	_objs->_currFM = new FrameManager;
 	_objs->_fmMap[*id] = _objs->_currFM;
 }
 
-void FCN(offm_setframe)()
+void OF_FCN(offm_setframe)()
 {
 	if(_objs->_currFM)
 	  _objs->_currFM->setFrame(_objs->_currFrame);
 }
 
-void FCN(offm_lock)()
+void OF_FCN(offm_lock)()
 {
 	if(_objs->_currFM)
 	  _objs->_intVal = _objs->_currFM->lock();
 }
 
-void FCN(offm_unlock)()
+void OF_FCN(offm_unlock)()
 {
 	if(_objs->_currFM)
 	  _objs->_intVal = _objs->_currFM->unlock();
@@ -549,10 +542,10 @@ void FCN(offm_unlock)()
 	ReferenceFrame Functions
 *******************************************/
 
-void FCN(offrame_activate)(const char *name, int len)
+void OF_FCN(offrame_activate)(OF_CHARARG(name))
 {
 	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	// If requested frame does not exist, raise the error flag  
 	FrameMap::iterator i = _objs->_frameMap.find(temp);
@@ -568,10 +561,10 @@ void FCN(offrame_activate)(const char *name, int len)
 	}
 }
 
-void FCN(offrame_create)(const char *name, int len)
+void OF_FCN(offrame_create)(OF_CHARARG(name))
 {
 	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
   
 	FrameMap::iterator i = _objs->_frameMap.find(temp);
 	if(i == _objs->_frameMap.end()) // Make sure frame doesn't already exist
@@ -583,18 +576,18 @@ void FCN(offrame_create)(const char *name, int len)
 	else _objs->_currFrame = i->second.get();
 }
 
-void FCN(offrame_setcolor)(float *r, float *g, float *b, float *a)
+void OF_FCN(offrame_setcolor)(float *r, float *g, float *b, float *a)
 {
 	if(_objs->_currFrame) 
 	  _objs->_currFrame->setColor(*r, *g, *b, *a);
 }
 
-void FCN(offrame_addchild)(const char *name, int len)
+void OF_FCN(offrame_addchild)(OF_CHARARG(name))
 {
 	if(_objs->_currFrame)
 	{
 	  // Convert given character string and length to a proper C string
-	  std::string temp(name, len);
+	  std::string temp(OF_STRING(name));
 
 	  // Find desired child frame in frame map
 	  FrameMap::iterator i = _objs->_frameMap.find(temp);
@@ -608,12 +601,12 @@ void FCN(offrame_addchild)(const char *name, int len)
 	else _objs->_intVal = 1; // Current frame isn't defined, so raise error
 }
 
-void FCN(offrame_removechild)(const char *name, int len)
+void OF_FCN(offrame_removechild)(OF_CHARARG(name))
 {
 	if(_objs->_currFrame)
 	{
 	  // Convert given character string and length to a proper C string
-	  std::string temp(name, len);
+	  std::string temp(OF_STRING(name));
 
 	  // Find desired child frame in frame map
 	  FrameMap::iterator i = _objs->_frameMap.find(temp);
@@ -627,7 +620,7 @@ void FCN(offrame_removechild)(const char *name, int len)
 	else _objs->_intVal = 1;
 }
 
-void FCN(offrame_removeallchildren)()
+void OF_FCN(offrame_removeallchildren)()
 {
 	if(_objs->_currFrame)
 	{
@@ -639,7 +632,7 @@ void FCN(offrame_removeallchildren)()
 	}
 }
 
-void FCN(offrame_getnumchildren)(int *numchildren)
+void OF_FCN(offrame_getnumchildren)(int *numchildren)
 {
 	if(_objs->_currFrame) // Frame exists, so get number of children
 	{
@@ -653,79 +646,84 @@ void FCN(offrame_getnumchildren)(int *numchildren)
 	}
 }
 
-void FCN(offrame_setposition)(double *x, double *y, double *z)
+void OF_FCN(offrame_setposition)(double *x, double *y, double *z)
 {
 	if(_objs->_currFrame) 
 	  _objs->_currFrame->setPosition(*x, *y, *z);
 }
 
-void FCN(offrame_getposition)(double *x, double *y, double *z)
+void OF_FCN(offrame_getposition)(double *x, double *y, double *z)
 {
 	if(_objs->_currFrame) 
 	  _objs->_currFrame->getPosition(*x, *y, *z);
 }
 
-void FCN(offrame_setattitude)(double *rx, double *ry, double *rz, double *angle)
+void OF_FCN(offrame_setattitude)(double *rx, double *ry, double *rz, double *angle)
 {
 	if(_objs->_currFrame) 
 	  _objs->_currFrame->setAttitude(*rx, *ry, *rz, *angle);
 }
 
-void FCN(offrame_getattitude)(double *rx, double *ry, double *rz, double *angle)
+void OF_FCN(offrame_getattitude)(double *rx, double *ry, double *rz, double *angle)
 {
 	if(_objs->_currFrame) 
 	  _objs->_currFrame->setAttitude(*rx, *ry, *rz, *angle);
 }
 
-void FCN(offrame_showaxes)(unsigned int *axes)
+void OF_FCN(offrame_showaxes)(unsigned int *axes)
 {
 	if(_objs->_currFrame) 
 	  _objs->_currFrame->showAxes(*axes);
 }
 
-void FCN(offrame_shownamelabel)(bool *namelabel)
+void OF_FCN(offrame_shownamelabel)(bool *namelabel)
 {
 	if(_objs->_currFrame)
 	  _objs->_currFrame->showNameLabel(*namelabel);
 }
 
-void FCN(offrame_showaxeslabels)(unsigned int *labels)
+void OF_FCN(offrame_showaxeslabels)(unsigned int *labels)
 {
 	if(_objs->_currFrame)
 	  _objs->_currFrame->showAxesLabels(*labels);
 }
 
-void FCN(offrame_setnamelabel)(const char *name, int len)
+void OF_FCN(offrame_setnamelabel)(OF_CHARARG(name))
 {
 	if(_objs->_currFrame) 
 	{
 	  // Convert given character string and length to a proper C string
-	  std::string temp(name, len);
+	  std::string temp(OF_STRING(name));
 	  _objs->_currFrame->setName(temp);
 	}
 }
 
-#ifdef IVF_CALLS
-void FCN(offrame_setaxeslabels)(const char *xlabel,
-                                const char *ylabel,
-                                const char *zlabel, 
-                                int xlen, int ylen, int zlen)
-
+#if defined(IFORT_CALLS)
+void OF_FCN(offrame_setaxeslabels)(const char *xlabel,
+                                   const char *ylabel,
+                                   const char *zlabel, 
+                                   unsigned int xlabellen, 
+                                   unsigned int ylabellen, 
+                                   unsigned int zlabellen)
 #else
-void FCN(offrame_setaxeslabels)(const char *xlabel, int xlen,
-                                const char *ylabel, int ylen,
-                                const char *zlabel, int zlen)
+void OF_FCN(offrame_setaxeslabels)(OF_CHARARG(xlabel),
+                                   OF_CHARARG(ylabel),
+                                   OF_CHARARG(zlabel))
 #endif
 {
+        std::string _xlabel(OF_STRING(xlabel));
+        std::string _ylabel(OF_STRING(ylabel));
+        std::string _zlabel(OF_STRING(zlabel));
+
 	if(_objs->_currFrame)
 	{
-	  _objs->_currFrame->setXLabel(std::string(xlabel, xlen));
-	  _objs->_currFrame->setYLabel(std::string(ylabel, ylen));
-	  _objs->_currFrame->setZLabel(std::string(zlabel, zlen));
+	  _objs->_currFrame->setXLabel(_xlabel);
+	  _objs->_currFrame->setYLabel(_ylabel);
+	  _objs->_currFrame->setZLabel(_zlabel);
 	}
 }
 
-void FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
+void OF_FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
 {
 	if(_objs->_currFrame)
 	{
@@ -733,7 +731,7 @@ void FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, dou
 	}
 }
 
-void FCN(offrame_moveyaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
+void OF_FCN(offrame_moveyaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
 {
 	if(_objs->_currFrame)
 	{
@@ -741,7 +739,7 @@ void FCN(offrame_moveyaxis)(double pos[], double *length, double *headRatio, dou
 	}
 }
 
-void FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
+void OF_FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
 {
 	if(_objs->_currFrame)
 	{
@@ -749,12 +747,12 @@ void FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, dou
 	}
 }
 
-void FCN(offrame_followtrajectory)(const char *name, int len)
+void OF_FCN(offrame_followtrajectory)(OF_CHARARG(name))
 {
 	if(_objs->_currFrame)
 	{
 	  // Convert given character string and length to a proper C string
-	  std::string temp(name, len);
+	  std::string temp(OF_STRING(name));
 
 	  // Get the trajectory with the specified name
 	  Trajectory *traj;
@@ -786,7 +784,7 @@ void FCN(offrame_followtrajectory)(const char *name, int len)
 	}
 }
 
-OF_EXPORT void FCN(offrame_followtype)(int *data, int *mode)
+OF_EXPORT void OF_FCN(offrame_followtype)(int *data, int *mode)
 {
 	if(_objs->_currFrame)
 	{
@@ -799,7 +797,7 @@ OF_EXPORT void FCN(offrame_followtype)(int *data, int *mode)
 	}
 }
 
-OF_EXPORT void FCN(offrame_followposition)(int src[], unsigned int element[],
+OF_EXPORT void OF_FCN(offrame_followposition)(int src[], unsigned int element[],
                                            unsigned int opt[], double scale[])
 {
 	if(_objs->_currFrame)
@@ -827,7 +825,7 @@ OF_EXPORT void FCN(offrame_followposition)(int src[], unsigned int element[],
 	}
 }
 
-OF_EXPORT void FCN(offrame_managetime)(bool *affectChildren, bool *reset,
+OF_EXPORT void OF_FCN(offrame_managetime)(bool *affectChildren, bool *reset,
 				       bool *changePauseState, bool *pauseState,
                                        bool *changeOffsetTime, double *offsetTime,
                                        bool *changeTimeScale, double *timeScale)
@@ -852,7 +850,7 @@ OF_EXPORT void FCN(offrame_managetime)(bool *affectChildren, bool *reset,
 	else _objs->_intVal = 1;
 }
 
-void FCN(offrame_printframestring)()
+void OF_FCN(offrame_printframestring)()
 {
 	if(_objs->_currFrame)
 	{
@@ -866,16 +864,16 @@ void FCN(offrame_printframestring)()
 	Sphere Functions
 *******************************************/
 
-void FCN(ofsphere_create)(const char *name, int len)
+void OF_FCN(ofsphere_create)(OF_CHARARG(name))
 {
 	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	_objs->_currFrame = new Sphere(temp);
 	_objs->_frameMap[temp] = _objs->_currFrame;
 }
 
-void FCN(ofsphere_setradius)(double *radius)
+void OF_FCN(ofsphere_setradius)(double *radius)
 {
 	  // Make sure that the currently active ReferenceFrame is a Sphere
 	Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
@@ -884,18 +882,18 @@ void FCN(ofsphere_setradius)(double *radius)
 	sphere->setRadius(*radius);
 }
 
-void FCN(ofsphere_settexturemap)(const char *fname, int len)
+void OF_FCN(ofsphere_settexturemap)(OF_CHARARG(fname))
 {
 	// Make sure that the currently active ReferenceFrame is a Sphere
 	Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
 	if(sphere == NULL) return;
 
 	// Convert given character string and length to a proper C string
-	std::string temp(fname, len);
+	std::string temp(OF_STRING(fname));
 	sphere->setTextureMap(temp);
 }
 
-void FCN(ofsphere_setautolod)(bool *lod)
+void OF_FCN(ofsphere_setautolod)(bool *lod)
 {
 	Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
 	if(sphere)
@@ -908,28 +906,28 @@ void FCN(ofsphere_setautolod)(bool *lod)
 	Model Functions
 *******************************************/
 
-void FCN(ofmodel_create)(const char *name, int len)
+void OF_FCN(ofmodel_create)(OF_CHARARG(name))
 {
 	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	_objs->_currFrame = new Model(temp);
 	_objs->_frameMap[temp] = _objs->_currFrame;
 }
 
-void FCN(ofmodel_setmodel)(const char *fname, int len)
+void OF_FCN(ofmodel_setmodel)(OF_CHARARG(fname))
 {
 	// Make sure that the currently active ReferenceFrame is a Model
 	Model *model = dynamic_cast<Model*>(_objs->_currFrame);
 	if(model)
 	{
 	  // Convert given character string and length to a proper C string
-	  std::string temp(fname, len);
+	  std::string temp(OF_STRING(fname));
 	  _objs->_intVal = model->setModel(temp);
 	}
 }
 
-void FCN(ofmodel_setmodelposition)(double *x, double *y, double *z)
+void OF_FCN(ofmodel_setmodelposition)(double *x, double *y, double *z)
 {
 	// Make sure that the currently active ReferenceFrame is a Model
 	Model *model = dynamic_cast<Model*>(_objs->_currFrame);
@@ -939,7 +937,7 @@ void FCN(ofmodel_setmodelposition)(double *x, double *y, double *z)
 	}
 }
 
-void FCN(ofmodel_getmodelposition)(double *x, double *y, double *z)
+void OF_FCN(ofmodel_getmodelposition)(double *x, double *y, double *z)
 {
 	// Make sure that the currently active ReferenceFrame is a Model
 	Model *model = dynamic_cast<Model*>(_objs->_currFrame);
@@ -949,7 +947,7 @@ void FCN(ofmodel_getmodelposition)(double *x, double *y, double *z)
 	}
 }
 
-void FCN(ofmodel_setmodelscale)(double *sx, double *sy, double *sz)
+void OF_FCN(ofmodel_setmodelscale)(double *sx, double *sy, double *sz)
 {
 	// Make sure that the currently active ReferenceFrame is a Model
 	Model *model = dynamic_cast<Model*>(_objs->_currFrame);
@@ -959,7 +957,7 @@ void FCN(ofmodel_setmodelscale)(double *sx, double *sy, double *sz)
 	}
 }
 
-void FCN(ofmodel_getmodelscale)(double *sx, double *sy, double *sz)
+void OF_FCN(ofmodel_getmodelscale)(double *sx, double *sy, double *sz)
 {
 	// Make sure that the currently active ReferenceFrame is a Model
 	Model *model = dynamic_cast<Model*>(_objs->_currFrame);
@@ -969,7 +967,7 @@ void FCN(ofmodel_getmodelscale)(double *sx, double *sy, double *sz)
 	}
 }
 
-void FCN(ofmodel_setmodelpivot)(double *px, double *py, double *pz)
+void OF_FCN(ofmodel_setmodelpivot)(double *px, double *py, double *pz)
 {
 	// Make sure that the currently active ReferenceFrame is a Model
 	Model *model = dynamic_cast<Model*>(_objs->_currFrame);
@@ -979,7 +977,7 @@ void FCN(ofmodel_setmodelpivot)(double *px, double *py, double *pz)
 	}
 }
 
-void FCN(ofmodel_getmodelpivot)(double *px, double *py, double *pz)
+void OF_FCN(ofmodel_getmodelpivot)(double *px, double *py, double *pz)
 {
 	// Make sure that the currently active ReferenceFrame is a Model
 	Model *model = dynamic_cast<Model*>(_objs->_currFrame);
@@ -989,7 +987,7 @@ void FCN(ofmodel_getmodelpivot)(double *px, double *py, double *pz)
 	}
 }
 
-void FCN(ofmodel_getmodelsize)(double *size)
+void OF_FCN(ofmodel_getmodelsize)(double *size)
 {
   	// Make sure that the currently active ReferenceFrame is a Model
 	Model *model = dynamic_cast<Model*>(_objs->_currFrame);
@@ -1008,19 +1006,19 @@ void FCN(ofmodel_getmodelsize)(double *size)
 	DrawableTrajectory Functions
 ***********************************************/
 
-void FCN(ofdrawtraj_create)(const char *name, int len)
+void OF_FCN(ofdrawtraj_create)(OF_CHARARG(name))
 {
 	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	_objs->_currFrame = new DrawableTrajectory(temp);
 	_objs->_frameMap[temp] = _objs->_currFrame;
 }
 
-void FCN(ofdrawtraj_addartist)(const char *name, int len)
+void OF_FCN(ofdrawtraj_addartist)(OF_CHARARG(name))
 {
 	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	// Make sure that the current ReferenceFrame is a DrawableTrajectory
 	DrawableTrajectory *drawtraj = dynamic_cast<DrawableTrajectory*>(_objs->_currFrame);
@@ -1036,10 +1034,10 @@ void FCN(ofdrawtraj_addartist)(const char *name, int len)
 	else _objs->_intVal = 1;
 }
 
-OF_EXPORT void FCN(ofdrawtraj_removeartist)(const char *name, int len)
+OF_EXPORT void OF_FCN(ofdrawtraj_removeartist)(OF_CHARARG(name))
 {
   	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	// Make sure that the current ReferenceFrame is a DrawableTrajectory
 	DrawableTrajectory *drawtraj = dynamic_cast<DrawableTrajectory*>(_objs->_currFrame);
@@ -1055,7 +1053,7 @@ OF_EXPORT void FCN(ofdrawtraj_removeartist)(const char *name, int len)
 	else _objs->_intVal = 1;
 }
 
-OF_EXPORT void FCN(ofdrawtraj_removeallartists)()
+OF_EXPORT void OF_FCN(ofdrawtraj_removeallartists)()
 {
   	// Make sure that the current ReferenceFrame is a DrawableTrajectory
 	DrawableTrajectory *drawtraj = dynamic_cast<DrawableTrajectory*>(_objs->_currFrame);
@@ -1071,15 +1069,15 @@ OF_EXPORT void FCN(ofdrawtraj_removeallartists)()
 	CoordinateAxes Functions
 ***********************************************/
 
-void FCN(ofcoordaxes_create)(const char *name, int len)
+void OF_FCN(ofcoordaxes_create)(OF_CHARARG(name))
 {
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	_objs->_currFrame = new CoordinateAxes(temp);
 	_objs->_frameMap[temp] = _objs->_currFrame;
 }
 
-void FCN(ofcoordaxes_setaxislength)(double *len)
+void OF_FCN(ofcoordaxes_setaxislength)(double *len)
 {
 	CoordinateAxes *ca = dynamic_cast<CoordinateAxes*>(_objs->_currFrame);
 	if(ca) 
@@ -1090,7 +1088,7 @@ void FCN(ofcoordaxes_setaxislength)(double *len)
 	else _objs->_intVal = 1;
 }
 
-void FCN(ofcoordaxes_setdrawaxes)(unsigned int *axes)
+void OF_FCN(ofcoordaxes_setdrawaxes)(unsigned int *axes)
 {
 	CoordinateAxes *ca = dynamic_cast<CoordinateAxes*>(_objs->_currFrame);
 	if(ca) 
@@ -1101,7 +1099,7 @@ void FCN(ofcoordaxes_setdrawaxes)(unsigned int *axes)
 	else _objs->_intVal = 1;
 }
 
-void FCN(ofcoordaxes_settickspacing)(double *major, double *minor)
+void OF_FCN(ofcoordaxes_settickspacing)(double *major, double *minor)
 {
 	CoordinateAxes *ca = dynamic_cast<CoordinateAxes*>(_objs->_currFrame);
 	if(ca) 
@@ -1112,7 +1110,7 @@ void FCN(ofcoordaxes_settickspacing)(double *major, double *minor)
 	else _objs->_intVal = 1;
 }
 
-void FCN(ofcoordaxes_setticksize)(unsigned int *major, unsigned int *minor)
+void OF_FCN(ofcoordaxes_setticksize)(unsigned int *major, unsigned int *minor)
 {
 	CoordinateAxes *ca = dynamic_cast<CoordinateAxes*>(_objs->_currFrame);
 	if(ca) 
@@ -1123,13 +1121,13 @@ void FCN(ofcoordaxes_setticksize)(unsigned int *major, unsigned int *minor)
 	else _objs->_intVal = 1;
 }
 
-OF_EXPORT void FCN(ofcoordaxes_settickimage)( const char *fname, int len )
+OF_EXPORT void OF_FCN(ofcoordaxes_settickimage)(OF_CHARARG(fname))
 {
 	CoordinateAxes *ca = dynamic_cast<CoordinateAxes*>(_objs->_currFrame);
 	if(ca)
 	{
 	  // Convert given character string and length to a proper C string
-	  std::string temp(fname, len);
+	  std::string temp(OF_STRING(fname));
 	  _objs->_intVal = !ca->setTickImage(temp);
 	}
 	else _objs->_intVal = 1;
@@ -1139,15 +1137,15 @@ OF_EXPORT void FCN(ofcoordaxes_settickimage)( const char *fname, int len )
 	LatLonGrid Functions
 ***********************************************/
 
-void FCN(oflatlongrid_create)(const char *name, int len)
+void OF_FCN(oflatlongrid_create)(OF_CHARARG(name))
 {
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	_objs->_currFrame = new LatLonGrid(temp);
 	_objs->_frameMap[temp] = _objs->_currFrame;
 }
 
-void FCN(oflatlongrid_setparameters)(double *radius, double *latSpace, double *lonSpace)
+void OF_FCN(oflatlongrid_setparameters)(double *radius, double *latSpace, double *lonSpace)
 {
 	LatLonGrid *llg = dynamic_cast<LatLonGrid*>(_objs->_currFrame);
 	if(llg) 
@@ -1162,15 +1160,15 @@ void FCN(oflatlongrid_setparameters)(double *radius, double *latSpace, double *l
 	RadialPlane Functions
 ***********************************************/
 
-void FCN(ofradialplane_create)(const char *name, int len)
+void OF_FCN(ofradialplane_create)(OF_CHARARG(name))
 {
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	_objs->_currFrame = new RadialPlane(temp);
 	_objs->_frameMap[temp] = _objs->_currFrame;
 }
 
-void FCN(ofradialplane_setparameters)(double *radius, double *radSpace, double *lonSpace)
+void OF_FCN(ofradialplane_setparameters)(double *radius, double *radSpace, double *lonSpace)
 {
 	RadialPlane *rp = dynamic_cast<RadialPlane*>(_objs->_currFrame);
 	if(rp) 
@@ -1181,7 +1179,7 @@ void FCN(ofradialplane_setparameters)(double *radius, double *radSpace, double *
 	else _objs->_intVal = 1;
 }
 
-void FCN(ofradialplane_setplanecolor)(float *r, float *g, float *b, float *a)
+void OF_FCN(ofradialplane_setplanecolor)(float *r, float *g, float *b, float *a)
 {
 	RadialPlane *rp = dynamic_cast<RadialPlane*>(_objs->_currFrame);
 	if(rp) 
@@ -1192,7 +1190,7 @@ void FCN(ofradialplane_setplanecolor)(float *r, float *g, float *b, float *a)
 	else _objs->_intVal = 1;
 }
 
-void FCN(ofradialplane_setlinecolor)(float *r, float *g, float *b, float *a)
+void OF_FCN(ofradialplane_setlinecolor)(float *r, float *g, float *b, float *a)
 {
 	RadialPlane *rp = dynamic_cast<RadialPlane*>(_objs->_currFrame);
 	if(rp) 
@@ -1207,10 +1205,10 @@ void FCN(ofradialplane_setlinecolor)(float *r, float *g, float *b, float *a)
 	Trajectory Functions
 ***********************************************/
 
-void FCN(oftraj_activate)(const char *name, int len)
+void OF_FCN(oftraj_activate)(OF_CHARARG(name))
 {
 	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	TrajectoryMap::iterator i = _objs->_trajMap.find(temp);
 	if(i == _objs->_trajMap.end())
@@ -1225,90 +1223,93 @@ void FCN(oftraj_activate)(const char *name, int len)
 	}
 }
 
-#ifdef IVF_CALLS
-void FCN(oftraj_create)(const char *name, unsigned int *dof,
-                        unsigned int *numopt, int len)
+#if defined(IFORT_CALLS)
+void OF_FCN(oftraj_create)(const char *name, unsigned int *dof,
+                        unsigned int *numopt, int namelen)
+
 #else
-void FCN(oftraj_create)(const char *name, int len,
-                        unsigned int *dof, unsigned int *numopt)
+void OF_FCN(oftraj_create)(OF_CHARARG(name), unsigned int *dof,
+                        unsigned int *numopt)
+
 #endif
 {
 	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
+
 
 	_objs->_currTraj = new Trajectory(*dof, *numopt);
 	_objs->_trajMap[temp] = _objs->_currTraj;
 }
 
-void FCN(oftraj_setnumoptionals)(unsigned int *nopt)
+void OF_FCN(oftraj_setnumoptionals)(unsigned int *nopt)
 {
 	if(_objs->_currTraj)
 	  _objs->_currTraj->setNumOptionals(*nopt);
 }
 
-void FCN(oftraj_setdof)(unsigned int *dof)
+void OF_FCN(oftraj_setdof)(unsigned int *dof)
 {
 	if(_objs->_currTraj)
 	  _objs->_currTraj->setDOF(*dof);
 }
 
-void FCN(oftraj_addtime)(const double *t)
+void OF_FCN(oftraj_addtime)(const double *t)
 {
 	if(_objs->_currTraj)
 	  _objs->_intVal = _objs->_currTraj->addTime(*t);
 }
 
-void FCN(oftraj_addposition)(const double *x, const double *y, const double *z)
+void OF_FCN(oftraj_addposition)(const double *x, const double *y, const double *z)
 {
 	if(_objs->_currTraj)
 	  _objs->_intVal = _objs->_currTraj->addPosition(*x, *y, *z);
 }
 
-void FCN(oftraj_addpositionvec)(const double pos[])
+void OF_FCN(oftraj_addpositionvec)(const double pos[])
 {
 	if(_objs->_currTraj)
 	  _objs->_intVal = _objs->_currTraj->addPosition(pos);
 }
 
-void FCN(oftraj_addattitude)(const double *x, const double *y,
+void OF_FCN(oftraj_addattitude)(const double *x, const double *y,
                              const double *z, const double *w)
 {
 	if(_objs->_currTraj)
 	  _objs->_intVal = _objs->_currTraj->addAttitude(*x, *y, *z, *w);
 }
 
-void FCN(oftraj_addattitudevec)(const double att[])
+void OF_FCN(oftraj_addattitudevec)(const double att[])
 {
 	if(_objs->_currTraj)
 	  _objs->_intVal = _objs->_currTraj->addAttitude(att);
 }
 
-void FCN(oftraj_setoptional)(unsigned int *index, const double *x,
+void OF_FCN(oftraj_setoptional)(unsigned int *index, const double *x,
                              const double *y, const double *z)
 {
 	if(_objs->_currTraj)
 	  _objs->_intVal = _objs->_currTraj->setOptional(*index, *x, *y, *z);
 }
 
-void FCN(oftraj_setoptionalvec)(unsigned int *index, const double opt[])
+void OF_FCN(oftraj_setoptionalvec)(unsigned int *index, const double opt[])
 {
 	if(_objs->_currTraj)
 	  _objs->_intVal = _objs->_currTraj->setOptional(*index, opt);
 }
 
-void FCN(oftraj_clear)()
+void OF_FCN(oftraj_clear)()
 {
 	if(_objs->_currTraj)
 	  _objs->_currTraj->clear();
 }
 
-void FCN(oftraj_informartists)()
+void OF_FCN(oftraj_informartists)()
 {
 	if(_objs->_currTraj)
 	  _objs->_currTraj->informArtists();
 }
 
-void FCN(oftraj_autoinformartists)(bool *autoinform)
+void OF_FCN(oftraj_autoinformartists)(bool *autoinform)
 {
 	if(_objs->_currTraj)
 	  _objs->_currTraj->autoInformArtists(*autoinform);
@@ -1318,10 +1319,10 @@ void FCN(oftraj_autoinformartists)(bool *autoinform)
 	TrajectoryArtist Functions
 ************************************************/
 
-void FCN(oftrajartist_activate)(const char *name, int len)
+void OF_FCN(oftrajartist_activate)(OF_CHARARG(name))
 {
 	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	ArtistMap::iterator i = _objs->_artistMap.find(temp);
 	if(i == _objs->_artistMap.end())
@@ -1336,7 +1337,7 @@ void FCN(oftrajartist_activate)(const char *name, int len)
 	}
 }
 	
-void FCN(oftrajartist_settrajectory)()
+void OF_FCN(oftrajartist_settrajectory)()
 {
 	if(_objs->_currArtist)
 	  _objs->_currArtist->setTrajectory(_objs->_currTraj);
@@ -1347,16 +1348,16 @@ void FCN(oftrajartist_settrajectory)()
 	CurveArtist Functions
 ************************************************/
 
-void FCN(ofcurveartist_create)(const char *name, int len)
+void OF_FCN(ofcurveartist_create)(OF_CHARARG(name))
 {
 	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	_objs->_currArtist = new CurveArtist;
 	_objs->_artistMap[temp] = _objs->_currArtist;
 }
 
-void FCN(ofcurveartist_setxdata)(int *src, unsigned int *element,
+void OF_FCN(ofcurveartist_setxdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
@@ -1380,7 +1381,7 @@ void FCN(ofcurveartist_setxdata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-void FCN(ofcurveartist_setydata)(int *src, unsigned int *element,
+void OF_FCN(ofcurveartist_setydata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
@@ -1404,7 +1405,7 @@ void FCN(ofcurveartist_setydata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-void FCN(ofcurveartist_setzdata)(int *src, unsigned int *element,
+void OF_FCN(ofcurveartist_setzdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
@@ -1428,21 +1429,21 @@ void FCN(ofcurveartist_setzdata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-void FCN(ofcurveartist_setcolor)(float *r, float *g, float *b)
+void OF_FCN(ofcurveartist_setcolor)(float *r, float *g, float *b)
 {
 	CurveArtist *artist = dynamic_cast<CurveArtist*>(_objs->_currArtist);
 	if(artist) 
 	  artist->setColor(*r, *g, *b);
 }
 
-void FCN(ofcurveartist_setwidth)(float *width)
+void OF_FCN(ofcurveartist_setwidth)(float *width)
 {
 	CurveArtist *artist = dynamic_cast<CurveArtist*>(_objs->_currArtist);
 	if(artist) 
 	  artist->setWidth(*width);
 }
 
-void FCN(ofcurveartist_setpattern)(int *factor, unsigned short *pattern)
+void OF_FCN(ofcurveartist_setpattern)(int *factor, unsigned short *pattern)
 {
 	CurveArtist *artist = dynamic_cast<CurveArtist*>(_objs->_currArtist);
 	if(artist) 
@@ -1453,16 +1454,16 @@ void FCN(ofcurveartist_setpattern)(int *factor, unsigned short *pattern)
 	SegmentArtist Functions
 ************************************************/
 
-void FCN(ofsegmentartist_create)(const char *name, int len)
+void OF_FCN(ofsegmentartist_create)(OF_CHARARG(name))
 {
 	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	_objs->_currArtist = new SegmentArtist;
 	_objs->_artistMap[temp] = _objs->_currArtist;
 }
 
-void FCN(ofsegmentartist_setstartxdata)(int *src, unsigned int *element,
+void OF_FCN(ofsegmentartist_setstartxdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
@@ -1486,7 +1487,7 @@ void FCN(ofsegmentartist_setstartxdata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-void FCN(ofsegmentartist_setstartydata)(int *src, unsigned int *element,
+void OF_FCN(ofsegmentartist_setstartydata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
@@ -1510,7 +1511,7 @@ void FCN(ofsegmentartist_setstartydata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-void FCN(ofsegmentartist_setstartzdata)(int *src, unsigned int *element,
+void OF_FCN(ofsegmentartist_setstartzdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
@@ -1534,7 +1535,7 @@ void FCN(ofsegmentartist_setstartzdata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-void FCN(ofsegmentartist_setendxdata)(int *src, unsigned int *element,
+void OF_FCN(ofsegmentartist_setendxdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
@@ -1558,7 +1559,7 @@ void FCN(ofsegmentartist_setendxdata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-void FCN(ofsegmentartist_setendydata)(int *src, unsigned int *element,
+void OF_FCN(ofsegmentartist_setendydata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
@@ -1582,7 +1583,7 @@ void FCN(ofsegmentartist_setendydata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-void FCN(ofsegmentartist_setendzdata)(int *src, unsigned int *element,
+void OF_FCN(ofsegmentartist_setendzdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
@@ -1606,7 +1607,7 @@ void FCN(ofsegmentartist_setendzdata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-void FCN(ofsegmentartist_setstride)(unsigned int *stride)
+void OF_FCN(ofsegmentartist_setstride)(unsigned int *stride)
 {
 	SegmentArtist *artist = dynamic_cast<SegmentArtist*>(_objs->_currArtist);
 	if(artist)
@@ -1618,21 +1619,21 @@ void FCN(ofsegmentartist_setstride)(unsigned int *stride)
 	  _objs->_intVal = 1;
 }
 
-void FCN(ofsegmentartist_setcolor)(float *r, float *g, float *b)
+void OF_FCN(ofsegmentartist_setcolor)(float *r, float *g, float *b)
 {
 	SegmentArtist *artist = dynamic_cast<SegmentArtist*>(_objs->_currArtist);
 	if(artist) 
 	  artist->setColor(*r, *g, *b);
 }
 
-void FCN(ofsegmentartist_setwidth)(float *width)
+void OF_FCN(ofsegmentartist_setwidth)(float *width)
 {
 	SegmentArtist *artist = dynamic_cast<SegmentArtist*>(_objs->_currArtist);
 	if(artist) 
 	  artist->setWidth(*width);
 }
 
-void FCN(ofsegmentartist_setpattern)(int *factor, unsigned short *pattern)
+void OF_FCN(ofsegmentartist_setpattern)(int *factor, unsigned short *pattern)
 {
 	SegmentArtist *artist = dynamic_cast<SegmentArtist*>(_objs->_currArtist);
 	if(artist) 
@@ -1643,16 +1644,16 @@ void FCN(ofsegmentartist_setpattern)(int *factor, unsigned short *pattern)
 	MarkerArtist Functions
 *****************************************************************/
 
-OF_EXPORT void FCN(ofmarkerartist_create)(const char *name, int len)
+OF_EXPORT void OF_FCN(ofmarkerartist_create)(OF_CHARARG(name))
 {
 	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	_objs->_currArtist = new MarkerArtist;
 	_objs->_artistMap[temp] = _objs->_currArtist;
 }
 
-void FCN(ofmarkerartist_setxdata)(int *src, unsigned int *element,
+void OF_FCN(ofmarkerartist_setxdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
@@ -1676,7 +1677,7 @@ void FCN(ofmarkerartist_setxdata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-void FCN(ofmarkerartist_setydata)(int *src, unsigned int *element,
+void OF_FCN(ofmarkerartist_setydata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
@@ -1700,7 +1701,7 @@ void FCN(ofmarkerartist_setydata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-void FCN(ofmarkerartist_setzdata)(int *src, unsigned int *element,
+void OF_FCN(ofmarkerartist_setzdata)(int *src, unsigned int *element,
                                  unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
@@ -1724,7 +1725,7 @@ void FCN(ofmarkerartist_setzdata)(int *src, unsigned int *element,
 	  _objs->_intVal = 1;
 }
 
-OF_EXPORT void FCN(ofmarkerartist_setmarkers)( unsigned int *markers )
+OF_EXPORT void OF_FCN(ofmarkerartist_setmarkers)( unsigned int *markers )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
 	if(artist)
@@ -1735,7 +1736,7 @@ OF_EXPORT void FCN(ofmarkerartist_setmarkers)( unsigned int *markers )
 	else _objs->_intVal = 1;
 }
 
-OF_EXPORT void FCN(ofmarkerartist_setmarkercolor)( unsigned int *markers, float *r, float *g, float *b )
+OF_EXPORT void OF_FCN(ofmarkerartist_setmarkercolor)( unsigned int *markers, float *r, float *g, float *b )
 {
   	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
 	if(artist)
@@ -1746,19 +1747,19 @@ OF_EXPORT void FCN(ofmarkerartist_setmarkercolor)( unsigned int *markers, float 
 	else _objs->_intVal = 1;
 }
 
-OF_EXPORT void FCN(ofmarkerartist_setmarkerimage)( const char *fname, int len )
+OF_EXPORT void OF_FCN(ofmarkerartist_setmarkerimage)(OF_CHARARG(fname))
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
 	if(artist)
 	{
 	  // Convert given character string and length to a proper C string
-	  std::string temp(fname, len);
+	  std::string temp(OF_STRING(fname));
 	  _objs->_intVal = !artist->setMarkerImage(temp);
 	}
 	else _objs->_intVal = 1;
 }
 
-OF_EXPORT void FCN(ofmarkerartist_setintermediatetype)( unsigned int *type )
+OF_EXPORT void OF_FCN(ofmarkerartist_setintermediatetype)( unsigned int *type )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
 	if(artist)
@@ -1769,7 +1770,7 @@ OF_EXPORT void FCN(ofmarkerartist_setintermediatetype)( unsigned int *type )
 	else _objs->_intVal = 1;
 }
 
-OF_EXPORT void FCN(ofmarkerartist_setintermediatespacing)( double *spacing )
+OF_EXPORT void OF_FCN(ofmarkerartist_setintermediatespacing)( double *spacing )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
 	if(artist)
@@ -1780,7 +1781,7 @@ OF_EXPORT void FCN(ofmarkerartist_setintermediatespacing)( double *spacing )
 	else _objs->_intVal = 1;
 }
 
-OF_EXPORT void FCN(ofmarkerartist_setintermediatedirection)( unsigned int *direction )
+OF_EXPORT void OF_FCN(ofmarkerartist_setintermediatedirection)( unsigned int *direction )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
 	if(artist)
@@ -1791,7 +1792,7 @@ OF_EXPORT void FCN(ofmarkerartist_setintermediatedirection)( unsigned int *direc
 	else _objs->_intVal = 1;
 }
 
-OF_EXPORT void FCN(ofmarkerartist_setmarkersize)( unsigned int *size )
+OF_EXPORT void OF_FCN(ofmarkerartist_setmarkersize)( unsigned int *size )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
 	if(artist)
@@ -1802,7 +1803,7 @@ OF_EXPORT void FCN(ofmarkerartist_setmarkersize)( unsigned int *size )
 	else _objs->_intVal = 1;
 }
 
-OF_EXPORT void FCN(ofmarkerartist_setautoattenuate)( bool *autoattenuate )
+OF_EXPORT void OF_FCN(ofmarkerartist_setautoattenuate)( bool *autoattenuate )
 {
 	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
 	if(artist)
@@ -1817,10 +1818,10 @@ OF_EXPORT void FCN(ofmarkerartist_setautoattenuate)( bool *autoattenuate )
 	View Functions
 ************************************************/
 
-void FCN(ofview_activate)(const char *name, int len)
+void OF_FCN(ofview_activate)(OF_CHARARG(name))
 {
   	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	ViewMap::iterator i = _objs->_viewMap.find(temp);
 	if(i == _objs->_viewMap.end())
@@ -1835,44 +1836,49 @@ void FCN(ofview_activate)(const char *name, int len)
 	}
 }
 
-void FCN(ofview_create)(const char *name, int len)
+void OF_FCN(ofview_create)(OF_CHARARG(name))
 {
   	// Convert given character string and length to a proper C string
-	std::string temp(name, len);
+	std::string temp(OF_STRING(name));
 
 	_objs->_currView = new View;
 	_objs->_viewMap[temp] = _objs->_currView;
 }
 
-void FCN(ofview_setorthographic)(double *left, double *right,
+void OF_FCN(ofview_setorthographic)(double *left, double *right,
                                  double *bottom, double *top)
 {
 	if(_objs->_currView)
 	  _objs->_currView->setOrthographic(*left, *right, *bottom, *top);
 }
 
-void FCN(ofview_setperspective)(double *fov, double *ratio)
+void OF_FCN(ofview_setperspective)(double *fov, double *ratio)
 {
 	if(_objs->_currView)
 	  _objs->_currView->setPerspective(*fov, *ratio);
 }
 
-void FCN(ofview_setaspectmultiplier)(double *mult)
+void OF_FCN(ofview_setaspectmultiplier)(double *mult)
 {
 	if(_objs->_currView)
 	  _objs->_currView->setAspectMultiplier(*mult);
 }
 
-#ifdef IVF_CALLS
-void FCN(ofview_setviewframe)(const char *root, const char *frame, int rlen, int flen)
+#if defined(IFORT_CALLS)
+void OF_FCN(ofview_setviewframe)(const char *root, const char *frame, 
+                                 unsigned int rootlen, 
+                                 unsigned int framelen)
+
 #else
-void FCN(ofview_setviewframe)(const char *root, int rlen, const char *frame, int flen)
+void OF_FCN(ofview_setviewframe)(OF_CHARARG(root), OF_CHARARG(frame))
+
 #endif
 {
+        std::string rname(OF_STRING(root));
+	std::string fname(OF_STRING(frame));
+
 	if(_objs->_currView)
 	{
-	  std::string rname(root, rlen);
-	  std::string fname(frame, flen);
 
 	  // Find root and viewed frames in the FrameMap
 	  FrameMap::iterator i = _objs->_frameMap.find(rname);
@@ -1894,13 +1900,13 @@ void FCN(ofview_setviewframe)(const char *root, int rlen, const char *frame, int
 	}
 }
 
-void FCN(ofview_setdefaultviewdistance)(double *distance)
+void OF_FCN(ofview_setdefaultviewdistance)(double *distance)
 {
 	if(_objs->_currView)
 	  _objs->_currView->setDefaultViewDistance(*distance);
 }
 
-void FCN(ofview_isvalid)(bool *valid)
+void OF_FCN(ofview_isvalid)(bool *valid)
 {
 	if(_objs->_currView) 
 	{
@@ -1914,9 +1920,7 @@ void FCN(ofview_isvalid)(bool *valid)
 	}
 }
 
-void FCN(ofview_reset)()
+void OF_FCN(ofview_reset)()
 {
 	if(_objs->_currView) _objs->_currView->resetTrackball();
 }
-
-#undef FCN
