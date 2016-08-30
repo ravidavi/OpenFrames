@@ -15,7 +15,6 @@
 ***********************************/
 
 #include <OpenFrames/MarkerArtist.hpp>
-#include <osg/AlphaFunc>
 #include <osg/BlendFunc>
 #include <osg/Point>
 #include <osg/PointSprite>
@@ -86,6 +85,7 @@ MarkerArtist::MarkerArtist(const Trajectory *traj)
         fn->setFunction(osg::BlendFunc::SRC_ALPHA, 
                         osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
         ss->setAttributeAndModes(fn);
+        ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
 
         // Set default marker color and size
 	setMarkerColor(_markers, 1, 0, 0);
@@ -214,7 +214,7 @@ bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
 
 	if(fname.length() == 0) // Use default OpenGL point as marker
 	{
-          ss->removeAttribute(osg::StateAttribute::ALPHAFUNC);
+          ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
 	  ss->removeTextureAttribute(0, osg::StateAttribute::POINTSPRITE);
 	  ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
 	  return true;
@@ -238,10 +238,8 @@ bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
 	  tex->setImage(image);
 	  ss->setTextureAttributeAndModes(0, tex);
 
-          // Set alpha filtering
-          osg::AlphaFunc *alphaFunc = new osg::AlphaFunc;
-          alphaFunc->setFunction(osg::AlphaFunc::GEQUAL, 0.05f);
-          ss->setAttributeAndModes(alphaFunc, osg::StateAttribute::ON);
+          // Assume texture may have transparency
+          ss->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
 
 	  return true;
 	}

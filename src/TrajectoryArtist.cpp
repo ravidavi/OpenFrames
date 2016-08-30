@@ -22,9 +22,6 @@ namespace OpenFrames
 
 TrajectoryArtist::TrajectoryArtist() 
 {
-	// Disable lighting computations
-	osg::StateSet* stateset = getOrCreateStateSet();
-	stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 }
 
 // Not using the copy constructor

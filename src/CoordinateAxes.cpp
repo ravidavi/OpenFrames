@@ -15,7 +15,6 @@
 ***********************************/
 
 #include <OpenFrames/CoordinateAxes.hpp>
-#include <osg/AlphaFunc>
 #include <osg/BlendFunc>
 #include <osg/Point>
 #include <osg/PointSprite>
@@ -110,7 +109,7 @@ bool CoordinateAxes::setTickImage(const std::string &fname, bool force_reload)
 
 	if(fname.length() == 0) // Use default OpenGL point as marker
 	{
-	  ss->removeAttribute(osg::StateAttribute::BLENDFUNC);
+          ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
 	  ss->removeTextureAttribute(0, osg::StateAttribute::POINTSPRITE);
 	  ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
 	  return true;
@@ -125,12 +124,6 @@ bool CoordinateAxes::setTickImage(const std::string &fname, bool force_reload)
 	osg::Image *image = osgDB::readImageFile(fname); // Load image from file
 	if(image)
 	{
-	  // Set up blending so marker looks nice
-	  osg::BlendFunc *fn = new osg::BlendFunc();
-	  fn->setFunction(osg::BlendFunc::SRC_ALPHA, 
-	                  osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
-	  ss->setAttributeAndModes(fn);
-
 	  // Set up point sprite
 	  osg::PointSprite *sprite = new osg::PointSprite();
 	  ss->setTextureAttributeAndModes(0, sprite);
@@ -139,6 +132,9 @@ bool CoordinateAxes::setTickImage(const std::string &fname, bool force_reload)
 	  osg::Texture2D *tex = new osg::Texture2D();
 	  tex->setImage(image);
 	  ss->setTextureAttributeAndModes(0, tex);
+
+          // Assume texture may have transparency
+          ss->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
 
 	  return true;
 	}
@@ -186,11 +182,16 @@ void CoordinateAxes::_init()
 	_axesGeode->setName(_name + " axes geode");
 	_tickGeode->setName(_name + " tick geode");
 
-	// Set up an AlphaFunc to throw away tick mark pixels that are
-	// nearly transparent.
-	osg::AlphaFunc *alphaFunc = new osg::AlphaFunc;
-	alphaFunc->setFunction(osg::AlphaFunc::GEQUAL, 0.05f);
-	_tickGeode->getOrCreateStateSet()->setAttributeAndModes(alphaFunc);
+        // Set up blending so tick marks look nice
+        osg::BlendFunc *fn = new osg::BlendFunc();
+        fn->setFunction(osg::BlendFunc::SRC_ALPHA,
+                        osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+        _tickGeode->getOrCreateStateSet()->setAttributeAndModes(fn);
+        _tickGeode->getOrCreateStateSet()->setRenderingHint(osg::StateSet::OPAQUE_BIN);
+
+	// Disable lighting computations
+	_axesGeode->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+	_tickGeode->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
 	// Create the geometry drawables for the actual x/y/z axes, as well
 	// as for the major and minor tick marks
@@ -199,17 +200,15 @@ void CoordinateAxes::_init()
 	_minorTickGeom = new osg::Geometry;
 
 	// Set up point parameters for the major/minor tick marks
-	_majorTickGeom->getOrCreateStateSet()->setAttribute(new osg::Point);
-	_minorTickGeom->getOrCreateStateSet()->setAttribute(new osg::Point);
+        // Setting the osg::Point mode enables GL_POINT_SMOOTH
+        // Note that major/minor Geoms need separate StateSets since they
+        // can have different osg::Point sizes
+	_majorTickGeom->getOrCreateStateSet()->setAttributeAndModes(new osg::Point);
+	_minorTickGeom->getOrCreateStateSet()->setAttributeAndModes(new osg::Point);
 
 	// Create the arrays for vertex and color data
 	_vertices = new osg::Vec3dArray; // Vertices will be added later
 	_colors = new osg::Vec4Array(1); // Color will be specified later
-
-	// Disable lighting computations
-	_axesGeom->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-	_majorTickGeom->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-	_minorTickGeom->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
 	// Attach vertex and color data to the geometries
 	_axesGeom->setVertexArray(_vertices.get());

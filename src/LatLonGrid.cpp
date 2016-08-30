@@ -97,6 +97,9 @@ void LatLonGrid::_init()
 	_geode = new osg::Geode;
 	_geode->setName(_name);
 
+	// Disable lighting computations since we're only drawing lines
+        _geode->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+
 	// Create a geometry drawable for the equator and prime meridian, and
 	// another one for the rest of the grid lines.
 	_gridGeom = new osg::Geometry;
@@ -106,13 +109,8 @@ void LatLonGrid::_init()
 	_vertices = new osg::Vec3Array;
 	_colors = new osg::Vec4Array(1);
 
-	// Disable lighting computations since we're only drawing lines, and set
-	// greater line thickness for the equator/prime meridian.
-	osg::StateSet *ss = _gridGeom->getOrCreateStateSet();
-	ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-	ss = _mainGeom->getOrCreateStateSet();
-	ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-	ss->setAttribute(new osg::LineWidth(3.0));
+	// Set greater line thickness for the equator/prime meridian.
+	_mainGeom->getOrCreateStateSet()->setAttribute(new osg::LineWidth(3.0));
 
 	// Bind the vertex and color data to the geometry objects
 	_gridGeom->setVertexArray(_vertices.get());
