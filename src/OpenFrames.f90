@@ -792,6 +792,11 @@
 	CHARACTER(LEN=*), INTENT(IN) :: fname
 	END SUBROUTINE
 
+	SUBROUTINE ofmarkerartist_setmarkershader(fname)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofmarkerartist_setmarkershader
+	CHARACTER(LEN=*), INTENT(IN) :: fname
+	END SUBROUTINE
+
 	SUBROUTINE ofmarkerartist_setintermediatetype(type)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofmarkerartist_setintermediatetype
 	INTEGER, INTENT(IN) :: type

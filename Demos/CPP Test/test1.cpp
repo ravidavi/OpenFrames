@@ -201,7 +201,8 @@ int main()
 	ma->setMarkerColor(MarkerArtist::START, 0, 1, 0);
 	ma->setMarkerColor(MarkerArtist::END,   1, 0, 0);
 	ma->setMarkerColor(MarkerArtist::INTERMEDIATE, 1, 1, 0);
-	ma->setMarkerImage("../Images/fuzzyparticle.tiff");
+	//ma->setMarkerImage("../Images/fuzzyparticle.tiff");
+        ma->setMarkerShader("../Shaders/Marker_Rose.frag");
 	ma->setMarkerSize(10);
 	data._src = Trajectory::POSOPT;
 	data._element = 0; // Use X position for X coordinate
@@ -250,8 +251,9 @@ int main()
 
 	// Create a MarkerArtist to draw the center marker
 	MarkerArtist *centermarker = new MarkerArtist();
-	centermarker->setMarkerImage("../Images/target.tiff");
-	centermarker->setMarkerSize(10);
+	//centermarker->setMarkerImage("../Images/target.tiff");
+	centermarker->setMarkerShader("../Shaders/Marker_Target.frag");
+	centermarker->setMarkerSize(15);
 
 	// Add the markerartist to the drawable trajectory
 	drawcenter->addArtist(centermarker);

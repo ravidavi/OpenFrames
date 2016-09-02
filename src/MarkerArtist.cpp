@@ -18,6 +18,7 @@
 #include <osg/BlendFunc>
 #include <osg/Point>
 #include <osg/PointSprite>
+#include <osg/Program>
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
 #include <iostream>
@@ -39,6 +40,47 @@ struct AttenuateUpdater : public osg::Drawable::UpdateCallback
 	  MarkerArtist *ma = static_cast<MarkerArtist*>(drawable);
 	  ma->computeAttenuation();
 	}
+};
+
+// Fragment shader that draws a texture on a PointSprite
+static const char *FragSource_Texture = {
+  "#version 120\n"
+  "uniform sampler2D tex;\n"
+
+  "void main(void)\n"
+  "{\n"
+     // Discard fragments with small alpha values
+  "  vec4 t2d = texture2D(tex, gl_TexCoord[0].st);\n"
+  "  if(t2d.a < 0.05)\n"
+  "  {\n"
+  "    discard;\n"
+  "  }\n"
+
+     // Color the texture with user-specified color
+  "  gl_FragColor = t2d*gl_Color;\n"
+  "}\n"
+};
+
+// Fragment shader that draws a solid disk on a PointSprite
+static const char *FragSource_Disk = {
+  "#version 120\n"
+  "vec2 v;\n"
+
+  "void main(void)\n"
+  "{\n"
+     // gl_PointCoord has range (x,y) in [0, 1] each, with y-down
+     // Move origin to point center, with extents [-0.5, 0.5]
+  "  v = gl_PointCoord - vec2(0.5);\n"
+
+     // Throw away fragments outside the disk (radius > 0.5)
+  "  if(dot(v, v) > 0.25)\n"
+  "  {\n"
+  "    discard;\n"
+  "  }\n"
+
+     // Remaining fragments get the user-specified color
+  "  gl_FragColor = gl_Color;\n"
+  "}\n"
 };
 
 MarkerArtist::MarkerArtist(const Trajectory *traj)
@@ -77,14 +119,19 @@ MarkerArtist::MarkerArtist(const Trajectory *traj)
         osg::StateSet *ss = getOrCreateStateSet();
 
 	// Add the Point parameter to the marker
-        // Setting the osg::Point mode enables GL_POINT_SMOOTH
-	ss->setAttributeAndModes(new osg::Point);
+	ss->setAttribute(new osg::Point);
 
-        // Set up blending so markers look nice
-        osg::BlendFunc *fn = new osg::BlendFunc();
-        fn->setFunction(osg::BlendFunc::SRC_ALPHA, 
-                        osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
-        ss->setAttributeAndModes(fn);
+        // Set up point sprite
+        osg::PointSprite *sprite = new osg::PointSprite();
+        ss->setTextureAttributeAndModes(0, sprite);
+
+        // Fragment shader to draw the marker
+        _program = new osg::Program;
+        _program->setName("OFMarkerArtist_FragmentShader");
+        ss->setAttributeAndModes(_program, osg::StateAttribute::ON);
+        resetMarkerShader(); // Set default shader
+
+        // Assume opaque points
         ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
 
         // Set default marker color and size
@@ -210,15 +257,14 @@ void MarkerArtist::setMarkerSize(unsigned int size)
 
 bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
 {
-	osg::StateSet *ss = getOrCreateStateSet();
-
-	if(fname.length() == 0) // Use default OpenGL point as marker
+        // Remove any existing marker image
+	if(fname.length() == 0) 
 	{
-          ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
-	  ss->removeTextureAttribute(0, osg::StateAttribute::POINTSPRITE);
-	  ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
-	  return true;
+          resetMarkerShader();
+          return true;
 	}
+
+	osg::StateSet *ss = getOrCreateStateSet();
 
 	// Check if there is already a texture being used.
 	osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(ss->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
@@ -229,10 +275,6 @@ bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
 	osg::Image *image = osgDB::readImageFile(fname); // Load image from file
 	if(image)
 	{
-	  // Set up point sprite
-	  osg::PointSprite *sprite = new osg::PointSprite();
-	  ss->setTextureAttributeAndModes(0, sprite);
-
 	  // Specify texture to use for point sprite
 	  osg::Texture2D *tex = new osg::Texture2D();
 	  tex->setImage(image);
@@ -241,6 +283,16 @@ bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
           // Assume texture may have transparency
           ss->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
 
+          // Set up alpha blending for marker texture
+          osg::BlendFunc *fn = new osg::BlendFunc();
+          fn->setFunction(osg::BlendFunc::SRC_ALPHA, 
+              osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+          ss->setAttributeAndModes(fn);
+
+          // Fragment shader to draw the marker
+          removeExistingShader();
+          _program->addShader(new osg::Shader(osg::Shader::FRAGMENT, FragSource_Texture));
+
 	  return true;
 	}
 	else
@@ -248,6 +300,30 @@ bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
 	  std::cerr<< "MarkerArtist ERROR: Image file \'" << fname << "\' could not be found!" << std::endl;
 	  return false; // Image was not found
 	}
+}
+
+bool MarkerArtist::setMarkerShader(const std::string &fname)
+{
+        // Reset shader
+	if(fname.length() == 0) 
+	{
+          resetMarkerShader();
+          return true;
+	}
+
+        // Remove existing shader
+        removeExistingShader();
+
+        // Fragment shader to draw the marker
+        osg::Shader *shader = new osg::Shader(osg::Shader::FRAGMENT);
+        if(!shader->loadShaderSourceFromFile(fname))
+        {
+          std::cerr<< "OpenFrames::MarkerArtist::setMarkerShader ERROR: File " << fname << " not properly loaded." << std::endl;
+          return false;
+        }
+        _program->addShader(shader);
+
+        return true;
 }
 
 void MarkerArtist::setAutoAttenuate(bool attenuate)
@@ -649,6 +725,40 @@ void MarkerArtist::verifyData() const
 	  _dataValid = false;
 	  _dataZero = false;
 	}
+}
+
+void MarkerArtist::resetMarkerShader()
+{
+        osg::StateSet *ss = getOrCreateStateSet();
+
+        // Remove existing image texture and blending
+        ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
+        ss->removeAttribute(osg::StateAttribute::BLENDFUNC);
+
+        // Remove existing shader
+        removeExistingShader();
+
+        // Assume opaque marker
+        ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
+
+        // Default to circular point marker
+        _program->addShader(new osg::Shader(osg::Shader::FRAGMENT, FragSource_Disk));
+}
+
+void MarkerArtist::removeExistingShader()
+{
+        // Remove existing shader
+        unsigned int numShaders = _program->getNumShaders();
+        if(numShaders == 0) 
+        {
+          return;
+        }
+        else if(numShaders > 1)
+        {
+          std::cerr<< "OpenFrames::MarkerArtist Warning: " << numShaders << " fragment shaders already attached, you may get a GLSL error." << std::endl;
+        }
+
+        _program->removeShader(_program->getShader(0));
 }
 
 }

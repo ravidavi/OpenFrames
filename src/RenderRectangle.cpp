@@ -200,6 +200,11 @@ void RenderRectangle::setSkySphereTexture(const std::string& fname)
 	  _scene->removeChild(_skySphere->getGroup());
 }
 
+void RenderRectangle::setBackgroundColor(float r, float g, float b)
+{
+        _sceneView->getCamera()->setClearColor(osg::Vec4(r, g, b, 1.0));
+}
+
 void RenderRectangle::addView(View *view)
 {
 	if(view != NULL)

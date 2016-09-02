@@ -79,6 +79,7 @@ class OF_EXPORT MarkerArtist : public TrajectoryArtist
 	void setMarkerColor( unsigned int markers, float r, float g, float b);
 	void setMarkerSize(unsigned int size); // Size in pixels
 	bool setMarkerImage( const std::string &fname, bool force_reload = false );
+	bool setMarkerShader( const std::string &fname );
 
 	/** Specify whether to automatically shrink/grow the marker size as
 	    the camera gets closer or farther from the marker. */
@@ -117,6 +118,12 @@ class OF_EXPORT MarkerArtist : public TrajectoryArtist
 	/** Verify whether the requested data is valid. */
 	void verifyData() const;
 
+        /** Reset shader to default state (circular point) */
+        void resetMarkerShader();
+
+        /** Remove exising shader */
+        void removeExistingShader();
+
         // Data sources for x, y, and z components
 	Trajectory::DataSource _dataSource[3];
 
@@ -133,6 +140,8 @@ class OF_EXPORT MarkerArtist : public TrajectoryArtist
 	mutable bool _dataValid; // If trajectory supports required data
 	mutable bool _dataZero; // If we're just drawing at the origin
 	mutable bool _shouldAttenuate; // Attenuation needs to be recomputed
+
+        osg::ref_ptr<osg::Program> _program; // GLSL program for marker fragment shader
 };
 
 }

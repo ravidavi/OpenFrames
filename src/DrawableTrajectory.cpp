@@ -85,7 +85,7 @@ class UniformCallback : public osg::NodeCallback
         }
 };
 
-// Implement the shader portion of Rendering Relative to Eye using GPU
+// Implement vertex shader for Rendering Relative to Eye using GPU
 static const char *VertSource = {
   "#version 120\n"
   "uniform mat4 osg_ProjectionMatrix;\n"
@@ -167,7 +167,7 @@ void DrawableTrajectory::_init()
         stateset->addUniform(eyeLow);
         _geode->setCullCallback(new UniformCallback(*mvmat, *eyeHigh, *eyeLow));
         osg::Program *program = new osg::Program;
-        program->setName("OFDrawableTrajectory_Shader");
+        program->setName("OFDrawableTrajectory_VertexShader");
         program->addShader(new osg::Shader(osg::Shader::VERTEX, VertSource));
         program->addBindAttribLocation("of_VertexLow", 1);
         stateset->setAttributeAndModes(program, osg::StateAttribute::ON);

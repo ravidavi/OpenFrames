@@ -367,7 +367,7 @@ void OF_FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col,
 	if(_objs->_currWinProxy)
 	{
 	  RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
-	  if(rr) rr->getSceneView()->getCamera()->setClearColor(osg::Vec4(*r, *g, *b, 1.0));
+	  if(rr) rr->setBackgroundColor(*r, *g, *b);
 	}
 }
 
@@ -1755,6 +1755,18 @@ OF_EXPORT void OF_FCN(ofmarkerartist_setmarkerimage)(OF_CHARARG(fname))
 	  // Convert given character string and length to a proper C string
 	  std::string temp(OF_STRING(fname));
 	  _objs->_intVal = !artist->setMarkerImage(temp);
+	}
+	else _objs->_intVal = 1;
+}
+
+OF_EXPORT void OF_FCN(ofmarkerartist_setmarkershader)(OF_CHARARG(fname))
+{
+	MarkerArtist *artist = dynamic_cast<MarkerArtist*>(_objs->_currArtist);
+	if(artist)
+	{
+	  // Convert given character string and length to a proper C string
+	  std::string temp(OF_STRING(fname));
+	  _objs->_intVal = !artist->setMarkerShader(temp);
 	}
 	else _objs->_intVal = 1;
 }

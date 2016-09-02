@@ -66,6 +66,9 @@ class OF_EXPORT RenderRectangle : public osg::Referenced
 	/** Set the sky sphere texture */
 	void setSkySphereTexture(const std::string& fname);
 
+        /** Set the background color if no texture is specified */
+        void setBackgroundColor(float r, float g, float b);
+
 	/** Enable/disable the automatic depth partitioner */
 	void setDepthPartitioningEnabled(bool enable)
 	{ _depthPartition->setActive(enable); }
