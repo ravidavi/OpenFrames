@@ -131,11 +131,11 @@ int main()
         MarkerArtist *ma = new MarkerArtist(traj);
         ma->setMarkers(MarkerArtist::START + MarkerArtist::INTERMEDIATE + MarkerArtist::END);
         ma->setAutoAttenuate(true);
-        ma->setMarkerColor(MarkerArtist::START, 0, 1, 0);
-        ma->setMarkerColor(MarkerArtist::END,   1, 0, 0);
-        ma->setMarkerColor(MarkerArtist::INTERMEDIATE, 1, 1, 0);
-        ma->setMarkerImage("../Images/fuzzyparticle.tiff");
-        ma->setMarkerSize(20); // In pixels
+        ma->setMarkerColor(MarkerArtist::START, 0, 1, 0); // Green
+        ma->setMarkerColor(MarkerArtist::END,   1, 0, 0); // Red
+        ma->setMarkerColor(MarkerArtist::INTERMEDIATE, 1, 1, 0); // Yellow
+        ma->setMarkerShader("../Shaders/Marker_Rose.frag");
+        ma->setMarkerSize(10); // In pixels
         drawtraj->addArtist(ma);
 
 	// Create a CurveArtist for the trajectory.  By default the CurveArtist
@@ -151,9 +151,25 @@ int main()
         tf->setFollowType(TrajectoryFollower::POSITION + TrajectoryFollower::ATTITUDE, TrajectoryFollower::LIMIT);
 	hubble->getTransform()->setUpdateCallback(tf);
 
+	// Create a drawable trajectory for the spacecraft center marker
+	// DrawableTrajectory(name)
+	DrawableTrajectory *drawcenter = new DrawableTrajectory("center marker");
+	drawcenter->showAxes(ReferenceFrame::NO_AXES);
+	drawcenter->showAxesLabels(ReferenceFrame::NO_AXES);
+	drawcenter->showNameLabel(false);
+
+        // Create an artist to draw spacecraft center marker
+        MarkerArtist *centermarker = new MarkerArtist;
+	centermarker->setMarkerShader("../Shaders/Marker_CirclePulse.frag");
+	centermarker->setMarkerSize(15);
+
+	// Add the markerartist to the drawable trajectory
+	drawcenter->addArtist(centermarker);
+
 	// Set up reference frame heirarchies.
 	earth->addChild(drawtraj);
 	earth->addChild(hubble);
+        hubble->addChild(drawcenter);
 
 	// Create views
 	View *view = new View(earth, earth);
@@ -182,7 +198,7 @@ int main()
           pos[1] = rmag*std::sin(t);
 	  att.makeRotate(t, 0, 0, 1);
 
-	  traj->addTime(1000000*t);
+	  traj->addTime(10*t);
 	  traj->addPosition(pos);
 	  traj->addAttitude(att[0], att[1], att[2], att[3]);
 	}

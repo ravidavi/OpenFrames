@@ -121,9 +121,6 @@ class OF_EXPORT MarkerArtist : public TrajectoryArtist
         /** Reset shader to default state (circular point) */
         void resetMarkerShader();
 
-        /** Remove exising shader */
-        void removeExistingShader();
-
         // Data sources for x, y, and z components
 	Trajectory::DataSource _dataSource[3];
 
@@ -141,7 +138,7 @@ class OF_EXPORT MarkerArtist : public TrajectoryArtist
 	mutable bool _dataZero; // If we're just drawing at the origin
 	mutable bool _shouldAttenuate; // Attenuation needs to be recomputed
 
-        osg::ref_ptr<osg::Program> _program; // GLSL program for marker fragment shader
+        osg::ref_ptr<osg::Shader> _fragShader; // Marker fragment shader
 };
 
 }

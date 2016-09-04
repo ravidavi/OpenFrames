@@ -70,54 +70,6 @@ class UniformCallback : public osg::NodeCallback
 
   private:
         osg::Uniform &_mvmat, &_eyeHigh, &_eyeLow;
-
-        // Simulate the VertSource vertex shader, useful for debugging
-        osg::Vec3f simulate_vertsource(
-            osg::Vec3f vertexhigh, osg::Vec3f vertexlow,
-            osg::Vec3f eyehigh, osg::Vec3f eyelow,
-            osg::Matrixf mv, osg::Matrixf proj)
-        {
-          osg::Vec3f result;
-          OpenFrames::DS_Subtract(vertexhigh, vertexlow,
-                                  eyehigh, eyelow, result);
-          osg::Vec3f gl_Position = result*mv*proj;
-          return gl_Position;
-        }
-};
-
-// Implement vertex shader for Rendering Relative to Eye using GPU
-static const char *VertSource = {
-  "#version 120\n"
-  "uniform mat4 osg_ProjectionMatrix;\n"
-
-  // ModelView matrix with zero translation component
-  "uniform mat4 of_RTEModelViewMatrix;\n"
-
-  // High/low parts of modelview matrix translation
-  "uniform vec3 of_ModelViewEyeHigh;\n"
-  "uniform vec3 of_ModelViewEyeLow;\n"
-
-  // High/low parts of current vertex position
-  "attribute vec4 osg_Vertex;\n"
-  "attribute vec4 of_VertexLow;\n"
-
-  "void main(void)\n"
-  "{\n"
-     // Low part of vertex - eye and associated numerical error
-  "  vec3 t1 = of_VertexLow.xyz - of_ModelViewEyeLow;\n"
-  "  vec3 e = t1 - of_VertexLow.xyz;\n"
-
-     // High part of vertex - eye including numerical error
-  "  vec3 t2 = ((-of_ModelViewEyeLow - e) + (of_VertexLow.xyz - (t1 - e))) + osg_Vertex.xyz - of_ModelViewEyeHigh;\n"
-
-     // Sum of low + high parts and associated numerical error
-  "  vec3 diffHigh = t1 + t2;\n"
-  "  vec3 diffLow = t2 - (diffHigh - t1);\n"
-
-     // Vertex position with low and high parts
-  "  gl_Position = osg_ProjectionMatrix*of_RTEModelViewMatrix*vec4(diffHigh+diffLow, 1.0);\n"
-  "  gl_FrontColor = gl_Color;\n"
-  "}\n"
 };
 
 DrawableTrajectory::DrawableTrajectory( const std::string &name ) 
@@ -166,11 +118,6 @@ void DrawableTrajectory::_init()
         stateset->addUniform(eyeHigh);
         stateset->addUniform(eyeLow);
         _geode->setCullCallback(new UniformCallback(*mvmat, *eyeHigh, *eyeLow));
-        osg::Program *program = new osg::Program;
-        program->setName("OFDrawableTrajectory_VertexShader");
-        program->addShader(new osg::Shader(osg::Shader::VERTEX, VertSource));
-        program->addBindAttribLocation("of_VertexLow", 1);
-        stateset->setAttributeAndModes(program, osg::StateAttribute::ON);
 
         // Add contained artists to this frame's transform
 	_xform->addChild(_geode.get());

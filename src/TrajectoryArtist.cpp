@@ -20,8 +20,65 @@
 namespace OpenFrames
 {
 
+// Vertex shader object used by all Trajectory Artists
+static osg::ref_ptr<osg::Shader> OFTA_VertShader;
+
+// Implement vertex shader for Rendering Relative to Eye using GPU
+static const char *OFTA_VertSource = {
+  "#version 120\n"
+  "uniform mat4 osg_ProjectionMatrix;\n"
+
+  // ModelView matrix with zero translation component
+  "uniform mat4 of_RTEModelViewMatrix;\n"
+
+  // High/low parts of modelview matrix translation
+  "uniform vec3 of_ModelViewEyeHigh;\n"
+  "uniform vec3 of_ModelViewEyeLow;\n"
+
+  // High/low parts of current vertex position
+  "attribute vec4 osg_Vertex;\n"
+  "attribute vec4 of_VertexLow;\n"
+
+  "void main(void)\n"
+  "{\n"
+     // Low part of vertex - eye and associated numerical error
+  "  vec3 t1 = of_VertexLow.xyz - of_ModelViewEyeLow;\n"
+  "  vec3 e = t1 - of_VertexLow.xyz;\n"
+
+     // High part of vertex - eye including numerical error
+  "  vec3 t2 = ((-of_ModelViewEyeLow - e) + (of_VertexLow.xyz - (t1 - e))) + osg_Vertex.xyz - of_ModelViewEyeHigh;\n"
+
+     // Sum of low + high parts and associated numerical error
+  "  vec3 diffHigh = t1 + t2;\n"
+  "  vec3 diffLow = t2 - (diffHigh - t1);\n"
+
+     // Vertex position with low and high parts
+  "  gl_Position = osg_ProjectionMatrix*of_RTEModelViewMatrix*vec4(diffHigh+diffLow, 1.0);\n"
+  "  gl_FrontColor = gl_Color;\n"
+  "}\n"
+};
+
 TrajectoryArtist::TrajectoryArtist() 
 {
+        // Create vertex shader if it doesn't already exist
+        if(OFTA_VertShader == NULL)
+        {
+          OFTA_VertShader = new osg::Shader(osg::Shader::VERTEX, OFTA_VertSource);
+        }
+
+        // Create vertex program
+        _program = new osg::Program;
+        _program->setName("OFTrajectoryArtist_ShaderProgram");
+
+        // Add the vertex shader
+        _program->addShader(OFTA_VertShader);
+
+        // Create vertex attribute that stores low part of vertex
+        // Used by Artists to implement Rendering RTE in GPU
+        _program->addBindAttribLocation("of_VertexLow", 1);
+
+        // Set the shader program for this Artist
+        getOrCreateStateSet()->setAttribute(_program);
 }
 
 // Not using the copy constructor
