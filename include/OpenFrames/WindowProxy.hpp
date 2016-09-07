@@ -66,10 +66,12 @@ public:
 	/** Callback function for swapping the front/back buffers */
 	void setSwapBuffersFunction(void (*fcn)(unsigned int *winID));
 
+        /** Callback function for realizing a window (TBD as needed) */
+	virtual bool realizeImplementation();
+	virtual bool isRealizedImplementation() const  { return _realized; }
+
 	/** Dummy implementations, assume that graphics context is *always* current and valid. */
 	virtual bool valid() const { return true; }
-	virtual bool realizeImplementation() { return true; }
-	virtual bool isRealizedImplementation() const  { return true; }
 	virtual bool releaseContextImplementation() { return true; }
 	virtual void closeImplementation() {}
 	virtual void grabFocus() {}
@@ -85,6 +87,7 @@ protected:
 	void (*_swapBuffers)(unsigned int *winID);
 
 	WindowProxy *_window; // Pointer to the WindowProxy that represents the window
+        bool _realized; // Whether this context has been realized
 };
 
 /** The WindowEventHandler handles incoming events. */

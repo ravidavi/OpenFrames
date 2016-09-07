@@ -45,8 +45,28 @@ class OF_EXPORT View : public osg::Referenced
 	  PERSPECTIVE, 	// Objects get smaller as they get farther away
 	};
 
+        /** The LookAt transformation algorithm */
+        enum LookAtType
+        {
+          // Starting from inertial frame, rotate along XY plane then
+          // up the z-plane to view the LookAt frame
+          ABSOLUTE_AZEL=0,
+
+          // Starting from inertial frame, rotate directly towards the
+          // LookAt frame using the most direct single rotation
+          ABSOLUTE_DIRECT,
+
+          // Starting from Body-Fixed frame, rotate directly towards the
+          // LookAt frame using the most direct single rotation
+          RELATIVE_AZEL,
+
+          // Starting from Body-Fixed frame, rotate directly towards the
+          // LookAt frame using the most direct single rotation
+          RELATIVE_DIRECT
+        };
+
 	View();
-	View(ReferenceFrame *root, ReferenceFrame *frame);
+	View(ReferenceFrame *root, ReferenceFrame *frame, ReferenceFrame *lookat = NULL, LookAtType lookattype = RELATIVE_AZEL);
 
 	/** Get the projection type */
 	inline ProjectionType getProjectionType() { return _projType; }
@@ -119,11 +139,13 @@ class OF_EXPORT View : public osg::Referenced
 	/** Set the frame to be viewed and the root frame that it should be
 	    viewed with respect to. Usually the root frame should be the root
 	    of the ReferenceFrame heirarchy that the viewed frame is part of. */
-	void setViewFrame( ReferenceFrame* root, ReferenceFrame* frame );
+	void setViewFrame( ReferenceFrame* root, ReferenceFrame* frame, ReferenceFrame* lookat = NULL, LookAtType lookattype = RELATIVE_AZEL );
 
 	/** Get the root/origin frames associated with this View */
 	ReferenceFrame* getViewRoot() { return _xform->getRoot(); }
 	ReferenceFrame* getViewOrigin() { return _xform->getOrigin(); }
+        ReferenceFrame* getLookAtOrigin() { return _xform_lookat->getOrigin(); }
+        LookAtType getLookAtType() { return _lookatType; }
 
 	inline bool isValid() {return _xform->isValid();}
 
@@ -131,8 +153,12 @@ class OF_EXPORT View : public osg::Referenced
 	virtual ~View();
 	void _init();
 
-	/** The transform for the ReferenceFrame being viewed. */
+	/** The transform for the origin ReferenceFrame. */
 	osg::ref_ptr<TransformAccumulator> _xform;
+
+	/** The transform for the look-at ReferenceFrame. */
+	osg::ref_ptr<TransformAccumulator> _xform_lookat;
+        LookAtType _lookatType;
 
 	/** The projection type for this view. */
 	ProjectionType _projType;

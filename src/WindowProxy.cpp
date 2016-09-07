@@ -26,7 +26,7 @@ namespace OpenFrames
 
 /** This is the GraphicsWindow that is used for embedded graphics */
 EmbeddedGraphics::EmbeddedGraphics(int x, int y, int width, int height, WindowProxy *window)
-: _makeCurrent(NULL), _swapBuffers(NULL), _updateContext(NULL), _window(window)
+: _makeCurrent(NULL), _swapBuffers(NULL), _updateContext(NULL), _window(window), _realized(false)
 {
 	// Specify traits for this graphics context
 	_traits = new GraphicsContext::Traits;
@@ -108,6 +108,12 @@ bool EmbeddedGraphics::updateContextImplementation()
 void EmbeddedGraphics::setSwapBuffersFunction(void (*fcn)(unsigned int *winID))
 {
 	_swapBuffers = fcn;
+}
+
+bool EmbeddedGraphics::realizeImplementation()
+{
+        _realized = true;
+        return _realized;
 }
 
 /** This is the handler for events to a WindowProxy */
@@ -346,7 +352,12 @@ public:
           // Report OpenGL version info
           char *glVersionString = (char*)glGetString(GL_VERSION);
           if(glVersionString)
-            std::cout<< "OpenFrames using OpenGL " << glVersionString << std::endl;
+          {
+            std::cout<< "OpenFrames using OpenGL " << glVersionString;
+            if(gc->getTraits()->samples > 0)
+              std::cout<< " with " << gc->getTraits()->samples << "x MSAA";
+            std::cout<< std::endl;
+          }
           else
           {
             std::cerr<< "OpenFrames::WindowProxy ERROR: Could not load a valid OpenGL implementation." << std::endl;
