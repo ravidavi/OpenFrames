@@ -20,7 +20,7 @@
 #include <OpenFrames/Export.h>
 #include <OpenFrames/DepthPartitionNode.hpp>
 #include <OpenFrames/FrameManager.hpp>
-#include <OpenFrames/Sphere.hpp>
+#include <OpenFrames/StarField.hpp>
 #include <OpenFrames/View.hpp>
 #include <osg/Camera>
 #include <osg/Referenced>
@@ -112,7 +112,8 @@ class OF_EXPORT RenderRectangle : public osg::Referenced
 
 	osg::ref_ptr<osg::Group> _scene; // Everything to be drawn
 	osg::ref_ptr<osg::Camera> _border; // Border around rectangle
-	osg::ref_ptr<Sphere> _skySphere;
+	//osg::ref_ptr<Sphere> _skySphere;
+        osg::ref_ptr<StarField> _starField;
 
 	// Manager for access to the ReferenceFrame scene
 	osg::ref_ptr<FrameManager> _frameManager;

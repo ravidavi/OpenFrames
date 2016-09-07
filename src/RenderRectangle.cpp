@@ -36,7 +36,7 @@ RenderRectangle::RenderRectangle()
 	_scene = new osg::Group;
 
 	// Create the Sphere for the sky sphere
-	_skySphere = new Sphere("Sky Sphere");
+        _starField = new StarField();
 
 	// The SceneView is responsible for doing the update, cull, and 
 	// draw operations for the ReferenceFrame scene.
@@ -91,18 +91,6 @@ void RenderRectangle::_init()
 	_border->setRenderOrder(osg::Camera::POST_RENDER);
 
 	setSelected(false); // Set the border to look deselected
-
-	// Set up the sky sphere
-	_skySphere->showAxes(ReferenceFrame::NO_AXES);
-	_skySphere->showAxesLabels(ReferenceFrame::NO_AXES);
-	_skySphere->showNameLabel(false);
-	_skySphere->getTransform()->setFollowEye(true); // Follow the current view
-	geode = _skySphere->getSphere();
-	ss = geode->getOrCreateStateSet();
-	ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF);  // Disable lighting
-	ss->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);// Disable depth test
-	ss->setRenderBinDetails(-1, "RenderBin"); // Draw before other objects
-	geode->setCullingActive(false); // Make sure sphere is not culled out
 
 	// Tell the depth partitioner to not clear the color buffer before drawing
 	_depthPartition->setClearColorBuffer(false);
@@ -194,10 +182,10 @@ void RenderRectangle::setShowBorder(bool show)
 
 void RenderRectangle::setSkySphereTexture(const std::string& fname)
 {
-	if(_skySphere->setTextureMap(fname))
-	  _scene->addChild(_skySphere->getGroup());
+	if(_starField->setTextureMap(fname))
+	  _scene->addChild(_starField->getStarField());
 	else
-	  _scene->removeChild(_skySphere->getGroup());
+	  _scene->removeChild(_starField->getStarField());
 }
 
 void RenderRectangle::setBackgroundColor(float r, float g, float b)
