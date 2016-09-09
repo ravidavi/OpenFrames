@@ -19,7 +19,6 @@
 #include <osg/Quat>
 #include <osg/Geode>
 #include <osg/PolygonOffset>
-#include <osg/ShapeDrawable>
 #include <osg/Shape>
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
@@ -98,13 +97,14 @@ Sphere::~Sphere() { }
     and color = the color of the sphere's reference frame. */
 void Sphere::_init()
 {
-	osg::ShapeDrawable* sd = new osg::ShapeDrawable;
+	_sphereSD = new osg::ShapeDrawable;
+        _sphereSD->setName("SphereDrawable");
 	osg::Sphere* sphere = new osg::Sphere;
 	osg::TessellationHints* hints = new osg::TessellationHints;
 
 	// Set the shape to be drawn
-	sd->setShape(sphere);
-	sd->setTessellationHints(hints);
+	_sphereSD->setShape(sphere);
+	_sphereSD->setTessellationHints(hints);
 
 	// Don't need very high detail on a simple sphere
 	hints->setDetailRatio(2.0);
@@ -112,12 +112,12 @@ void Sphere::_init()
 	// Offset the sphere's polygons backwards so that a decal on the sphere's
 	// surface will always show up on top of the sphere.
 	osg::PolygonOffset *offset = new osg::PolygonOffset(1, 1);
-	sd->getOrCreateStateSet()->setAttributeAndModes(offset);
+	_sphereSD->getOrCreateStateSet()->setAttributeAndModes(offset);
 
 	// Create the node that contains the Sphere
 	_geode = new osg::Geode;
 	_geode->setName(_name);
-	_geode->addDrawable(sd);
+	_geode->addDrawable(_sphereSD);
 	
 	// Add the sphere to the ReferenceFrame
 	_xform->addChild(_geode.get());
@@ -129,10 +129,9 @@ void Sphere::_init()
 
 void Sphere::setRadius(const double &radius)
 {
-	osg::Drawable *drawable = _geode->getDrawable(0);
-	osg::Sphere *sphere = static_cast<osg::Sphere*>(drawable->getShape());
+	osg::Sphere *sphere = static_cast<osg::Sphere*>(_sphereSD->getShape());
 	sphere->setRadius(radius);
-	drawable->dirtyBound();
+	_sphereSD->dirtyBound();
 
 	moveXAxis(osg::Vec3(radius, 0, 0), 0.5*radius);
 	moveYAxis(osg::Vec3(0, radius, 0), 0.5*radius);
@@ -141,8 +140,7 @@ void Sphere::setRadius(const double &radius)
 
 double Sphere::getRadius()
 {
-	osg::Drawable *drawable = _geode->getDrawable(0);
-	osg::Sphere *sphere = static_cast<osg::Sphere*>(drawable->getShape());
+	osg::Sphere *sphere = static_cast<osg::Sphere*>(_sphereSD->getShape());
 	return sphere->getRadius();
 }
 
@@ -150,7 +148,7 @@ bool Sphere::setTextureMap(const std::string &fname, bool force_reload)
 {
 	if(fname.length() == 0) // Remove existing texture
 	{
-	  osg::StateSet* stateset = _geode->getStateSet();
+	  osg::StateSet* stateset = _sphereSD->getStateSet();
 	  if(stateset)
 	  {
 	    stateset->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
@@ -161,7 +159,7 @@ bool Sphere::setTextureMap(const std::string &fname, bool force_reload)
 	}
 
 	// Check if there is already a texture being used.
-	osg::StateSet* stateset = _geode->getOrCreateStateSet();
+	osg::StateSet* stateset = _sphereSD->getOrCreateStateSet();
 	osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(stateset->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
 	
 	// If the current texture has the same filename as the new texture, then reload only if we have to.
@@ -199,23 +197,22 @@ void Sphere::setAutoLOD( bool lod )
 {
 	if(lod)
 	{
-	  osg::ShapeDrawable *sd = static_cast<osg::ShapeDrawable*>(_geode->getDrawable(0));
-	  osg::Sphere *sphere = static_cast<osg::Sphere*>(sd->getShape());
-	  osg::TessellationHints *hints = static_cast<osg::TessellationHints*>(sd->getTessellationHints());
+	  osg::Sphere *sphere = static_cast<osg::Sphere*>(_sphereSD->getShape());
+	  osg::TessellationHints *hints = static_cast<osg::TessellationHints*>(_sphereSD->getTessellationHints());
 
-	  if(sd->getCullCallback() == NULL)
-	    sd->setCullCallback(new SphereLODCallback(*sphere, *hints));
+	  if(_sphereSD->getCullCallback() == NULL)
+	    _sphereSD->setCullCallback(new SphereLODCallback(*sphere, *hints));
 	}
 	else
 	{
-	  _geode->getDrawable(0)->setCullCallback(NULL);
+	  _sphereSD->setCullCallback(NULL);
 	}
 }
 
 void Sphere::setColor( const osg::Vec4 &color )
 {
 	ReferenceFrame::setColor(color);
-	static_cast<osg::ShapeDrawable*>(_geode->getDrawable(0))->setColor(color);
+        _sphereSD->setColor(color);
 }
 
 const osg::BoundingSphere& Sphere::getBound() const

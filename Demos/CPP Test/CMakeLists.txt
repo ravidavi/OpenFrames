@@ -2,7 +2,7 @@
 INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include ${OPENSCENEGRAPH_INCLUDE_DIRS})
 
 # Specify tests that should be built
-SET( ALL_TESTS test1 test2 test3 test_jitter)
+SET( ALL_TESTS test1 test2 test3 test_jitter )
 
 IF(OF_BUILD_TESTS) # If user asked for test programs
   FOREACH(curr_test ${ALL_TESTS})
@@ -39,6 +39,11 @@ IF(OF_BUILD_TESTS) # If user asked for test programs
 
   INSTALL(
     DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../Shaders
+    DESTINATION ${CMAKE_INSTALL_PREFIX}
+  )
+
+  INSTALL(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../Stars
     DESTINATION ${CMAKE_INSTALL_PREFIX}
   )
 ENDIF(OF_BUILD_TESTS)

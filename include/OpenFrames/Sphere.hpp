@@ -40,9 +40,6 @@ class OF_EXPORT Sphere : public ReferenceFrame
 	Sphere( const std::string &name, const osg::Vec4 &color );
 	Sphere( const std::string &name , float r, float g, float b, float a = 1.0 );
 
-	/** Get the geode containing the sphere */
-	inline osg::Geode* getSphere() { return _geode.get(); }
-
 	/** Set the radius of the sphere, given wrt the origin of
 	    the sphere's reference frame */
 	void setRadius( const double &radius );
@@ -67,9 +64,12 @@ class OF_EXPORT Sphere : public ReferenceFrame
 
   protected:
 	virtual ~Sphere();
-	void _init();
 
 	osg::ref_ptr<osg::Geode> _geode; // Node containing the sphere
+        osg::ref_ptr<osg::ShapeDrawable> _sphereSD; // The actual sphere
+
+  private:
+        void _init();
 };
 
 } // !namespace OpenFrames

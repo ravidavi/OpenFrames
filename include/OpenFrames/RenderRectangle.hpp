@@ -20,7 +20,7 @@
 #include <OpenFrames/Export.h>
 #include <OpenFrames/DepthPartitionNode.hpp>
 #include <OpenFrames/FrameManager.hpp>
-#include <OpenFrames/StarField.hpp>
+#include <OpenFrames/SkySphere.hpp>
 #include <OpenFrames/View.hpp>
 #include <osg/Camera>
 #include <osg/Referenced>
@@ -65,6 +65,9 @@ class OF_EXPORT RenderRectangle : public osg::Referenced
 
 	/** Set the sky sphere texture */
 	void setSkySphereTexture(const std::string& fname);
+
+	/** Set the star field data */
+	void setSkySphereStarCatalog(const std::string& fname);
 
         /** Set the background color if no texture is specified */
         void setBackgroundColor(float r, float g, float b);
@@ -112,8 +115,7 @@ class OF_EXPORT RenderRectangle : public osg::Referenced
 
 	osg::ref_ptr<osg::Group> _scene; // Everything to be drawn
 	osg::ref_ptr<osg::Camera> _border; // Border around rectangle
-	//osg::ref_ptr<Sphere> _skySphere;
-        osg::ref_ptr<StarField> _starField;
+	osg::ref_ptr<SkySphere> _skySphere; // The background sky
 
 	// Manager for access to the ReferenceFrame scene
 	osg::ref_ptr<FrameManager> _frameManager;

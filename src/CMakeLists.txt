@@ -25,8 +25,8 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     ReferenceFrame.cpp
     RenderRectangle.cpp
     SegmentArtist.cpp
+    SkySphere.cpp
     Sphere.cpp
-    StarField.cpp
     SubtreeTracker.cpp
     Trajectory.cpp
     TrajectoryArtist.cpp

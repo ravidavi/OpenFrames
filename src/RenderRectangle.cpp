@@ -35,8 +35,9 @@ RenderRectangle::RenderRectangle()
 	// The scene contains the user's scene along with decorations
 	_scene = new osg::Group;
 
-	// Create the Sphere for the sky sphere
-        _starField = new StarField();
+	// Create the sky sphere but don't draw it yet
+        _skySphere = new SkySphere("Sky Sphere");
+        _skySphere->setDrawMode(SkySphere::NONE);
 
 	// The SceneView is responsible for doing the update, cull, and 
 	// draw operations for the ReferenceFrame scene.
@@ -92,17 +93,17 @@ void RenderRectangle::_init()
 
 	setSelected(false); // Set the border to look deselected
 
-	// Tell the depth partitioner to not clear the color buffer before drawing
+	// Tell the depth partitioner to not clear the color buffer before drawing, so that decorations don't get erased
 	_depthPartition->setClearColorBuffer(false);
 
-	// Add depth partitioner and border to the scene; the sky sphere gets
-	// added when a valid texture is applied to it.
+        // Add decorations to the scene
 	_scene->addChild(_depthPartition.get());
 	_scene->addChild(_border.get());
+        _scene->addChild(_skySphere->getGroup());
 
 	// Set up the SceneView
 	_sceneView->setSceneData(_scene.get());
-	_sceneView->getCamera()->setCullingMode(osg::CullSettings::ENABLE_ALL_CULLING & ~osg::CullSettings::SMALL_FEATURE_CULLING);
+	_sceneView->getCamera()->setCullingMode(osg::CullSettings::DEFAULT_CULLING & ~osg::CullSettings::SMALL_FEATURE_CULLING);
 }
 
 void RenderRectangle::setFrameManager(FrameManager *fm)
@@ -182,10 +183,24 @@ void RenderRectangle::setShowBorder(bool show)
 
 void RenderRectangle::setSkySphereTexture(const std::string& fname)
 {
-	if(_starField->setTextureMap(fname))
-	  _scene->addChild(_starField->getStarField());
-	else
-	  _scene->removeChild(_starField->getStarField());
+        unsigned int currDrawMode = _skySphere->getDrawMode();
+        if(_skySphere->setTextureMap(fname))
+          // Add TEXTURE to existing drawmode
+          _skySphere->setDrawMode(currDrawMode | SkySphere::TEXTURE);
+        else
+          // Remove TEXTURE from existing drawmode
+          _skySphere->setDrawMode(currDrawMode & ~SkySphere::TEXTURE);
+}
+
+void RenderRectangle::setSkySphereStarCatalog(const std::string& fname)
+{
+        unsigned int currDrawMode = _skySphere->getDrawMode();
+        if(_skySphere->setStarCatalog(fname))
+          // Add STARFIELD to existing drawmode
+          _skySphere->setDrawMode(currDrawMode | SkySphere::STARFIELD);
+        else
+          // Remove STARFIELD from existing drawmode
+          _skySphere->setDrawMode(currDrawMode & ~SkySphere::STARFIELD);
 }
 
 void RenderRectangle::setBackgroundColor(float r, float g, float b)
