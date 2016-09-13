@@ -181,7 +181,9 @@ int main()
 
 	// Set up the scene
 	theWindow->setScene(fm, 0, 0);
-	theWindow->getGridPosition(0, 0)->setSkySphereTexture("../Images/StarMap.tif");
+        theWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0);
+	//theWindow->getGridPosition(0, 0)->setSkySphereTexture("../Images/StarMap.tif");
+	theWindow->getGridPosition(0, 0)->setSkySphereStarData("../Stars/Stars_HYGv3.txt", -2.0, 8.0, 40000);
 	theWindow->getGridPosition(0, 0)->addView(view);
 	theWindow->getGridPosition(0, 0)->addView(view2);
 

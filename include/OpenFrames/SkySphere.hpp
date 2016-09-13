@@ -52,14 +52,23 @@ class OF_EXPORT SkySphere : public OpenFrames::Sphere {
 
     SkySphere(const std::string &name);
 
-    // Specify which elements to draw by combining elements of DrawMode
+    ///
+    /// Specify which elements to draw by combining elements of DrawMode
     void setDrawMode(unsigned int drawMode);
     unsigned int getDrawMode();
 
-    // Set the star catalog drawn as the starfield
-    bool setStarCatalog(const std::string &fname);
+    ///
+    /// Set the star catalog drawn as the starfield
+    /// Note that magnitude and brightness are inverse, e.g. mag = -1 is
+    /// brighter than mag = 1
+    /// Note that stars are drawn according to their position in the
+    /// catalog, so sorting the catalog allows drawing brightest/dimmest
+    /// stars first.
+    /// Limits: minMag < maxMag AND numStars >= 1
+    bool setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int numStars, float starScale = 4.0);
 
-    // Convert a Star to a position and color
+    ///
+    /// Convert a Star to a XYZ position, RGB color, and size (in color[3])
     static void StarToPoint(const Star &star, osg::Vec3 &pos, osg::Vec4 &color);
 
   protected:
@@ -67,8 +76,14 @@ class OF_EXPORT SkySphere : public OpenFrames::Sphere {
 
     osg::ref_ptr<osg::Geometry> _starGeom; // The actual stars
 
+    std::string _starCatalogFile; // File containing star catalog
+    float _minMag, _maxMag; // Range of drawn star magnitudes
+    unsigned int _maxNumStars; // Maximum number of drawn stars
+    float _starScale; // Pixel size scale
+
   private:
     void _init();
+    bool processStars();
 };
 
 }  // !namespace OpenFrames

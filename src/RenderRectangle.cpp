@@ -192,15 +192,22 @@ void RenderRectangle::setSkySphereTexture(const std::string& fname)
           _skySphere->setDrawMode(currDrawMode & ~SkySphere::TEXTURE);
 }
 
-void RenderRectangle::setSkySphereStarCatalog(const std::string& fname)
+bool RenderRectangle::setSkySphereStarData(
+        const std::string& catalogName,
+        float minMag, float maxMag,
+        unsigned int numStars,
+        float starScale)
 {
         unsigned int currDrawMode = _skySphere->getDrawMode();
-        if(_skySphere->setStarCatalog(fname))
+        bool success = _skySphere->setStarData(catalogName, minMag, maxMag, numStars, starScale);
+        if(success)
           // Add STARFIELD to existing drawmode
           _skySphere->setDrawMode(currDrawMode | SkySphere::STARFIELD);
         else
           // Remove STARFIELD from existing drawmode
           _skySphere->setDrawMode(currDrawMode & ~SkySphere::STARFIELD);
+
+        return success;
 }
 
 void RenderRectangle::setBackgroundColor(float r, float g, float b)
