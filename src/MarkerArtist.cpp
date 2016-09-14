@@ -253,7 +253,7 @@ void MarkerArtist::setMarkerSize(unsigned int size)
 	}
 }
 
-bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
+bool MarkerArtist::setMarkerImage(const std::string &fname)
 {
         // Remove any existing marker image
 	if(fname.length() == 0) 
@@ -262,20 +262,14 @@ bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
           return true;
 	}
 
-	osg::StateSet *ss = getOrCreateStateSet();
-
-	// Check if there is already a texture being used.
-	osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(ss->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
-
-	// If the current texture has the same filename as the new texture, then reload only if we have to.
-	if(texture && (texture->getImage()->getFileName() == fname) && !force_reload) return true;
-
-	osg::Image *image = osgDB::readImageFile(fname); // Load image from file
+        // Load image from file
+	osg::Image *image = osgDB::readImageFile(fname);
 	if(image)
 	{
+          osg::StateSet *ss = getOrCreateStateSet();
+
 	  // Specify texture to use for point sprite
-	  osg::Texture2D *tex = new osg::Texture2D();
-	  tex->setImage(image);
+	  osg::Texture2D *tex = new osg::Texture2D(image);
 	  ss->setTextureAttributeAndModes(0, tex);
 
           // Assume texture may have transparency
@@ -294,7 +288,7 @@ bool MarkerArtist::setMarkerImage(const std::string &fname, bool force_reload)
 	}
 	else
 	{
-	  std::cerr<< "MarkerArtist ERROR: Image file \'" << fname << "\' could not be found!" << std::endl;
+	  std::cerr<< "OpenFrames::MarkerArtist ERROR: Image file \'" << fname << "\' could not be found!" << std::endl;
 	  return false; // Image was not found
 	}
 }
@@ -308,10 +302,22 @@ bool MarkerArtist::setMarkerShader(const std::string &fname)
           return true;
 	}
 
-        // Fragment shader to draw the custom marker
-        if(!_fragShader->loadShaderSourceFromFile(fname))
+        // Load shader source from file
+        bool success = _fragShader->loadShaderSourceFromFile(fname);
+        if(success)
         {
-          std::cerr<< "OpenFrames::MarkerArtist::setMarkerShader ERROR: File " << fname << " not properly loaded." << std::endl;
+          osg::StateSet *ss = getOrCreateStateSet();
+
+          // Remove existing image texture and blend function
+          ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
+          ss->removeAttribute(osg::StateAttribute::BLENDFUNC);
+
+          // Assume opaque marker
+          ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
+        }
+        else
+        {
+          std::cerr<< "OpenFrames::MarkerArtist ERROR: Shader file \'" << fname << "\' not properly loaded!" << std::endl;
           return false;
         }
 

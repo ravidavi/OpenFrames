@@ -541,14 +541,12 @@ OF_EXPORT void OF_FCN(ofmarkerartist_setmarkers)( unsigned int *markers );
 // Set color for markers
 OF_EXPORT void OF_FCN(ofmarkerartist_setmarkercolor)( unsigned int *markers, float *r, float *g, float *b );
 
-// Set image used as marker
-// If an empty string is given, then use default OpenGL point
+// Set image used as marker, overriding any existing shader
+// If an empty string is given, then use default circular point
 OF_EXPORT void OF_FCN(ofmarkerartist_setmarkerimage)(OF_CHARARG(fname));
   
-// Set GLSL fragment shader used to draw marker
-// If an empty string is given, then use default OpenGL point
-// Otherwise, the shader will have access to the texture set by the
-// most recent call to setmarkerimage (if any)
+// Set GLSL fragment shader used to draw marker, overriding any existing image
+// If an empty string is given, then use default circular point
 OF_EXPORT void OF_FCN(ofmarkerartist_setmarkershader)(OF_CHARARG(fname));
   
 // Specify which type of intermediate markers should be drawn

@@ -78,7 +78,7 @@ class OF_EXPORT MarkerArtist : public TrajectoryArtist
 	void setMarkers( unsigned int markers );
 	void setMarkerColor( unsigned int markers, float r, float g, float b);
 	void setMarkerSize(unsigned int size); // Size in pixels
-	bool setMarkerImage( const std::string &fname, bool force_reload = false );
+	bool setMarkerImage( const std::string &fname );
 	bool setMarkerShader( const std::string &fname );
 
 	/** Specify whether to automatically shrink/grow the marker size as
