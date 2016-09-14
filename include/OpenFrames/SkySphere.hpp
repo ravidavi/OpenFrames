@@ -20,8 +20,7 @@
 #include <OpenFrames/Export.h>
 #include <OpenFrames/Sphere.hpp>
 
-#include <osg/Referenced>
-#include <osg/ref_ptr>
+#include <array>
 
 namespace OpenFrames {
 
@@ -71,19 +70,29 @@ class OF_EXPORT SkySphere : public OpenFrames::Sphere {
     /// Convert a Star to a XYZ position, RGB color, and size (in color[3])
     static void StarToPoint(const Star &star, osg::Vec3 &pos, osg::Vec4 &color);
 
+    // Get the Geometry bin to which a star should be assigned
+    static unsigned int getStarBin(const osg::Vec3 &p);
+
   protected:
     virtual ~SkySphere(); // Must be allocated on heap using 'new'
 
-    osg::ref_ptr<osg::Geometry> _starGeom; // The actual stars
+    bool processStars(); // Load and set up all star data
+
+    // Clear all stars
+    void clearStars();
 
     std::string _starCatalogFile; // File containing star catalog
     float _minMag, _maxMag; // Range of drawn star magnitudes
     unsigned int _maxNumStars; // Maximum number of drawn stars
     float _starScale; // Pixel size scale
 
+    static const unsigned int _starBinSpacing = 3;
+    static const unsigned int _starBinCount = _starBinSpacing*_starBinSpacing*6;
+    typedef std::array<osg::ref_ptr<osg::Geometry>, _starBinCount> StarBins;
+    StarBins _starBinGeoms;
+
   private:
     void _init();
-    bool processStars();
 };
 
 }  // !namespace OpenFrames

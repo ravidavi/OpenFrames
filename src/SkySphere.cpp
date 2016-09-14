@@ -36,7 +36,6 @@ static const char *OFSkySphere_VertSource = {
   // encoded in the alpha component of color
   "  gl_Position = osg_ModelViewProjectionMatrix*osg_Vertex;\n"
   "  gl_FrontColor = gl_Color;\n"
-  "  gl_FrontColor.w = 1.0;\n"
   "  gl_PointSize = gl_Color.w;\n"
   "}\n"
 };
@@ -46,6 +45,8 @@ static const char *OFSkySphere_FragSource = {
   "#version 120\n"
   "vec2 v;\n"
   "float alpha;\n"
+
+  // Cutoff radius where fragment alpha starts fading to zero
   "const float r_cutoff = 0.25;\n"
   "const float x = -0.5/(r_cutoff - 0.5);\n"
   "const float y = 0.5/(r_cutoff - 0.5);\n"
@@ -62,8 +63,8 @@ static const char *OFSkySphere_FragSource = {
   // Fragment alpha is based on distance from point center
   // Fades alpha = 1 -> 0 starting at half of point radius
   "  alpha = mix(x, y, length(v));\n"
-  "  alpha = clamp(0.0, 1.0, alpha);\n"
-  "  gl_FragColor.w = alpha;\n"
+  "  alpha = clamp(alpha, 0.0, 1.0);\n"
+  "  gl_FragColor.a = alpha;\n"
   "}\n"
 };
 
@@ -77,6 +78,7 @@ SkySphere::~SkySphere() {}
 
 void SkySphere::_init()
 {
+  // Initialize star rendering parameters
   _minMag = -2.0;
   _maxMag = 8.0;
   _maxNumStars = 10000;
@@ -98,19 +100,16 @@ void SkySphere::_init()
   // Draw SkySphere before other objects so it's always in background
   ss->setRenderBinDetails(-1, "RenderBin");
 
-  // Create Geometry that will contain stars
-  _starGeom = new osg::Geometry;
-  _starGeom->setName("StarFieldDrawable");
-  _geode->addDrawable(_starGeom);
+  // Create new StateSet to specify star-specific OpenGL properties
+  ss = new osg::StateSet();
 
-  // Set vertex and fragment shaders for stars
+  // Create vertex and fragment shaders for stars
   osg::Shader *vertShader = new osg::Shader(osg::Shader::VERTEX, OFSkySphere_VertSource);
   osg::Shader *fragShader = new osg::Shader(osg::Shader::FRAGMENT, OFSkySphere_FragSource);
   osg::Program *program = new osg::Program;
   program->setName("OFSkySphere_ShaderProgram");
   program->addShader(vertShader);
   program->addShader(fragShader);
-  ss = _starGeom->getOrCreateStateSet();
   ss->setAttribute(program);
   ss->setMode(GL_PROGRAM_POINT_SIZE, osg::StateAttribute::ON);
 
@@ -118,10 +117,23 @@ void SkySphere::_init()
   osg::PointSprite *sprite = new osg::PointSprite();
   ss->setTextureAttributeAndModes(0, sprite);
 
-  // Set blending for stars
+  // Set additive blending for stars
   osg::BlendFunc *fn = new osg::BlendFunc();
   fn->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE);
   ss->setAttributeAndModes(fn);
+
+  // Create star bins (osg::Geometries) that will hold sets of stars
+  for(unsigned int i = 0; i < _starBinCount; ++i)
+  {
+    _starBinGeoms[i] = new osg::Geometry;
+    _starBinGeoms[i]->setName("StarFieldDrawable"+std::to_string(i));
+    _starBinGeoms[i]->setStateSet(ss);
+    _starBinGeoms[i]->setVertexArray(new osg::Vec3Array());
+    osg::Vec4Array *colors = new osg::Vec4Array;
+    colors->setBinding(osg::Array::BIND_PER_VERTEX);
+    _starBinGeoms[i]->setColorArray(colors);
+    _geode->addDrawable(_starBinGeoms[i]);
+  }
 
   // By default draw both texture and starfield
   setDrawMode(TEXTURE + STARFIELD);
@@ -130,16 +142,19 @@ void SkySphere::_init()
 void SkySphere::setDrawMode(unsigned int drawMode)
 {
   // Enable/disable drawable containing textured sphere
-  if(drawMode & TEXTURE)
-    _sphereSD->setNodeMask(0xffffffff);
-  else
-    _sphereSD->setNodeMask(0x0);
+  osg::Node::NodeMask sphereMask;
+  if(drawMode & TEXTURE) sphereMask = 0xffffffff;
+  else sphereMask = 0x0;
+  _sphereSD->setNodeMask(sphereMask);
 
   // Enable/disable drawable containing starfield
-  if(drawMode & STARFIELD)
-    _starGeom->setNodeMask(0xffffffff);
-  else
-    _starGeom->setNodeMask(0x0);
+  osg::Node::NodeMask starMask;
+  if(drawMode & STARFIELD) starMask = 0xffffffff;
+  else starMask = 0x0;
+  for(int i = 0; i < _starBinGeoms.size(); ++i)
+  {
+    _starBinGeoms[i]->setNodeMask(starMask);
+  }
 }
 
 unsigned int SkySphere::getDrawMode()
@@ -148,7 +163,8 @@ unsigned int SkySphere::getDrawMode()
   unsigned int useTexture = _sphereSD->getNodeMask() & TEXTURE;
 
   // Check if starfield is drawn
-  unsigned int useStarfield = _starGeom->getNodeMask() & STARFIELD;
+  // We can just check the first bin since all of them have the same mask
+  unsigned int useStarfield = _starBinGeoms[0]->getNodeMask() & STARFIELD;
 
   // Return draw mode
   return (useTexture + useStarfield);
@@ -171,9 +187,7 @@ bool SkySphere::processStars()
   if(_starCatalogFile.empty())
   {
     // Clear star geometry data
-    _starGeom->setVertexArray(NULL);
-    _starGeom->setColorArray(NULL);
-    _starGeom->removePrimitiveSet(0, _starGeom->getNumPrimitiveSets());
+    clearStars();
     return false;
   }
 
@@ -185,6 +199,9 @@ bool SkySphere::processStars()
     return false;
   }
 
+  // Clear all stars before processing new ones
+  clearStars();
+
   // Throw away header line
   std::string line;
   std::getline(starfile, line);
@@ -193,14 +210,13 @@ bool SkySphere::processStars()
   float ra, dec, dist, mag, colorindex;
   int numStars = 0;
   float maxSize = 0.0, minSize = 10000.0;
+  float maxMag = 0.0, minMag = 10000.0;
   Star currStar;
-  osg::Vec3Array *vertices = new osg::Vec3Array;
-  osg::Vec4Array *colors = new osg::Vec4Array;
-  vertices->reserveArray(_maxNumStars);
-  colors->reserveArray(_maxNumStars);
-  colors->setBinding(osg::Array::BIND_PER_VERTEX);
+  osg::Vec3Array *vertices;
+  osg::Vec4Array *colors;
   osg::Vec3 currVert;
   osg::Vec4 currColor;
+  unsigned int currBin;
   while(starfile && (numStars < _maxNumStars))
   {
     // Get line
@@ -215,29 +231,41 @@ bool SkySphere::processStars()
     // Filter by magnitude
     if((mag < _minMag) || (mag > _maxMag)) continue;
 
+    // Prepare star data for processing
     //currStar.ra = ra*osg::PI/12.0 + 2.0*osg::PI_2;
     currStar.ra = ra*osg::PI/12.0;    // Hours to radians
     currStar.dec = dec*osg::PI/180.0; // Degrees to radians
     currStar.mag = mag;
     currStar.colorindex = colorindex;
 
+    // Process current star
     StarToPoint(currStar, currVert, currColor);
     currColor[3] *= _starScale; // Scale star pixel size
+    //if(currStar.dec > 89.2*osg::PI/180.0) currColor[3] = 20.0;
+    currBin = getStarBin(currVert);
+    vertices = static_cast<osg::Vec3Array*>(_starBinGeoms[currBin]->getVertexArray());
+    colors = static_cast<osg::Vec4Array*>(_starBinGeoms[currBin]->getColorArray());
     vertices->push_back(currVert);
     colors->push_back(currColor);
     ++numStars;
+    if(mag > maxMag) maxMag = mag;
+    if(mag < minMag) minMag = mag;
     if(currColor[3] > maxSize) maxSize = currColor[3];
     if(currColor[3] < minSize) minSize = currColor[3];
   }
   starfile.close();
 
-  std::cout<< std::setprecision(2) << std::fixed << "OpenFrames plotting " << numStars << " stars in magnitude range [" << _minMag << "," << _maxMag << "], and pixel size range [" << minSize << "," << maxSize << "]" << std::endl;
+  std::cout<< std::setprecision(2) << std::fixed << "OpenFrames plotting " << numStars << " stars in magnitude range [" << minMag << "," << maxMag << "], and pixel size range [" << minSize << "," << maxSize << "]" << std::endl;
 
-  // Add vertices and colors to star Geometry
-  _starGeom->setVertexArray(vertices);
-  _starGeom->setColorArray(colors);
-  _starGeom->removePrimitiveSet(0, _starGeom->getNumPrimitiveSets());
-  _starGeom->addPrimitiveSet(new osg::DrawArrays(GL_POINTS, 0, vertices->size()));
+  // Tell all star bins to draw their 
+  for(unsigned int i = 0; i < _starBinGeoms.size(); ++i)
+  {
+    vertices = static_cast<osg::Vec3Array*>(_starBinGeoms[i]->getVertexArray());
+    unsigned int currBinSize = vertices->size();
+    //std::cout<< "Star Bin " << i << " has " << currBinSize << " stars" << std::endl;
+    if(currBinSize > 0)
+      _starBinGeoms[i]->addPrimitiveSet(new osg::DrawArrays(GL_POINTS, 0, currBinSize));
+  }
 
   return true;
 }
@@ -248,11 +276,10 @@ bool SkySphere::processStars()
 // http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
 void SkySphere::StarToPoint(const Star &star, osg::Vec3 &pos, osg::Vec4 & color)
 {
-  // Star position, spherical to cartesian
-  const float radius = 1.0; // Assume star plotted at unit sphere distance
-  pos[0] = radius*std::cos(star.ra)*std::cos(star.dec);
-  pos[1] = radius*std::sin(star.ra)*std::cos(star.dec);
-  pos[2] = radius*std::sin(star.dec);
+  // Star position, spherical to cartesian, assuming unit sphere
+  pos[0] = std::cos(star.ra)*std::cos(star.dec);
+  pos[1] = std::sin(star.ra)*std::cos(star.dec);
+  pos[2] = std::sin(star.dec);
 
   // Star pixel diameter (use color alpha to send this to vertex shader)
   // Diameter computation takes both brightness and luminance into account
@@ -298,6 +325,91 @@ void SkySphere::StarToPoint(const Star &star, osg::Vec3 &pos, osg::Vec4 & color)
   // Debug: draw all stars as green
   //color[1] = 1.0;
   //color[0] = color[2] = 0.0;
+}
+
+// Map point on unit sphere to point on unit cube, then map that point
+// to a star bin number. This allows spatial grouping of stars so that
+// they can be culled when not in view.
+unsigned int SkySphere::getStarBin(const osg::Vec3 &p)
+{
+  unsigned int face; // Cube face
+  float s, t; // Star coordinates on a cube face
+  float planedist;
+
+  float x = p[0];
+  float y = p[1];
+  float z = p[2];
+  float ax = std::abs(x);
+  float ay = std::abs(y);
+  float az = std::abs(z);
+
+  // +/- Z cube face maps to bin 4/5
+  // This happens when Z > X and Z > Y
+  if((az >= ax) && (az >= ay))
+  {
+    if(z > 0) face = 4;
+    else face = 5;
+    planedist = std::abs(1.0/z);
+    s = planedist*x;
+    t = planedist*y;
+  }
+
+  // +/- X cube face maps to bin 0/1
+  // This happens when |X| > |Y|
+  else if(ax >= ay)
+  {
+    if(x > 0) face = 0;
+    else face = 1;
+    planedist = std::abs(1.0/x);
+    s = planedist*y;
+    t = planedist*z;
+  }
+
+  // +/- Y cube face maps to bin 2/3
+  // This happens for all other cases
+  else
+  {
+    if(y > 0) face = 2;
+    else face = 3;
+    planedist = std::abs(1.0/y);
+    s = planedist*x;
+    t = planedist*z;
+  }
+
+  // For any plane, s and t are in range [-1, 1] 
+  // We need them in range [0, 1] 
+  s = (s + 1.0)*0.5;
+  t = (t + 1.0)*0.5;
+  if(s < 0) s = 0.0;
+  if(t < 0) t = 0.0;
+
+  // Bins are evenly spaced within a plane
+  float inversespacing = 1.0/(float)_starBinSpacing;
+  unsigned int s_bin = (unsigned int)(s/inversespacing);
+  unsigned int t_bin = (unsigned int)(t/inversespacing);
+  if(s_bin == _starBinSpacing) --s_bin;
+  if(t_bin == _starBinSpacing) --t_bin;
+
+  // Compute overall bin as n-adic number in base _starBinSpacing
+  unsigned int bin = s_bin + t_bin*_starBinSpacing + face*_starBinSpacing*_starBinSpacing;
+
+  return bin;
+}
+
+void SkySphere::clearStars()
+{
+  osg::Vec3Array *vertices;
+  osg::Vec4Array *colors;
+
+  // Clear star geometry data
+  for(unsigned int i = 0; i < _starBinGeoms.size(); ++i)
+  {
+    vertices = static_cast<osg::Vec3Array*>(_starBinGeoms[i]->getVertexArray());
+    colors = static_cast<osg::Vec4Array*>(_starBinGeoms[i]->getColorArray());
+    vertices->clear();
+    colors->clear();
+    _starBinGeoms[i]->removePrimitiveSet(0, _starBinGeoms[i]->getNumPrimitiveSets());
+  }
 }
 
 } // !namespace OpenFrames
