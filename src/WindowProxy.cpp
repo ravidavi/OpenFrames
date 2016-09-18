@@ -351,9 +351,10 @@ public:
 
           // Report OpenGL version info
           char *glVersionString = (char*)glGetString(GL_VERSION);
-          if(glVersionString)
+          char *glRendererString = (char*)glGetString(GL_RENDERER);
+          if(glVersionString && glRendererString)
           {
-            std::cout<< "OpenFrames using OpenGL " << glVersionString;
+            std::cout<< "OpenFrames renderer: " << glRendererString << ", version: " << glVersionString;
             if(gc->getTraits()->samples > 0)
               std::cout<< " with " << gc->getTraits()->samples << "x MSAA";
             std::cout<< std::endl;

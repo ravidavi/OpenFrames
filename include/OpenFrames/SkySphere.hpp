@@ -86,8 +86,20 @@ class OF_EXPORT SkySphere : public OpenFrames::Sphere {
     unsigned int _maxNumStars; // Maximum number of drawn stars
     float _starScale; // Pixel size scale
 
-    static const unsigned int _starBinSpacing = 3;
+    // Stars are grouped by position into star bins. Bins are arranged
+    // in a cube superscribed on the star unit sphere. Each cube face
+    // contains bins arranged in a square grid.
+    // Note that each bin does not have an equal number of stars, since
+    // the sphere->cube mapping is not evenly spaced and stars are not
+    // uniformly distributed in the sky
+
+    // Number of bin rows (and columns) per cube face
+    static const unsigned int _starBinSpacing = 2;
+
+    // Total number of bins for a 6-sided cube
     static const unsigned int _starBinCount = _starBinSpacing*_starBinSpacing*6;
+
+    // Star bins containing each set of stars
     typedef std::array<osg::ref_ptr<osg::Geometry>, _starBinCount> StarBins;
     StarBins _starBinGeoms;
 

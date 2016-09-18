@@ -35,8 +35,8 @@ static const char *OFTA_VertSource = {
   "uniform vec3 of_ModelViewEyeHigh;\n"
   "uniform vec3 of_ModelViewEyeLow;\n"
 
-  // High/low parts of current vertex position
-  "attribute vec4 osg_Vertex;\n"
+  // Low part of current vertex position
+  // High part comes in through gl_Vertex
   "attribute vec4 of_VertexLow;\n"
 
   "void main(void)\n"
@@ -46,7 +46,7 @@ static const char *OFTA_VertSource = {
   "  vec3 e = t1 - of_VertexLow.xyz;\n"
 
      // High part of vertex - eye including numerical error
-  "  vec3 t2 = ((-of_ModelViewEyeLow - e) + (of_VertexLow.xyz - (t1 - e))) + osg_Vertex.xyz - of_ModelViewEyeHigh;\n"
+  "  vec3 t2 = ((-of_ModelViewEyeLow - e) + (of_VertexLow.xyz - (t1 - e))) + gl_Vertex.xyz - of_ModelViewEyeHigh;\n"
 
      // Sum of low + high parts and associated numerical error
   "  vec3 diffHigh = t1 + t2;\n"

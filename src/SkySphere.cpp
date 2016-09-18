@@ -28,13 +28,12 @@ namespace OpenFrames{
 static const char *OFSkySphere_VertSource = {
   "#version 120\n"
   "uniform mat4 osg_ModelViewProjectionMatrix;\n"
-  "attribute vec4 osg_Vertex;\n"
 
   "void main(void)\n"
   "{\n"
   // Position and color are just passed through, but point size is
   // encoded in the alpha component of color
-  "  gl_Position = osg_ModelViewProjectionMatrix*osg_Vertex;\n"
+  "  gl_Position = osg_ModelViewProjectionMatrix*gl_Vertex;\n"
   "  gl_FrontColor = gl_Color;\n"
   "  gl_PointSize = gl_Color.w;\n"
   "}\n"
@@ -262,7 +261,11 @@ bool SkySphere::processStars()
   {
     vertices = static_cast<osg::Vec3Array*>(_starBinGeoms[i]->getVertexArray());
     unsigned int currBinSize = vertices->size();
-    //std::cout<< "Star Bin " << i << " has " << currBinSize << " stars" << std::endl;
+
+#ifdef OF_DEBUG
+    std::cout<< "Star Bin " << i << " has " << currBinSize << " stars" << std::endl;
+#endif
+
     if(currBinSize > 0)
       _starBinGeoms[i]->addPrimitiveSet(new osg::DrawArrays(GL_POINTS, 0, currBinSize));
   }
@@ -330,26 +333,35 @@ void SkySphere::StarToPoint(const Star &star, osg::Vec3 &pos, osg::Vec4 & color)
 // Map point on unit sphere to point on unit cube, then map that point
 // to a star bin number. This allows spatial grouping of stars so that
 // they can be culled when not in view.
+// This algorithm does an inverse mapping of the simple cube->sphere
+// mapping that normalizes cube points onto the unit sphere. This mapping
+// does not produce evenly-spaced points, but is much better than
+// tesselating a sphere by latitude/longitude. Alternative algorithms
+// can be investigated in the future.
 unsigned int SkySphere::getStarBin(const osg::Vec3 &p)
 {
   unsigned int face; // Cube face
   float s, t; // Star coordinates on a cube face
   float planedist;
 
-  float x = p[0];
-  float y = p[1];
-  float z = p[2];
+  const float &x = p[0];
+  const float &y = p[1];
+  const float &z = p[2];
   float ax = std::abs(x);
   float ay = std::abs(y);
   float az = std::abs(z);
 
+  // Map the star to a cube face, and compute its s-t coordinates
+  // s-t nomenclature is just an alternative to x-y since the plane
+  // could be oriented in any direction
+
   // +/- Z cube face maps to bin 4/5
-  // This happens when Z > X and Z > Y
+  // This happens when |Z| > |X| and |Z| > |Y|
   if((az >= ax) && (az >= ay))
   {
     if(z > 0) face = 4;
     else face = 5;
-    planedist = std::abs(1.0/z);
+    planedist = 1.0/az;
     s = planedist*x;
     t = planedist*y;
   }
@@ -360,7 +372,7 @@ unsigned int SkySphere::getStarBin(const osg::Vec3 &p)
   {
     if(x > 0) face = 0;
     else face = 1;
-    planedist = std::abs(1.0/x);
+    planedist = 1.0/ax;
     s = planedist*y;
     t = planedist*z;
   }
@@ -371,26 +383,26 @@ unsigned int SkySphere::getStarBin(const osg::Vec3 &p)
   {
     if(y > 0) face = 2;
     else face = 3;
-    planedist = std::abs(1.0/y);
+    planedist = 1.0/ay;
     s = planedist*x;
     t = planedist*z;
   }
 
   // For any plane, s and t are in range [-1, 1] 
-  // We need them in range [0, 1] 
+  // We need them in range [0, 1] before computing grid location
   s = (s + 1.0)*0.5;
   t = (t + 1.0)*0.5;
   if(s < 0) s = 0.0;
   if(t < 0) t = 0.0;
 
-  // Bins are evenly spaced within a plane
+  // Bins are arranged on a uniform grid within a plane
   float inversespacing = 1.0/(float)_starBinSpacing;
   unsigned int s_bin = (unsigned int)(s/inversespacing);
   unsigned int t_bin = (unsigned int)(t/inversespacing);
   if(s_bin == _starBinSpacing) --s_bin;
   if(t_bin == _starBinSpacing) --t_bin;
 
-  // Compute overall bin as n-adic number in base _starBinSpacing
+  // Compute bin number as n-adic expansion in base _starBinSpacing
   unsigned int bin = s_bin + t_bin*_starBinSpacing + face*_starBinSpacing*_starBinSpacing;
 
   return bin;
