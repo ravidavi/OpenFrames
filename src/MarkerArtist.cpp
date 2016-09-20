@@ -117,7 +117,7 @@ MarkerArtist::MarkerArtist(const Trajectory *traj)
 
         osg::StateSet *ss = getOrCreateStateSet();
 
-	// Add the Point parameter to the marker
+	// Add the Point parameter to allow marker resizing
 	ss->setAttribute(new osg::Point);
 
         // Set up point sprite
@@ -128,9 +128,6 @@ MarkerArtist::MarkerArtist(const Trajectory *traj)
         _fragShader = new osg::Shader(osg::Shader::FRAGMENT);
         _program->addShader(_fragShader);
         resetMarkerShader(); // Set default shader
-
-        // Assume opaque points
-        ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
 
         // Set default marker color and size
 	setMarkerColor(_markers, 1, 0, 0);

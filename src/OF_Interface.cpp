@@ -1133,6 +1133,18 @@ OF_EXPORT void OF_FCN(ofcoordaxes_settickimage)(OF_CHARARG(fname))
 	else _objs->_intVal = 1;
 }
 
+OF_EXPORT void OF_FCN(ofcoordaxes_settickshader)(OF_CHARARG(fname))
+{
+	CoordinateAxes *ca = dynamic_cast<CoordinateAxes*>(_objs->_currFrame);
+	if(ca)
+	{
+	  // Convert given character string and length to a proper C string
+	  std::string temp(OF_STRING(fname));
+	  _objs->_intVal = !ca->setTickShader(temp);
+	}
+	else _objs->_intVal = 1;
+}
+
 /***********************************************
 	LatLonGrid Functions
 ***********************************************/

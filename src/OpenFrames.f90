@@ -523,6 +523,11 @@
 	CHARACTER(LEN=*), INTENT(IN) :: fname
 	END SUBROUTINE
 
+	SUBROUTINE ofcoordaxes_settickshader(fname)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofcoordaxes_settickshader
+	CHARACTER(LEN=*), INTENT(IN) :: fname
+	END SUBROUTINE
+
 ! LatLonGrid functions
 
 	SUBROUTINE oflatlongrid_create(name)

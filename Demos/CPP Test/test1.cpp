@@ -235,7 +235,7 @@ int main()
 	axes->setAxisLength(2.0*M_PI);
 	axes->setTickSpacing(M_PI, 0.25*M_PI);
 	axes->setTickSize(8, 5);
-	axes->setTickImage("../Images/circle.tiff");
+        axes->setTickShader(""); // Default to solid circle
 	axes->setXLabel("X");
 	axes->setYLabel("Z");
 	axes->setZLabel("t");

@@ -336,6 +336,7 @@ OF_EXPORT void OF_FCN(ofcoordaxes_setdrawaxes)(unsigned int *axes);
 OF_EXPORT void OF_FCN(ofcoordaxes_settickspacing)(double *major, double *minor);
 OF_EXPORT void OF_FCN(ofcoordaxes_setticksize)(unsigned int *major, unsigned int *minor);
 OF_EXPORT void OF_FCN(ofcoordaxes_settickimage)(OF_CHARARG(fname));
+OF_EXPORT void OF_FCN(ofcoordaxes_settickshader)(OF_CHARARG(fname));
 
 /******************************************************************
 	LatLonGrid Functions

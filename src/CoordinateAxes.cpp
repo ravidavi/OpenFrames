@@ -24,6 +24,47 @@
 namespace OpenFrames
 {
 
+// Fragment shader that draws a texture on a PointSprite
+static const char *FragSource_Texture = {
+  "#version 120\n"
+  "uniform sampler2D tex;\n"
+
+  "void main(void)\n"
+  "{\n"
+     // Discard fragments with small alpha values
+  "  vec4 t2d = texture2D(tex, gl_TexCoord[0].st);\n"
+  "  if(t2d.a < 0.05)\n"
+  "  {\n"
+  "    discard;\n"
+  "  }\n"
+
+     // Color the texture with user-specified color
+  "  gl_FragColor = t2d*gl_Color;\n"
+  "}\n"
+};
+
+// Fragment shader that draws a solid disk on a PointSprite
+static const char *FragSource_Disk = {
+  "#version 120\n"
+  "vec2 v;\n"
+
+  "void main(void)\n"
+  "{\n"
+  // gl_PointCoord has range (x,y) in [0, 1] each, with y-down
+  // Move origin to point center, with extents [-0.5, 0.5]
+  "  v = gl_PointCoord - vec2(0.5);\n"
+
+  // Throw away fragments outside the disk (radius > 0.5)
+  "  if(dot(v, v) > 0.25)\n"
+  "  {\n"
+  "    discard;\n"
+  "  }\n"
+
+  // Remaining fragments get the user-specified color
+  "  gl_FragColor = gl_Color;\n"
+  "}\n"
+};
+
 CoordinateAxes::CoordinateAxes(const std::string &name)
 	: ReferenceFrame(name)
 {
@@ -103,46 +144,76 @@ void CoordinateAxes::setTickSize(unsigned int majorSize, unsigned int minorSize)
 	}
 }
 
-bool CoordinateAxes::setTickImage(const std::string &fname, bool force_reload)
+bool CoordinateAxes::setTickImage(const std::string &fname)
 {
-	osg::StateSet *ss = _tickGeode->getOrCreateStateSet();
+        // Remove any existing tick image
+        if(fname.length() == 0)
+        {
+          resetTickShader();
+          return true;
+        }
 
-	if(fname.length() == 0) // Use default OpenGL point as marker
-	{
-          ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
-	  ss->removeTextureAttribute(0, osg::StateAttribute::POINTSPRITE);
-	  ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
-	  return true;
-	}
+        // Load image from file
+	osg::Image *image = osgDB::readImageFile(fname);
 
-	// Check if there is already a texture being used.
-	osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(ss->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
-
-	// If the current texture has the same filename as the new texture, then reload only if we have to.
-	if(texture && (texture->getImage()->getFileName() == fname) && !force_reload) return true;
-
-	osg::Image *image = osgDB::readImageFile(fname); // Load image from file
 	if(image)
 	{
-	  // Set up point sprite
-	  osg::PointSprite *sprite = new osg::PointSprite();
-	  ss->setTextureAttributeAndModes(0, sprite);
+          osg::StateSet *ss = _tickGeode->getOrCreateStateSet();
 
 	  // Specify texture to use for point sprite
-	  osg::Texture2D *tex = new osg::Texture2D();
-	  tex->setImage(image);
+	  osg::Texture2D *tex = new osg::Texture2D(image);
 	  ss->setTextureAttributeAndModes(0, tex);
 
           // Assume texture may have transparency
           ss->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
 
+          // Set up alpha blending for texture
+          osg::BlendFunc *fn = new osg::BlendFunc();
+          fn->setFunction(osg::BlendFunc::SRC_ALPHA,
+              osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+          ss->setAttributeAndModes(fn);
+
+          // Fragment shader to draw the marker texture
+          _fragShader->setShaderSource(FragSource_Texture);
+
 	  return true;
 	}
 	else
 	{
-	  std::cerr<< "CoordinateAxes ERROR: Image file \'" << fname << "\' could not be found!" << std::endl;
+	  std::cerr<< "OpenFrames::CoordinateAxes ERROR: Image file \'" << fname << "\' could not be found!" << std::endl;
 	  return false; // Image was not found
 	}
+}
+
+bool CoordinateAxes::setTickShader(const std::string &fname)
+{
+        // Reset shader
+        if(fname.length() == 0)
+        {
+          resetTickShader();
+          return true;
+        }
+
+        // Load shader source from file
+        bool success = _fragShader->loadShaderSourceFromFile(fname);
+        if(success)
+        {
+          osg::StateSet *ss = _tickGeode->getOrCreateStateSet();
+
+          // Remove existing image texture and blend function
+          ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
+          ss->removeAttribute(osg::StateAttribute::BLENDFUNC);
+
+          // Assume opaque marker
+          ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
+        }
+        else
+        {
+          std::cerr<< "OpenFrames::MarkerArtist ERROR: Shader file \'" << fname << "\' not properly loaded!" << std::endl;
+          return false;
+        }
+
+        return true;
 }
 
 const osg::BoundingSphere& CoordinateAxes::getBound() const
@@ -176,18 +247,11 @@ void CoordinateAxes::setColor( const osg::Vec4 &color )
 void CoordinateAxes::_init()
 {
 	// Create geode to hold all the geometries
-	_axesGeode = new osg::Geode;
-	_tickGeode = new osg::Geode;
+	_axesGeode = new osg::Geode; // Hold axes lines
+	_tickGeode = new osg::Geode; // Hold major/minor tick marks
 
 	_axesGeode->setName(_name + " axes geode");
 	_tickGeode->setName(_name + " tick geode");
-
-        // Set up blending so tick marks look nice
-        osg::BlendFunc *fn = new osg::BlendFunc();
-        fn->setFunction(osg::BlendFunc::SRC_ALPHA,
-                        osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
-        _tickGeode->getOrCreateStateSet()->setAttributeAndModes(fn);
-        _tickGeode->getOrCreateStateSet()->setRenderingHint(osg::StateSet::OPAQUE_BIN);
 
 	// Disable lighting computations
 	_axesGeode->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
@@ -199,12 +263,26 @@ void CoordinateAxes::_init()
 	_majorTickGeom = new osg::Geometry;
 	_minorTickGeom = new osg::Geometry;
 
-	// Set up point parameters for the major/minor tick marks
-        // Setting the osg::Point mode enables GL_POINT_SMOOTH
+        // Add the Point parameter to allow major/minor tick mark resizing
         // Note that major/minor Geoms need separate StateSets since they
         // can have different osg::Point sizes
-	_majorTickGeom->getOrCreateStateSet()->setAttributeAndModes(new osg::Point);
-	_minorTickGeom->getOrCreateStateSet()->setAttributeAndModes(new osg::Point);
+	_majorTickGeom->getOrCreateStateSet()->setAttribute(new osg::Point);
+	_minorTickGeom->getOrCreateStateSet()->setAttribute(new osg::Point);
+
+        // Set up point sprite so tick marks can be customized
+        // This can be shared between major/minor Geoms
+        osg::PointSprite *sprite = new osg::PointSprite();
+        _tickGeode->getOrCreateStateSet()->setTextureAttributeAndModes(0, sprite);
+
+        // GLSL shader program
+        osg::Program *program = new osg::Program;
+        program->setName("OFCoordinateAxes_ShaderProgram");
+        _tickGeode->getOrCreateStateSet()->setAttribute(program);
+
+        // Fragment shader to draw the tick marks
+        _fragShader = new osg::Shader(osg::Shader::FRAGMENT);
+        program->addShader(_fragShader);
+        resetTickShader();
 
 	// Create the arrays for vertex and color data
 	_vertices = new osg::Vec3dArray; // Vertices will be added later
@@ -340,6 +418,21 @@ void CoordinateAxes::_createAxes()
 
 	// Tell the minor tick mark geometry to draw data as points
 	_minorTickGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS, start, _vertices->size() - start));
+}
+
+void CoordinateAxes::resetTickShader()
+{
+        osg::StateSet *ss = _tickGeode->getOrCreateStateSet();
+
+        // Remove existing image texture and blending
+        ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
+        ss->removeAttribute(osg::StateAttribute::BLENDFUNC);
+
+        // Assume opaque marker
+        ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
+
+        // Default to circular point marker
+        _fragShader->setShaderSource(FragSource_Disk);
 }
 
 } // !namespace OpenFrames

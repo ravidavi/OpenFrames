@@ -53,8 +53,9 @@ class OF_EXPORT CoordinateAxes : public ReferenceFrame
 	/** Set/get tick size */
 	void setTickSize(unsigned majorSize, unsigned int minorSize);
 	
-	/** Set tick image */
-	bool setTickImage( const std::string &fname, bool force_reload = false);
+	/** Set tick image or shader */
+	bool setTickImage(const std::string &fname);
+        bool setTickShader(const std::string &fname );
 
 	/** Inherited from ReferenceFrame. */
 	virtual const osg::BoundingSphere& getBound() const;
@@ -67,6 +68,9 @@ class OF_EXPORT CoordinateAxes : public ReferenceFrame
 	void _init();
 	void _computeTickAttenuation();
 	void _createAxes();
+
+        /** Reset shader to default state */
+        void resetTickShader();
 
 	double _axisLength; // Length of each axis
 	double _majorTickSpacing, _minorTickSpacing; // Tick mark spacing
@@ -81,6 +85,8 @@ class OF_EXPORT CoordinateAxes : public ReferenceFrame
 
 	osg::ref_ptr<osg::Vec3dArray> _vertices; // Vertices that define the lines
 	osg::ref_ptr<osg::Vec4Array> _colors;   // Colors for each line
+
+        osg::ref_ptr<osg::Shader> _fragShader; // Tick mark fragment shader
 };
 
 } // !namespace OpenFrames
