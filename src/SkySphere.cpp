@@ -206,8 +206,8 @@ bool SkySphere::processStars()
   std::getline(starfile, line);
 
   // Loop over all stars
-  float ra, dec, dist, mag, colorindex;
-  int numStars = 0;
+  float ra, dec, mag, colorindex;
+  unsigned int numStars = 0;
   float maxSize = 0.0, minSize = 10000.0;
   float maxMag = 0.0, minMag = 10000.0;
   Star currStar;

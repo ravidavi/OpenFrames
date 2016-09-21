@@ -36,6 +36,7 @@ using namespace OpenFrames;
 double tscale = 1.0; // Animation speedup relative to real time
 Sphere *earth;
 CoordinateAxes *axes;
+CoordinateAxes *earthaxes;
 TimeManagementVisitor *tmv;
 WindowProxy *theWindow;
 
@@ -54,6 +55,12 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
 	  axes->getTransform()->accept(*tmv);
 	  tmv->setPauseState(false, paused);
 	}
+
+        else if(*key == 'c')
+        {
+          osg::Vec4 color = earthaxes->getColor();
+          earthaxes->setColor(1.0-color[0], 1.0-color[1], 1.0-color[2]);
+        }
 
 	// Reset time to epoch. All ReferenceFrames that are following
 	// a Trajectory will return to their starting positions.
@@ -127,8 +134,19 @@ int main()
 	Model *hubble = new Model("Hubble", 1, 0, 0, 0.9);
 
         // Set Earth parameters
-        earth->setRadius(6371.0);
+        const double r_earth = 6371.0;
+        earth->setRadius(r_earth);
         earth->setTextureMap("../Images/EarthTexture.bmp");
+
+	// Create a set of Coordinate Axes for Earth axes
+	earthaxes = new CoordinateAxes("earthaxes", 1, 0, 0, 1);
+	earthaxes->setAxisLength(5.0*r_earth);
+	earthaxes->setTickSpacing(r_earth, 0.25*r_earth);
+	earthaxes->setTickSize(10, 5);
+        earthaxes->setTickShader("../Shaders/Marker_CirclePulse.frag"); // Default to solid circle
+	earthaxes->setXLabel("X");
+	earthaxes->setYLabel("Y");
+	earthaxes->setZLabel("Z");
 
 	// Set the spacecraft parameters
 	hubble->setModel("../Models/Hubble.3ds");
@@ -267,6 +285,7 @@ int main()
 
 	// Set up reference frame heirarchies.
 	earth->addChild(drawtraj);
+        earth->addChild(earthaxes);
 	earth->addChild(hubble);
 	axes->addChild(timehist);
 	axes->addChild(trace);

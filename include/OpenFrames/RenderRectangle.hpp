@@ -67,7 +67,7 @@ class OF_EXPORT RenderRectangle : public osg::Referenced
 	void setSkySphereTexture(const std::string& fname);
 
 	/** Set the star field data */
-	bool setSkySphereStarData(const std::string& catalogName, float minMag, float maxMag, unsigned int numStars, float starScale = 4.0);
+	bool setSkySphereStarData(const std::string& catalogName, float minMag, float maxMag, unsigned int numStars = 100000, float starScale = 4.0);
 
         /** Set the background color if no texture is specified */
         void setBackgroundColor(float r, float g, float b);

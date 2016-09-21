@@ -166,6 +166,13 @@
 	CHARACTER(LEN=*), INTENT(IN) :: fname
 	END SUBROUTINE
 
+	SUBROUTINE ofwin_setbackgroundstardata(row, col, minmag, maxmag, fname)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setbackgroundstardata
+	INTEGER, INTENT(IN) :: row, col
+        REAL, INTENT(IN) :: minmag, maxmag
+	CHARACTER(LEN=*), INTENT(IN) :: fname
+	END SUBROUTINE
+
 	SUBROUTINE ofwin_setdesiredframerate(fps)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setdesiredframerate
 	REAL(8), INTENT(IN) :: fps

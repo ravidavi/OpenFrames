@@ -385,6 +385,20 @@ void OF_FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col, OF
 	}
 }
 
+void OF_FCN(ofwin_setbackgroundstardata)(unsigned int *row, unsigned int *col, float *minMag, float *maxMag, OF_CHARARG(fname))
+{
+	if(_objs->_currWinProxy)
+	{
+	  RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+	  if(rr) 
+	  {
+	    // Convert given character string and length to a proper C string
+	    std::string temp(OF_STRING(fname));
+	    rr->setSkySphereStarData(temp, *minMag, *maxMag);
+	  }
+	}
+}
+
 void OF_FCN(ofwin_setswapbuffersfunction)(void (*fcn)(unsigned int *winID))
 {
 	if(_objs->_currWinProxy) 

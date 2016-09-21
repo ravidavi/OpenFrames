@@ -119,6 +119,9 @@ OF_EXPORT void OF_FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int 
 
 // Set the background texture of the specified grid position
 OF_EXPORT void OF_FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col, OF_CHARARG(fname));
+
+// Set the background star field of the specified grid position
+OF_EXPORT void OF_FCN(ofwin_setbackgroundstardata)(unsigned int *row, unsigned int *col, float *minMag, float *maxMag, OF_CHARARG(fname));
                                                
 // Set the callback functions for swapping buffers and making a context current
 OF_EXPORT void OF_FCN(ofwin_setswapbuffersfunction)(void (*fcn)(unsigned int *winID));
