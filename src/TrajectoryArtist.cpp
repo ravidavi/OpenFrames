@@ -55,6 +55,7 @@ static const char *OFTA_VertSource = {
      // Vertex position with low and high parts
   "  gl_Position = osg_ProjectionMatrix*of_RTEModelViewMatrix*vec4(diffHigh+diffLow, 1.0);\n"
   "  gl_FrontColor = gl_Color;\n"
+  "  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
   "}\n"
 };
 

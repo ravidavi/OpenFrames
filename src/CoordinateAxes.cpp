@@ -24,6 +24,20 @@
 namespace OpenFrames
 {
 
+// Implement vertex shader to compute tick mark position/color
+static const char *OFCoordinateAxes_VertSource = {
+	"#version 120\n"
+	"uniform mat4 osg_ModelViewProjectionMatrix;\n"
+
+	"void main(void)\n"
+	"{\n"
+	// Position, color, and texture are just passed through
+	"  gl_Position = osg_ModelViewProjectionMatrix*gl_Vertex;\n"
+	"  gl_FrontColor = gl_Color;\n"
+	"  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+	"}\n"
+};
+
 // Fragment shader that draws a texture on a PointSprite
 static const char *FragSource_Texture = {
   "#version 120\n"
@@ -278,6 +292,11 @@ void CoordinateAxes::_init()
         osg::Program *program = new osg::Program;
         program->setName("OFCoordinateAxes_ShaderProgram");
         _tickGeode->getOrCreateStateSet()->setAttribute(program);
+		
+		// Vertex shader to draw the tick marks
+		osg::Shader *vertShader = new osg::Shader(osg::Shader::VERTEX);
+		vertShader->setShaderSource(OFCoordinateAxes_VertSource);
+		program->addShader(vertShader);
 
         // Fragment shader to draw the tick marks
         _fragShader = new osg::Shader(osg::Shader::FRAGMENT);
