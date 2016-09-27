@@ -56,11 +56,11 @@ class OF_EXPORT View : public osg::Referenced
           // LookAt frame using the most direct single rotation
           ABSOLUTE_DIRECT,
 
-          // Starting from Body-Fixed frame, rotate directly towards the
-          // LookAt frame using the most direct single rotation
+          // Starting from body-fixed frame, rotate along XY plane then
+          // up the z-plane to view the LookAt frame
           RELATIVE_AZEL,
 
-          // Starting from Body-Fixed frame, rotate directly towards the
+          // Starting from body-fixed frame, rotate directly towards the
           // LookAt frame using the most direct single rotation
           RELATIVE_DIRECT
         };

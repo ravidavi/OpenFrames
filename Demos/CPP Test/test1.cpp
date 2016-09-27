@@ -33,12 +33,18 @@ using namespace OpenFrames;
 #define M_PI 3.14159265358979323846
 #endif
 
-double tscale = 1.0; // Animation speedup relative to real time
+double tscale = 0.1; // Animation speedup relative to real time
 Sphere *earth;
 CoordinateAxes *axes;
 CoordinateAxes *earthaxes;
 TimeManagementVisitor *tmv;
 WindowProxy *theWindow;
+
+const double rmag = 100000.0; // [km] Size of orbit
+const double rp2 = 50000.0; // Periapse of second orbit
+const double ecc2 = 0.5; // Eccentricity of second orbit
+const double p2 = rp2*(1.0+ecc2); // Semilatus rectum of second orbit
+const double inc2 = 45.0*M_PI/180.0; // Inclination of second orbit
 
 /** The function called when the user presses a key */
 void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
@@ -75,7 +81,7 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
 	// Speed up time
 	else if((*key == '+') || (*key == '='))
 	{
-	  tscale += 0.1;
+	  tscale += 0.01;
 	  tmv->setTimeScale(true, tscale);
 	  earth->getTransform()->accept(*tmv);
 	  axes->getTransform()->accept(*tmv);
@@ -85,7 +91,7 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
 	// Slow down time
 	else if((*key == '-') || (*key == '_'))
 	{
-	  tscale -= 0.1;
+	  tscale -= 0.01;
 	  tmv->setTimeScale(true, tscale);
 	  earth->getTransform()->accept(*tmv);
 	  axes->getTransform()->accept(*tmv);
@@ -132,6 +138,7 @@ int main()
 	// Model(name, color(r,g,b,a))
 	earth = new Sphere("Earth", 0, 1, 0, 0.9);
 	Model *hubble = new Model("Hubble", 1, 0, 0, 0.9);
+	Model *hubble2 = new Model("Spacecraft", 0, 1, 0, 0.9);
 
         // Set Earth parameters
         const double r_earth = 6371.0;
@@ -139,11 +146,11 @@ int main()
         earth->setTextureMap("../Images/EarthTexture.bmp");
 
 	// Create a set of Coordinate Axes for Earth axes
-	earthaxes = new CoordinateAxes("earthaxes", 1, 0, 0, 1);
-	earthaxes->setAxisLength(5.0*r_earth);
-	earthaxes->setTickSpacing(r_earth, 0.25*r_earth);
+        // By default the tick marks will be solid circles
+	earthaxes = new CoordinateAxes("earthaxes", 0, 0, 1, 1);
+	earthaxes->setAxisLength(2.0*rmag);
+	earthaxes->setTickSpacing(rmag, 0.25*rmag);
 	earthaxes->setTickSize(10, 5);
-        earthaxes->setTickShader("../Shaders/Marker_CirclePulse.frag"); // Default to solid circle
 	earthaxes->setXLabel("X");
 	earthaxes->setYLabel("Y");
 	earthaxes->setZLabel("Z");
@@ -151,10 +158,27 @@ int main()
 	// Set the spacecraft parameters
 	hubble->setModel("../Models/Hubble.3ds");
         hubble->setModelScale(0.001, 0.001, 0.001); // 1-meter size
+        hubble2->setModel("../Models/Hubble.3ds");
+        hubble2->setModelScale(0.001, 0.001, 0.001); // 1-meter size
+
+	// Create a drawable trajectory to hold the hubble2 center marker
+	DrawableTrajectory *h2center = new DrawableTrajectory("hubble2 center marker", 1, 0, 0, 1);
+	h2center->showAxes(ReferenceFrame::NO_AXES);
+	h2center->showAxesLabels(ReferenceFrame::NO_AXES);
+	h2center->showNameLabel(false);
+
+	// Create a MarkerArtist to draw the center marker
+	MarkerArtist *h2centermarker = new MarkerArtist();
+	h2centermarker->setMarkerShader("../Shaders/Marker_CirclePulse.frag");
+	h2centermarker->setMarkerSize(15);
+
+	// Add the MarkerArtist to the drawable trajectory
+	h2center->addArtist(h2centermarker);
 
 	// Create the trajectory using
 	// Trajectory(DOF, number of optionals)
-	Trajectory *traj = new Trajectory(3, 1);
+	Trajectory *traj = new Trajectory(3, 1);  // For hubble
+        Trajectory *traj2 = new Trajectory(3, 0); // For hubble2
 
 	// Create a drawable trajectory for the spacecraft window using
 	// DrawableTrajectory(name, color(r,g,b,a))
@@ -169,6 +193,13 @@ int main()
 	ca->setWidth(2.0); // Line width for the trajectory
 	ca->setColor(1, 0, 0);
 	drawtraj->addArtist(ca);
+
+	// Create a CurveArtist for the second trajectory.
+	CurveArtist *ca2 = new CurveArtist(traj2);
+	ca2->setWidth(2.0); // Line width for the trajectory
+	ca2->setColor(0, 1, 0);
+        ca2->setPattern(1.0, 0x00FF); // Dashed line
+	drawtraj->addArtist(ca2);
 
 	Trajectory::DataSource data; // Data source for artists
 	data._src = Trajectory::POSOPT;
@@ -203,12 +234,12 @@ int main()
 	data._src = Trajectory::POSOPT;
 	data._opt = 0;
 	data._element = 0; // Use X position for X coordinate
-	data._scale = 0.01; // Scale down since positions are large
+	data._scale = 1.0; // Draw positions to scale
 	ca->setXData(data);
-	data._element = 2; // Use Z position for Y coordinate
+	data._element = 1; // Use Y position for Y coordinate
 	ca->setYData(data);
 	data._src = Trajectory::TIME; // Use time for Z coordinate
-	data._scale = 100.0; // Scale since time << distance
+	data._scale = rmag/M_PI; // Scale since time << distance
 	ca->setZData(data);
 	timehist->addArtist(ca);
 
@@ -219,17 +250,16 @@ int main()
 	ma->setMarkerColor(MarkerArtist::START, 0, 1, 0);
 	ma->setMarkerColor(MarkerArtist::END,   1, 0, 0);
 	ma->setMarkerColor(MarkerArtist::INTERMEDIATE, 1, 1, 0);
-	//ma->setMarkerImage("../Images/fuzzyparticle.tiff");
         ma->setMarkerShader("../Shaders/Marker_Rose.frag");
 	ma->setMarkerSize(10);
 	data._src = Trajectory::POSOPT;
 	data._element = 0; // Use X position for X coordinate
-	data._scale = 0.01; // Scale down since positions are large
+	data._scale = 1.0; // Draw positions to scale
 	ma->setXData(data);
-	data._element = 2; // Use Z position for Y coordinate
+	data._element = 1; // Use Y position for Y coordinate
 	ma->setYData(data);
 	data._src = Trajectory::TIME; // Use time for Z coordinate
-	data._scale = 100.0; // Scale since time << distance
+	data._scale = rmag/M_PI; // Scale since time << distance
 	ma->setZData(data);
 	timehist->addArtist(ma);
 
@@ -245,17 +275,17 @@ int main()
 
 	// Draw markers at equally spaced distances
 	ma->setIntermediateType(MarkerArtist::DISTANCE);
-	ma->setIntermediateSpacing(1000.0); // Every 1000 km
+	ma->setIntermediateSpacing(rmag/2.0); // Distance interval
 	ma->setIntermediateDirection(MarkerArtist::END); // From end of trajectory
 
 	// Create a set of Coordinate Axes for time history plot
 	axes = new CoordinateAxes("axes", 0.0, 0.8, 0.8, 1);
-	axes->setAxisLength(2.0*M_PI);
-	axes->setTickSpacing(M_PI, 0.25*M_PI);
+	axes->setAxisLength(2.0*rmag);
+	axes->setTickSpacing(rmag, 0.5*rmag);
 	axes->setTickSize(8, 5);
         axes->setTickShader(""); // Default to solid circle
 	axes->setXLabel("X");
-	axes->setYLabel("Z");
+	axes->setYLabel("Y");
 	axes->setZLabel("t");
 
 	// Create a ReferenceFrame to show model's position in time history plot
@@ -269,11 +299,10 @@ int main()
 
 	// Create a MarkerArtist to draw the center marker
 	MarkerArtist *centermarker = new MarkerArtist();
-	//centermarker->setMarkerImage("../Images/target.tiff");
 	centermarker->setMarkerShader("../Shaders/Marker_Target.frag");
 	centermarker->setMarkerSize(15);
 
-	// Add the markerartist to the drawable trajectory
+	// Add the MarkerArtist to the drawable trajectory
 	drawcenter->addArtist(centermarker);
 
 	// Create a RadialPlane to show trace frame's orientation
@@ -281,12 +310,14 @@ int main()
 	rp->showAxes(ReferenceFrame::NO_AXES);
 	rp->showAxesLabels(ReferenceFrame::NO_AXES);
 	rp->showNameLabel(false);
-	rp->setParameters(10.0, 2.5, 60.0*M_PI/180.0);
+	rp->setParameters(2.0*rmag, 0.5*rmag, 60.0*M_PI/180.0);
 
 	// Set up reference frame heirarchies.
 	earth->addChild(drawtraj);
         earth->addChild(earthaxes);
 	earth->addChild(hubble);
+        earth->addChild(hubble2);
+        hubble2->addChild(h2center);
 	axes->addChild(timehist);
 	axes->addChild(trace);
 	trace->addChild(drawcenter);
@@ -297,18 +328,22 @@ int main()
 	tf->setTimeScale(tscale);
 	hubble->getTransform()->setUpdateCallback(tf);
 
+	TrajectoryFollower *tf2 = new TrajectoryFollower(traj2);
+	tf2->setTimeScale(tscale);
+	hubble2->getTransform()->setUpdateCallback(tf2);
+
 	// Tell trace frame to follow time history
 	tf = new TrajectoryFollower(traj);
 	tf->setTimeScale(tscale);
 	data._src = Trajectory::POSOPT;
 	data._opt = 0;
 	data._element = 0; // Use X position for X coordinate
-	data._scale = 0.01; // Scale down since positions are large
+	data._scale = 1.0; // Draw positions to scale
 	tf->setXData(data);
-	data._element = 2; // Use Z position for Y coordinate
+	data._element = 1; // Use Y position for Y coordinate
 	tf->setYData(data);
 	data._src = Trajectory::TIME; // Use time for Z coordinate
-	data._scale = 100.0;
+	data._scale = rmag/M_PI; // Scale since time << distance
 	tf->setZData(data);
 	trace->getTransform()->setUpdateCallback(tf);
 
@@ -325,6 +360,10 @@ int main()
 	View *view3 = new View(axes, axes);
 	View *view4 = new View(axes, trace);
 
+        // Create view that looks from hubble towards hubble2, using
+        // the Relative AzEl transformation
+        View *view5 = new View(earth, hubble, hubble2, View::RELATIVE_AZEL);
+
 	// Create a manager to handle the spatial scene
 	FrameManager* fm = new FrameManager;
 	fm->setFrame(earth);
@@ -336,29 +375,43 @@ int main()
 	// Set up the scene
 	theWindow->setScene(fm, 0, 0);
 	theWindow->setScene(fm2, 1, 0);
-	theWindow->getGridPosition(0, 0)->setSkySphereTexture("../Images/StarMap.tif");
+	//theWindow->getGridPosition(0, 0)->setSkySphereTexture("../Images/StarMap.tif");
+	theWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0); // Black background
+        theWindow->getGridPosition(0, 0)->setSkySphereStarData("../Stars/Stars_HYGv3.txt", -2.0, 6.0, 40000); // At most 40000 stars of magnitude range [-2.0, 6.0] from the HYGv3 database
 	theWindow->getGridPosition(0, 0)->addView(view);
 	theWindow->getGridPosition(0, 0)->addView(view2);
+	theWindow->getGridPosition(0, 0)->addView(view5);
 	theWindow->getGridPosition(1, 0)->addView(view3);
 	theWindow->getGridPosition(1, 0)->addView(view4);
 
 	// Add the actual positions and attitudes for the trajectory.
 	osg::Quat att; // Quaternion for attitude transformations
 	double pos[3], vel[3];
-	pos[1] = vel[1] = 0.0;
-        double rmag = 100000.0;
+        double rmag2;
 	for(double t = 0.0; t <= 2.0*M_PI; t += M_PI/90.0)
 	{
-	  pos[0] = rmag*sin(t);
-	  pos[2] = rmag*cos(t);
-	  vel[0] = pos[0] + 0.5*pos[2];
-	  vel[2] = pos[2] - 0.5*pos[0];
-	  att.makeRotate(t, 0, 1, 0);
+	  pos[0] = rmag*cos(t);
+	  pos[1] = rmag*sin(t);
+          pos[2] = 0.0;
+	  vel[0] = pos[0] - 0.5*pos[1];
+	  vel[1] = pos[1] + 0.5*pos[0];
+          vel[2] = 0.0;
+	  att.makeRotate(t, 0, 0, 1);
 
-	  traj->addTime(t);
+          // Add main trajectory position & velocity
+	  traj->addTime(2.0*t);
 	  traj->addPosition(pos);
 	  traj->setOptional(0, vel);
 	  traj->addAttitude(att[0], att[1], att[2], att[3]);
+
+          // Perturb position for second trajectory
+          rmag2 = p2/(1.0 + ecc2*cos(t));
+          pos[0] = rmag2*cos(t);
+          pos[1] = rmag2*sin(t)*cos(inc2);
+          pos[2] = rmag2*sin(t)*sin(inc2);
+
+          traj2->addTime(t);
+          traj2->addPosition(pos);
 	}
 
 	// Specify the key press callback
