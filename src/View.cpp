@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2016 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,169 +17,16 @@
 #include <OpenFrames/View.hpp>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osgViewer/View>
+#include <iostream>
 
 namespace OpenFrames
 {
 
-void LookAtTransform_AbsoluteDirect(osg::Matrixd &matrix,
-                                    TransformAccumulator *from,
-                                    TransformAccumulator *to)
-{
-  // Compute From origin in world coordinates
-  osg::Vec3d view_origin = from->getLocalToWorld().getTrans();
-
-  // Compute From->To vector in world coordinates
-  osg::Vec3d relpos = to->getLocalToWorld().getTrans() - view_origin;
-  double len = relpos.length();
-
-  const double eps = 1.0e-6;
-  if(len <= eps)
-  {
-    // If From and To origins coincide, then just set view to
-    // From origin
-    matrix.setTrans(from->getWorldToLocal().getTrans());
-  }
-  else
-  {
-    osg::Matrixd lookat_matrix;
-
-    // Perform direct rotation from Y-axis to final lookat vector
-    lookat_matrix.makeRotate(osg::Vec3d(0, 1, 0), relpos);
-
-    // Translate to Local origin
-    lookat_matrix.setTrans(view_origin);
-
-    // Make the transformation World to Local
-    matrix.invert(lookat_matrix); 
-  }
-}
-
-void LookAtTransform_RelativeDirect(osg::Matrixd &matrix,
-                                    TransformAccumulator *from,
-                                    TransformAccumulator *to)
-{
-  // Get the From frame's World to Local transformation
-  matrix = from->getWorldToLocal();
-
-  // Compute From->To vector in From coordinates
-  osg::Vec3d relpos = (to->getLocalToWorld()*matrix).getTrans();
-  double len = relpos.length();
-
-  const double eps = 1.0e-6;
-  if(len > eps)
-  {
-    osg::Matrixd lookat_matrix;
-
-    // Perform direct rotation from Y-axis to final lookat vector
-    lookat_matrix.makeRotate(osg::Vec3d(0, 1, 0), relpos);
-
-    // Make the transformation World to Local
-    matrix.postMult(osg::Matrixd::inverse(lookat_matrix));
-  }
-}
-
-void LookAtTransform_AbsoluteAzEl(osg::Matrixd &matrix,
-                                  TransformAccumulator *from,
-                                  TransformAccumulator *to)
-{
-  // Compute From origin in world coordinates
-  osg::Vec3d view_origin = from->getLocalToWorld().getTrans();
-
-  // Compute From->To vector in world coordinates
-  osg::Vec3d relpos = to->getLocalToWorld().getTrans() - view_origin;
-  double len = relpos.length();
-
-  const double eps = 1.0e-6;
-  if(len <= eps)
-  {
-    // If From and To origins coincide, then just set view to
-    // From origin
-    matrix.setTrans(from->getWorldToLocal().getTrans());
-  }
-  else
-  {
-    // If From and To origins are not coincident, compute the
-    // rotation that maps Y-axis to From->To vector. We choose
-    // Y axis because that is the Trackball's "into-screen" axis.
-    // Note that instead of just picking the shortest rotation, we
-    // first rotate in X-Y plane then up Z-axis to give a more
-    // "natural" rotation.
-
-    // First rotate Y-axis to projection of final vector on XY plane
-    osg::Vec3d relpos_tmp(relpos[0], relpos[1], 0.0);
-    len = relpos_tmp.length();
-
-    // Only do in-plane rotation if nonsingular
-    osg::Matrixd lookat_matrix;
-    if(len > eps)
-    {
-      lookat_matrix.makeRotate(osg::Vec3d(0, 1, 0), relpos_tmp);
-    }
-
-    // Rotate new Y-vector upwards to final vector
-    // Note that the length here is guaranteed > epsilon
-    relpos_tmp.set(0, len, relpos[2]);
-    osg::Quat q; 
-    q.makeRotate(osg::Vec3d(0, 1, 0), relpos_tmp);
-    lookat_matrix.preMultRotate(q);
-
-    // Translate to Local origin
-    lookat_matrix.setTrans(view_origin);
-
-    // Make the transformation World to Local
-    matrix.invert(lookat_matrix); 
-  }
-}
-
-void LookAtTransform_RelativeAzEl(osg::Matrixd &matrix,
-                                  TransformAccumulator *from,
-                                  TransformAccumulator *to)
-{
-  // Get the From frame's World to Local transformation
-  matrix = from->getWorldToLocal();
-
-  // Compute From->To vector in From coordinates
-  osg::Vec3d relpos = (to->getLocalToWorld()*matrix).getTrans();
-  double len = relpos.length();
-
-  const double eps = 1.0e-6;
-  if(len > eps)
-  {
-    // If From and To origins are not coincident, compute the
-    // rotation that maps Y-axis to From->To vector. We choose
-    // Y axis because that is the Trackball's "into-screen" axis.
-    // Note that instead of just picking the shortest rotation, we
-    // first rotate in X-Y plane then up Z-axis to give a more
-    // "natural" rotation.
-
-    // First rotate Y-axis to projection of final vector on XY plane
-    osg::Vec3d relpos_tmp(relpos[0], relpos[1], 0.0);
-    len = relpos_tmp.length();
-
-    // Only do in-plane rotation if nonsingular
-    osg::Matrixd lookat_matrix;
-    if(len > eps)
-    {
-      lookat_matrix.makeRotate(osg::Vec3d(0, 1, 0), relpos_tmp);
-    }
-
-    // Rotate new Y-vector upwards to final vector
-    // Note that the length here is guaranteed > epsilon
-    relpos_tmp.set(0, len, relpos[2]);
-    osg::Quat q; 
-    q.makeRotate(osg::Vec3d(0, 1, 0), relpos_tmp);
-    lookat_matrix.preMultRotate(q);
-
-    // Make the transformation World to Local
-    matrix.postMult(osg::Matrixd::inverse(lookat_matrix));
-  }
-}
-
 class FollowingTrackball : public osgGA::TrackballManipulator
 {
   public:
-	FollowingTrackball(TransformAccumulator *xform, TransformAccumulator *xform_lookat, View::LookAtType &lookatType)
-	: _xform(xform), _xform_lookat(xform_lookat), _lookatType(lookatType)
+	FollowingTrackball(TransformAccumulator *xform, TransformAccumulator *xform_lookat, View::ViewFrameType &frameType, View::ViewRotationType &rotationType)
+	: _xform(xform), _xform_lookat(xform_lookat), _frameType(frameType), _rotationType(rotationType)
 	{
 	  // We will compute the home position manually
 	  setAutoComputeHomePosition(false);
@@ -194,6 +41,7 @@ class FollowingTrackball : public osgGA::TrackballManipulator
         // Get the Viewpoint to World transformation matrix
 	virtual osg::Matrixd getMatrix() const
 	{
+          std::cout<< "Trackball::getMatrix()" << std::endl;
           return osg::Matrix::inverse(getInverseMatrix());
 	}
 
@@ -202,35 +50,75 @@ class FollowingTrackball : public osgGA::TrackballManipulator
 	{
 	  osg::Matrixd matrix;
 
-          if(!_xform_lookat->isValid())
+          // First compute World to Local transform
+          if(_frameType == View::ABSOLUTE)
           {
-            // Not using LookAt frame, so just get World to Local
-            // coordinate transformation
-            matrix = _xform->getWorldToLocal();
+            // Translate origin to the viewed frame's origin.
+            // Since there is no rotation, just negate the translation
+            // component of the frame's Local->World transform.
+            matrix.setTrans(-_xform->getLocalToWorld().getTrans());
           }
           else
           {
-            // If a LookAt frame is defined, create a transform that 
-            // looks from the View frame to the LookAt frame using the
-            // specified transformation algorithm
-            switch(_lookatType)
+            // Get the body-fixed transform for the viewed frame
+            matrix = _xform->getWorldToLocal();
+          }
+
+          // If using From->To view, add a transformation that rotates
+          // towards the desired LookAt frame
+          if(_xform_lookat->isValid())
+          {
+            // Compute From->To vector in From frame's coordinates
+            osg::Vec3d relpos = (_xform_lookat->getLocalToWorld()*matrix).getTrans();
+            double len = relpos.length();
+            const double eps = 1.0e-6;
+
+            // Compute From->To rotation if origins are not coincident
+            // Rotation should map Y-axis to From->To vector, since the
+            // Y-axis is the Trackball's initial view direction
+            if(len > eps)
             {
-              case View::ABSOLUTE_AZEL :
-                LookAtTransform_AbsoluteAzEl(matrix, _xform.get(), _xform_lookat.get());
-                break;
-              case View::RELATIVE_AZEL :
-                LookAtTransform_RelativeAzEl(matrix, _xform.get(), _xform_lookat.get());
-                break;
-              case View::ABSOLUTE_DIRECT :
-                LookAtTransform_AbsoluteDirect(matrix, _xform.get(), _xform_lookat.get());
-                break;
-              case View::RELATIVE_DIRECT :
-                LookAtTransform_RelativeDirect(matrix, _xform.get(), _xform_lookat.get());
-                break;
+              // Direct rotation using shortest angle
+              if(_rotationType == View::DIRECT)
+              {
+                // Direct rotation from Y-axis to final lookat vector
+                osg::Quat q;
+                q.makeRotate(relpos, osg::Vec3d(0.0, 1.0, 0.0));
+
+                // Append the rotation to World->Local matrix
+                matrix.postMultRotate(q);
+              }
+
+              // Azimuth-Elevation rotation
+              // More "natural" rotation, first in X-Y plane then up Z-axis
+              else
+              {
+                // Compute projection of From-To vector onto XY plane
+                osg::Vec3d relpos_tmp(relpos[0], relpos[1], 0.0);
+                len = relpos_tmp.length();
+
+                // Rotate XY projection vector in the World frame (matrix)
+                // to the Y-axis of an intermediate frame
+                // Only rotate if XY projection vector is nonsingular
+                osg::Quat q;
+                if(len > eps)
+                {
+                  q.makeRotate(relpos_tmp, osg::Vec3d(0.0, 1.0, 0.0));
+                  matrix.postMultRotate(q);
+                }
+
+                // Rotate From-To vector in the intermediate frame (matrix)
+                // to the Y-axis of the final Local frame
+                // Note that |relpos_tmp| > epsilon is guaranteed
+                relpos_tmp.set(0, len, relpos[2]);
+                q.makeRotate(relpos_tmp, osg::Vec3d(0.0, 1.0, 0.0));
+                matrix.postMultRotate(q);
+              }
             }
           }
 
-          // Add trackball to get World to Viewpoint frame
+          // At this point matrix represents the World to Local transform,
+          // so add the trackball to get World to Viewpoint transform
           matrix.postMult(TrackballManipulator::getInverseMatrix());
 	  return matrix;
 	}
@@ -254,7 +142,8 @@ class FollowingTrackball : public osgGA::TrackballManipulator
 
 	// The ReferenceFrame being followed.
 	osg::ref_ptr<TransformAccumulator> _xform, _xform_lookat;
-        View::LookAtType &_lookatType;
+        View::ViewFrameType &_frameType;
+        View::ViewRotationType &_rotationType;
 };
 
 View::View()
@@ -263,10 +152,17 @@ View::View()
 	resetTrackball();
 }
 
-View::View(ReferenceFrame *root, ReferenceFrame *frame, ReferenceFrame *lookat, LookAtType lookatType)
+View::View(ReferenceFrame *root, ReferenceFrame *viewFrame, ViewFrameType frameType)
 {
 	_init();
-	setViewFrame(root, frame, lookat, lookatType);
+	setViewFrame(root, viewFrame, frameType);
+	resetTrackball();
+}
+
+View::View(ReferenceFrame *root, ReferenceFrame *viewFrame, ReferenceFrame *lookatFrame, ViewFrameType frameType, ViewRotationType rotationType)
+{
+	_init();
+	setViewBetweenFrames(root, viewFrame, lookatFrame, frameType, rotationType);
 	resetTrackball();
 }
 
@@ -277,10 +173,11 @@ void View::_init()
 	  // Set up the ReferenceFrame transform accumulator
 	_xform = new TransformAccumulator;
         _xform_lookat = new TransformAccumulator;
-        _lookatType = RELATIVE_AZEL;
+        _frameType = RELATIVE;
+        _rotationType = AZEL;
 
 	  // Setup the trackball view manipulator
-	_trackball = new FollowingTrackball(_xform.get(), _xform_lookat.get(), _lookatType);
+	_trackball = new FollowingTrackball(_xform.get(), _xform_lookat.get(), _frameType, _rotationType);
 
 	  // Set the default view distance to be auto computed
 	_defaultViewDistance = 0.0;
@@ -288,7 +185,7 @@ void View::_init()
 	  // Set up the projection matrix
 	_projType = PERSPECTIVE;
 	_aspectMultiplier = 1.0;
-	setPerspective(50.0, 640.0/480.0);
+	setPerspective(30.0, 640.0/480.0);
 }
 
 /** Reset the trackball to look at the origin frame */
@@ -322,19 +219,28 @@ void View::saveTrackball()
 }
 
 void View::setViewFrame( ReferenceFrame* root, 
-                         ReferenceFrame* frame,
-                         ReferenceFrame* lookat,
-                         LookAtType lookatType)
+                         ReferenceFrame* viewFrame,
+                         ViewFrameType frameType )
 {
 	_xform->setRoot(root);
-	_xform->setOrigin(frame);
+	_xform->setOrigin(viewFrame);
+        _frameType = frameType;
+        _xform_lookat->setRoot(NULL);
 
-        if(lookat)
-        {
-          _xform_lookat->setRoot(root);
-          _xform_lookat->setOrigin(lookat);
-          _lookatType = lookatType;
-        }
+}
+
+void View::setViewBetweenFrames( ReferenceFrame* root,
+                                 ReferenceFrame* viewFrame,
+                                 ReferenceFrame* lookatFrame,
+                                 ViewFrameType frameType,
+                                 ViewRotationType rotationType )
+{
+	_xform->setRoot(root);
+	_xform->setOrigin(viewFrame);
+        _frameType = frameType;
+        _xform_lookat->setRoot(root);
+        _xform_lookat->setOrigin(lookatFrame);
+        _rotationType = rotationType;
 }
 
 }

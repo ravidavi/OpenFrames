@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2016 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -45,28 +45,44 @@ class OF_EXPORT View : public osg::Referenced
 	  PERSPECTIVE, 	// Objects get smaller as they get farther away
 	};
 
-        /** The LookAt transformation algorithm */
-        enum LookAtType
+        /** The base frame when viewing a ReferenceFrame.
+            The camera is assumed to be fixed in this frame when computing
+            its user-controlled transformations. */
+        enum ViewFrameType
         {
-          // Starting from inertial frame, rotate along XY plane then
-          // up the z-plane to view the LookAt frame
-          ABSOLUTE_AZEL=0,
+          // View frame initialized to the scene's global reference frame.
+          // This is equivalent to an "inertial-fixed" view that follows
+          // the body as it translates.
+          // If viewing in from-to mode, then the rotation starts in the
+          // scene's global reference frame.
+          ABSOLUTE=0,
 
-          // Starting from inertial frame, rotate directly towards the
-          // LookAt frame using the most direct single rotation
-          ABSOLUTE_DIRECT,
+          // View frame initialized to the frame being viewed. This is
+          // equivalent to a "body-fixed" view.
+          // If viewing in from-to mode, then the rotation starts in the
+          // body-fixed reference frame.
+          RELATIVE
+        };
 
-          // Starting from body-fixed frame, rotate along XY plane then
-          // up the z-plane to view the LookAt frame
-          RELATIVE_AZEL,
+        /** The method used to rotate the view to look at the "to" frame.
+            Since the camera by default looks down the Y-axis, this
+            specifies how the Y-axis is rotated to match the vector that
+            points to the "to" frame. */
+        enum ViewRotationType
+        {
+          // Single direct rotation, using shortest angle
+          // This may result in upside-down view if the rotation angle
+          // is greater than 90 degrees out-of-plane
+          DIRECT=0,
 
-          // Starting from body-fixed frame, rotate directly towards the
-          // LookAt frame using the most direct single rotation
-          RELATIVE_DIRECT
+          // First rotate along X-Y (azimuth), then up Z (elevation)
+          // This preserves "Z-up" for the view base frame
+          AZEL
         };
 
 	View();
-	View(ReferenceFrame *root, ReferenceFrame *frame, ReferenceFrame *lookat = NULL, LookAtType lookattype = RELATIVE_AZEL);
+        View(ReferenceFrame *root, ReferenceFrame *viewFrame, ViewFrameType baseframe = RELATIVE);
+	View(ReferenceFrame *root, ReferenceFrame *viewFrame, ReferenceFrame *lookatFrame, ViewFrameType frameType = RELATIVE, ViewRotationType rotationType = AZEL);
 
 	/** Get the projection type */
 	inline ProjectionType getProjectionType() { return _projType; }
@@ -137,15 +153,25 @@ class OF_EXPORT View : public osg::Referenced
 	void saveTrackball();
 
 	/** Set the frame to be viewed and the root frame that it should be
-	    viewed with respect to. Usually the root frame should be the root
-	    of the ReferenceFrame heirarchy that the viewed frame is part of. */
-	void setViewFrame( ReferenceFrame* root, ReferenceFrame* frame, ReferenceFrame* lookat = NULL, LookAtType lookattype = RELATIVE_AZEL );
+	    viewed with respect to. Generally the root frame should be 
+            the root of the ReferenceFrame heirarchy that the viewed frame 
+            is part of. 
+            Optionally, set the reference frame used when viewing the 
+            target frame. */
+        void setViewFrame( ReferenceFrame* root, ReferenceFrame* viewFrame, ViewFrameType frameType = RELATIVE );
+
+        /** View the lookat frame from the point of view of the base frame.
+            Optionally, set the reference frame used when viewing the 
+            target frame and the rotation type that should be used to
+            rotate from the target to the lookat frame. */
+	void setViewBetweenFrames( ReferenceFrame* root, ReferenceFrame* viewFrame, ReferenceFrame* lookatFrame, ViewFrameType frameType = RELATIVE, ViewRotationType rotationType = AZEL );
 
 	/** Get the root/origin frames associated with this View */
 	ReferenceFrame* getViewRoot() { return _xform->getRoot(); }
-	ReferenceFrame* getViewOrigin() { return _xform->getOrigin(); }
-        ReferenceFrame* getLookAtOrigin() { return _xform_lookat->getOrigin(); }
-        LookAtType getLookAtType() { return _lookatType; }
+	ReferenceFrame* getViewFrame() { return _xform->getOrigin(); }
+        ReferenceFrame* getLookAtFrame() { return _xform_lookat->getOrigin(); }
+        ViewFrameType getViewFrameType() { return _frameType; }
+        ViewRotationType getViewRotationType() { return _rotationType; }
 
 	inline bool isValid() {return _xform->isValid();}
 
@@ -155,10 +181,11 @@ class OF_EXPORT View : public osg::Referenced
 
 	/** The transform for the origin ReferenceFrame. */
 	osg::ref_ptr<TransformAccumulator> _xform;
+        ViewFrameType _frameType;
 
 	/** The transform for the look-at ReferenceFrame. */
 	osg::ref_ptr<TransformAccumulator> _xform_lookat;
-        LookAtType _lookatType;
+        ViewRotationType _rotationType;
 
 	/** The projection type for this view. */
 	ProjectionType _projType;

@@ -360,9 +360,10 @@ int main()
 	View *view3 = new View(axes, axes);
 	View *view4 = new View(axes, trace);
 
-        // Create view that looks from hubble towards hubble2, using
-        // the Relative AzEl transformation
-        View *view5 = new View(earth, hubble, hubble2, View::RELATIVE_AZEL);
+        // Create views that look from hubble towards hubble2, using
+        // various transformation types
+        View *view5 = new View(earth, hubble, hubble2, View::RELATIVE, View::DIRECT);
+        View *view6 = new View(earth, hubble, hubble2, View::RELATIVE, View::AZEL);
 
 	// Create a manager to handle the spatial scene
 	FrameManager* fm = new FrameManager;
@@ -375,12 +376,12 @@ int main()
 	// Set up the scene
 	theWindow->setScene(fm, 0, 0);
 	theWindow->setScene(fm2, 1, 0);
-	//theWindow->getGridPosition(0, 0)->setSkySphereTexture("../Images/StarMap.tif");
 	theWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0); // Black background
         theWindow->getGridPosition(0, 0)->setSkySphereStarData("../Stars/Stars_HYGv3.txt", -2.0, 6.0, 40000); // At most 40000 stars of magnitude range [-2.0, 6.0] from the HYGv3 database
 	theWindow->getGridPosition(0, 0)->addView(view);
 	theWindow->getGridPosition(0, 0)->addView(view2);
 	theWindow->getGridPosition(0, 0)->addView(view5);
+	theWindow->getGridPosition(0, 0)->addView(view6);
 	theWindow->getGridPosition(1, 0)->addView(view3);
 	theWindow->getGridPosition(1, 0)->addView(view4);
 
@@ -396,7 +397,7 @@ int main()
 	  vel[0] = pos[0] - 0.5*pos[1];
 	  vel[1] = pos[1] + 0.5*pos[0];
           vel[2] = 0.0;
-	  att.makeRotate(t, 0, 0, 1);
+	  att.makeRotate(t, 1, 1, 1);
 
           // Add main trajectory position & velocity
 	  traj->addTime(2.0*t);
