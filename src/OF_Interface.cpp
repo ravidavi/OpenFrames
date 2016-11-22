@@ -166,6 +166,7 @@ OF_Objects *_objs = NULL;
 void OF_FCN(of_initialize)()
 {
 	_objs = OF_Objects::instance();
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(of_cleanup)()
@@ -226,7 +227,8 @@ void OF_FCN(ofwin_createproxy)(int *x, int *y,
 
 	// Add the new WindowProxy to the map, replacing any previous one
 	_objs->_winMap[*id] = wp;
-	_objs->_currWinProxy = wp;
+    _objs->_currWinProxy = wp;
+    _objs->_intVal = 0;
 }
 
 OF_EXPORT void OF_FCN(ofwin_setgridsize)(int *nrow, int *ncol)
@@ -234,15 +236,23 @@ OF_EXPORT void OF_FCN(ofwin_setgridsize)(int *nrow, int *ncol)
 	if(_objs->_currWinProxy)
 	{
 	  _objs->_currWinProxy->setGridSize(*nrow, *ncol);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 OF_EXPORT void OF_FCN(ofwin_setkeypresscallback)(void (*fcn)(KEYPRESS_SIG))
 {
 	if(_objs->_currWinProxy) 
 	{
-	  _objs->_currWinProxy->setKeyPressCallback(fcn);
-	}
+      _objs->_currWinProxy->setKeyPressCallback(fcn);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 OF_EXPORT void OF_FCN(ofwin_setmousemotioncallback)(void (*fcn)(MOUSEMOTION_SIG))
@@ -250,7 +260,11 @@ OF_EXPORT void OF_FCN(ofwin_setmousemotioncallback)(void (*fcn)(MOUSEMOTION_SIG)
 	if(_objs->_currWinProxy) 
 	{
 	  _objs->_currWinProxy->setMouseMotionCallback(fcn);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 OF_EXPORT void OF_FCN(ofwin_setbuttonpresscallback)(void (*fcn)(BUTTON_SIG))
@@ -258,7 +272,11 @@ OF_EXPORT void OF_FCN(ofwin_setbuttonpresscallback)(void (*fcn)(BUTTON_SIG))
 	if(_objs->_currWinProxy) 
 	{
 	  _objs->_currWinProxy->setButtonPressCallback(fcn);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 OF_EXPORT void OF_FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG))
@@ -266,7 +284,11 @@ OF_EXPORT void OF_FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG))
 	if(_objs->_currWinProxy) 
 	{
 	  _objs->_currWinProxy->setButtonReleaseCallback(fcn);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_start)()
@@ -282,7 +304,10 @@ void OF_FCN(ofwin_start)()
 	  {
 	    waitLimiter.frame();
 	  }
-	}
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_stop)()
@@ -298,7 +323,11 @@ void OF_FCN(ofwin_stop)()
 	  {
 	    waitLimiter.frame();
 	  }
-	}
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_waitforstop)()
@@ -313,8 +342,12 @@ void OF_FCN(ofwin_waitforstop)()
 	  while(_objs->_currWinProxy->isRunning())
 	  {
 		waitLimiter.frame();
-	  }
+      }
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 OF_EXPORT void OF_FCN(ofwin_pauseanimation)(bool *pause)
@@ -322,7 +355,11 @@ OF_EXPORT void OF_FCN(ofwin_pauseanimation)(bool *pause)
 	if(_objs->_currWinProxy)
 	{
 	  _objs->_currWinProxy->pauseAnimation(*pause);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 OF_EXPORT void OF_FCN(ofwin_isrunning)(unsigned int *state)
@@ -330,14 +367,23 @@ OF_EXPORT void OF_FCN(ofwin_isrunning)(unsigned int *state)
 	if(_objs->_currWinProxy)
 	{
 	  *state = _objs->_currWinProxy->isRunning();
+      _objs->_intVal = 0;
 	}
-	else *state = 0;
+    else {
+      *state = 0;
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_setscene)(unsigned int *row, unsigned int *col)
 {
-	if(_objs->_currWinProxy)
-	  _objs->_currWinProxy->setScene(_objs->_currFM, *row, *col);
+	if(_objs->_currWinProxy) {
+      _objs->_currWinProxy->setScene(_objs->_currFM, *row, *col);
+      _objs->_intVal = 0;
+	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_setstereo)(unsigned int *row, unsigned int *col, bool *enable,
@@ -356,9 +402,19 @@ void OF_FCN(ofwin_setstereo)(unsigned int *row, unsigned int *col, bool *enable,
 		  if(*width > 0.0) ds->setScreenWidth(*width);
 		  if(*height > 0.0) ds->setScreenHeight(*height);
 		  if(*distance > 0.0) ds->setScreenDistance(*distance);
-		}
-	  }
-	}
+          _objs->_intVal = 0;
+        }
+        else {
+          _objs->_intVal = 1;
+        }
+      }
+      else {
+        _objs->_intVal = 2;
+      }
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col, 
@@ -367,8 +423,17 @@ void OF_FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col,
 	if(_objs->_currWinProxy)
 	{
 	  RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
-	  if(rr) rr->setBackgroundColor(*r, *g, *b);
+      if (rr) { 
+        rr->setBackgroundColor(*r, *g, *b);
+        _objs->_intVal = 0;
+      }
+      else {
+        _objs->_intVal = 1;
+      }
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col, OF_CHARARG(fname))
@@ -380,9 +445,16 @@ void OF_FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col, OF
 	  {
 	    // Convert given character string and length to a proper C string
 	    std::string temp(OF_STRING(fname));
-	    rr->setSkySphereTexture(temp);
-	  }
+        rr->setSkySphereTexture(temp);
+        _objs->_intVal = 0;
+      }
+      else {
+        _objs->_intVal = 1;
+      }
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_setbackgroundstardata)(unsigned int *row, unsigned int *col, float *minMag, float *maxMag, OF_CHARARG(fname))
@@ -394,63 +466,115 @@ void OF_FCN(ofwin_setbackgroundstardata)(unsigned int *row, unsigned int *col, f
 	  {
 	    // Convert given character string and length to a proper C string
 	    std::string temp(OF_STRING(fname));
-	    rr->setSkySphereStarData(temp, *minMag, *maxMag);
-	  }
+        rr->setSkySphereStarData(temp, *minMag, *maxMag);
+        _objs->_intVal = 0;
+      }
+      else {
+        _objs->_intVal = 1;
+      }
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_setswapbuffersfunction)(void (*fcn)(unsigned int *winID))
 {
-	if(_objs->_currWinProxy) 
-	  _objs->_currWinProxy->setSwapBuffersFunction(fcn);
+    if (_objs->_currWinProxy) {
+      _objs->_currWinProxy->setSwapBuffersFunction(fcn);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_setmakecurrentfunction)(void (*fcn)(unsigned int *winID, bool *success))
 {
-	if(_objs->_currWinProxy) 
+	if (_objs->_currWinProxy) {
 	  _objs->_currWinProxy->setMakeCurrentFunction(fcn);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_setupdatecontextfunction)(void (*fcn)(unsigned int *winID, bool *success))
 {
-	if(_objs->_currWinProxy) 
+	if (_objs->_currWinProxy) {
 	  _objs->_currWinProxy->setUpdateContextFunction(fcn);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_resizewindow)(int *x, int *y, unsigned int *width, unsigned int *height)
 {
-	if(_objs->_currWinProxy) 
+	if (_objs->_currWinProxy) {
 	  _objs->_currWinProxy->resizeWindow(*x, *y, *width, *height);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_keypress)(unsigned int *key)
 {
-	if(_objs->_currWinProxy)
+	if (_objs->_currWinProxy) {
 	  _objs->_currWinProxy->keyPress(*key);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_buttonpress)(float *x, float *y, unsigned int *button)
 {
-	if(_objs->_currWinProxy)
+	if (_objs->_currWinProxy) {
 	  _objs->_currWinProxy->buttonPress(*x, *y, *button);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 	
 void OF_FCN(ofwin_buttonrelease)(float *x, float *y, unsigned int *button)
 {
-	if(_objs->_currWinProxy)
+	if (_objs->_currWinProxy) {
 	  _objs->_currWinProxy->buttonRelease(*x, *y, *button);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_mousemotion)(float *x, float *y)
 {
-	if(_objs->_currWinProxy)
+	if (_objs->_currWinProxy) {
 	  _objs->_currWinProxy->mouseMotion(*x, *y);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_setdesiredframerate)(double *fps)
 {
-	if(_objs->_currWinProxy)
+	if (_objs->_currWinProxy) {
 	  _objs->_currWinProxy->setDesiredFramerate(*fps);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_addview)(unsigned int *row, unsigned int *col)
@@ -464,7 +588,13 @@ void OF_FCN(ofwin_addview)(unsigned int *row, unsigned int *col)
 	    _objs->_intVal = 0;
 	  }
 	  else _objs->_intVal = 1;
-	}
+    }
+    else if (!_objs->_currView) {
+      _objs->_intVal = -1;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_removeview)(unsigned int *row, unsigned int *col)
@@ -478,7 +608,13 @@ void OF_FCN(ofwin_removeview)(unsigned int *row, unsigned int *col)
 	    _objs->_intVal = 0;
 	  }
 	  else _objs->_intVal = 1;
-	}
+    }
+    else if (!_objs->_currView) {
+      _objs->_intVal = -1;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_removeallviews)(unsigned int *row, unsigned int *col)
@@ -493,6 +629,12 @@ void OF_FCN(ofwin_removeallviews)(unsigned int *row, unsigned int *col)
 	  }
 	  else _objs->_intVal = 1;
 	}
+    else if (!_objs->_currView) {
+      _objs->_intVal = -1;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofwin_selectview)(unsigned int *row, unsigned int *col)
@@ -507,6 +649,12 @@ void OF_FCN(ofwin_selectview)(unsigned int *row, unsigned int *col)
 	  }
 	  else _objs->_intVal = 1;
 	}
+    else if (!_objs->_currView) {
+      _objs->_intVal = -1;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 /*******************************************
@@ -531,25 +679,44 @@ void OF_FCN(offm_activate)(int *id)
 void OF_FCN(offm_create)(int *id)
 {
 	_objs->_currFM = new FrameManager;
-	_objs->_fmMap[*id] = _objs->_currFM;
+    _objs->_fmMap[*id] = _objs->_currFM;
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(offm_setframe)()
 {
-	if(_objs->_currFM)
-	  _objs->_currFM->setFrame(_objs->_currFrame);
+    if (_objs->_currFM) {
+      _objs->_currFM->setFrame(_objs->_currFrame);
+      _objs->_intVal = 0;
+    }
+	else 
+	{
+	  _objs->_intVal = -2;
+	}
 }
 
 void OF_FCN(offm_lock)()
 {
-	if(_objs->_currFM)
+	if (_objs->_currFM) {
 	  _objs->_intVal = _objs->_currFM->lock();
+      _objs->_intVal = 0;
+    }
+	else 
+	{
+	  _objs->_intVal = -2;
+	}
 }
 
 void OF_FCN(offm_unlock)()
 {
-	if(_objs->_currFM)
+    if (_objs->_currFM) {
 	  _objs->_intVal = _objs->_currFM->unlock();
+      _objs->_intVal = 0;
+    }
+	else 
+	{
+	  _objs->_intVal = -2;
+	}
 }
 
 /*******************************************
@@ -586,14 +753,24 @@ void OF_FCN(offrame_create)(OF_CHARARG(name))
 	  // Create the new ReferenceFrame and make it the active one
 	  _objs->_currFrame = new ReferenceFrame(temp);
 	  _objs->_frameMap[temp] = _objs->_currFrame;
+      _objs->_intVal = 0;
 	}
-	else _objs->_currFrame = i->second.get();
+    else {
+      _objs->_currFrame = i->second.get();
+      _objs->_intVal = 1;
+    }
 }
 
 void OF_FCN(offrame_setcolor)(float *r, float *g, float *b, float *a)
 {
-	if(_objs->_currFrame) 
-	  _objs->_currFrame->setColor(*r, *g, *b, *a);
+    if (_objs->_currFrame) {
+      _objs->_currFrame->setColor(*r, *g, *b, *a);
+      _objs->_intVal = 0;
+    }
+    else
+    {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_addchild)(OF_CHARARG(name))
@@ -612,7 +789,7 @@ void OF_FCN(offrame_addchild)(OF_CHARARG(name))
 	    _objs->_currFrame->addChild(i->second.get()); // Found, so add it as child
 	  }
 	}
-	else _objs->_intVal = 1; // Current frame isn't defined, so raise error
+	else _objs->_intVal = -2; // Current frame isn't defined, so raise error
 }
 
 void OF_FCN(offrame_removechild)(OF_CHARARG(name))
@@ -631,7 +808,7 @@ void OF_FCN(offrame_removechild)(OF_CHARARG(name))
 	    _objs->_currFrame->removeChild(i->second.get()); // Found, so remove it as child
 	  }
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 void OF_FCN(offrame_removeallchildren)()
@@ -642,8 +819,12 @@ void OF_FCN(offrame_removeallchildren)()
 	  for(int i = numchildren-1; i >= 0; i--)
 	  {
 	    _objs->_currFrame->removeChild(_objs->_currFrame->getChild(i));
-	  }
-	}
+      }
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_getnumchildren)(int *numchildren)
@@ -662,44 +843,79 @@ void OF_FCN(offrame_getnumchildren)(int *numchildren)
 
 void OF_FCN(offrame_setposition)(double *x, double *y, double *z)
 {
-	if(_objs->_currFrame) 
-	  _objs->_currFrame->setPosition(*x, *y, *z);
+    if (_objs->_currFrame) {
+      _objs->_currFrame->setPosition(*x, *y, *z);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_getposition)(double *x, double *y, double *z)
 {
-	if(_objs->_currFrame) 
+	if (_objs->_currFrame) {
 	  _objs->_currFrame->getPosition(*x, *y, *z);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_setattitude)(double *rx, double *ry, double *rz, double *angle)
 {
-	if(_objs->_currFrame) 
+	if (_objs->_currFrame) {
 	  _objs->_currFrame->setAttitude(*rx, *ry, *rz, *angle);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_getattitude)(double *rx, double *ry, double *rz, double *angle)
 {
-	if(_objs->_currFrame) 
-	  _objs->_currFrame->setAttitude(*rx, *ry, *rz, *angle);
+	if (_objs->_currFrame) {
+	  _objs->_currFrame->getAttitude(*rx, *ry, *rz, *angle);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_showaxes)(unsigned int *axes)
 {
-	if(_objs->_currFrame) 
+	if (_objs->_currFrame) {
 	  _objs->_currFrame->showAxes(*axes);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_shownamelabel)(bool *namelabel)
 {
-	if(_objs->_currFrame)
+	if (_objs->_currFrame) {
 	  _objs->_currFrame->showNameLabel(*namelabel);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_showaxeslabels)(unsigned int *labels)
 {
-	if(_objs->_currFrame)
+	if (_objs->_currFrame) {
 	  _objs->_currFrame->showAxesLabels(*labels);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_setnamelabel)(OF_CHARARG(name))
@@ -709,7 +925,11 @@ void OF_FCN(offrame_setnamelabel)(OF_CHARARG(name))
 	  // Convert given character string and length to a proper C string
 	  std::string temp(OF_STRING(name));
 	  _objs->_currFrame->setName(temp);
-	}
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 #if defined(IFORT_CALLS)
@@ -734,7 +954,11 @@ void OF_FCN(offrame_setaxeslabels)(OF_CHARARG(xlabel),
 	  _objs->_currFrame->setXLabel(_xlabel);
 	  _objs->_currFrame->setYLabel(_ylabel);
 	  _objs->_currFrame->setZLabel(_zlabel);
-	}
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
@@ -742,7 +966,11 @@ void OF_FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, 
 	if(_objs->_currFrame)
 	{
 	  _objs->_currFrame->moveXAxis(osg::Vec3d(pos[0], pos[1], pos[2]), *length, *headRatio, *bodyRadius, *headRadius);
-	}
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_moveyaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
@@ -750,7 +978,11 @@ void OF_FCN(offrame_moveyaxis)(double pos[], double *length, double *headRatio, 
 	if(_objs->_currFrame)
 	{
 	  _objs->_currFrame->moveYAxis(osg::Vec3d(pos[0], pos[1], pos[2]), *length, *headRatio, *bodyRadius, *headRadius);
-	}
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
@@ -758,7 +990,11 @@ void OF_FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, 
 	if(_objs->_currFrame)
 	{
 	  _objs->_currFrame->moveZAxis(osg::Vec3d(pos[0], pos[1], pos[2]), *length, *headRatio, *bodyRadius, *headRadius);
-	}
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(offrame_followtrajectory)(OF_CHARARG(name))
@@ -795,7 +1031,11 @@ void OF_FCN(offrame_followtrajectory)(OF_CHARARG(name))
 	  {
 	    tf->setFollowTrajectory(traj);
 	  }
-	}
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 OF_EXPORT void OF_FCN(offrame_followtype)(int *data, int *mode)
@@ -805,10 +1045,18 @@ OF_EXPORT void OF_FCN(offrame_followtype)(int *data, int *mode)
 	  // Check if the frame is already following a trajectory
 	  TrajectoryFollower *tf = dynamic_cast<TrajectoryFollower*>(_objs->_currFrame->getTransform()->getUpdateCallback());
 	    
-	  if(tf == NULL) _objs->_intVal = 1;
-	  else tf->setFollowType((unsigned int)(*data), 
-	                         (TrajectoryFollower::FollowMode)(*mode));
+      if (tf == NULL) {
+        _objs->_intVal = 1;
+      }
+      else {
+        tf->setFollowType((unsigned int)(*data),
+            (TrajectoryFollower::FollowMode)(*mode));
+        _objs->_intVal = 0;
+      }
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 OF_EXPORT void OF_FCN(offrame_followposition)(int src[], unsigned int element[],
@@ -834,9 +1082,13 @@ OF_EXPORT void OF_FCN(offrame_followposition)(int src[], unsigned int element[],
 
 	    tf->setXData(data[0]);
 	    tf->setYData(data[1]);
-	    tf->setZData(data[2]);
+        tf->setZData(data[2]);
+        _objs->_intVal = 0;
 	  }
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 OF_EXPORT void OF_FCN(offrame_managetime)(bool *affectChildren, bool *reset,
@@ -861,7 +1113,7 @@ OF_EXPORT void OF_FCN(offrame_managetime)(bool *affectChildren, bool *reset,
 
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 void OF_FCN(offrame_printframestring)()
@@ -870,8 +1122,12 @@ void OF_FCN(offrame_printframestring)()
 	{
 	  std::string str;
 	  _objs->_currFrame->createFrameString(str);
-	  std::cout << str;
+      std::cout << str;
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 /*******************************************
@@ -884,27 +1140,36 @@ void OF_FCN(ofsphere_create)(OF_CHARARG(name))
 	std::string temp(OF_STRING(name));
 
 	_objs->_currFrame = new Sphere(temp);
-	_objs->_frameMap[temp] = _objs->_currFrame;
+    _objs->_frameMap[temp] = _objs->_currFrame;
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(ofsphere_setradius)(double *radius)
 {
 	  // Make sure that the currently active ReferenceFrame is a Sphere
 	Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
-	if(sphere == NULL) return;
+    if (sphere == NULL) {
+      _objs->_intVal = 1;
+      return;
+    }
 
-	sphere->setRadius(*radius);
+    sphere->setRadius(*radius);
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(ofsphere_settexturemap)(OF_CHARARG(fname))
 {
 	// Make sure that the currently active ReferenceFrame is a Sphere
 	Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
-	if(sphere == NULL) return;
+    if (sphere == NULL) {
+      _objs->_intVal = 1;
+      return;
+    }
 
 	// Convert given character string and length to a proper C string
 	std::string temp(OF_STRING(fname));
-	sphere->setTextureMap(temp);
+    sphere->setTextureMap(temp);
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(ofsphere_setautolod)(bool *lod)
@@ -913,7 +1178,11 @@ void OF_FCN(ofsphere_setautolod)(bool *lod)
 	if(sphere)
 	{
 	  sphere->setAutoLOD(*lod);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 /*******************************************
@@ -927,6 +1196,7 @@ void OF_FCN(ofmodel_create)(OF_CHARARG(name))
 
 	_objs->_currFrame = new Model(temp);
 	_objs->_frameMap[temp] = _objs->_currFrame;
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(ofmodel_setmodel)(OF_CHARARG(fname))
@@ -937,8 +1207,12 @@ void OF_FCN(ofmodel_setmodel)(OF_CHARARG(fname))
 	{
 	  // Convert given character string and length to a proper C string
 	  std::string temp(OF_STRING(fname));
-	  _objs->_intVal = model->setModel(temp);
+      _objs->_intVal = model->setModel(temp);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofmodel_setmodelposition)(double *x, double *y, double *z)
@@ -948,7 +1222,11 @@ void OF_FCN(ofmodel_setmodelposition)(double *x, double *y, double *z)
 	if(model)
 	{
 	  model->setModelPosition(*x, *y, *z);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofmodel_getmodelposition)(double *x, double *y, double *z)
@@ -958,7 +1236,11 @@ void OF_FCN(ofmodel_getmodelposition)(double *x, double *y, double *z)
 	if(model)
 	{
 	  model->getModelPosition(*x, *y, *z);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofmodel_setmodelscale)(double *sx, double *sy, double *sz)
@@ -968,7 +1250,11 @@ void OF_FCN(ofmodel_setmodelscale)(double *sx, double *sy, double *sz)
 	if(model)
 	{
 	  model->setModelScale(*sx, *sy, *sz);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofmodel_getmodelscale)(double *sx, double *sy, double *sz)
@@ -978,7 +1264,11 @@ void OF_FCN(ofmodel_getmodelscale)(double *sx, double *sy, double *sz)
 	if(model)
 	{
 	  model->getModelScale(*sx, *sy, *sz);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofmodel_setmodelpivot)(double *px, double *py, double *pz)
@@ -988,7 +1278,11 @@ void OF_FCN(ofmodel_setmodelpivot)(double *px, double *py, double *pz)
 	if(model)
 	{
 	  model->setModelPivot(*px, *py, *pz);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofmodel_getmodelpivot)(double *px, double *py, double *pz)
@@ -998,7 +1292,11 @@ void OF_FCN(ofmodel_getmodelpivot)(double *px, double *py, double *pz)
 	if(model)
 	{
 	  model->getModelPivot(*px, *py, *pz);
+      _objs->_intVal = 0;
 	}
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofmodel_getmodelsize)(double *size)
@@ -1011,9 +1309,18 @@ void OF_FCN(ofmodel_getmodelsize)(double *size)
 	  const osg::Node *node = model->getModel();
 
 	  // Get the bounding sphere of the model
-	  if(node) *size = node->getBound()._radius;
-	  else *size = -1.0; // Model not specified
-	}
+      if (node) {
+        *size = node->getBound()._radius;
+        _objs->_intVal = 0;
+      }
+      else {
+        *size = -1.0; // Model not specified
+        _objs->_intVal = 1;
+      }
+    }
+    else {
+        _objs->_intVal = -2;
+    }
 }
 
 /***********************************************
@@ -1027,6 +1334,7 @@ void OF_FCN(ofdrawtraj_create)(OF_CHARARG(name))
 
 	_objs->_currFrame = new DrawableTrajectory(temp);
 	_objs->_frameMap[temp] = _objs->_currFrame;
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(ofdrawtraj_addartist)(OF_CHARARG(name))
@@ -1045,7 +1353,7 @@ void OF_FCN(ofdrawtraj_addartist)(OF_CHARARG(name))
 	  drawtraj->addArtist(i->second.get());
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofdrawtraj_removeartist)(OF_CHARARG(name))
@@ -1064,7 +1372,7 @@ OF_EXPORT void OF_FCN(ofdrawtraj_removeartist)(OF_CHARARG(name))
 	  drawtraj->removeArtist(i->second.get());
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofdrawtraj_removeallartists)()
@@ -1076,7 +1384,7 @@ OF_EXPORT void OF_FCN(ofdrawtraj_removeallartists)()
 	  drawtraj->removeAllArtists();
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 /***********************************************
@@ -1089,6 +1397,7 @@ void OF_FCN(ofcoordaxes_create)(OF_CHARARG(name))
 
 	_objs->_currFrame = new CoordinateAxes(temp);
 	_objs->_frameMap[temp] = _objs->_currFrame;
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(ofcoordaxes_setaxislength)(double *len)
@@ -1099,7 +1408,7 @@ void OF_FCN(ofcoordaxes_setaxislength)(double *len)
 	  ca->setAxisLength(*len);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 void OF_FCN(ofcoordaxes_setdrawaxes)(unsigned int *axes)
@@ -1110,7 +1419,7 @@ void OF_FCN(ofcoordaxes_setdrawaxes)(unsigned int *axes)
 	  ca->setDrawAxes(*axes);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 void OF_FCN(ofcoordaxes_settickspacing)(double *major, double *minor)
@@ -1121,7 +1430,7 @@ void OF_FCN(ofcoordaxes_settickspacing)(double *major, double *minor)
 	  ca->setTickSpacing(*major, *minor);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 void OF_FCN(ofcoordaxes_setticksize)(unsigned int *major, unsigned int *minor)
@@ -1132,7 +1441,7 @@ void OF_FCN(ofcoordaxes_setticksize)(unsigned int *major, unsigned int *minor)
 	  ca->setTickSize(*major, *minor);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofcoordaxes_settickimage)(OF_CHARARG(fname))
@@ -1144,7 +1453,7 @@ OF_EXPORT void OF_FCN(ofcoordaxes_settickimage)(OF_CHARARG(fname))
 	  std::string temp(OF_STRING(fname));
 	  _objs->_intVal = !ca->setTickImage(temp);
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofcoordaxes_settickshader)(OF_CHARARG(fname))
@@ -1156,7 +1465,7 @@ OF_EXPORT void OF_FCN(ofcoordaxes_settickshader)(OF_CHARARG(fname))
 	  std::string temp(OF_STRING(fname));
 	  _objs->_intVal = !ca->setTickShader(temp);
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 /***********************************************
@@ -1169,6 +1478,7 @@ void OF_FCN(oflatlongrid_create)(OF_CHARARG(name))
 
 	_objs->_currFrame = new LatLonGrid(temp);
 	_objs->_frameMap[temp] = _objs->_currFrame;
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(oflatlongrid_setparameters)(double *radius, double *latSpace, double *lonSpace)
@@ -1179,7 +1489,7 @@ void OF_FCN(oflatlongrid_setparameters)(double *radius, double *latSpace, double
 	  llg->setParameters(*radius, *latSpace, *lonSpace);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 /***********************************************
@@ -1192,6 +1502,7 @@ void OF_FCN(ofradialplane_create)(OF_CHARARG(name))
 
 	_objs->_currFrame = new RadialPlane(temp);
 	_objs->_frameMap[temp] = _objs->_currFrame;
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(ofradialplane_setparameters)(double *radius, double *radSpace, double *lonSpace)
@@ -1202,7 +1513,7 @@ void OF_FCN(ofradialplane_setparameters)(double *radius, double *radSpace, doubl
 	  rp->setParameters(*radius, *radSpace, *lonSpace);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 void OF_FCN(ofradialplane_setplanecolor)(float *r, float *g, float *b, float *a)
@@ -1213,7 +1524,7 @@ void OF_FCN(ofradialplane_setplanecolor)(float *r, float *g, float *b, float *a)
 	  rp->setPlaneColor(*r, *g, *b, *a);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 void OF_FCN(ofradialplane_setlinecolor)(float *r, float *g, float *b, float *a)
@@ -1224,7 +1535,7 @@ void OF_FCN(ofradialplane_setlinecolor)(float *r, float *g, float *b, float *a)
 	  rp->setLineColor(*r, *g, *b, *a);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 /***********************************************
@@ -1265,80 +1576,134 @@ void OF_FCN(oftraj_create)(OF_CHARARG(name), unsigned int *dof,
 
 	_objs->_currTraj = new Trajectory(*dof, *numopt);
 	_objs->_trajMap[temp] = _objs->_currTraj;
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(oftraj_setnumoptionals)(unsigned int *nopt)
 {
-	if(_objs->_currTraj)
-	  _objs->_currTraj->setNumOptionals(*nopt);
+    if (_objs->_currTraj) {
+      _objs->_currTraj->setNumOptionals(*nopt);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(oftraj_setdof)(unsigned int *dof)
 {
-	if(_objs->_currTraj)
+    if (_objs->_currTraj) {
 	  _objs->_currTraj->setDOF(*dof);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(oftraj_addtime)(const double *t)
 {
-	if(_objs->_currTraj)
-	  _objs->_intVal = _objs->_currTraj->addTime(*t);
+    if (_objs->_currTraj) {
+	  _objs->_intVal = !_objs->_currTraj->addTime(*t);
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(oftraj_addposition)(const double *x, const double *y, const double *z)
 {
-	if(_objs->_currTraj)
-	  _objs->_intVal = _objs->_currTraj->addPosition(*x, *y, *z);
+    if (_objs->_currTraj) {
+	  _objs->_intVal = !_objs->_currTraj->addPosition(*x, *y, *z);
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(oftraj_addpositionvec)(const double pos[])
 {
-	if(_objs->_currTraj)
-	  _objs->_intVal = _objs->_currTraj->addPosition(pos);
+    if (_objs->_currTraj) {
+	  _objs->_intVal = !_objs->_currTraj->addPosition(pos);
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(oftraj_addattitude)(const double *x, const double *y,
                              const double *z, const double *w)
 {
-	if(_objs->_currTraj)
-	  _objs->_intVal = _objs->_currTraj->addAttitude(*x, *y, *z, *w);
+	if (_objs->_currTraj) {
+	  _objs->_intVal = !_objs->_currTraj->addAttitude(*x, *y, *z, *w);
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(oftraj_addattitudevec)(const double att[])
 {
-	if(_objs->_currTraj)
-	  _objs->_intVal = _objs->_currTraj->addAttitude(att);
+	if (_objs->_currTraj) {
+	  _objs->_intVal = !_objs->_currTraj->addAttitude(att);
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(oftraj_setoptional)(unsigned int *index, const double *x,
                              const double *y, const double *z)
 {
-	if(_objs->_currTraj)
-	  _objs->_intVal = _objs->_currTraj->setOptional(*index, *x, *y, *z);
+	if (_objs->_currTraj) {
+	  _objs->_intVal = !_objs->_currTraj->setOptional(*index, *x, *y, *z);
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(oftraj_setoptionalvec)(unsigned int *index, const double opt[])
 {
-	if(_objs->_currTraj)
-	  _objs->_intVal = _objs->_currTraj->setOptional(*index, opt);
+    if (_objs->_currTraj) {
+	  _objs->_intVal = !_objs->_currTraj->setOptional(*index, opt);
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(oftraj_clear)()
 {
-	if(_objs->_currTraj)
+    if (_objs->_currTraj) {
 	  _objs->_currTraj->clear();
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(oftraj_informartists)()
 {
-	if(_objs->_currTraj)
+	if (_objs->_currTraj) {
 	  _objs->_currTraj->informArtists();
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(oftraj_autoinformartists)(bool *autoinform)
 {
-	if(_objs->_currTraj)
+	if (_objs->_currTraj) {
 	  _objs->_currTraj->autoInformArtists(*autoinform);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 /************************************************
@@ -1365,8 +1730,18 @@ void OF_FCN(oftrajartist_activate)(OF_CHARARG(name))
 	
 void OF_FCN(oftrajartist_settrajectory)()
 {
-	if(_objs->_currArtist)
-	  _objs->_currArtist->setTrajectory(_objs->_currTraj);
+    if (_objs->_currArtist) {
+      if (_objs->_currTraj) {
+        _objs->_currArtist->setTrajectory(_objs->_currTraj);
+        _objs->_intVal = 0;
+      }
+      else {
+        _objs->_intVal = 1;
+      }
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 
@@ -1381,6 +1756,7 @@ void OF_FCN(ofcurveartist_create)(OF_CHARARG(name))
 
 	_objs->_currArtist = new CurveArtist;
 	_objs->_artistMap[temp] = _objs->_currArtist;
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(ofcurveartist_setxdata)(int *src, unsigned int *element,
@@ -1389,7 +1765,7 @@ void OF_FCN(ofcurveartist_setxdata)(int *src, unsigned int *element,
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
-	  _objs->_intVal = 1;
+	  _objs->_intVal = 2;
 	  return;
 	}
 
@@ -1404,7 +1780,7 @@ void OF_FCN(ofcurveartist_setxdata)(int *src, unsigned int *element,
 	  _objs->_intVal = !artist->setXData(data);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 void OF_FCN(ofcurveartist_setydata)(int *src, unsigned int *element,
@@ -1413,7 +1789,7 @@ void OF_FCN(ofcurveartist_setydata)(int *src, unsigned int *element,
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
-	  _objs->_intVal = 1;
+	  _objs->_intVal = 2;
 	  return;
 	}
 
@@ -1428,7 +1804,7 @@ void OF_FCN(ofcurveartist_setydata)(int *src, unsigned int *element,
 	  _objs->_intVal = !artist->setYData(data);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 void OF_FCN(ofcurveartist_setzdata)(int *src, unsigned int *element,
@@ -1437,7 +1813,7 @@ void OF_FCN(ofcurveartist_setzdata)(int *src, unsigned int *element,
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
-	  _objs->_intVal = 1;
+	  _objs->_intVal = 2;
 	  return;
 	}
 
@@ -1452,28 +1828,43 @@ void OF_FCN(ofcurveartist_setzdata)(int *src, unsigned int *element,
 	  _objs->_intVal = !artist->setZData(data);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 void OF_FCN(ofcurveartist_setcolor)(float *r, float *g, float *b)
 {
 	CurveArtist *artist = dynamic_cast<CurveArtist*>(_objs->_currArtist);
-	if(artist) 
-	  artist->setColor(*r, *g, *b);
+    if (artist) {
+      artist->setColor(*r, *g, *b);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofcurveartist_setwidth)(float *width)
 {
 	CurveArtist *artist = dynamic_cast<CurveArtist*>(_objs->_currArtist);
-	if(artist) 
+    if (artist) {
 	  artist->setWidth(*width);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofcurveartist_setpattern)(int *factor, unsigned short *pattern)
 {
 	CurveArtist *artist = dynamic_cast<CurveArtist*>(_objs->_currArtist);
-	if(artist) 
+    if (artist) {
 	  artist->setPattern(*factor, *pattern);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 /************************************************
@@ -1486,7 +1877,8 @@ void OF_FCN(ofsegmentartist_create)(OF_CHARARG(name))
 	std::string temp(OF_STRING(name));
 
 	_objs->_currArtist = new SegmentArtist;
-	_objs->_artistMap[temp] = _objs->_currArtist;
+    _objs->_artistMap[temp] = _objs->_currArtist;
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(ofsegmentartist_setstartxdata)(int *src, unsigned int *element,
@@ -1495,7 +1887,7 @@ void OF_FCN(ofsegmentartist_setstartxdata)(int *src, unsigned int *element,
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
-	  _objs->_intVal = 1;
+	  _objs->_intVal = 2;
 	  return;
 	}
 
@@ -1510,7 +1902,7 @@ void OF_FCN(ofsegmentartist_setstartxdata)(int *src, unsigned int *element,
 	  _objs->_intVal = !artist->setStartXData(data);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 void OF_FCN(ofsegmentartist_setstartydata)(int *src, unsigned int *element,
@@ -1519,7 +1911,7 @@ void OF_FCN(ofsegmentartist_setstartydata)(int *src, unsigned int *element,
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
-	  _objs->_intVal = 1;
+	  _objs->_intVal = 2;
 	  return;
 	}
 
@@ -1534,7 +1926,7 @@ void OF_FCN(ofsegmentartist_setstartydata)(int *src, unsigned int *element,
 	  _objs->_intVal = !artist->setStartYData(data);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 void OF_FCN(ofsegmentartist_setstartzdata)(int *src, unsigned int *element,
@@ -1543,7 +1935,7 @@ void OF_FCN(ofsegmentartist_setstartzdata)(int *src, unsigned int *element,
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
-	  _objs->_intVal = 1;
+	  _objs->_intVal = 2;
 	  return;
 	}
 
@@ -1558,7 +1950,7 @@ void OF_FCN(ofsegmentartist_setstartzdata)(int *src, unsigned int *element,
 	  _objs->_intVal = !artist->setStartZData(data);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 void OF_FCN(ofsegmentartist_setendxdata)(int *src, unsigned int *element,
@@ -1567,7 +1959,7 @@ void OF_FCN(ofsegmentartist_setendxdata)(int *src, unsigned int *element,
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
-	  _objs->_intVal = 1;
+	  _objs->_intVal = 2;
 	  return;
 	}
 
@@ -1582,7 +1974,7 @@ void OF_FCN(ofsegmentartist_setendxdata)(int *src, unsigned int *element,
 	  _objs->_intVal = !artist->setEndXData(data);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 void OF_FCN(ofsegmentartist_setendydata)(int *src, unsigned int *element,
@@ -1591,7 +1983,7 @@ void OF_FCN(ofsegmentartist_setendydata)(int *src, unsigned int *element,
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
-	  _objs->_intVal = 1;
+	  _objs->_intVal = 2;
 	  return;
 	}
 
@@ -1606,7 +1998,7 @@ void OF_FCN(ofsegmentartist_setendydata)(int *src, unsigned int *element,
 	  _objs->_intVal = !artist->setEndYData(data);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 void OF_FCN(ofsegmentartist_setendzdata)(int *src, unsigned int *element,
@@ -1615,7 +2007,7 @@ void OF_FCN(ofsegmentartist_setendzdata)(int *src, unsigned int *element,
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
-	  _objs->_intVal = 1;
+	  _objs->_intVal = 2;
 	  return;
 	}
 
@@ -1630,7 +2022,7 @@ void OF_FCN(ofsegmentartist_setendzdata)(int *src, unsigned int *element,
 	  _objs->_intVal = !artist->setEndZData(data);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 void OF_FCN(ofsegmentartist_setstride)(unsigned int *stride)
@@ -1642,28 +2034,43 @@ void OF_FCN(ofsegmentartist_setstride)(unsigned int *stride)
 	  artist->setStride(*stride);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 void OF_FCN(ofsegmentartist_setcolor)(float *r, float *g, float *b)
 {
 	SegmentArtist *artist = dynamic_cast<SegmentArtist*>(_objs->_currArtist);
-	if(artist) 
+    if (artist) {
 	  artist->setColor(*r, *g, *b);
+	  _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofsegmentartist_setwidth)(float *width)
 {
 	SegmentArtist *artist = dynamic_cast<SegmentArtist*>(_objs->_currArtist);
-	if(artist) 
+    if (artist) {
 	  artist->setWidth(*width);
+	  _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofsegmentartist_setpattern)(int *factor, unsigned short *pattern)
 {
 	SegmentArtist *artist = dynamic_cast<SegmentArtist*>(_objs->_currArtist);
-	if(artist) 
+    if (artist) {
 	  artist->setPattern(*factor, *pattern);
+	  _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 /*****************************************************************
@@ -1677,6 +2084,7 @@ OF_EXPORT void OF_FCN(ofmarkerartist_create)(OF_CHARARG(name))
 
 	_objs->_currArtist = new MarkerArtist;
 	_objs->_artistMap[temp] = _objs->_currArtist;
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(ofmarkerartist_setxdata)(int *src, unsigned int *element,
@@ -1685,7 +2093,7 @@ void OF_FCN(ofmarkerartist_setxdata)(int *src, unsigned int *element,
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
-	  _objs->_intVal = 1;
+	  _objs->_intVal = 2;
 	  return;
 	}
 
@@ -1700,7 +2108,7 @@ void OF_FCN(ofmarkerartist_setxdata)(int *src, unsigned int *element,
 	  _objs->_intVal = !artist->setXData(data);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 void OF_FCN(ofmarkerartist_setydata)(int *src, unsigned int *element,
@@ -1709,7 +2117,7 @@ void OF_FCN(ofmarkerartist_setydata)(int *src, unsigned int *element,
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
-	  _objs->_intVal = 1;
+	  _objs->_intVal = 2;
 	  return;
 	}
 
@@ -1724,7 +2132,7 @@ void OF_FCN(ofmarkerartist_setydata)(int *src, unsigned int *element,
 	  _objs->_intVal = !artist->setYData(data);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 void OF_FCN(ofmarkerartist_setzdata)(int *src, unsigned int *element,
@@ -1733,7 +2141,7 @@ void OF_FCN(ofmarkerartist_setzdata)(int *src, unsigned int *element,
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
 	{
-	  _objs->_intVal = 1;
+	  _objs->_intVal = 2;
 	  return;
 	}
 
@@ -1748,7 +2156,7 @@ void OF_FCN(ofmarkerartist_setzdata)(int *src, unsigned int *element,
 	  _objs->_intVal = !artist->setZData(data);
 	}
 	else
-	  _objs->_intVal = 1;
+	  _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofmarkerartist_setmarkers)( unsigned int *markers )
@@ -1759,7 +2167,7 @@ OF_EXPORT void OF_FCN(ofmarkerartist_setmarkers)( unsigned int *markers )
 	  artist->setMarkers(*markers);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofmarkerartist_setmarkercolor)( unsigned int *markers, float *r, float *g, float *b )
@@ -1770,7 +2178,7 @@ OF_EXPORT void OF_FCN(ofmarkerartist_setmarkercolor)( unsigned int *markers, flo
 	  artist->setMarkerColor(*markers, *r, *g, *b);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofmarkerartist_setmarkerimage)(OF_CHARARG(fname))
@@ -1782,7 +2190,7 @@ OF_EXPORT void OF_FCN(ofmarkerartist_setmarkerimage)(OF_CHARARG(fname))
 	  std::string temp(OF_STRING(fname));
 	  _objs->_intVal = !artist->setMarkerImage(temp);
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofmarkerartist_setmarkershader)(OF_CHARARG(fname))
@@ -1794,7 +2202,7 @@ OF_EXPORT void OF_FCN(ofmarkerartist_setmarkershader)(OF_CHARARG(fname))
 	  std::string temp(OF_STRING(fname));
 	  _objs->_intVal = !artist->setMarkerShader(temp);
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofmarkerartist_setintermediatetype)( unsigned int *type )
@@ -1805,7 +2213,7 @@ OF_EXPORT void OF_FCN(ofmarkerartist_setintermediatetype)( unsigned int *type )
 	  artist->setIntermediateType((MarkerArtist::IntermediateType)(*type));
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofmarkerartist_setintermediatespacing)( double *spacing )
@@ -1816,7 +2224,7 @@ OF_EXPORT void OF_FCN(ofmarkerartist_setintermediatespacing)( double *spacing )
 	  artist->setIntermediateSpacing(*spacing);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofmarkerartist_setintermediatedirection)( unsigned int *direction )
@@ -1827,7 +2235,7 @@ OF_EXPORT void OF_FCN(ofmarkerartist_setintermediatedirection)( unsigned int *di
 	  artist->setIntermediateDirection((MarkerArtist::DrawnMarkers)(*direction));
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofmarkerartist_setmarkersize)( unsigned int *size )
@@ -1838,7 +2246,7 @@ OF_EXPORT void OF_FCN(ofmarkerartist_setmarkersize)( unsigned int *size )
 	  artist->setMarkerSize(*size);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 OF_EXPORT void OF_FCN(ofmarkerartist_setautoattenuate)( bool *autoattenuate )
@@ -1849,7 +2257,7 @@ OF_EXPORT void OF_FCN(ofmarkerartist_setautoattenuate)( bool *autoattenuate )
 	  artist->setAutoAttenuate(*autoattenuate);
 	  _objs->_intVal = 0;
 	}
-	else _objs->_intVal = 1;
+	else _objs->_intVal = -2;
 }
 
 /************************************************
@@ -1880,26 +2288,42 @@ void OF_FCN(ofview_create)(OF_CHARARG(name))
 	std::string temp(OF_STRING(name));
 
 	_objs->_currView = new View;
-	_objs->_viewMap[temp] = _objs->_currView;
+    _objs->_viewMap[temp] = _objs->_currView;
+    _objs->_intVal = 0;
 }
 
 void OF_FCN(ofview_setorthographic)(double *left, double *right,
                                  double *bottom, double *top)
 {
-	if(_objs->_currView)
+	if (_objs->_currView) {
 	  _objs->_currView->setOrthographic(*left, *right, *bottom, *top);
+	  _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofview_setperspective)(double *fov, double *ratio)
 {
-	if(_objs->_currView)
+	if (_objs->_currView) {
 	  _objs->_currView->setPerspective(*fov, *ratio);
+	  _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofview_setaspectmultiplier)(double *mult)
 {
-	if(_objs->_currView)
+	if (_objs->_currView) {
 	  _objs->_currView->setAspectMultiplier(*mult);
+	  _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 #if defined(IFORT_CALLS)
@@ -1935,13 +2359,22 @@ void OF_FCN(ofview_setviewframe)(OF_CHARARG(root), OF_CHARARG(frame))
 	  // root -> view frame. If the path doesn't exist, then
 	  // the ofview_isvalid() function will raise a flag.
 	  _objs->_currView->setViewFrame(rootFrame, viewFrame);
-	}
+	  _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofview_setdefaultviewdistance)(double *distance)
 {
-	if(_objs->_currView)
+	if (_objs->_currView) {
 	  _objs->_currView->setDefaultViewDistance(*distance);
+	  _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }
 
 void OF_FCN(ofview_isvalid)(bool *valid)
@@ -1954,11 +2387,17 @@ void OF_FCN(ofview_isvalid)(bool *valid)
 	else 
 	{
 	  *valid = false;
-	  _objs->_intVal = 1; // error flag
+	  _objs->_intVal = -2; // error flag
 	}
 }
 
 void OF_FCN(ofview_reset)()
 {
-	if(_objs->_currView) _objs->_currView->resetTrackball();
+	if (_objs->_currView) {
+      _objs->_currView->resetTrackball();
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
 }

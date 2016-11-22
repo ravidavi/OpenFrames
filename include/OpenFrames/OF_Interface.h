@@ -76,6 +76,8 @@ OF_EXPORT void OF_FCN(of_initialize)();
 OF_EXPORT void OF_FCN(of_cleanup)();
 
 // Get the values returned by functions.
+// Functions return zero to indicate success,
+// and non-zero to indicate an error
 OF_EXPORT void OF_FCN(of_getreturnedvalue)(int *val);
 
 /***********************************************************************
