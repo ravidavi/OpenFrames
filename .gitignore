@@ -28,3 +28,7 @@ bin/
 lib/
 *install*/
 *Darwin*/
+
+# Doxygen generated files #
+docs/html
+docs/latex
