@@ -2336,23 +2336,31 @@ void OF_FCN(ofview_setviewframe)(OF_CHARARG(root), OF_CHARARG(frame))
 
 #endif
 {
+        // Convert inputs to usable strings
         std::string rname(OF_STRING(root));
 	std::string fname(OF_STRING(frame));
 
 	if(_objs->_currView)
 	{
-
 	  // Find root and viewed frames in the FrameMap
 	  FrameMap::iterator i = _objs->_frameMap.find(rname);
 	  FrameMap::iterator j = _objs->_frameMap.find(fname);
 	  ReferenceFrame *rootFrame, *viewFrame;
 
 	  // Set dummy reference to root frame
-	  if(i == _objs->_frameMap.end()) rootFrame = NULL;
+	  if(i == _objs->_frameMap.end()) 
+          {
+            _objs->_intVal = -2;
+            return;
+          }
 	  else rootFrame = i->second.get();
 
 	  // Set dummy reference to view frame
-	  if(j == _objs->_frameMap.end()) viewFrame = NULL;
+	  if(j == _objs->_frameMap.end()) 
+          {
+            _objs->_intVal = -3;
+            return;
+          }
 	  else viewFrame = j->second.get();
 
 	  // Tell current view to find and remember the path from the
@@ -2362,7 +2370,74 @@ void OF_FCN(ofview_setviewframe)(OF_CHARARG(root), OF_CHARARG(frame))
 	  _objs->_intVal = 0;
     }
     else {
-      _objs->_intVal = -2;
+      _objs->_intVal = -1;
+    }
+}
+
+#if defined(IFORT_CALLS)
+void OF_FCN(ofview_setviewbetweenframes)(const char *root, 
+                                 const char *srcframe, 
+                                 const char *dstframe,
+                                 unsigned int frameType,
+                                 unsigned int rotationType,
+                                 unsigned int rootlen, 
+                                 unsigned int srcframelen,
+                                 unsigned int dstframelen)
+
+#else
+void OF_FCN(ofview_setviewbetweenframes)(OF_CHARARG(root), 
+                                         OF_CHARARG(srcframe),
+                                         OF_CHARARG(dstframe),
+                                         unsigned int frameType,
+                                         unsigned int rotationType)
+
+#endif
+{
+        // Convert inputs to usable strings
+        std::string rname(OF_STRING(root));
+	std::string sfname(OF_STRING(srcframe));
+	std::string dfname(OF_STRING(dstframe));
+
+	if(_objs->_currView)
+	{
+	  // Find root and viewed frames in the FrameMap
+	  FrameMap::iterator i = _objs->_frameMap.find(rname);
+	  FrameMap::iterator j = _objs->_frameMap.find(sfname);
+	  FrameMap::iterator k = _objs->_frameMap.find(dfname);
+	  ReferenceFrame *rootFrame, *viewFrame, *lookatFrame;
+
+	  // Set dummy reference to root frame
+	  if(i == _objs->_frameMap.end())
+          {
+            _objs->_intVal = -2;
+            return;
+          }
+	  else rootFrame = i->second.get();
+
+	  // Set dummy reference to view frame
+	  if(j == _objs->_frameMap.end())
+          {
+            _objs->_intVal = -3;
+            return;
+          }
+	  else viewFrame = j->second.get();
+
+	  // Set dummy reference to lookat frame
+	  if(k == _objs->_frameMap.end())
+          {
+            _objs->_intVal = -4;
+            return;
+          }
+	  else lookatFrame = k->second.get();
+
+	  // Tell current view to find and remember the path from the
+	  // root -> view frame. If the path doesn't exist, then
+	  // the ofview_isvalid() function will raise a flag.
+	  _objs->_currView->setViewBetweenFrames(rootFrame, viewFrame, lookatFrame, (View::ViewFrameType)frameType, (View::ViewRotationType)rotationType);
+	  _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -1;
     }
 }
 

@@ -597,7 +597,7 @@ OF_EXPORT void OF_FCN(ofview_setperspective)(double *fov, double *ratio);
 // the image by a constant amount.
 OF_EXPORT void OF_FCN(ofview_setaspectmultiplier)(double *mult);
 
-// Set the default view that the current transform will show. The 'root'
+// Tell current view to follow the specified ReferenceFrame. The 'root'
 // input should be set to the root of the ReferenceFrame heirarchy, and the
 // 'frame' input should be set to whatever frame you want to view. Note that
 // this function does NOT use or modify the currently active ReferenceFrame.
@@ -606,6 +606,17 @@ OF_EXPORT void OF_FCN(ofview_setviewframe)(const char *root, const char *frame, 
 #else
 OF_EXPORT void OF_FCN(ofview_setviewframe)(OF_CHARARG(root),
                                            OF_CHARARG(frame));
+#endif
+
+// View from srcframe towards dstframe, using a specified frame type and
+// rotation type. See View::ViewFrameType and View::ViewRotationType.
+// The 'root' input should be set to the root of the ReferenceFrame 
+// heirarchy, and must contain 'srcframe' and 'dstframe'. Note that 
+// this function does NOT use or modify the currently active ReferenceFrame.
+#if defined(IFORT_CALLS)
+OF_EXPORT void OF_FCN(ofview_setviewbetweenframes)(const char *root, const char *srcframe, const char *dstframe, unsigned int frameType, unsigned int rotationType, unsigned int rootlen, unsigned int srcframelen, unsigned int dstframelen);
+#else
+OF_EXPORT void OF_FCN(ofview_setviewbetweenframes)(OF_CHARARG(root), OF_CHARARG(srcframe), OF_CHARARG(dstframe), unsigned int frameType, unsigned int rotationType);
 #endif
 
 // Set the default view distance. A value <= 0.0 means the distance should be auto-computed
