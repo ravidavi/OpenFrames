@@ -2378,8 +2378,8 @@ void OF_FCN(ofview_setviewframe)(OF_CHARARG(root), OF_CHARARG(frame))
 void OF_FCN(ofview_setviewbetweenframes)(const char *root, 
                                  const char *srcframe, 
                                  const char *dstframe,
-                                 unsigned int frameType,
-                                 unsigned int rotationType,
+                                 unsigned int *frameType,
+                                 unsigned int *rotationType,
                                  unsigned int rootlen, 
                                  unsigned int srcframelen,
                                  unsigned int dstframelen)
@@ -2388,8 +2388,8 @@ void OF_FCN(ofview_setviewbetweenframes)(const char *root,
 void OF_FCN(ofview_setviewbetweenframes)(OF_CHARARG(root), 
                                          OF_CHARARG(srcframe),
                                          OF_CHARARG(dstframe),
-                                         unsigned int frameType,
-                                         unsigned int rotationType)
+                                         unsigned int *frameType,
+                                         unsigned int *rotationType)
 
 #endif
 {
@@ -2433,7 +2433,7 @@ void OF_FCN(ofview_setviewbetweenframes)(OF_CHARARG(root),
 	  // Tell current view to find and remember the path from the
 	  // root -> view frame. If the path doesn't exist, then
 	  // the ofview_isvalid() function will raise a flag.
-	  _objs->_currView->setViewBetweenFrames(rootFrame, viewFrame, lookatFrame, (View::ViewFrameType)frameType, (View::ViewRotationType)rotationType);
+	  _objs->_currView->setViewBetweenFrames(rootFrame, viewFrame, lookatFrame, (View::ViewFrameType)(*frameType), (View::ViewRotationType)(*rotationType));
 	  _objs->_intVal = 0;
     }
     else {

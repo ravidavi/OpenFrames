@@ -57,6 +57,14 @@
 	INTEGER, PARAMETER :: OF_YAXIS = 2 ! Use Y axis 
 	INTEGER, PARAMETER :: OF_ZAXIS = 4 ! Use Z axis
 
+! Constants that specify relative view base reference frame
+	INTEGER, PARAMETER :: OFVIEW_ABSOLUTE = 0 ! Global reference frame
+	INTEGER, PARAMETER :: OFVIEW_RELATIVE = 1 ! Body-fixed frame
+
+! Constants that specify relative view rotation between frames
+	INTEGER, PARAMETER :: OFVIEW_DIRECT = 0 ! Direct rotation
+	INTEGER, PARAMETER :: OFVIEW_AZEL = 1 ! Azimuth-Elevation rotation
+
 	INTERFACE
 
 ! Sets up all internal OpenFrames Fortran/C interface variables
@@ -864,6 +872,12 @@
 	SUBROUTINE ofview_setviewframe(root, frame)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_setviewframe
 	CHARACTER(*), INTENT(IN) :: root, frame
+	END SUBROUTINE
+
+	SUBROUTINE ofview_setviewbetweenframes(root, srcframe, dstframe, frameType, rotationType)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_setviewbetweenframes
+	CHARACTER(*), INTENT(IN) :: root, srcframe, dstframe
+	INTEGER, INTENT(IN) :: frameType, rotationType
 	END SUBROUTINE
 
 	SUBROUTINE ofview_setdefaultviewdistance(distance)
