@@ -60,6 +60,7 @@ static const char *OFTA_VertSource = {
 };
 
 TrajectoryArtist::TrajectoryArtist() 
+: _currTime(0.0), _rangeStart(DBL_MIN), _rangeEnd(DBL_MAX)
 {
         // Create vertex shader if it doesn't already exist
         if(OFTA_VertShader == NULL)

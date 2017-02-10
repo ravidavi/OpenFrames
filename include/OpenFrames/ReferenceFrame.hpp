@@ -39,7 +39,6 @@ namespace osg {
 namespace OpenFrames {
 
 class FrameTracker;
-class Trajectory;
 
 /*******************************************
  * Ravi Mathur

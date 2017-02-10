@@ -60,6 +60,18 @@ class OF_EXPORT TrajectoryArtist : public osg::Drawable
 	    implemented by derived classes. */
 	virtual void dataAdded() = 0;
 
+        /** Set current simulation time. This is used by specific artists in
+            different ways, e.g. only draw a portion of the Trajectory. */
+        virtual void setCurrentTime(double t) { _currTime = t; }
+
+        /** Set the range of data points to draw, relative to the current
+            simulation time. */
+        virtual void setDrawRange(double start, double end)
+        {
+          _rangeStart = start;
+          _rangeEnd = end;
+        }
+
   protected:
 	virtual ~TrajectoryArtist();
 
@@ -73,6 +85,9 @@ class OF_EXPORT TrajectoryArtist : public osg::Drawable
 	osg::ref_ptr<const Trajectory> _traj; // Trajectory to be drawn
 
         osg::ref_ptr<osg::Program> _program; // GLSL program
+
+        double _currTime;     // Current time for time-based drawing
+        double _rangeStart, _rangeEnd; // Data range to draw
 };
 
 }

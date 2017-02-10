@@ -361,26 +361,28 @@ void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
 	    if(_paused) time += _timeScale*_pauseTime;
 	    else time += _timeScale*_latestTime;
 
-	    // Prevent trajectory data from being modified while we are
-	    // using it in computations.
-	    _follow->lockData();
-
 	    // Apply new position/attitude to the FrameTransform
-	    FrameTransform *ft = static_cast<FrameTransform*>(node);
+	    FrameTransform *ft = dynamic_cast<FrameTransform*>(node);
+            if(ft)
+            {
+              // Prevent trajectory data from being modified while we are
+              // using it in computations.
+              _follow->lockData();
 
-	    if(_dataValid && (_data & POSITION)) 
-	    {
-	      _updatePosition(time);
-	      ft->setPosition(_v1[0], _v1[1], _v1[2]);
-	    }
+              if(_dataValid && (_data & POSITION)) 
+              {
+                _updatePosition(time);
+                ft->setPosition(_v1[0], _v1[1], _v1[2]);
+              }
 
-	    if(_data & ATTITUDE) 
-	    {
-	      _updateAttitude(time);
-	      ft->setAttitude(_a1[0], _a1[1], _a1[2], _a1[3]);
-	    }
+              if(_data & ATTITUDE) 
+              {
+                _updateAttitude(time);
+                ft->setAttitude(_a1[0], _a1[1], _a1[2], _a1[3]);
+              }
 
-	    _follow->unlockData(); // Free up the trajectory data
+              _follow->unlockData(); // Free up the trajectory data
+            }
 
 	    _needsUpdate = false; // Reset update flag
 	  }
