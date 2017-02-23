@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2017 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -83,10 +83,14 @@ class OF_EXPORT DepthPartitionNode : public osg::Group
 	~DepthPartitionNode();
 
 	void init();
+  
+  // Updates a projection matrix with specified near/far plane
+  void updateProjectionMatrix(osg::Matrix& proj,
+                              double near, double far);
 
 	// Creates a new Camera object with default settings
-	osg::Camera* createOrReuseCamera(const osg::Matrix& proj, double near, 
-	                         double far, const unsigned int &camNum);
+	osg::Camera* createOrReuseCamera(unsigned int camNum,
+                                   const osg::Camera* parentCamera);
 
 	bool _active; // Whether partitioning is active on the scene
 

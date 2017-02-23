@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2017 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@
 
 #ifdef WIN32
   #include <windows.h>
-  #define FACTOR 1.0e3
-  #define MINSLEEP 1
+  #define FACTOR 1.0e3  // Windows sleep time in milliseconds
+  #define MINSLEEP 1    // Minimum sleep time
   #define SLEEP_FCN Sleep
 #else
   #include <unistd.h>
-  #define FACTOR 1.0e6
+  #define FACTOR 1.0e6  // *nix sleep time in microseconds
   #define MINSLEEP 1000
   #define SLEEP_FCN usleep
 #endif
@@ -40,11 +40,18 @@ FramerateLimiter::FramerateLimiter()
 
 void FramerateLimiter::setDesiredFramerate(double fps)
 {
-	_desired_spf = 1.0/fps; // Desired seconds per frame
+  if(fps > 0.0)
+    _desired_spf = 1.0/fps; // Desired seconds per frame
+  else
+  {
+    // Indicate unlimited framerate
+    fps = 0.0;
+    _desired_spf = 0.0;
+  }
 
 	// Number of frames before checking statistics
-	_max_frames = (unsigned int)ceil(fps/10.0);
-	if(_max_frames == 0) _max_frames = 1;
+	_max_frames = (unsigned int)ceil(fps/2.0);
+	if(_max_frames == 0) _max_frames = 128; // Unlimited framerate, so get stats infrequently
 	_max_frames_inv = 1.0/(double)_max_frames;
 
 	reset(); // Initialize everything
@@ -59,7 +66,7 @@ void FramerateLimiter::frame()
 	    // Calculate the average spf for the previous set of frames
 	  _curr_spf = _timer.delta_s(_ref_time, _timer.tick())*_max_frames_inv;
 
-	    // Compute the extra amount of time that each frame (on average)
+	    // Approximate the extra amount of time that each frame
 	    // should take up in order to reach the desired fps.
 	  _sleeptime += (int)(FACTOR * (_desired_spf-_curr_spf));
 

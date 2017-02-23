@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2017 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -185,9 +185,14 @@ class OF_EXPORT WindowProxy : public OpenThreads::Thread, public osg::Referenced
 	inline void setDesiredFramerate(const double &fps)
 	{ _frameThrottle.setDesiredFramerate(fps); }
 
+  /** Get the desired framerate at which animation should occur. */
 	inline double getDesiredFramerate()
 	{ return _frameThrottle.getDesiredFramerate(); }
 
+  /** Get the actual animation framerate. This is an instantaneous value. */
+  inline double getFramerate()
+  { return _frameThrottle.getFramerate(); }
+  
 	osgViewer::CompositeViewer* getViewer() const { return _viewer.get(); }
 
 	/** Set the render grid's dimensions. */
