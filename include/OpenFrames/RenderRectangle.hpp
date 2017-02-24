@@ -118,7 +118,8 @@ namespace OpenFrames
     osg::ref_ptr<DepthPartitionNode> _depthPartition;
     
     osg::ref_ptr<osg::Group> _scene; // Everything to be drawn
-    osg::ref_ptr<osg::Camera> _border; // Border around rectangle
+    osg::ref_ptr<osg::Camera> _hudCamera; // Heads-up-display camera
+    osg::ref_ptr<osg::Geode> _borderGeode; // The border rectangle
     osg::ref_ptr<SkySphere> _skySphere; // The background sky
     
     // Manager for access to the ReferenceFrame scene

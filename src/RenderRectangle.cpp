@@ -27,9 +27,9 @@ namespace OpenFrames
   
   RenderRectangle::RenderRectangle()
   {
-    // Create the Camera that will draw the border.
-    _border = new osg::Camera;
-    _border->setName("Border");
+    // Create the Camera that will draw HUD elements
+    _hudCamera = new osg::Camera;
+    _hudCamera->setName("HUD");
     
     // Create the auto depth partitioning node
     _depthPartition = new DepthPartitionNode;
@@ -58,13 +58,14 @@ namespace OpenFrames
   
   void RenderRectangle::_init()
   {
-    // Create and set up the geode that will contain the border
-    osg::Geode *geode = new osg::Geode;
-    geode->setCullingActive(false);
-    osg::StateSet* ss = geode->getOrCreateStateSet();
+    // Create the geode that will contain the border
+    _borderGeode = new osg::Geode;
+    _borderGeode->setCullingActive(false);
+    osg::StateSet* ss = _borderGeode->getOrCreateStateSet();
     ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
     ss->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
     ss->setAttribute(new osg::LineWidth);
+    _hudCamera->addChild(_borderGeode); // Add border to HUD
     
     // Specify points that make up the border
     osg::Vec3Array* vertices = new osg::Vec3Array;
@@ -83,24 +84,23 @@ namespace OpenFrames
     geom->setColorArray(colors);
     geom->setColorBinding(osg::Geometry::BIND_OVERALL);
     geom->addPrimitiveSet(new osg::DrawArrays(GL_LINE_LOOP, 0, 4));
-    geode->addDrawable(geom);
+    _borderGeode->addDrawable(geom);
     
-    // Set up the border camera render properties
-    _border->addChild(geode);
-    _border->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
-    _border->setProjectionMatrix(osg::Matrix::ortho2D(0, 1.0, 0, 1.0));
-    _border->setViewMatrix(osg::Matrix::identity());
-    _border->setClearMask(GL_DEPTH_BUFFER_BIT);
-    _border->setAllowEventFocus(false);
+    // Set up the HUD camera render properties
+    _hudCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+    _hudCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1.0, 0, 1.0));
+    _hudCamera->setViewMatrix(osg::Matrix::identity());
+    _hudCamera->setClearMask(GL_DEPTH_BUFFER_BIT);
+    _hudCamera->setAllowEventFocus(false);
     
     // Make sure camera is rendered after all other cameras
-    _border->setRenderOrder(osg::Camera::POST_RENDER, 100);
+    _hudCamera->setRenderOrder(osg::Camera::POST_RENDER, 100);
 
     // Don't adjust camera projection matrix when enclosing view is resized
-    _border->setProjectionResizePolicy(osg::Camera::FIXED);
+    _hudCamera->setProjectionResizePolicy(osg::Camera::FIXED);
 
-    // Add the border camera as a slave to the main camera
-    _sceneView->addSlave(_border.get(), false);
+    // Add the HUD camera as a slave to the main camera
+    _sceneView->addSlave(_hudCamera.get(), false); // Don't use main camera's scene
 
     setSelected(false); // Set the border to look deselected by default
     
@@ -142,34 +142,33 @@ namespace OpenFrames
   
   void RenderRectangle::setGraphicsContext(osg::GraphicsContext *gc)
   {
-    _border->setGraphicsContext(gc);
+    _hudCamera->setGraphicsContext(gc);
     _sceneView->getCamera()->setGraphicsContext(gc);
   }
   
   void RenderRectangle::setViewport(int x, int y, int w, int h)
   {
     _sceneView->getCamera()->setViewport(x, y, w, h);
-    _border->setViewport(x, y, w, h);
+    _hudCamera->setViewport(x, y, w, h);
   }
   
   /** Set this RenderRectangle to have a "selected" or "deselected" look */
   void RenderRectangle::setSelected(bool select)
   {
-    osg::Geode *geode = dynamic_cast<osg::Geode*>(_border->getChild(0));
-    osg::Geometry *geom = dynamic_cast<osg::Geometry*>(geode->getDrawable(0));
-    
+    // Set color
+    osg::Geometry *geom = dynamic_cast<osg::Geometry*>(_borderGeode->getDrawable(0));
     osg::Vec4Array *colors = dynamic_cast<osg::Vec4Array*>(geom->getColorArray());
-    colors->pop_back(); // Remove the current color
     if(select)
     {
-      colors->push_back(osg::Vec4(1.0, 0, 0, 1.0)); // Add a red color
+      (*colors)[0].set(1.0, 0, 0, 1.0); // Make red
     }
     else
     {
-      colors->push_back(osg::Vec4(0, 1.0, 0, 1.0)); // Add a green color
+      (*colors)[0].set(0, 1.0, 0, 1.0); // Make green
     }
     
-    osg::LineWidth *lw = dynamic_cast<osg::LineWidth*>(geode->getStateSet()->getAttribute(osg::StateAttribute::LINEWIDTH));
+    // Set line width
+    osg::LineWidth *lw = dynamic_cast<osg::LineWidth*>(_borderGeode->getStateSet()->getAttribute(osg::StateAttribute::LINEWIDTH));
     if(select)
     {
       lw->setWidth(3.0); // Set a 3.0 line width
@@ -185,8 +184,7 @@ namespace OpenFrames
   /** Get the selected state of this RenderRectangle */
   bool RenderRectangle::getSelected()
   {
-    osg::Geode *geode = dynamic_cast<osg::Geode*>(_border->getChild(0));
-    osg::LineWidth *lw = dynamic_cast<osg::LineWidth*>(geode->getStateSet()->getAttribute(osg::StateAttribute::LINEWIDTH));
+    osg::LineWidth *lw = dynamic_cast<osg::LineWidth*>(_borderGeode->getStateSet()->getAttribute(osg::StateAttribute::LINEWIDTH));
     if(lw->getWidth() == 1.0) return false;
     else return true;
   }
@@ -194,8 +192,8 @@ namespace OpenFrames
   /** Set whether the border rectangle is shown or not */
   void RenderRectangle::setShowBorder(bool show)
   {
-    if(show) _border->setNodeMask(0xffffffff);
-    else _border->setNodeMask(0x0);
+    if(show) _borderGeode->setNodeMask(0xffffffff);
+    else _borderGeode->setNodeMask(0x0);
   }
   
   void RenderRectangle::setSkySphereTexture(const std::string& fname)
@@ -209,8 +207,7 @@ namespace OpenFrames
       _skySphere->setDrawMode(currDrawMode & ~SkySphere::TEXTURE);
   }
   
-  bool RenderRectangle::setSkySphereStarData(
-                                             const std::string& catalogName,
+  bool RenderRectangle::setSkySphereStarData(const std::string& catalogName,
                                              float minMag, float maxMag,
                                              unsigned int numStars,
                                              float starScale)
