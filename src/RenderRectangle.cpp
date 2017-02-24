@@ -20,6 +20,7 @@
 #include <osg/LineWidth>
 #include <osg/Depth>
 #include <osg/StateSet>
+#include <iostream>
 
 namespace OpenFrames
 {
@@ -28,6 +29,7 @@ namespace OpenFrames
   {
     // Create the Camera that will draw the border.
     _border = new osg::Camera;
+    _border->setName("Border");
     
     // Create the auto depth partitioning node
     _depthPartition = new DepthPartitionNode;
@@ -83,22 +85,30 @@ namespace OpenFrames
     geom->addPrimitiveSet(new osg::DrawArrays(GL_LINE_LOOP, 0, 4));
     geode->addDrawable(geom);
     
-    // Set up the border itself
+    // Set up the border camera render properties
     _border->addChild(geode);
-    _border->setProjectionMatrix(osg::Matrix::ortho2D(0, 1.0, 0, 1.0));
     _border->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+    _border->setProjectionMatrix(osg::Matrix::ortho2D(0, 1.0, 0, 1.0));
     _border->setViewMatrix(osg::Matrix::identity());
     _border->setClearMask(GL_DEPTH_BUFFER_BIT);
-    _border->setRenderOrder(osg::Camera::POST_RENDER);
+    _border->setAllowEventFocus(false);
     
-    setSelected(false); // Set the border to look deselected
+    // Make sure camera is rendered after all other cameras
+    _border->setRenderOrder(osg::Camera::POST_RENDER, 100);
+
+    // Don't adjust camera projection matrix when enclosing view is resized
+    _border->setProjectionResizePolicy(osg::Camera::FIXED);
+
+    // Add the border camera as a slave to the main camera
+    _sceneView->addSlave(_border.get(), false);
+
+    setSelected(false); // Set the border to look deselected by default
     
     // Tell the depth partitioner to not clear the color buffer before drawing, so that decorations don't get erased
     _depthPartition->setClearColorBuffer(false);
     
     // Add decorations to the scene
     _scene->addChild(_depthPartition.get());
-    _scene->addChild(_border.get());
     _scene->addChild(_skySphere->getGroup());
     
     // Set up the SceneView
@@ -130,9 +140,16 @@ namespace OpenFrames
     _frameManager = fm; // Set the new FrameManager
   }
   
+  void RenderRectangle::setGraphicsContext(osg::GraphicsContext *gc)
+  {
+    _border->setGraphicsContext(gc);
+    _sceneView->getCamera()->setGraphicsContext(gc);
+  }
+  
   void RenderRectangle::setViewport(int x, int y, int w, int h)
   {
     _sceneView->getCamera()->setViewport(x, y, w, h);
+    _border->setViewport(x, y, w, h);
   }
   
   /** Set this RenderRectangle to have a "selected" or "deselected" look */
@@ -177,8 +194,8 @@ namespace OpenFrames
   /** Set whether the border rectangle is shown or not */
   void RenderRectangle::setShowBorder(bool show)
   {
-    if(show && !_scene->containsNode(_border.get())) _scene->addChild(_border.get());
-    else if(!show) _scene->removeChild(_border.get());
+    if(show) _border->setNodeMask(0xffffffff);
+    else _border->setNodeMask(0x0);
   }
   
   void RenderRectangle::setSkySphereTexture(const std::string& fname)
@@ -338,7 +355,7 @@ namespace OpenFrames
   void RenderRectangle::selectCurrentView()
   {
     _sceneView->setCameraManipulator(getCurrentView()->getTrackball());
-    applyCurrentPerspective();
+    applyCurrentViewProjection();
   }
   
   View* RenderRectangle::getCurrentView()
@@ -347,7 +364,7 @@ namespace OpenFrames
     else return _views[_currView].get();
   }
   
-  void RenderRectangle::applyCurrentPerspective()
+  void RenderRectangle::applyCurrentViewProjection()
   {
     View *view = getCurrentView();
     
@@ -364,7 +381,12 @@ namespace OpenFrames
       
       view->setPerspective(fov, ratio); // Set new aspect ratio
     }
+    else
+    {
+      std::cerr<< "OpenFrames::RenderRectangle: Ortho projection not supported" << std::endl;
+    }
     
+    // Apply the projection matrix
     _sceneView->getCamera()->setProjectionMatrix(view->getProjectionMatrix());
   }
   

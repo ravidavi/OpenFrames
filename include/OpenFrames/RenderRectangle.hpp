@@ -51,9 +51,13 @@ namespace OpenFrames
     void setFrameManager(FrameManager *fm);
     inline FrameManager* getFrameManager() const { return _frameManager.get(); }
     
+    /** Get the OpenSceneGraph View associated with this RenderRectangle */
     osgViewer::View* getSceneView() const { return _sceneView.get(); }
     
-    /* Set the size of the viewport to render into */
+    /** Set the graphics context that is used for all OpenGL rendering */
+    void setGraphicsContext(osg::GraphicsContext *gc);
+    
+    /** Set the size of the viewport to render into */
     void setViewport(int x, int y, int w, int h);
     
     /** Set the border color to red if selected, and green if deselected. */
@@ -92,8 +96,8 @@ namespace OpenFrames
     /** Get the current View, or the default View if none have been set. */
     View* getCurrentView();
     
-    /** Apply the current View's perspective to the SceneView. */
-    void applyCurrentPerspective();
+    /** Apply the current View's projection matrix to the SceneView. */
+    void applyCurrentViewProjection();
     
   protected:
     virtual ~RenderRectangle();

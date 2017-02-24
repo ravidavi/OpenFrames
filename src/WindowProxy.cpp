@@ -239,7 +239,6 @@ namespace OpenFrames
           if(!success) std::cerr<< "WindowEventHandler::handle WARNING: OpenGL context was not properly updated during RESIZE event. Rendering artifacts may occur." << std::endl;
         }
         
-        _window->setupGrid(ea.getWindowWidth(), ea.getWindowHeight());
         break;
       }
         
@@ -471,8 +470,7 @@ namespace OpenFrames
     // Set the graphics context for each RenderRectangle
     for(unsigned int i = 0; i < _renderList.size(); ++i)
     {
-      osgViewer::View* currSV = _renderList[i]->getSceneView();
-      currSV->getCamera()->setGraphicsContext(_window.get());
+      _renderList[i]->setGraphicsContext(_window.get());
     }
     
     // Compute the positions/sizes of each RenderRectangle
@@ -567,8 +565,8 @@ namespace OpenFrames
         // Set viewport size for this grid position
         rect->setViewport((int)(rw*col), (int)(rh*(_nRow-1-row)), (int)rw, (int)rh);
         
-        // Reset the perspective matrix
-        rect->applyCurrentPerspective();
+        // Reset the projection matrix
+        rect->applyCurrentViewProjection();
       }
     }
   }
