@@ -34,12 +34,15 @@ namespace OpenFrames
     // Create the auto depth partitioning node
     _depthPartition = new DepthPartitionNode;
     
-    // The scene contains the user's scene along with decorations
+    // The user's scene
     _scene = new osg::Group;
     
-    // Create the sky sphere but don't draw it yet
+    // Create the Camera that will draw background elements
+    _backCamera = new osg::Camera;
+    _backCamera->setName("Background");
+    
+    // Create the sky sphere
     _skySphere = new SkySphere("Sky Sphere");
-    _skySphere->setDrawMode(SkySphere::NONE);
     
     // The SceneView is responsible for doing the update, cull, and
     // draw operations for the ReferenceFrame scene.
@@ -58,58 +61,74 @@ namespace OpenFrames
   
   void RenderRectangle::_init()
   {
-    // Create the geode that will contain the border
-    _borderGeode = new osg::Geode;
-    _borderGeode->setCullingActive(false);
-    osg::StateSet* ss = _borderGeode->getOrCreateStateSet();
-    ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    ss->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
-    ss->setAttribute(new osg::LineWidth);
-    _hudCamera->addChild(_borderGeode); // Add border to HUD
-    
-    // Specify points that make up the border
-    osg::Vec3Array* vertices = new osg::Vec3Array;
-    vertices->push_back(osg::Vec3(0, 0, -1));
-    vertices->push_back(osg::Vec3(0.999, 0, -1));
-    vertices->push_back(osg::Vec3(0.999, 0.999, -1));
-    vertices->push_back(osg::Vec3(0, 0.999, -1));
-    
-    // Create a dummy color for the border
-    osg::Vec4Array *colors = new osg::Vec4Array;
-    colors->push_back(osg::Vec4(0, 0, 0, 1.0));
-    
-    // Set up the geometry object for the border
-    osg::Geometry *geom = new osg::Geometry;
-    geom->setVertexArray(vertices);
-    geom->setColorArray(colors);
-    geom->setColorBinding(osg::Geometry::BIND_OVERALL);
-    geom->addPrimitiveSet(new osg::DrawArrays(GL_LINE_LOOP, 0, 4));
-    _borderGeode->addDrawable(geom);
-    
-    // Set up the HUD camera render properties
-    _hudCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
-    _hudCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1.0, 0, 1.0));
-    _hudCamera->setViewMatrix(osg::Matrix::identity());
-    _hudCamera->setClearMask(GL_DEPTH_BUFFER_BIT);
-    _hudCamera->setAllowEventFocus(false);
-    
-    // Make sure camera is rendered after all other cameras
-    _hudCamera->setRenderOrder(osg::Camera::POST_RENDER, 100);
+    // Set up cameras
+    {
+      // Set up the HUD camera render properties
+      _hudCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+      _hudCamera->setClearMask(GL_DEPTH_BUFFER_BIT);
+      _hudCamera->setAllowEventFocus(false);
+      _hudCamera->setRenderOrder(osg::Camera::POST_RENDER, 100); // Render after other cameras
+      _hudCamera->setViewMatrix(osg::Matrix::identity());
+      _hudCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1.0, 0, 1.0));
+      _hudCamera->setProjectionResizePolicy(osg::Camera::FIXED); // Resizing should not affect projection matrix
+      
+      // Set up the background camera render properties
+      _backCamera->setReferenceFrame(osg::Transform::RELATIVE_RF);
+      _backCamera->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+      _backCamera->setAllowEventFocus(false);
+      _backCamera->setRenderOrder(osg::Camera::PRE_RENDER); // Render before other cameras
 
-    // Don't adjust camera projection matrix when enclosing view is resized
-    _hudCamera->setProjectionResizePolicy(osg::Camera::FIXED);
-
-    // Add the HUD camera as a slave to the main camera
-    _sceneView->addSlave(_hudCamera.get(), false); // Don't use main camera's scene
-
-    setSelected(false); // Set the border to look deselected by default
+      // Add the HUD and background cameras as a slaves to the main camera
+      // Second argument means the camera is not sharing the main camera's scene
+      _sceneView->addSlave(_hudCamera, false);
+      _sceneView->addSlave(_backCamera, false);
+      
+      // Main camera shouldn't clear its color buffer
+      _sceneView->getCamera()->setClearMask(GL_DEPTH_BUFFER_BIT);
+    }
     
+    // Set up border rectangle
+    {
+      // Create the geode that will contain the border
+      _borderGeode = new osg::Geode;
+      _borderGeode->setCullingActive(false);
+      osg::StateSet* ss = _borderGeode->getOrCreateStateSet();
+      ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+      ss->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
+      ss->setAttribute(new osg::LineWidth);
+      
+      // Specify points that make up the border
+      osg::Vec3Array* vertices = new osg::Vec3Array;
+      vertices->push_back(osg::Vec3(0, 0, -1));
+      vertices->push_back(osg::Vec3(0.999, 0, -1));
+      vertices->push_back(osg::Vec3(0.999, 0.999, -1));
+      vertices->push_back(osg::Vec3(0, 0.999, -1));
+      
+      // Create a dummy color for the border
+      osg::Vec4Array *colors = new osg::Vec4Array;
+      colors->push_back(osg::Vec4(0, 0, 0, 1.0));
+      
+      // Set up the geometry object for the border
+      osg::Geometry *geom = new osg::Geometry;
+      geom->setVertexArray(vertices);
+      geom->setColorArray(colors);
+      geom->setColorBinding(osg::Geometry::BIND_OVERALL);
+      geom->addPrimitiveSet(new osg::DrawArrays(GL_LINE_LOOP, 0, 4));
+      _borderGeode->addDrawable(geom);
+      
+      _hudCamera->addChild(_borderGeode); // Add border to HUD
+      setSelected(false); // Set the border to look deselected by default
+    }
+    
+    // Set up the Sky Sphere
+    _skySphere->setDrawMode(SkySphere::NONE); // Disabled by default
+    _backCamera->addChild(_skySphere->getGroup());
+
     // Tell the depth partitioner to not clear the color buffer before drawing, so that decorations don't get erased
     _depthPartition->setClearColorBuffer(false);
     
     // Add decorations to the scene
     _scene->addChild(_depthPartition.get());
-    _scene->addChild(_skySphere->getGroup());
     
     // Set up the SceneView
     _sceneView->setSceneData(_scene.get());
@@ -142,14 +161,17 @@ namespace OpenFrames
   
   void RenderRectangle::setGraphicsContext(osg::GraphicsContext *gc)
   {
-    _hudCamera->setGraphicsContext(gc);
     _sceneView->getCamera()->setGraphicsContext(gc);
+    _hudCamera->setGraphicsContext(gc);
+    _backCamera->setGraphicsContext(gc);
+
   }
   
   void RenderRectangle::setViewport(int x, int y, int w, int h)
   {
     _sceneView->getCamera()->setViewport(x, y, w, h);
     _hudCamera->setViewport(x, y, w, h);
+    _backCamera->setViewport(x, y, w, h);
   }
   
   /** Set this RenderRectangle to have a "selected" or "deselected" look */

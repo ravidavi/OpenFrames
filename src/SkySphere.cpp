@@ -96,9 +96,6 @@ void SkySphere::_init()
   ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
   ss->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
 
-  // Draw SkySphere before other objects so it's always in background
-  ss->setRenderBinDetails(-1, "RenderBin");
-
   // Create new StateSet to specify star-specific OpenGL properties
   ss = new osg::StateSet();
 
