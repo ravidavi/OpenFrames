@@ -167,13 +167,13 @@ unsigned int SkySphere::getDrawMode()
 }
 
 
-bool SkySphere::setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int numStars, float starScale) 
+bool SkySphere::setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int maxNumStars, float starScale)
 {
-  if((minMag >= maxMag) || (numStars == 0) || (starScale <= 0.0)) return false;
+  if((minMag >= maxMag) || (maxNumStars == 0) || (starScale <= 0.0)) return false;
   _starCatalogFile = catalogName;
   _minMag = minMag;
   _maxMag = maxMag;
-  _maxNumStars = numStars;
+  _maxNumStars = maxNumStars;
   _starScale = starScale;
   return processStars();
 }

@@ -64,7 +64,7 @@ class OF_EXPORT SkySphere : public OpenFrames::Sphere {
     /// catalog, so sorting the catalog allows drawing brightest/dimmest
     /// stars first.
     /// Limits: minMag < maxMag AND numStars >= 1
-    bool setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int numStars, float starScale = 4.0);
+    bool setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int maxNumStars, float starScale = 4.0);
 
     ///
     /// Convert a Star to a XYZ position, RGB color, and size (in color[3])

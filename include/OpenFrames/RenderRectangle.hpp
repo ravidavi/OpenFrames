@@ -45,7 +45,7 @@ namespace OpenFrames
   public:
     typedef std::vector<osg::ref_ptr<View> > ViewList;
     
-    RenderRectangle();
+    RenderRectangle(bool useVR = false);
     
     /** Set the FrameManager containing the scene to be viewed */
     void setFrameManager(FrameManager *fm);
@@ -66,14 +66,15 @@ namespace OpenFrames
     
     /** Set whether the "selected" border rectangle is shown or not */
     void setShowBorder(bool show);
+    bool getShowBorder() { return (_borderGeode->getNodeMask() != 0x0); }
     
     /** Set the sky sphere texture */
     void setSkySphereTexture(const std::string& fname);
     
     /** Set the star field data */
-    bool setSkySphereStarData(const std::string& catalogName, float minMag, float maxMag, unsigned int numStars = 100000, float starScale = 4.0);
+    bool setSkySphereStarData(const std::string& catalogName, float minMag, float maxMag, unsigned int maxNumStars = 100000, float starScale = 4.0);
     
-    /** Set the background color if no texture is specified */
+    /** Set the background color. Only valid if no sky texture or stars are specified */
     void setBackgroundColor(float r, float g, float b);
     
     /** Enable/disable the automatic depth partitioner */
@@ -99,6 +100,9 @@ namespace OpenFrames
     /** Apply the current View's projection matrix to the SceneView. */
     void applyCurrentViewProjection();
     
+    /** Enable VR mode. Currently it cannot be disabled after being enabled. */
+    void enableVR();
+    
   protected:
     virtual ~RenderRectangle();
     void _init();
@@ -118,8 +122,18 @@ namespace OpenFrames
     osg::ref_ptr<DepthPartitionNode> _depthPartition;
     
     osg::ref_ptr<osg::Group> _scene; // Everything to be drawn
+    
+    // Cameras used to render various parts of the scene
     osg::ref_ptr<osg::Camera> _hudCamera; // Heads-up-display camera
     osg::ref_ptr<osg::Camera> _backCamera; // Background camera
+    osg::ref_ptr<osg::Camera> _mirrorCamera; // Camera to mirror scene onto window
+    
+    // Render textures used for storing each eye's image
+    osg::ref_ptr<osg::Texture2D> _rightEyeColorTex, _rightEyeDepthTex;
+    osg::ref_ptr<osg::Texture2D> _leftEyeColorTex, _leftEyeDepthTex;
+    
+    bool _useVR; // Enable VR rendering using OpenVR
+    
     osg::ref_ptr<osg::Geode> _borderGeode; // The border rectangle
     osg::ref_ptr<SkySphere> _skySphere; // The background sky
     

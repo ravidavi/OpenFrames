@@ -216,6 +216,11 @@ namespace OpenFrames
           _window->getGridPosition(_currentRow, _currentCol)->previousView();
         }
         
+        else if(key == 's')
+        {
+          std::cout<< "Framerate: " << _window->getDesiredFramerate() << "fps desired, " << _window->getFramerate() << "fps actual" << std::endl;
+        }
+        
         // Spacebar resets current view
         else if(key == osgGA::GUIEventAdapter::KEY_Space)
           _window->getGridPosition(_currentRow, _currentCol)->getCurrentView()->resetTrackball();
@@ -377,6 +382,12 @@ namespace OpenFrames
         std::cerr<< "OpenFrames::WindowProxy ERROR: OpenGL glVertexAttrib3fv not found." << std::endl;
       }
       
+      // Check for FrameBuffer Objects (needed for VR support)
+      if(!glext->isFrameBufferObjectSupported)
+      {
+        std::cerr<< "OpenFrames::WindowProxy WARNING: FBOs not supported, VR support disabled." << std::endl;
+      }
+      
       // Other OpenGL extension checks can go here
     }
     
@@ -421,6 +432,13 @@ namespace OpenFrames
     shutdown();
   }
   
+  class DisableSwap : public osg::GraphicsContext::SwapCallback
+  {
+  public:
+    DisableSwap() {}
+    virtual void swapBuffersImplementation(osg::GraphicsContext *gc) {}
+  };
+  
   bool WindowProxy::setupWindow()
   {
     if(_isEmbedded) // For embedded windows, just set the window to our embedded GraphicsContext
@@ -460,6 +478,9 @@ namespace OpenFrames
       
       // Allow shaders to access osg_* uniforms
       _window->getState()->setUseModelViewAndProjectionUniforms(true);
+      
+      // Disable swap buffers
+      //_window->setSwapCallback(new DisableSwap());
     }
     else
     {

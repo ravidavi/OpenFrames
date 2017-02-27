@@ -20,6 +20,7 @@
 #include <OpenFrames/Export.h>
 #include <OpenFrames/DistanceAccumulator.hpp>
 #include <osg/Camera>
+#include <osg/Texture2D>
 
 namespace OpenFrames
 {
@@ -76,6 +77,15 @@ class OF_EXPORT DepthPartitionNode : public osg::Group
 	virtual bool removeChild(osg::Node *child);
 	virtual bool removeChild(unsigned int pos, unsigned int numRemove = 1);
 	virtual bool setChild(unsigned int i, osg::Node *node);
+  
+  void setVRTextures(osg::Texture2D *rightColor, osg::Texture2D *rightDepth, osg::Texture2D *leftColor, osg::Texture2D *leftDepth)
+  {
+    _rightEyeColorTex = rightColor;
+    _rightEyeDepthTex = rightDepth;
+    _leftEyeColorTex = leftColor;
+    _leftEyeDepthTex = leftDepth;
+    _useVR = true;
+  }
 
   protected:
 	typedef std::vector< osg::ref_ptr<osg::Camera> > CameraList;
@@ -104,6 +114,11 @@ class OF_EXPORT DepthPartitionNode : public osg::Group
 	// will be reused on every frame in order to save time and memory.
 	CameraList _cameraList;
 	unsigned int _numCameras; // Number of Cameras actually being used
+  
+  // Render textures used for storing each eye's image
+  osg::ref_ptr<osg::Texture2D> _rightEyeColorTex, _rightEyeDepthTex;
+  osg::ref_ptr<osg::Texture2D> _leftEyeColorTex, _leftEyeDepthTex;
+  bool _useVR;
 };
 
 }

@@ -25,8 +25,11 @@
 namespace OpenFrames
 {
   
-  RenderRectangle::RenderRectangle()
+  RenderRectangle::RenderRectangle(bool useVR)
+  : _useVR(useVR)
   {
+    //_useVR = true;
+    
     // Create the Camera that will draw HUD elements
     _hudCamera = new osg::Camera;
     _hudCamera->setName("HUD");
@@ -40,6 +43,10 @@ namespace OpenFrames
     // Create the Camera that will draw background elements
     _backCamera = new osg::Camera;
     _backCamera->setName("Background");
+    
+    // Create the Camera that will mirror the VR scene to the window
+    _mirrorCamera = new osg::Camera;
+    _mirrorCamera->setName("Mirror");
     
     // Create the sky sphere
     _skySphere = new SkySphere("Sky Sphere");
@@ -61,30 +68,91 @@ namespace OpenFrames
   
   void RenderRectangle::_init()
   {
+    // Set up textures
+    {
+      // Note that texture size is automatically set by OSG during first render
+      _rightEyeColorTex = new osg::Texture2D();
+      _rightEyeColorTex->setSourceFormat(GL_RGBA);
+      _rightEyeColorTex->setInternalFormat(GL_RGBA8);
+      _rightEyeColorTex->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::NEAREST);
+      _rightEyeColorTex->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::NEAREST);
+      _rightEyeColorTex->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+      _rightEyeColorTex->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+      
+      _rightEyeDepthTex = new osg::Texture2D();
+      _rightEyeDepthTex->setSourceFormat(GL_DEPTH_COMPONENT);
+      _rightEyeDepthTex->setSourceType(GL_UNSIGNED_INT);
+      _rightEyeDepthTex->setInternalFormat(GL_DEPTH_COMPONENT24);
+      _rightEyeDepthTex->setBorderWidth(0);
+      _rightEyeDepthTex->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR);
+      _rightEyeDepthTex->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR);
+      _rightEyeDepthTex->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+      _rightEyeDepthTex->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+      
+      _leftEyeColorTex = new osg::Texture2D();
+      _leftEyeColorTex->setSourceFormat(GL_RGBA);
+      _leftEyeColorTex->setInternalFormat(GL_RGBA8);
+      _leftEyeColorTex->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::NEAREST);
+      _leftEyeColorTex->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::NEAREST);
+      _leftEyeColorTex->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+      _leftEyeColorTex->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+      
+      _leftEyeDepthTex = new osg::Texture2D();
+      _leftEyeDepthTex->setSourceFormat(GL_DEPTH_COMPONENT);
+      _leftEyeDepthTex->setSourceType(GL_UNSIGNED_INT);
+      _leftEyeDepthTex->setInternalFormat(GL_DEPTH_COMPONENT24);
+      _leftEyeDepthTex->setBorderWidth(0);
+      _leftEyeDepthTex->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR);
+      _leftEyeDepthTex->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR);
+      _leftEyeDepthTex->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+      _leftEyeDepthTex->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+    }
+    
     // Set up cameras
     {
-      // Set up the HUD camera render properties
+      // Set up HUD camera render properties
+      // Note that a HUD should never be drawn on a VR display to avoid eye strain
       _hudCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
       _hudCamera->setClearMask(GL_DEPTH_BUFFER_BIT);
       _hudCamera->setAllowEventFocus(false);
-      _hudCamera->setRenderOrder(osg::Camera::POST_RENDER, 100); // Render after other cameras
+      _hudCamera->setRenderOrder(osg::Camera::POST_RENDER, 101); // Render after other cameras
+      _hudCamera->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
       _hudCamera->setViewMatrix(osg::Matrix::identity());
-      _hudCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1.0, 0, 1.0));
+      _hudCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));
       _hudCamera->setProjectionResizePolicy(osg::Camera::FIXED); // Resizing should not affect projection matrix
       
-      // Set up the background camera render properties
+      // Set up background camera render properties
       _backCamera->setReferenceFrame(osg::Transform::RELATIVE_RF);
       _backCamera->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
       _backCamera->setAllowEventFocus(false);
       _backCamera->setRenderOrder(osg::Camera::PRE_RENDER); // Render before other cameras
+      _backCamera->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+      if(_useVR)
+      {
+        _backCamera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
+        _backCamera->attach(osg::Camera::COLOR_BUFFER0, _rightEyeColorTex);
+        _backCamera->attach(osg::Camera::COLOR_BUFFER1, _leftEyeColorTex);
+        _backCamera->attach(osg::Camera::DEPTH_BUFFER, _rightEyeDepthTex);
+      }
+
+      // Set up mirror camera render properties
+      _mirrorCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+      _mirrorCamera->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+      _mirrorCamera->setAllowEventFocus(false);
+      _mirrorCamera->setRenderOrder(osg::Camera::POST_RENDER, 100); // Render just before HUD
+      _mirrorCamera->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+      _mirrorCamera->setViewMatrix(osg::Matrix::identity());
+      _mirrorCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));
 
       // Add the HUD and background cameras as a slaves to the main camera
       // Second argument means the camera is not sharing the main camera's scene
       _sceneView->addSlave(_hudCamera, false);
       _sceneView->addSlave(_backCamera, false);
+      if(_useVR) _sceneView->addSlave(_mirrorCamera, false);
       
       // Main camera shouldn't clear its color buffer
       _sceneView->getCamera()->setClearMask(GL_DEPTH_BUFFER_BIT);
+      if(_useVR) _sceneView->getCamera()->setProjectionResizePolicy(osg::Camera::FIXED);
     }
     
     // Set up border rectangle
@@ -120,15 +188,28 @@ namespace OpenFrames
       setSelected(false); // Set the border to look deselected by default
     }
     
-    // Set up the Sky Sphere
-    _skySphere->setDrawMode(SkySphere::NONE); // Disabled by default
-    _backCamera->addChild(_skySphere->getGroup());
-
-    // Tell the depth partitioner to not clear the color buffer before drawing, so that decorations don't get erased
-    _depthPartition->setClearColorBuffer(false);
+    // Set up mirror camera to show the right eye
+    {
+      osg::Geometry* geom = osg::createTexturedQuadGeometry(osg::Vec3(), osg::Vec3(1, 0, 0), osg::Vec3(0, 1, 0));
+      osg::Geode *quad = new osg::Geode;
+      quad->addDrawable(geom);
+      _mirrorCamera->addChild(quad);
+      _mirrorCamera->getOrCreateStateSet()->setTextureAttributeAndModes(0, _rightEyeColorTex, osg::StateAttribute::ON);
+    }
     
-    // Add decorations to the scene
-    _scene->addChild(_depthPartition.get());
+    // Set up the Sky Sphere
+    {
+      _skySphere->setDrawMode(SkySphere::NONE); // Disabled by default
+      _backCamera->addChild(_skySphere->getGroup());
+    }
+    
+    // Set up the depth partitioner
+    {
+      // Don't clear color buffer so that background is preserved
+      _depthPartition->setClearColorBuffer(false);
+      if(_useVR) _depthPartition->setVRTextures(_rightEyeColorTex, _rightEyeDepthTex, _leftEyeColorTex, _leftEyeDepthTex);
+      _scene->addChild(_depthPartition.get());
+    }
     
     // Set up the SceneView
     _sceneView->setSceneData(_scene.get());
@@ -164,14 +245,22 @@ namespace OpenFrames
     _sceneView->getCamera()->setGraphicsContext(gc);
     _hudCamera->setGraphicsContext(gc);
     _backCamera->setGraphicsContext(gc);
-
+    _mirrorCamera->setGraphicsContext(gc);
   }
   
   void RenderRectangle::setViewport(int x, int y, int w, int h)
   {
     _sceneView->getCamera()->setViewport(x, y, w, h);
+    _mirrorCamera->setViewport(x, y, w, h);
     _hudCamera->setViewport(x, y, w, h);
-    _backCamera->setViewport(x, y, w, h);
+    if(_useVR)
+    {
+      _backCamera->setViewport(0, 0, w, h);
+    }
+    else
+    {
+      _backCamera->setViewport(x, y, w, h);
+    }
   }
   
   /** Set this RenderRectangle to have a "selected" or "deselected" look */
@@ -231,11 +320,11 @@ namespace OpenFrames
   
   bool RenderRectangle::setSkySphereStarData(const std::string& catalogName,
                                              float minMag, float maxMag,
-                                             unsigned int numStars,
+                                             unsigned int maxNumStars,
                                              float starScale)
   {
     unsigned int currDrawMode = _skySphere->getDrawMode();
-    bool success = _skySphere->setStarData(catalogName, minMag, maxMag, numStars, starScale);
+    bool success = _skySphere->setStarData(catalogName, minMag, maxMag, maxNumStars, starScale);
     if(success)
       // Add STARFIELD to existing drawmode
       _skySphere->setDrawMode(currDrawMode | SkySphere::STARFIELD);

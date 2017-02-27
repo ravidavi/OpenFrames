@@ -16,6 +16,7 @@
 
 #include <OpenFrames/DepthPartitionNode.hpp>
 #include <osgUtil/CullVisitor>
+#include <iostream>
 
 namespace OpenFrames
 {
@@ -134,7 +135,7 @@ namespace OpenFrames
         // Set the projection/modelview matrices and viewport of the camera
         currCam->setProjectionMatrix(proj);
         currCam->setViewMatrix(*modelview);
-        currCam->setViewport(viewport);
+        if(!_useVR) currCam->setViewport(viewport);
         
         // Redirect the CullVisitor to the current camera
         currCam->accept(nv);
@@ -223,6 +224,15 @@ namespace OpenFrames
       for(unsigned int i = 0; i < numChildren; ++i)
       {
         camera->addChild(_children[i].get());
+      }
+      
+      if(_useVR)
+      {
+        camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
+        camera->attach(osg::Camera::COLOR_BUFFER0, _rightEyeColorTex);
+        camera->attach(osg::Camera::DEPTH_BUFFER, _rightEyeDepthTex);
+        camera->setViewport(0, 0, _rightEyeColorTex->getTextureWidth(), _rightEyeColorTex->getTextureHeight());
+        std::cout<< "Creating DPN camera, width = " << _rightEyeColorTex->getTextureWidth() << ", height = " << _rightEyeColorTex->getTextureHeight() << std::endl;
       }
       
       // Store new camera in master camera list
