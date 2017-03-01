@@ -10,6 +10,7 @@ SET(OF_HEADER_PATH ${OpenFrames_SOURCE_DIR}/include)
 ADD_LIBRARY(${LIB_NAME} SHARED
     CoordinateAxes.cpp
     CurveArtist.cpp
+    DepthPartitionCallback.cpp
     DepthPartitionNode.cpp
     DescendantTracker.cpp
     DistanceAccumulator.cpp
