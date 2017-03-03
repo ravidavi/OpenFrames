@@ -22,8 +22,26 @@
 #include <osg/StateSet>
 #include <iostream>
 
+// New = DepthPartitioner, with slave cameras
+// Old = DepthPartitionNode, with nested cameras
+const bool useNewDP = true;
+
 namespace OpenFrames
 {
+  class VisitorNameNode : public osg::Node
+  {
+  public:
+    VisitorNameNode() {}
+    virtual void traverse(osg::NodeVisitor &nv)
+    {
+      osgUtil::CullVisitor *cv = nv.asCullVisitor();
+      if(cv)
+      {
+        osg::Camera *cam = cv->getCurrentCamera();
+        std::cout<< "Cull from Camera " << cam->getName() << std::endl;
+      }
+    }
+  };
   
   RenderRectangle::RenderRectangle(bool useVR)
   : _useVR(useVR)
@@ -34,11 +52,9 @@ namespace OpenFrames
     _hudCamera = new osg::Camera;
     _hudCamera->setName("HUD");
     
-    // Create the auto depth partitioning node
-    _depthPartition = new DepthPartitionNode;
-    
     // The user's scene
     _scene = new osg::Group;
+    //_scene->addChild(new VisitorNameNode);
     
     // Create the Camera that will draw background elements
     _backCamera = new osg::Camera;
@@ -54,6 +70,12 @@ namespace OpenFrames
     // The SceneView is responsible for doing the update, cull, and
     // draw operations for the ReferenceFrame scene.
     _sceneView = new osgViewer::View();
+    _sceneView->getCamera()->setName("Master");
+    
+    // Create the auto depth partitioner
+    _depthPartitionNode = new DepthPartitionNode;
+    _depthPartitioner = new DepthPartitioner();
+    if(useNewDP) _depthPartitioner->setViewToPartition(_sceneView);
     
     // Create a default view and make it active
     _defaultView = new View;
@@ -125,7 +147,7 @@ namespace OpenFrames
       _backCamera->setReferenceFrame(osg::Transform::RELATIVE_RF);
       _backCamera->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
       _backCamera->setAllowEventFocus(false);
-      _backCamera->setRenderOrder(osg::Camera::PRE_RENDER); // Render before other cameras
+      _backCamera->setRenderOrder(osg::Camera::PRE_RENDER, -1); // Render before other cameras
       _backCamera->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
       if(_useVR)
       {
@@ -206,13 +228,14 @@ namespace OpenFrames
     // Set up the depth partitioner
     {
       // Don't clear color buffer so that background is preserved
-      _depthPartition->setClearColorBuffer(false);
-      if(_useVR) _depthPartition->setVRTextures(_rightEyeColorTex, _rightEyeDepthTex, _leftEyeColorTex, _leftEyeDepthTex);
-      _scene->addChild(_depthPartition.get());
+      _depthPartitionNode->setClearColorBuffer(false);
+      _depthPartitioner->getCallback()->setClearColorBuffer(false);
+      if(_useVR) _depthPartitionNode->setVRTextures(_rightEyeColorTex, _rightEyeDepthTex, _leftEyeColorTex, _leftEyeDepthTex);
+      if(!useNewDP) _scene->addChild(_depthPartitionNode.get());
     }
     
     // Set up the SceneView
-    _sceneView->setSceneData(_scene.get());
+    _sceneView->setSceneData(_scene);
     _sceneView->getCamera()->setCullingMode(osg::CullSettings::DEFAULT_CULLING & ~osg::CullSettings::SMALL_FEATURE_CULLING);
   }
   
@@ -222,7 +245,9 @@ namespace OpenFrames
     if(_frameManager.get() == fm) return;
     
     if(_frameManager.valid()) // Remove the old scene
-      _depthPartition->removeChild(_frameManager->getData());
+    {
+      _depthPartitionNode->removeChild(_frameManager->getData());
+    }
     
     // Set a default view
     if(fm == NULL)
@@ -232,7 +257,8 @@ namespace OpenFrames
     }
     else
     {
-      _depthPartition->addChild(fm->getData()); // Set the new scene
+      if(useNewDP) _scene->addChild(fm->getData());
+      _depthPartitionNode->addChild(fm->getData()); // Set the new scene
       _defaultView->setViewFrame(fm->getFrame(), fm->getFrame());
       _defaultView->resetTrackball();
     }
@@ -243,6 +269,7 @@ namespace OpenFrames
   void RenderRectangle::setGraphicsContext(osg::GraphicsContext *gc)
   {
     _sceneView->getCamera()->setGraphicsContext(gc);
+    _depthPartitioner->setGraphicsContext(gc);
     _hudCamera->setGraphicsContext(gc);
     _backCamera->setGraphicsContext(gc);
     _mirrorCamera->setGraphicsContext(gc);
@@ -251,6 +278,7 @@ namespace OpenFrames
   void RenderRectangle::setViewport(int x, int y, int w, int h)
   {
     _sceneView->getCamera()->setViewport(x, y, w, h);
+    _depthPartitioner->setViewport(x, y, w, h);
     _mirrorCamera->setViewport(x, y, w, h);
     _hudCamera->setViewport(x, y, w, h);
     if(_useVR)
@@ -479,14 +507,20 @@ namespace OpenFrames
     /** Adjust the perspective projection with the current viewport size */
     if(view->getProjectionType() == View::PERSPECTIVE)
     {
-      const osg::Viewport *vp = _sceneView->getCamera()->getViewport();
-      double fov, ratio;
+      // Get main camera viewport or depth partitioner's viewport
+      osg::Viewport *vp = _sceneView->getCamera()->getViewport();
+      if(!vp) vp = _depthPartitioner->getViewport();
+      if(!vp)
+      {
+        std::cerr<< "OpenFrames::RenderRectangle ERROR: No suitable viewport" << std::endl;
+        return;
+      }
       
+      double fov, ratio;
       view->getPerspective(fov, ratio); // Get current field of view (fov)
       
-      // Compute new aspect ratio if the viewport is defined
-      if(vp != NULL) ratio = (double)vp->width() / (double)vp->height();
-      
+      // Compute new aspect ratio
+      ratio = (double)vp->width() / (double)vp->height();
       view->setPerspective(fov, ratio); // Set new aspect ratio
     }
     else

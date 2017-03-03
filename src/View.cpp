@@ -127,14 +127,30 @@ class FollowingTrackball : public osgGA::TrackballManipulator
 	{
 	  osgViewer::View *view = dynamic_cast<osgViewer::View*>(&us);
 	  osg::Viewport *vp = view->getCamera()->getViewport();
+    if(!vp)
+    {
+      // Main camera viewport not defined, so find a suitable slave viewport
+      for(unsigned int i = 0; i < view->getNumSlaves(); ++i)
+      {
+        if(view->getSlave(i)._camera->getAllowEventFocus())
+          vp = view->getSlave(i)._camera->getViewport();
+        if(vp) break;
+      }
+    }
 
-	  // For the trackballs to work correctly, we want to specify that each
+	  // For the trackballs to work correctly, we need to specify that each
 	  // osgViewer::View has its own range of (x,y) coordinates
-	  osg::ref_ptr<osgGA::GUIEventAdapter> event = new osgGA::GUIEventAdapter(ea);
-	  event->setInputRange(vp->x(), vp->y(), vp->x() + vp->width(), vp->y() + vp->height());
-
-	  // Continue handling the modified event
-	 return TrackballManipulator::handle(*(event.get()), us);
+    if(vp)
+    {
+      osg::ref_ptr<osgGA::GUIEventAdapter> event = new osgGA::GUIEventAdapter(ea);
+      event->setInputRange(vp->x(), vp->y(), vp->x() + vp->width(), vp->y() + vp->height());
+      return TrackballManipulator::handle(*(event.get()), us);
+    }
+    else
+    {
+      std::cerr<< "OpenFrames::FollowingTrackball ERROR: No suitable viewport." << std::endl;
+      return TrackballManipulator::handle(ea, us);
+    }
 	}
 
   protected:

@@ -40,15 +40,17 @@ namespace OpenFrames
     
     /** Specify which View to partition */
     void setViewToPartition(osgViewer::View *view);
+    osgViewer::View* getViewToPartition() { return _view; }
     
     /** Set the GraphicsContext to use for depth partitioning Cameras */
     void setGraphicsContext(osg::GraphicsContext *gc);
     
     /** Set the Viewport to use for depth partitioning Cameras */
     void setViewport(int x, int y, int w, int h);
+    osg::Viewport* getViewport() { return _dpMainSlaveCamera->getViewport(); }
     
-    /** Set whether the color buffer should be cleared by the first Camera */
-    void setClearColorBuffer(bool clear);
+    /** Get the update callback that does the actual partitioning */
+    DepthPartitionCallback* getCallback() { return _dpCallback; }
     
   protected:
     ~DepthPartitioner();
@@ -56,6 +58,7 @@ namespace OpenFrames
     osg::ref_ptr<osg::Camera> _dpMainSlaveCamera;
     osg::ref_ptr<DepthPartitionCallback> _dpCallback;
     osg::ref_ptr<osgViewer::View> _view;
+    osg::Node::NodeMask _prevNodeMask;
   };
   
   /**********************************************************
@@ -64,27 +67,19 @@ namespace OpenFrames
    * Analyzes a scene, then partitions it into several segments that can
    * be rendered separately. Each segment is small enough in the
    * z-direction to avoid depth buffer problems for very large scenes.
+   * Note this must be a slave update callback, since normal update callbacks
+   * are called before the camera manipulator (e.g. trackball) is applied.
    **********************************************************/
   class OF_EXPORT DepthPartitionCallback : public osg::View::Slave::UpdateSlaveCallback
   {
+    friend class DepthPartitioner;
+    
   public:
     DepthPartitionCallback();
-    
-    /** Set the active state. If not active, no depth partitioning will be performed. */
-    void setActive(bool active);
-    inline bool getActive() const { return _active; }
-    
-    /** Remove depth partitioner from current View */
-    void reset();
     
     /** Specify whether the color buffer should be cleared before the first Camera draws its scene. */
     void setClearColorBuffer(bool clear);
     inline bool getClearColorBuffer() const { return _clearColorBuffer; }
-    
-    /** Specify the render order for each Camera */
-    void setRenderOrder(osg::Camera::RenderOrder order);
-    inline osg::Camera::RenderOrder getRenderOrder() const
-    { return _renderOrder; }
     
     /** Set/get the maximum scene traversal depth, defaults to UINT_MAX */
     void setMaxTraversalDepth(unsigned int depth)
@@ -99,6 +94,9 @@ namespace OpenFrames
   protected:
     ~DepthPartitionCallback();
     
+    /** Remove depth partitioner from current View */
+    void reset();
+    
     // Updates a projection matrix with specified near/far plane
     void updateProjectionMatrix(osg::Matrix& proj,
                                 double near, double far);
@@ -107,12 +105,9 @@ namespace OpenFrames
     osg::Camera* createOrReuseCamera(unsigned int camNum,
                                      osg::Camera* masterCamera);
     
-    bool _active; // Whether partitioning is active on the scene
-    
     // The NodeVisitor that computes depth partitions for the scene
     osg::ref_ptr<DistanceAccumulator> _distAccumulator;
     
-    osg::Camera::RenderOrder _renderOrder;
     bool _clearColorBuffer;
     
     // Cameras that should be used to draw the scene. These cameras

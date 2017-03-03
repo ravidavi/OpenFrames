@@ -27,14 +27,15 @@ namespace OpenFrames
 {
   DepthPartitioner::DepthPartitioner(osgViewer::View *view)
   {
-    // Create slave Camera that will hold the depth partitioner
-    if(view && view->getCamera())
-      _dpMainSlaveCamera = new osg::Camera(*(view->getCamera()));
-    else
-      _dpMainSlaveCamera = new osg::Camera();
+    // Create slave Camera to manage the depth partitioner
+    // Note this camera won't have any scene of its own, it just analyzes the scene
+    // and creates other slave cameras as needed
+    _dpMainSlaveCamera = new osg::Camera();
     _dpMainSlaveCamera->setNodeMask(0x0);
+    _dpMainSlaveCamera->setAllowEventFocus(false);
+    _dpMainSlaveCamera->setRenderOrder(osg::Camera::PRE_RENDER);
     
-    // Create callback that will perform depth partitioning
+    // Create slave callback that will perform depth partitioning
     _dpCallback = new DepthPartitionCallback();
 
     setViewToPartition(view);
@@ -66,6 +67,9 @@ namespace OpenFrames
       
       // Detach depth partition slave cameras from previous view
       _dpCallback->reset();
+      
+      // Reset previous master Camera's node mask
+      _view->getCamera()->setNodeMask(_prevNodeMask);
     }
     
     _view = view; // Set new View
@@ -73,6 +77,10 @@ namespace OpenFrames
     // Add depth partitioning objects to new View
     if(_view.valid())
     {
+      // Disable master camera and save its node mask
+      _prevNodeMask = _view->getCamera()->getNodeMask();
+      _view->getCamera()->setNodeMask(0x0);
+      
       // Add main slave camera, don't use master scene data
       _view->addSlave(_dpMainSlaveCamera, false);
       
@@ -81,7 +89,7 @@ namespace OpenFrames
       slave->_updateSlaveCallback = _dpCallback;
     }
   }
-  
+
   void DepthPartitioner::setGraphicsContext(osg::GraphicsContext *gc)
   {
     _dpMainSlaveCamera->setGraphicsContext(gc);
@@ -92,20 +100,13 @@ namespace OpenFrames
     _dpMainSlaveCamera->setViewport(x, y, w, h);
   }
   
-  void DepthPartitioner::setClearColorBuffer(bool clear)
-  {
-    _dpCallback->setClearColorBuffer(clear);
-  }
-  
   DepthPartitioner::~DepthPartitioner()
   {
     setViewToPartition(NULL);
   }
   
   DepthPartitionCallback::DepthPartitionCallback()
-  : _active(true),
-  _clearColorBuffer(true),
-  _renderOrder(osg::Camera::PRE_RENDER)
+  : _clearColorBuffer(true)
   {
     _distAccumulator = new DistanceAccumulator;
   }
@@ -113,21 +114,6 @@ namespace OpenFrames
   DepthPartitionCallback::~DepthPartitionCallback()
   {
     reset();
-  }
-  
-  void DepthPartitionCallback::setActive(bool active)
-  {
-    _active = active;
-    
-    // Disable all cameras if needed
-    // Cameras will be re-enabled in the update callback as needed
-    if(!_active)
-    {
-      for(unsigned int i = 0; i < _cameraList.size(); ++i)
-      {
-        _cameraList[i]->setNodeMask(0xf);
-      }
-    }
   }
   
   void DepthPartitionCallback::reset()
@@ -160,22 +146,9 @@ namespace OpenFrames
     }
   }
   
-  void DepthPartitionCallback::setRenderOrder(osg::Camera::RenderOrder order)
-  {
-    _renderOrder = order;
-    
-    // Update the render order for existing Cameras
-    for(unsigned int i = 0; i < _cameraList.size(); ++i)
-    {
-      _cameraList[i]->setRenderOrder(_renderOrder, i);
-    }
-  }
-  
   void DepthPartitionCallback::updateSlave(osg::View& view, osg::View::Slave& slave)
   {
     slave.updateSlaveImplementation(view);
-    
-    if(!_active) return; // Don't analyze if inactive
     
     // If the scene hasn't been defined then don't do anything
     osgViewer::View *sceneView = dynamic_cast<osgViewer::View*>(&view);
@@ -214,7 +187,7 @@ namespace OpenFrames
         // Copy parent projection matrix and update the near/far planes
         proj = projmat;
         updateProjectionMatrix(proj, camPairs[i].first, camPairs[i].second);
-        std::cout<< std::setprecision(10) << currCam->getName() << ": " << camPairs[i].first << ", " << camPairs[i].second << std::endl;
+        //std::cout<< std::setprecision(10) << currCam->getName() << " near = " << camPairs[i].first << ", far = " << camPairs[i].second << std::endl;
         
         // Set the camera rendering state
         currCam->setNodeMask(0xffffffff);
@@ -240,25 +213,21 @@ namespace OpenFrames
     
     if(!camera) // Create a new Camera
     {
-      camera = new osg::Camera;
+      camera = new osg::Camera(*mainCamera);
       camera->setCullingActive(false);
-      camera->setCullingMode(mainCamera->getCullingMode());
-      camera->setRenderOrder(_renderOrder, camNum);
+      camera->setRenderOrder(mainCamera->getRenderOrder(), camNum);
       camera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
-      camera->setName(std::string("DPCam") + std::to_string(camNum));
+      camera->setName(dpCamNamePrefix + std::to_string(camNum));
       
       // We will compute the near/far planes ourselves
       camera->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
       
       if(camNum == 0 && _clearColorBuffer)
-      {
         camera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        camera->setClearColor(mainCamera->getClearColor());
-      }
       else
         camera->setClearMask(GL_DEPTH_BUFFER_BIT);
       
-      // Add Camera as slave to master
+      // Add Camera as slave
       mainCamera->getView()->addSlave(camera, true);
       
       // Store new camera in master camera list
