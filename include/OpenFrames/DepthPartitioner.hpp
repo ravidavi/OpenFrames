@@ -39,15 +39,8 @@ namespace OpenFrames
     DepthPartitioner(osgViewer::View *view = NULL);
     
     /** Specify which View to partition */
-    void setViewToPartition(osgViewer::View *view);
+    bool setViewToPartition(osgViewer::View *view);
     osgViewer::View* getViewToPartition() { return _view; }
-    
-    /** Set the GraphicsContext to use for depth partitioning Cameras */
-    void setGraphicsContext(osg::GraphicsContext *gc);
-    
-    /** Set the Viewport to use for depth partitioning Cameras */
-    void setViewport(int x, int y, int w, int h);
-    osg::Viewport* getViewport() { return _dpMainSlaveCamera->getViewport(); }
     
     /** Get the update callback that does the actual partitioning */
     DepthPartitionCallback* getCallback() { return _dpCallback; }
@@ -57,8 +50,7 @@ namespace OpenFrames
     
     osg::ref_ptr<osg::Camera> _dpMainSlaveCamera;
     osg::ref_ptr<DepthPartitionCallback> _dpCallback;
-    osg::ref_ptr<osgViewer::View> _view;
-    osg::Node::NodeMask _prevNodeMask;
+    osgViewer::View *_view;
   };
   
   /**********************************************************

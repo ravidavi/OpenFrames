@@ -24,10 +24,11 @@
 
 // New = DepthPartitioner, with slave cameras
 // Old = DepthPartitionNode, with nested cameras
-const bool useNewDP = true;
+const bool useNewDP = false;
 
 namespace OpenFrames
 {
+  // Class that writes names of each camera that tries to traverse a scene
   class VisitorNameNode : public osg::Node
   {
   public:
@@ -54,6 +55,8 @@ namespace OpenFrames
     
     // The user's scene
     _scene = new osg::Group;
+    
+    // For debugging, write names of all cameras that try to traverse the scene
     //_scene->addChild(new VisitorNameNode);
     
     // Create the Camera that will draw background elements
@@ -269,7 +272,6 @@ namespace OpenFrames
   void RenderRectangle::setGraphicsContext(osg::GraphicsContext *gc)
   {
     _sceneView->getCamera()->setGraphicsContext(gc);
-    _depthPartitioner->setGraphicsContext(gc);
     _hudCamera->setGraphicsContext(gc);
     _backCamera->setGraphicsContext(gc);
     _mirrorCamera->setGraphicsContext(gc);
@@ -278,7 +280,6 @@ namespace OpenFrames
   void RenderRectangle::setViewport(int x, int y, int w, int h)
   {
     _sceneView->getCamera()->setViewport(x, y, w, h);
-    _depthPartitioner->setViewport(x, y, w, h);
     _mirrorCamera->setViewport(x, y, w, h);
     _hudCamera->setViewport(x, y, w, h);
     if(_useVR)
@@ -509,19 +510,16 @@ namespace OpenFrames
     {
       // Get main camera viewport or depth partitioner's viewport
       osg::Viewport *vp = _sceneView->getCamera()->getViewport();
-      if(!vp) vp = _depthPartitioner->getViewport();
-      if(!vp)
+      
+      if(vp)
       {
-        std::cerr<< "OpenFrames::RenderRectangle ERROR: No suitable viewport" << std::endl;
-        return;
+        double fov, ratio;
+        view->getPerspective(fov, ratio); // Get current field of view (fov)
+        
+        // Compute new aspect ratio
+        ratio = (double)vp->width() / (double)vp->height();
+        view->setPerspective(fov, ratio); // Set new aspect ratio
       }
-      
-      double fov, ratio;
-      view->getPerspective(fov, ratio); // Get current field of view (fov)
-      
-      // Compute new aspect ratio
-      ratio = (double)vp->width() / (double)vp->height();
-      view->setPerspective(fov, ratio); // Set new aspect ratio
     }
     else
     {

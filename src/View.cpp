@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2016 Ravishankar Mathur
+   Copyright 2017 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -127,16 +127,6 @@ class FollowingTrackball : public osgGA::TrackballManipulator
 	{
 	  osgViewer::View *view = dynamic_cast<osgViewer::View*>(&us);
 	  osg::Viewport *vp = view->getCamera()->getViewport();
-    if(!vp)
-    {
-      // Main camera viewport not defined, so find a suitable slave viewport
-      for(unsigned int i = 0; i < view->getNumSlaves(); ++i)
-      {
-        if(view->getSlave(i)._camera->getAllowEventFocus())
-          vp = view->getSlave(i)._camera->getViewport();
-        if(vp) break;
-      }
-    }
 
 	  // For the trackballs to work correctly, we need to specify that each
 	  // osgViewer::View has its own range of (x,y) coordinates
