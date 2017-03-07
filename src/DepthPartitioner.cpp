@@ -25,7 +25,7 @@ static const std::string dpMainCamName(dpCamNamePrefix+"Main");
 
 namespace OpenFrames
 {
-  DepthPartitioner::DepthPartitioner(osgViewer::View *view)
+  DepthPartitioner::DepthPartitioner(osgViewer::View *view, VRTextureBuffer *texBuffer)
   : _view(NULL) // Don't set to incoming view yet
   {
     // Create slave Camera to manage the depth partitioner
@@ -36,7 +36,7 @@ namespace OpenFrames
     _dpMainSlaveCamera->setAllowEventFocus(false);
     
     // Create slave callback that will perform depth partitioning
-    _dpCallback = new DepthPartitionCallback();
+    _dpCallback = new DepthPartitionCallback(texBuffer);
 
     setViewToPartition(view);
   }
@@ -99,8 +99,9 @@ namespace OpenFrames
     setViewToPartition(NULL);
   }
   
-  DepthPartitionCallback::DepthPartitionCallback()
-  : _clearColorBuffer(true)
+  DepthPartitionCallback::DepthPartitionCallback(VRTextureBuffer *texBuffer)
+  : _clearColorBuffer(true),
+  _texBuffer(texBuffer)
   {
     _distAccumulator = new DistanceAccumulator;
   }
@@ -166,25 +167,16 @@ namespace OpenFrames
     
     // Step 3: Create the slave Cameras that will draw each depth segment
     unsigned int numCameras = camPairs.size(); // Get the number of cameras
-    if(numCameras > 0)
+    for(int i = 0; i < numCameras; ++i)
     {
-      osg::Camera *currCam;
-      osg::Matrixd proj;
-      
-      for(int i = 0; i < numCameras; ++i)
+      // Create and activate the camera
+      if(!_texBuffer)
       {
-        // Create and activate the camera
-        currCam = createOrReuseCamera(i, camera);
-        
-        // Copy main projection matrix and update the near/far planes
-        proj = projmat;
-        updateProjectionMatrix(proj, camPairs[i].first, camPairs[i].second);
-        //std::cout<< std::setprecision(10) << currCam->getName() << " near = " << camPairs[i].first << ", far = " << camPairs[i].second << std::endl;
-        
-        // Set the camera rendering state
-        currCam->setNodeMask(0xffffffff);
-        currCam->setProjectionMatrix(proj);
-        currCam->setViewMatrix(viewmat);
+        createOrReuseCamera(i, camera, camPairs[i].first, camPairs[i].second);
+      }
+      else
+      {
+        createOrReuseVRCamera(i, camera, camPairs[i].first, camPairs[i].second);
       }
     }
     
@@ -195,39 +187,87 @@ namespace OpenFrames
     }
   }
   
-  osg::Camera* DepthPartitionCallback::createOrReuseCamera(unsigned int camNum,
-                                                           osg::Camera* mainCamera)
+  void DepthPartitionCallback::createOrReuseCamera(unsigned int camNum,
+                                                   osg::Camera* mainCamera,
+                                                   double &zNear, double &zFar)
   {
     if(_cameraList.size() <= camNum) _cameraList.resize(camNum+1);
-    osg::Camera *camera = _cameraList[camNum].get();
+    osg::Camera *newcam = _cameraList[camNum].get();
     
-    if(!camera) // Create a new Camera
+    if(!newcam) // Create a new Camera
     {
-      camera = new osg::Camera();
-      camera->setCullingActive(false);
-      camera->setRenderOrder(mainCamera->getRenderOrder(), camNum);
-      camera->setName(dpCamNamePrefix + std::to_string(camNum));
-      camera->setGraphicsContext(mainCamera->getGraphicsContext());
-      camera->setViewport(mainCamera->getViewport());
-      camera->setAllowEventFocus(false);
+      newcam = new osg::Camera();
+      newcam->setCullingActive(false);
+      newcam->setRenderOrder(mainCamera->getRenderOrder(), camNum);
+      newcam->setName(dpCamNamePrefix + std::to_string(camNum));
+      newcam->setGraphicsContext(mainCamera->getGraphicsContext());
+      newcam->setViewport(mainCamera->getViewport());
+      newcam->setAllowEventFocus(false);
       
       // We will compute the projection matrix ourselves
-      camera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
-      camera->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
+      newcam->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+      newcam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
       
       if(camNum == 0 && _clearColorBuffer)
-        camera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        newcam->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       else
-        camera->setClearMask(GL_DEPTH_BUFFER_BIT);
+        newcam->setClearMask(GL_DEPTH_BUFFER_BIT);
       
       // Add Camera as slave, and tell it to use the master Camera's scene
-      mainCamera->getView()->addSlave(camera, true);
+      mainCamera->getView()->addSlave(newcam, true);
       
       // Store new camera in internal camera list
-      _cameraList[camNum] = camera;
+      _cameraList[camNum] = newcam;
     }
     
-    return camera;
+    // Update projection depth planes
+    osg::Matrixd projmat = mainCamera->getProjectionMatrix();
+    updateProjectionMatrix(projmat, zNear, zFar);
+    
+    // Set camera rendering matrices
+    newcam->setProjectionMatrix(projmat);
+    newcam->setViewMatrix(mainCamera->getViewMatrix());
+    
+    // Activate camera
+    newcam->setNodeMask(0xffffffff);
+  }
+  
+  void DepthPartitionCallback::createOrReuseVRCamera(unsigned int camNum,
+                                                     osg::Camera* mainCamera,
+                                                     double &zNear, double &zFar)
+  {
+    if(_vrCameraList.size() <= camNum) _vrCameraList.resize(camNum+1);
+    VRCamera *vrcam = _vrCameraList[camNum].get();
+    
+    if(!vrcam) // Create a new VRCamera
+    {
+      vrcam = new VRCamera(_texBuffer, camNum, VRCamera::AUTO);
+      vrcam->setGraphicsContext(mainCamera->getGraphicsContext());
+      
+      osg::Camera *cam;
+      for(unsigned int i = 0; i < vrcam->getNumCameras(); ++i)
+      {
+        cam = vrcam->getCamera(i);
+        cam->setRenderOrder(mainCamera->getRenderOrder(), camNum);
+        cam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
+        if(camNum == 0 && _clearColorBuffer)
+          cam->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        else
+          cam->setClearMask(GL_DEPTH_BUFFER_BIT);
+        
+        mainCamera->getView()->addSlave(cam, true);
+      }
+      
+      _vrCameraList[camNum] = vrcam;
+    }
+    
+    // Update projection depth planes
+    osg::Matrixd projmat = mainCamera->getProjectionMatrix();
+    updateProjectionMatrix(projmat, zNear, zFar);
+    
+    // Set camera rendering matrices
+    vrcam->setProjectionMatrix(projmat, zNear);
+    vrcam->setViewMatrix(mainCamera->getViewMatrix());
   }
   
   void DepthPartitionCallback::updateProjectionMatrix(osg::Matrix& proj, double near, double far)

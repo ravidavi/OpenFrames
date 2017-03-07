@@ -23,6 +23,7 @@
 #include <OpenFrames/FrameManager.hpp>
 #include <OpenFrames/SkySphere.hpp>
 #include <OpenFrames/View.hpp>
+#include <OpenFrames/VRUtils.hpp>
 #include <osg/Camera>
 #include <osg/Referenced>
 #include <osg/ref_ptr>
@@ -131,8 +132,7 @@ namespace OpenFrames
     osg::ref_ptr<osg::Camera> _mirrorCamera; // Camera to mirror scene onto window
     
     // Render textures used for storing each eye's image
-    osg::ref_ptr<osg::Texture2D> _rightEyeColorTex, _rightEyeDepthTex;
-    osg::ref_ptr<osg::Texture2D> _leftEyeColorTex, _leftEyeDepthTex;
+    osg::ref_ptr<VRTextureBuffer> _texBuffer;
     
     bool _useVR; // Enable VR rendering using OpenVR
     

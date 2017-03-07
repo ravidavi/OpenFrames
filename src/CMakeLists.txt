@@ -34,6 +34,7 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     TransformAccumulator.cpp
     Vector.cpp
     View.cpp
+    VRUtils.cpp
     WindowProxy.cpp
 )
 

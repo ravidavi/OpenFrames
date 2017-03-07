@@ -24,7 +24,9 @@
 
 // New = DepthPartitioner, with slave cameras
 // Old = DepthPartitionNode, with nested cameras
-const bool useNewDP = false;
+const bool useNewDP = true;
+const int vrWidth = 1080;
+const int vrHeight = 1200;
 
 namespace OpenFrames
 {
@@ -75,9 +77,15 @@ namespace OpenFrames
     _sceneView = new osgViewer::View();
     _sceneView->getCamera()->setName("Master");
     
+    // Create texure buffer for VR
+    _texBuffer = new VRTextureBuffer(vrWidth, vrHeight);
+    
     // Create the auto depth partitioner
     _depthPartitionNode = new DepthPartitionNode;
-    _depthPartitioner = new DepthPartitioner();
+    if(_useVR)
+      _depthPartitioner = new DepthPartitioner(NULL, _texBuffer);
+    else
+      _depthPartitioner = new DepthPartitioner();
     if(useNewDP) _depthPartitioner->setViewToPartition(_sceneView);
     
     // Create a default view and make it active
@@ -93,46 +101,6 @@ namespace OpenFrames
   
   void RenderRectangle::_init()
   {
-    // Set up textures
-    {
-      // Note that texture size is automatically set by OSG during first render
-      _rightEyeColorTex = new osg::Texture2D();
-      _rightEyeColorTex->setSourceFormat(GL_RGBA);
-      _rightEyeColorTex->setInternalFormat(GL_RGBA8);
-      _rightEyeColorTex->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::NEAREST);
-      _rightEyeColorTex->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::NEAREST);
-      _rightEyeColorTex->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-      _rightEyeColorTex->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-      
-      _rightEyeDepthTex = new osg::Texture2D();
-      _rightEyeDepthTex->setSourceFormat(GL_DEPTH_COMPONENT);
-      _rightEyeDepthTex->setSourceType(GL_UNSIGNED_INT);
-      _rightEyeDepthTex->setInternalFormat(GL_DEPTH_COMPONENT24);
-      _rightEyeDepthTex->setBorderWidth(0);
-      _rightEyeDepthTex->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR);
-      _rightEyeDepthTex->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR);
-      _rightEyeDepthTex->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-      _rightEyeDepthTex->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-      
-      _leftEyeColorTex = new osg::Texture2D();
-      _leftEyeColorTex->setSourceFormat(GL_RGBA);
-      _leftEyeColorTex->setInternalFormat(GL_RGBA8);
-      _leftEyeColorTex->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::NEAREST);
-      _leftEyeColorTex->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::NEAREST);
-      _leftEyeColorTex->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-      _leftEyeColorTex->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-      
-      _leftEyeDepthTex = new osg::Texture2D();
-      _leftEyeDepthTex->setSourceFormat(GL_DEPTH_COMPONENT);
-      _leftEyeDepthTex->setSourceType(GL_UNSIGNED_INT);
-      _leftEyeDepthTex->setInternalFormat(GL_DEPTH_COMPONENT24);
-      _leftEyeDepthTex->setBorderWidth(0);
-      _leftEyeDepthTex->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR);
-      _leftEyeDepthTex->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR);
-      _leftEyeDepthTex->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-      _leftEyeDepthTex->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-    }
-    
     // Set up cameras
     {
       // Set up HUD camera render properties
@@ -155,9 +123,10 @@ namespace OpenFrames
       if(_useVR)
       {
         _backCamera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
-        _backCamera->attach(osg::Camera::COLOR_BUFFER0, _rightEyeColorTex);
-        _backCamera->attach(osg::Camera::COLOR_BUFFER1, _leftEyeColorTex);
-        _backCamera->attach(osg::Camera::DEPTH_BUFFER, _rightEyeDepthTex);
+        _backCamera->attach(osg::Camera::COLOR_BUFFER0, _texBuffer->_rightColorTex);
+        _backCamera->attach(osg::Camera::COLOR_BUFFER1, _texBuffer->_leftColorTex);
+        _backCamera->attach(osg::Camera::DEPTH_BUFFER, _texBuffer->_rightDepthTex);
+        _backCamera->setViewport(0, 0, vrWidth, vrHeight);
       }
 
       // Set up mirror camera render properties
@@ -219,7 +188,7 @@ namespace OpenFrames
       osg::Geode *quad = new osg::Geode;
       quad->addDrawable(geom);
       _mirrorCamera->addChild(quad);
-      _mirrorCamera->getOrCreateStateSet()->setTextureAttributeAndModes(0, _rightEyeColorTex, osg::StateAttribute::ON);
+      _mirrorCamera->getOrCreateStateSet()->setTextureAttributeAndModes(0, _texBuffer->_rightColorTex, osg::StateAttribute::ON);
     }
     
     // Set up the Sky Sphere
@@ -233,13 +202,18 @@ namespace OpenFrames
       // Don't clear color buffer so that background is preserved
       _depthPartitionNode->setClearColorBuffer(false);
       _depthPartitioner->getCallback()->setClearColorBuffer(false);
-      if(_useVR) _depthPartitionNode->setVRTextures(_rightEyeColorTex, _rightEyeDepthTex, _leftEyeColorTex, _leftEyeDepthTex);
+      if(_useVR)
+      {
+        //_depthPartitionNode->setVRTextures(_rightEyeColorTex, _rightEyeDepthTex, _leftEyeColorTex, _leftEyeDepthTex);
+        //_depthPartitioner->setVRTexBuffer(_texBuffer);
+      }
       if(!useNewDP) _scene->addChild(_depthPartitionNode.get());
     }
     
     // Set up the SceneView
     _sceneView->setSceneData(_scene);
     _sceneView->getCamera()->setCullingMode(osg::CullSettings::DEFAULT_CULLING & ~osg::CullSettings::SMALL_FEATURE_CULLING);
+    _sceneView->getCamera()->setNodeMask(0x0);
   }
   
   void RenderRectangle::setFrameManager(FrameManager *fm)
@@ -282,11 +256,7 @@ namespace OpenFrames
     _sceneView->getCamera()->setViewport(x, y, w, h);
     _mirrorCamera->setViewport(x, y, w, h);
     _hudCamera->setViewport(x, y, w, h);
-    if(_useVR)
-    {
-      _backCamera->setViewport(0, 0, w, h);
-    }
-    else
+    if(!_useVR)
     {
       _backCamera->setViewport(x, y, w, h);
     }

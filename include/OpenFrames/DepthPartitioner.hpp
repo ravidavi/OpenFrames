@@ -19,6 +19,7 @@
 
 #include <OpenFrames/Export.h>
 #include <OpenFrames/DistanceAccumulator.hpp>
+#include <OpenFrames/VRUtils.hpp>
 #include <osg/Camera>
 #include <osgViewer/View>
 
@@ -36,7 +37,7 @@ namespace OpenFrames
   class OF_EXPORT DepthPartitioner : public osg::Referenced
   {
   public:
-    DepthPartitioner(osgViewer::View *view = NULL);
+    DepthPartitioner(osgViewer::View *view = NULL, VRTextureBuffer *texBuffer = NULL);
     
     /** Specify which View to partition */
     bool setViewToPartition(osgViewer::View *view);
@@ -67,7 +68,7 @@ namespace OpenFrames
     friend class DepthPartitioner;
     
   public:
-    DepthPartitionCallback();
+    DepthPartitionCallback(VRTextureBuffer *texBuffer);
     
     /** Specify whether the color buffer should be cleared before the first Camera draws its scene. */
     void setClearColorBuffer(bool clear);
@@ -94,8 +95,10 @@ namespace OpenFrames
                                 double near, double far);
     
     // Creates a new Camera object with default settings
-    osg::Camera* createOrReuseCamera(unsigned int camNum,
-                                     osg::Camera* masterCamera);
+    void createOrReuseCamera(unsigned int camNum,
+                             osg::Camera* masterCamera, double &zNear, double &zFar);
+    void createOrReuseVRCamera(unsigned int camNum,
+                               osg::Camera* masterCamera, double &zNear, double &zFar);
     
     // The NodeVisitor that computes depth partitions for the scene
     osg::ref_ptr<DistanceAccumulator> _distAccumulator;
@@ -106,6 +109,11 @@ namespace OpenFrames
     // will be reused on every frame in order to save time.
     typedef std::vector< osg::ref_ptr<osg::Camera> > CameraList;
     CameraList _cameraList;
+    
+    typedef std::vector< osg::ref_ptr<VRCamera> > VRCameraList;
+    VRCameraList _vrCameraList;
+    
+    osg::ref_ptr<VRTextureBuffer> _texBuffer;
   };
   
 } // !namespace OpenFrames
