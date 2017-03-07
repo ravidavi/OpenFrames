@@ -49,7 +49,7 @@ namespace OpenFrames
   RenderRectangle::RenderRectangle(bool useVR)
   : _useVR(useVR)
   {
-    //_useVR = true;
+    _useVR = true;
     
     // Create the Camera that will draw HUD elements
     _hudCamera = new osg::Camera;
@@ -487,7 +487,10 @@ namespace OpenFrames
         view->getPerspective(fov, ratio); // Get current field of view (fov)
         
         // Compute new aspect ratio
-        ratio = (double)vp->width() / (double)vp->height();
+        if(_useVR)
+          ratio = (double)vrWidth / (double)vrHeight;
+        else
+          ratio = (double)vp->width() / (double)vp->height();
         view->setPerspective(fov, ratio); // Set new aspect ratio
       }
     }
