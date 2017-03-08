@@ -114,17 +114,39 @@ namespace OpenFrames
   void DepthPartitionCallback::reset()
   {
     // Remove slave cameras from current View
-    for(int i = 0; i < _cameraList.size(); ++i)
+    if(!_texBuffer)
     {
-      osg::View *view = _cameraList[i]->getView();
-      if(view)
+      for(int i = 0; i < _cameraList.size(); ++i)
       {
-        unsigned int pos = view->findSlaveIndexForCamera(_cameraList[i]);
-        view->removeSlave(pos);
+        osg::View *view = _cameraList[i]->getView();
+        if(view)
+        {
+          unsigned int pos = view->findSlaveIndexForCamera(_cameraList[i]);
+          view->removeSlave(pos);
+        }
       }
+      
+      _cameraList.clear(); // Erase all cameras
+    }
+    else
+    {
+      for(int i = 0; i < _vrCameraList.size(); ++i)
+      {
+        VRCamera *vrcam = _vrCameraList[i];
+        for(int j = 0; j < vrcam->getNumCameras(); ++j)
+        {
+          osg::View *view = vrcam->getCamera(j)->getView();
+          if(view)
+          {
+            unsigned int pos = view->findSlaveIndexForCamera(vrcam->getCamera(j));
+            view->removeSlave(pos);
+          }
+        }
+      }
+      
+      _vrCameraList.clear();
     }
     
-    _cameraList.clear(); // Erase all cameras
   }
   
   void DepthPartitionCallback::setClearColorBuffer(bool clear)
@@ -181,9 +203,19 @@ namespace OpenFrames
     }
     
     // Step 4: Deactivate unused cameras
-    for(int i = numCameras; i < _cameraList.size(); ++i)
+    if(!_texBuffer)
     {
-      _cameraList[i]->setNodeMask(0x0);
+      for(int i = numCameras; i < _cameraList.size(); ++i)
+      {
+        _cameraList[i]->setNodeMask(0x0);
+      }
+    }
+    else
+    {
+      for(int i = numCameras; i < _vrCameraList.size(); ++i)
+      {
+        _vrCameraList[i]->disableCameras();
+      }
     }
   }
   

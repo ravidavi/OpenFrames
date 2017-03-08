@@ -236,4 +236,12 @@ namespace OpenFrames{
     }
   }
   
+  void VRCamera::disableCameras()
+  {
+    for(unsigned int i = 0; i < getNumCameras(); ++i)
+    {
+      getCamera(i)->setNodeMask(0x0);
+    }
+  }
+  
 } // !namespace OpenFrames

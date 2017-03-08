@@ -149,7 +149,7 @@ namespace OpenFrames
     WindowProxy(int x, int y,
                 unsigned int width, unsigned int height,
                 unsigned int nrow, unsigned int ncol,
-                bool embedded = false);
+                bool embedded = false, bool useVR = false);
     
     virtual void cancelCleanup();
     
@@ -278,6 +278,8 @@ namespace OpenFrames
     bool _pause;
     osg::Timer_t _startTime, _pauseTime;
     bool _isAnimating; // Whether the animation loop has started or not (regardless of pause state)
+    
+    bool _useVR; // Whether to use VR rendering
   };
   
 }

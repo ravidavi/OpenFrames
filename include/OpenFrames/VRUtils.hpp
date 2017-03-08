@@ -66,6 +66,7 @@ namespace OpenFrames {
     
     unsigned int getNumCameras();
     osg::Camera* getCamera(unsigned int camNum);
+    void disableCameras();
     
   protected:
     virtual ~VRCamera();

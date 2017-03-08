@@ -396,8 +396,8 @@ namespace OpenFrames
   };
   
   WindowProxy::WindowProxy( int x, int y, unsigned int width, unsigned int height,
-                           unsigned int nrow, unsigned int ncol, bool embedded )
-  : _winID(0), _nRow(0), _nCol(0), _isEmbedded(embedded), _pause(false), _isAnimating(false)
+                           unsigned int nrow, unsigned int ncol, bool embedded, bool useVR )
+  : _winID(0), _nRow(0), _nCol(0), _isEmbedded(embedded), _pause(false), _isAnimating(false), _useVR(useVR)
   {
     _viewer = new osgViewer::CompositeViewer;
     _embeddedGraphics = new EmbeddedGraphics(x, y, width, height, this);
@@ -411,6 +411,18 @@ namespace OpenFrames
     
     /** We don't want the OpenGL context being made current then released at every frame, because that slows things down and can cause problems with single-context windowing systems such as Winteracter. It's ok to not do this here, because we know that each WindowProxy will only handle one drawing context in its thread. */
     _viewer->setReleaseContextAtEndOfFrameHint(false);
+    
+    // VR can only be enabled for 1x1 windows
+    if(_useVR)
+    {
+      if((nrow != 1) || (ncol != 1))
+      {
+        std::cerr<< "OpenFrames::WindowProxy ERROR: VR only available for 1x1 windows. Disabling VR." << std::endl;
+        _useVR = false;
+      }
+      else
+        std::cout<< "WindowProxy enabling VR" << std::endl;
+    }
     
     // Create the RenderRectangles immediately so that they can be modified as needed
     setGridSize(nrow, ncol);
@@ -627,7 +639,7 @@ namespace OpenFrames
     for(unsigned int i = oldSize; i < newSize; ++i)
     {
       // Create the new RenderRectangle
-      _renderList[i] = new RenderRectangle;
+      _renderList[i] = new RenderRectangle(_useVR);
       
       currView = _renderList[i]->getSceneView();
       

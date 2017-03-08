@@ -30,7 +30,7 @@ const int vrHeight = 1200;
 
 namespace OpenFrames
 {
-  // Class that writes names of each camera that tries to traverse a scene
+  // Print name of each camera that tries to cull-traverse a scene
   class VisitorNameNode : public osg::Node
   {
   public:
@@ -49,8 +49,6 @@ namespace OpenFrames
   RenderRectangle::RenderRectangle(bool useVR)
   : _useVR(useVR)
   {
-    _useVR = true;
-    
     // Create the Camera that will draw HUD elements
     _hudCamera = new osg::Camera;
     _hudCamera->setName("HUD");
@@ -188,7 +186,7 @@ namespace OpenFrames
       osg::Geode *quad = new osg::Geode;
       quad->addDrawable(geom);
       _mirrorCamera->addChild(quad);
-      _mirrorCamera->getOrCreateStateSet()->setTextureAttributeAndModes(0, _texBuffer->_rightColorTex, osg::StateAttribute::ON);
+      _mirrorCamera->getOrCreateStateSet()->setTextureAttributeAndModes(0, _texBuffer->_leftColorTex, osg::StateAttribute::ON);
     }
     
     // Set up the Sky Sphere
@@ -254,8 +252,8 @@ namespace OpenFrames
   void RenderRectangle::setViewport(int x, int y, int w, int h)
   {
     _sceneView->getCamera()->setViewport(x, y, w, h);
-    _mirrorCamera->setViewport(x, y, w, h);
     _hudCamera->setViewport(x, y, w, h);
+    _mirrorCamera->setViewport(x, y, w, h);
     if(!_useVR)
     {
       _backCamera->setViewport(x, y, w, h);
@@ -478,21 +476,20 @@ namespace OpenFrames
     /** Adjust the perspective projection with the current viewport size */
     if(view->getProjectionType() == View::PERSPECTIVE)
     {
-      // Get main camera viewport or depth partitioner's viewport
-      osg::Viewport *vp = _sceneView->getCamera()->getViewport();
+      // Get current field of view
+      double fov, ratio;
+      view->getPerspective(fov, ratio);
       
-      if(vp)
+      if(_useVR) ratio = (double)vrWidth / (double)vrHeight;
+      else
       {
-        double fov, ratio;
-        view->getPerspective(fov, ratio); // Get current field of view (fov)
-        
-        // Compute new aspect ratio
-        if(_useVR)
-          ratio = (double)vrWidth / (double)vrHeight;
-        else
-          ratio = (double)vp->width() / (double)vp->height();
-        view->setPerspective(fov, ratio); // Set new aspect ratio
+        // Get main camera viewport or depth partitioner's viewport
+        osg::Viewport *vp = _sceneView->getCamera()->getViewport();
+        if(vp) ratio = (double)vp->width() / (double)vp->height();
       }
+      
+      // Set new aspect ratio
+      view->setPerspective(fov, ratio); // Set new aspect ratio
     }
     else
     {
