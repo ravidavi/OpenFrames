@@ -19,7 +19,6 @@
 
 #include <OpenFrames/Export.h>
 #include <OpenFrames/DistanceAccumulator.hpp>
-#include <OpenFrames/VRUtils.hpp>
 #include <osg/Camera>
 #include <osgViewer/View>
 
@@ -34,10 +33,10 @@ namespace OpenFrames
    * Note that an instance of this class can only be attached to one
    * View at a time.
    **********************************************************/
-  class OF_EXPORT DepthPartitioner : public osg::Referenced
+  class OF_EXPORT DepthPartitioner : public virtual osg::Referenced
   {
   public:
-    DepthPartitioner(osgViewer::View *view = NULL, VRTextureBuffer *texBuffer = NULL);
+    DepthPartitioner();
     
     /** Specify which View to partition */
     bool setViewToPartition(osgViewer::View *view);
@@ -65,14 +64,14 @@ namespace OpenFrames
    **********************************************************/
   class OF_EXPORT DepthPartitionCallback : public osg::View::Slave::UpdateSlaveCallback
   {
-    friend class DepthPartitioner;
-    
   public:
-    DepthPartitionCallback(VRTextureBuffer *texBuffer);
+    DepthPartitionCallback();
+    
+    /** Remove all internal slave cameras from current View */
+    void reset() { _cameraManager->reset(); }
     
     /** Specify whether the color buffer should be cleared before the first Camera draws its scene. */
-    void setClearColorBuffer(bool clear);
-    inline bool getClearColorBuffer() const { return _clearColorBuffer; }
+    void setClearColorBuffer(bool clear) { _cameraManager->setClearColorBuffer(clear); }
     
     /** Set/get the maximum scene traversal depth, defaults to UINT_MAX */
     void setMaxTraversalDepth(unsigned int depth)
@@ -84,36 +83,42 @@ namespace OpenFrames
     /** Define the callback function */
     virtual void updateSlave(osg::View& view, osg::View::Slave& slave);
     
+    /** Manage cameras for the depth partition callback. */
+    struct CameraManager : public virtual osg::Referenced
+    {
+      CameraManager() : _clearColorBuffer(true) {}
+      virtual ~CameraManager() {}
+      
+      // Create a new camera and add it as a slave to the given camera
+      virtual void enableCamera(unsigned int camNum,
+                                osg::Camera* masterCamera,
+                                double &zNear, double &zFar) = 0;
+      
+      // Disable all cameras after specified start camera number
+      virtual void disableCameras(unsigned int start) = 0;
+      
+      // Clear all internal cameras
+      virtual void reset() = 0;
+      
+      // Updates a projection matrix with specified near/far plane
+      void updateProjectionMatrix(osg::Matrix& proj, const double &zNear, const double &zfar);
+      
+      // Have first camera clear the color buffer
+      virtual void setClearColorBuffer(bool clear) { _clearColorBuffer = clear; }
+      bool _clearColorBuffer;
+    };
+    
+    virtual void setCameraManager(CameraManager *cameraManager)
+    { _cameraManager = cameraManager; }
+    
   protected:
-    ~DepthPartitionCallback();
-    
-    /** Remove depth partitioner from current View */
-    void reset();
-    
-    // Updates a projection matrix with specified near/far plane
-    void updateProjectionMatrix(osg::Matrix& proj,
-                                double near, double far);
-    
-    // Creates a new Camera object with default settings
-    void createOrReuseCamera(unsigned int camNum,
-                             osg::Camera* masterCamera, double &zNear, double &zFar);
-    void createOrReuseVRCamera(unsigned int camNum,
-                               osg::Camera* masterCamera, double &zNear, double &zFar);
+    virtual ~DepthPartitionCallback();
     
     // The NodeVisitor that computes depth partitions for the scene
     osg::ref_ptr<DistanceAccumulator> _distAccumulator;
     
-    bool _clearColorBuffer;
-    
-    // Cameras that should be used to draw the scene. These cameras
-    // will be reused on every frame in order to save time.
-    typedef std::vector< osg::ref_ptr<osg::Camera> > CameraList;
-    CameraList _cameraList;
-    
-    typedef std::vector< osg::ref_ptr<VRCamera> > VRCameraList;
-    VRCameraList _vrCameraList;
-    
-    osg::ref_ptr<VRTextureBuffer> _texBuffer;
+    // The camera manager that creates cameras
+    osg::ref_ptr<CameraManager> _cameraManager;
   };
   
 } // !namespace OpenFrames

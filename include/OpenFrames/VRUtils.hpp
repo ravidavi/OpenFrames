@@ -18,6 +18,7 @@
 #define _OF_VRUTILS_
 
 #include <OpenFrames/Export.h>
+#include <OpenFrames/DepthPartitioner.hpp>
 
 #include <osg/ref_ptr>
 #include <osg/Referenced>
@@ -60,8 +61,10 @@ namespace OpenFrames {
     
     VRCamera(VRTextureBuffer *texBuffer, int camNum, StereoMode mode);
     
-    void setGraphicsContext(osg::GraphicsContext *gc);
+    // Set the projection matrix and enable cameras based on StereoMode
     void setProjectionMatrix(osg::Matrixd& projmat, double &zNear);
+    
+    // Set view matrix
     void setViewMatrix(osg::Matrixd& viewmat);
     
     unsigned int getNumCameras();
@@ -81,6 +84,25 @@ namespace OpenFrames {
     osg::ref_ptr<VRTextureBuffer> _texBuffer;
     
     StereoMode _mode;
+  };
+  
+  /** Creates and manages VR cameras for the depth partitioner */
+  struct OF_EXPORT VRCameraManager : public DepthPartitionCallback::CameraManager
+  {
+    VRCameraManager(VRTextureBuffer *texBuffer);
+    virtual ~VRCameraManager();
+    
+    virtual void enableCamera(unsigned int camNum,
+                              osg::Camera* masterCamera,
+                              double &zNear, double &zFar);
+    virtual void disableCameras(unsigned int start);
+    virtual void reset();
+    virtual void setClearColorBuffer(bool clear);
+    
+    typedef std::vector< osg::ref_ptr<VRCamera> > VRCameraList;
+    VRCameraList _vrCameraList;
+    
+    osg::ref_ptr<VRTextureBuffer> _texBuffer;
   };
   
 } // !namespace OpenFrames

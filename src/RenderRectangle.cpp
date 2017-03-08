@@ -57,7 +57,7 @@ namespace OpenFrames
     _scene = new osg::Group;
     
     // For debugging, write names of all cameras that try to traverse the scene
-    //_scene->addChild(new VisitorNameNode);
+    _scene->addChild(new VisitorNameNode);
     
     // Create the Camera that will draw background elements
     _backCamera = new osg::Camera;
@@ -80,10 +80,9 @@ namespace OpenFrames
     
     // Create the auto depth partitioner
     _depthPartitionNode = new DepthPartitionNode;
+    _depthPartitioner = new DepthPartitioner;
     if(_useVR)
-      _depthPartitioner = new DepthPartitioner(NULL, _texBuffer);
-    else
-      _depthPartitioner = new DepthPartitioner();
+      _depthPartitioner->getCallback()->setCameraManager(new VRCameraManager(_texBuffer));
     if(useNewDP) _depthPartitioner->setViewToPartition(_sceneView);
     
     // Create a default view and make it active

@@ -50,7 +50,7 @@ namespace OpenFrames{
     _rightDepthTex->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
     _rightDepthTex->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
     if(setSize) _rightDepthTex->setTextureSize(width, height);
-
+    
     // Set up left eye color buffer
     _leftColorTex = new osg::Texture2D();
     _leftColorTex->setSourceFormat(GL_RGBA);
@@ -114,7 +114,7 @@ namespace OpenFrames{
     _rightCamera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
     _rightCamera->attach(osg::Camera::COLOR_BUFFER0, _texBuffer->_rightColorTex);
     _rightCamera->attach(osg::Camera::DEPTH_BUFFER, _texBuffer->_rightDepthTex);
-
+    
     // Attach left eye color/depth buffers
     _leftCamera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
     _leftCamera->attach(osg::Camera::COLOR_BUFFER0, _texBuffer->_leftColorTex);
@@ -146,25 +146,6 @@ namespace OpenFrames{
   }
   
   VRCamera::~VRCamera() {}
-  
-  void VRCamera::setGraphicsContext(osg::GraphicsContext *gc)
-  {
-    if(_mode == STEREO)
-    {
-      _rightCamera->setGraphicsContext(gc);
-      _leftCamera->setGraphicsContext(gc);
-    }
-    else if(_mode == MONO)
-    {
-      _monoCamera->setGraphicsContext(gc);
-    }
-    else // AUTO
-    {
-      _rightCamera->setGraphicsContext(gc);
-      _leftCamera->setGraphicsContext(gc);
-      _monoCamera->setGraphicsContext(gc);
-    }
-  }
   
   unsigned int VRCamera::getNumCameras()
   {
@@ -218,12 +199,12 @@ namespace OpenFrames{
       }
       else // Near plane <= 100m means stereo rendering
       {
-        _rightCamera->setNodeMask(0xffffffff);
+        _rightCamera->setNodeMask(0xffffffff); // Enable stereo cameras
         _leftCamera->setNodeMask(0xffffffff);
         _rightCamera->setProjectionMatrix(projmat);
         _leftCamera->setProjectionMatrix(projmat);
         
-        _monoCamera->setNodeMask(0x0);
+        _monoCamera->setNodeMask(0x0); // Disable mono camera
       }
     }
   }
@@ -242,6 +223,103 @@ namespace OpenFrames{
     {
       getCamera(i)->setNodeMask(0x0);
     }
+  }
+  
+  VRCameraManager::VRCameraManager(VRTextureBuffer *texBuffer)
+  : _texBuffer(texBuffer)
+  {}
+  
+  VRCameraManager::~VRCameraManager()
+  {
+    reset();
+  }
+  
+  // Create a new VRCamera if needed, and add it as a slave
+  void VRCameraManager::enableCamera(unsigned int camNum,
+                                     osg::Camera* masterCamera,
+                                     double &zNear, double &zFar)
+  {
+    if(_vrCameraList.size() <= camNum) _vrCameraList.resize(camNum+1);
+    VRCamera *vrcam = _vrCameraList[camNum].get();
+    
+    if(!vrcam) // Create a new VRCamera
+    {
+      vrcam = new VRCamera(_texBuffer, camNum, VRCamera::AUTO);
+      
+      osg::Camera *cam;
+      for(unsigned int i = 0; i < vrcam->getNumCameras(); ++i)
+      {
+        cam = vrcam->getCamera(i);
+        cam->setGraphicsContext(masterCamera->getGraphicsContext());
+        cam->setRenderOrder(masterCamera->getRenderOrder(), camNum);
+        cam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
+        if(camNum == 0 && _clearColorBuffer)
+          cam->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        else
+          cam->setClearMask(GL_DEPTH_BUFFER_BIT);
+        
+        masterCamera->getView()->addSlave(cam, true);
+      }
+      
+      _vrCameraList[camNum] = vrcam;
+    }
+    
+    // Update projection matrix depth planes
+    osg::Matrixd projmat = masterCamera->getProjectionMatrix();
+    updateProjectionMatrix(projmat, zNear, zFar);
+    
+    // Set camera rendering matrices
+    vrcam->setProjectionMatrix(projmat, zNear); // This enables cameras as needed
+    vrcam->setViewMatrix(masterCamera->getViewMatrix());
+  }
+  
+  void VRCameraManager::disableCameras(unsigned int start)
+  {
+    for(int i = start; i < _vrCameraList.size(); ++i)
+    {
+      _vrCameraList[i]->disableCameras();
+    }
+  }
+  
+  void VRCameraManager::reset()
+  {
+    for(int i = 0; i < _vrCameraList.size(); ++i)
+    {
+      VRCamera *vrcam = _vrCameraList[i];
+      for(int j = 0; j < vrcam->getNumCameras(); ++j)
+      {
+        osg::View *view = vrcam->getCamera(j)->getView();
+        if(view)
+        {
+          unsigned int pos = view->findSlaveIndexForCamera(vrcam->getCamera(j));
+          view->removeSlave(pos);
+        }
+      }
+    }
+    
+    _vrCameraList.clear();
+  }
+  
+  void VRCameraManager::setClearColorBuffer(bool clear)
+  {
+    // Call parent method
+    CameraManager::setClearColorBuffer(clear);
+    
+    // Set first camera's clear color buffer setting if needed
+    if(_vrCameraList.size() > 0)
+    {
+      VRCamera *vrcam = _vrCameraList[0];
+      osg::Camera *cam;
+      for(unsigned int i = 0; i < vrcam->getNumCameras(); ++i)
+      {
+        cam = vrcam->getCamera(i);
+        if(_clearColorBuffer)
+          cam->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        else
+          cam->setClearMask(GL_DEPTH_BUFFER_BIT);
+      }
+    }
+    
   }
   
 } // !namespace OpenFrames
