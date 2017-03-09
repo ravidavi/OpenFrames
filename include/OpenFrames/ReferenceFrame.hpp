@@ -44,61 +44,144 @@ class Trajectory;
 /*******************************************
  * Ravi Mathur
  * OpenFrames API, class ReferenceFrame
- * This class defines the standard functions of a classical 
- * reference frame.  A reference frame can only contain other reference
- * frames, so all objects should be derived from this class.
 ******************************************/
+
+/**
+* \brief This class defines the standard functions of a classical reference frame. 
+* 
+* A reference frame can only contain other reference frames,
+* so all objects should be derived from this class.
+**/
 class OF_EXPORT ReferenceFrame : public osg::Referenced {
   public:
-	typedef std::vector<ReferenceFrame*> ParentList;
-	typedef std::vector<osg::ref_ptr<ReferenceFrame> > ChildList;
-	typedef std::vector<FrameTracker*> TrackerList;
+    typedef std::vector<ReferenceFrame*> ParentList; /**< Defines a vector of all direct parents of this frame */
+    typedef std::vector<osg::ref_ptr<ReferenceFrame> > ChildList; /**< Defines a vector of all direct children of this frame */
+    typedef std::vector<FrameTracker*> TrackerList; /**< Defines a vector of all trackers of this frame */
 
-	ReferenceFrame( const std::string &name );
-	ReferenceFrame( const std::string &name, const osg::Vec3 &color );
-	ReferenceFrame( const std::string &name, const osg::Vec4 &color );
+    /**
+    * \brief Construct a new ReferenceFrame
+    *
+    * The color of this frame will be white and 90% opaque.
+    *
+    * \param name Name of the frame
+    **/
+    ReferenceFrame(const std::string &name);
+
+    /**
+    * \brief Construct a new ReferenceFrame
+    *
+    * The color of this frame is specified by the constructor arguments and is 90% opaque.
+    *
+    * \param name  Name of the frame
+    * \param color Vector of the colors [red, green, blue]
+    **/
+    ReferenceFrame(const std::string &name, const osg::Vec3 &color);
+
+    /**
+    * \brief Construct a new ReferenceFrame
+    *
+    * The color of this frame is specified by the constructor arguments.
+    *
+    * \param name  Name of the frame
+    * \param color Vector of the colors [red, green, blue, alpha]
+    **/
+    ReferenceFrame(const std::string &name, const osg::Vec4 &color);
+
+    /**
+    * \brief Construct a new ReferenceFrame
+    *
+    * The color of this frame is specified by the constructor arguments.
+    *
+    * \param name Name of the frame
+    * \param r    Red color component [0-1]
+    * \param g    Green color component [0-1]
+    * \param b    Blue color component [0-1]
+    * \param a    Alpha (transparancy) component [0-1]
+    **/
 	ReferenceFrame( const std::string &name , float r, float g, float b, float a = 1.0 );
 
-	/** Set the name of the frame that will be displayed */
+	/* Set the name of the frame that will be displayed */
 	void setName( const std::string &name );
+
+    /**
+    * \brief Get the name of the frame
+    *
+    * \return Name of the frame
+    **/
 	inline const std::string& getName() const { return _name; }
 
-	/** Set the color of the frame's decorations (axes, name, ...)
+	/* Set the color of the frame's decorations (axes, name, ...)
 	    This method can be overridden by derived classes */
 	virtual void setColor( const osg::Vec4 &color );
 	virtual void setColor( float r, float g, float b, float a = 1.0 );
 	virtual const osg::Vec4& getColor() const;
 	virtual void getColor( float &r, float &g, float &b, float &a ) const;
 
-	/** Get the transform corresponding to this ReferenceFrame */
+    /**
+    * \brief Get the transform corresponding to this ReferenceFrame
+    *
+    * \return The transform
+    **/
 	inline FrameTransform* getTransform() {return _xform.get();}
 
-	/** Get the group corresponding to this ReferenceFrame. By default, the
+	/* Get the group corresponding to this ReferenceFrame. By default, the
 	    frame's group is the same as its transform.  However, subclasses
 	    can define a separate group if they wish to. A child frame's group is
 	    what is added to a parent frame's transform in addChild(). */
 	virtual osg::Group* getGroup();
 
-	/** Set the position/orientation of this frame. This only applies if
-	    the frame is not being auto positioned by a TrajectoryFollower. */
+    /**
+    * \brief Set the position of this frame
+    *
+    * This only applies if the frame is not being auto positioned by a TrajectoryFollower.
+    *
+    * \param x X position
+    * \param y Y position
+    * \param z Z position
+    **/
 	inline void setPosition( const double &x, const double &y, const double &z )
 	{ _xform->setPosition(x, y, z); }
 
+    /**
+    * \brief Get the position of this frame
+    *
+    * \param x Returned X position
+    * \param y Returned Y position
+    * \param z Returned Z position
+    **/
 	inline void getPosition( double &x, double &y, double &z ) const
 	{ _xform->getPosition(x, y, z); }
 
+    /**
+    * \brief Set the orientation of this frame
+    *
+    * This only applies if the frame is not being auto positioned by a TrajectoryFollower.
+    *
+    * \param rx    X component of the rotation quaternion
+    * \param ry    Y component of the rotation quaternion
+    * \param rz    Z component of the rotation quaternion
+    * \param angle Angle component of the rotation quaternion
+    **/
 	inline void setAttitude( const double &rx, const double &ry, const double &rz, const double &angle )
 	{ _xform->setAttitude(rx, ry, rz, angle); }
 
+    /**
+    * \brief Get the orientation of this frame
+    *
+    * \param rx    Returned X component of the rotation quaternion
+    * \param ry    Returned Y component of the rotation quaternion
+    * \param rz    Returned Z component of the rotation quaternion
+    * \param angle Returned angle component of the rotation quaternion
+    **/
 	inline void getAttitude( double &rx, double &ry, double &rz, double &angle) const
 	{ _xform->getAttitude(rx, ry, rz, angle); }
 	
-	/** Get the BoundingSphere encompassing this frame plus all of its
+	/* Get the BoundingSphere encompassing this frame plus all of its
 	    decorations. Derived classes should override this method
 	    and compute their own local BoundingSphere. */ 
 	virtual const osg::BoundingSphere& getBound() const;
 
-	enum AxesType // Specifies which axes to draw
+	enum AxesType /** Specifies which axes to draw */
 	{
 	  NO_AXES = 0,
 	  X_AXIS = 1,
@@ -106,55 +189,113 @@ class OF_EXPORT ReferenceFrame : public osg::Referenced {
 	  Z_AXIS = 4
 	};
 
-	// Show/hide the x, y, z axes vectors and labels; see AxesType
-	virtual void showAxes(unsigned int axes);
+    // Show/hide the x, y, z axes vectors and labels; see AxesType
+    virtual void showAxes(unsigned int axes);
 	virtual void showAxesLabels(unsigned int labels);
 	virtual void showNameLabel(bool namelabel);
 
-	/** Place x/y/z axis vectors at the given location with given length */
-	void moveXAxis(osg::Vec3d base, double len, double headRatio = 0.3, double bodyRadius = 0.0, double headRadius = 0.0) const;
-	void moveYAxis(osg::Vec3d base, double len, double headRatio = 0.3, double bodyRadius = 0.0, double headRadius = 0.0) const;
+    // Place x/y/z axis vectors at the given location with given length
+    void moveXAxis(osg::Vec3d base, double len, double headRatio = 0.3, double bodyRadius = 0.0, double headRadius = 0.0) const;
+    void moveYAxis(osg::Vec3d base, double len, double headRatio = 0.3, double bodyRadius = 0.0, double headRadius = 0.0) const;
 	void moveZAxis(osg::Vec3d base, double len, double headRatio = 0.3, double bodyRadius = 0.0, double headRadius = 0.0) const;
 
-	/** Set the text displayed for the axes labels.
-	    The default is 'X', 'Y', and 'Z' for the respective axes. */
-	inline void setXLabel(const std::string &str) { _xLabel->setText(str); }
-	inline void setYLabel(const std::string &str) { _yLabel->setText(str); }
+
+    /**
+    * Set the text displayed for the x-axis label.
+    * 
+    * The default axis label is 'X'.
+    * 
+    * \param str String to set as the axis label
+    */
+    inline void setXLabel(const std::string &str) { _xLabel->setText(str); }
+
+    /**
+    * Set the text displayed for the y-axis label.
+    *
+    * The default axis label is 'Y'.
+    *
+    * \param str String to set as the axis label
+    */
+    inline void setYLabel(const std::string &str) { _yLabel->setText(str); }
+
+    /**
+    * Set the text displayed for the z-axis label.
+    *
+    * The default axis label is 'Z'.
+    *
+    * \param str String to set as the axis label
+    */
 	inline void setZLabel(const std::string &str) { _zLabel->setText(str); }
 
-	/** Add/remove a frame as a child to this one */
+	/* Add/remove a frame as a child to this one */
 	bool addChild( ReferenceFrame* frame );
 	bool removeChild( ReferenceFrame* frame );
 
-	/** Get a child by its index */
-	inline int getNumChildren() { return _children.size(); }
+    /**
+    * \brief Get the number of children
+    *
+    * \return The number of children
+    **/
+    inline int getNumChildren() { return _children.size(); }
+
+    /**
+    * \brief Get a child by its index
+    *
+    * \param i Index of the child to get
+    *
+    * \return The child at the index
+    **/
 	inline ReferenceFrame* getChild( int i ) { return _children[i].get(); }
 
-	/** Create a formatted string containing names of all descendants */
+	/* Create a formatted string containing names of all descendants */
  	void createFrameString( std::string& str, std::string prefix = " " ) const;
  	
- 	/** Information about this ReferenceFrame that is included in it's
+ 	/* Information about this ReferenceFrame that is included in it's
  	    formatted name during a createFrameString() call */
  	virtual std::string frameInfo() const;
 
-	/** Add/remove a frame as a parent of this one.  This is called
+	/* Add/remove a frame as a parent of this one.  This is called
 	    automatically by addChild, so should not be called manually. */
 	void addParent( ReferenceFrame* frame );
 	void removeParent( ReferenceFrame* frame );
 
-	/** Get a parent by its index */
-	inline int getNumParents() const { return _parents.size(); }
+    /**
+    * \brief Get the number of parents
+    *
+    * \return The number of parents
+    **/
+    inline int getNumParents() const { return _parents.size(); }
+
+    /**
+    * \brief Get a parent by its index
+    *
+    * \param i Index of the parent to get
+    *
+    * \return The parent at the index
+    **/
 	inline ReferenceFrame* getParent( int i ) { return _parents[i]; }
 
-	/** Add/remove a tracker for this frame */
+	/* Add/remove a tracker for this frame */
 	void addTracker( FrameTracker* t );
 	void removeTracker( FrameTracker* t );
 
-	/** Get a tracker by its index */	
-	inline int getNumTrackers() const { return _trackers.size(); }
+    /**
+    * \brief Get the number of trackers
+    *
+    * \return The number of trackers
+    **/
+    inline int getNumTrackers() const { return _trackers.size(); }
+
+    /**
+    * \brief Get a tracker by its index
+    *
+    * \param i Index of the tracker to get
+    *
+    * \return The tracker at the index
+    **/
 	inline FrameTracker* getTracker( int i ) { return _trackers[i]; }
 
-	/** Find the index of the requested child, parent, or tracker.
+	/* Find the index of the requested child, parent, or tracker.
 	    If the requested object does not exist, return -1 */
 	int getChildIndex( const ReferenceFrame* frame ) const;
 	int getParentIndex( const ReferenceFrame* frame ) const;
@@ -163,23 +304,26 @@ class OF_EXPORT ReferenceFrame : public osg::Referenced {
   protected:
 	virtual ~ReferenceFrame(); // Must be allocated on heap using 'new'
 
-	std::string _name;  // Name of reference frame
-	mutable osg::ref_ptr<Vector> _xAxis, _yAxis, _zAxis; // Frame's vectors
-	mutable osg::ref_ptr<osgText::Text> _xLabel, _yLabel, _zLabel; // Axes labels
-	mutable osg::ref_ptr<osgText::Text> _nameLabel;
-	osg::ref_ptr<osg::Geode> _axes; // x,y,z axes together
+	std::string _name;  ///< Name of reference frame
+    mutable osg::ref_ptr<Vector> _xAxis; ///< Vector of frame's x-axis
+    mutable osg::ref_ptr<Vector> _yAxis; ///< Vector of frame's y-axis
+    mutable osg::ref_ptr<Vector> _zAxis; ///< Vector of frame's z-axis
+    mutable osg::ref_ptr<osgText::Text> _xLabel; ///< X-Axes label
+    mutable osg::ref_ptr<osgText::Text> _yLabel; ///< Y-Axes label
+    mutable osg::ref_ptr<osgText::Text> _zLabel; ///< Z-Axes label
+    mutable osg::ref_ptr<osgText::Text> _nameLabel; ///< Name of reference frame that is displayed
+	osg::ref_ptr<osg::Geode> _axes; ///< x,y,z axes together
 
-	mutable osg::BoundingSphere _bound; // Frame's bounding sphere
+	mutable osg::BoundingSphere _bound; ///< Frame's bounding sphere
 
-	  // The transform that all contained objects will undergo
-	osg::ref_ptr<FrameTransform> _xform;
+	osg::ref_ptr<FrameTransform> _xform; ///< The transform that all contained objects will undergo
 
   private:
 	void _init( const std::string &n, const osg::Vec4& c );
 
-	ParentList _parents;  // All direct parents of this frame
-	ChildList _children;  // All direct children of this frame
-	TrackerList _trackers; // All trackers of this frame
+	ParentList _parents;  ///< All direct parents of this frame
+	ChildList _children;  ///< All direct children of this frame
+	TrackerList _trackers; ///< All trackers of this frame
 };
 
 }  // !namespace OpenFrames
