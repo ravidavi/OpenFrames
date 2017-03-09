@@ -93,6 +93,7 @@ namespace OpenFrames {
     virtual ~VRCameraManager();
     
     virtual void enableCamera(unsigned int camNum,
+                              osg::GraphicsContext* gc,
                               osg::Camera* masterCamera,
                               double &zNear, double &zFar);
     virtual void disableCameras(unsigned int start);

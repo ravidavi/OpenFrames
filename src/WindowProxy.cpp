@@ -244,6 +244,12 @@ namespace OpenFrames
           if(!success) std::cerr<< "WindowEventHandler::handle WARNING: OpenGL context was not properly updated during RESIZE event. Rendering artifacts may occur." << std::endl;
         }
         
+        // Update viewports and projection matrices
+        // Although OSG automatically does this, it only applies to cameras attached to the resized
+        // graphics context. Since the DepthPartitioner explicitly removes the main camera from the
+        // graphics context, its projection matrix will not be updated, so its slaves will have
+        // incorrect projections. Calling this explicitly sets the camera's projection matrix.
+        _window->setupGrid(ea.getWindowWidth(), ea.getWindowHeight());
         break;
       }
         

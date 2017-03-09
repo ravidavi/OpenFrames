@@ -57,7 +57,7 @@ namespace OpenFrames
     _scene = new osg::Group;
     
     // For debugging, write names of all cameras that try to traverse the scene
-    _scene->addChild(new VisitorNameNode);
+    //_scene->addChild(new VisitorNameNode);
     
     // Create the Camera that will draw background elements
     _backCamera = new osg::Camera;
@@ -210,7 +210,6 @@ namespace OpenFrames
     // Set up the SceneView
     _sceneView->setSceneData(_scene);
     _sceneView->getCamera()->setCullingMode(osg::CullSettings::DEFAULT_CULLING & ~osg::CullSettings::SMALL_FEATURE_CULLING);
-    _sceneView->getCamera()->setNodeMask(0x0);
   }
   
   void RenderRectangle::setFrameManager(FrameManager *fm)

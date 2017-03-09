@@ -77,7 +77,7 @@ namespace OpenFrames
     void setMaxTraversalDepth(unsigned int depth)
     { _distAccumulator->setMaxDepth(depth); }
     
-    inline unsigned int getMaxTraversalDepth() const
+    unsigned int getMaxTraversalDepth() const
     { return _distAccumulator->getMaxDepth(); }
     
     /** Define the callback function */
@@ -91,6 +91,7 @@ namespace OpenFrames
       
       // Create a new camera and add it as a slave to the given camera
       virtual void enableCamera(unsigned int camNum,
+                                osg::GraphicsContext* gc,
                                 osg::Camera* masterCamera,
                                 double &zNear, double &zFar) = 0;
       
@@ -108,8 +109,8 @@ namespace OpenFrames
       bool _clearColorBuffer;
     };
     
-    virtual void setCameraManager(CameraManager *cameraManager)
-    { _cameraManager = cameraManager; }
+    /** Specify a new camera manager. NULL means reset to basic camera manager */
+    virtual void setCameraManager(CameraManager *cameraManager);
     
   protected:
     virtual ~DepthPartitionCallback();

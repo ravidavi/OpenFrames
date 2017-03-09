@@ -236,6 +236,7 @@ namespace OpenFrames{
   
   // Create a new VRCamera if needed, and add it as a slave
   void VRCameraManager::enableCamera(unsigned int camNum,
+                                     osg::GraphicsContext* gc,
                                      osg::Camera* masterCamera,
                                      double &zNear, double &zFar)
   {
@@ -250,7 +251,7 @@ namespace OpenFrames{
       for(unsigned int i = 0; i < vrcam->getNumCameras(); ++i)
       {
         cam = vrcam->getCamera(i);
-        cam->setGraphicsContext(masterCamera->getGraphicsContext());
+        cam->setGraphicsContext(gc);
         cam->setRenderOrder(masterCamera->getRenderOrder(), camNum);
         cam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
         if(camNum == 0 && _clearColorBuffer)

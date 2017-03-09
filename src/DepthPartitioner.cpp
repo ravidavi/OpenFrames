@@ -29,13 +29,18 @@ namespace OpenFrames
   DepthPartitioner::DepthPartitioner()
   : _view(NULL)
   {
-    // Create slave Camera to manage the depth partitioner
+    // Create main slave Camera to manage the depth partitioner
     // Note this camera won't have any scene of its own, it just analyzes the scene
     // and creates other slave cameras as needed
     _dpMainSlaveCamera = new osg::Camera();
-    _dpMainSlaveCamera->setNodeMask(0x0);
-    _dpMainSlaveCamera->setAllowEventFocus(false);
     _dpMainSlaveCamera->setName(dpMainCamName);
+    
+    // Disable main slave camera's scene traversal
+    _dpMainSlaveCamera->setNodeMask(0x0);
+    
+    // Allow main slave camera to recieve events. Needed since master camera won't
+    // recieve events after its graphics context is detached
+    _dpMainSlaveCamera->setAllowEventFocus(true);
     
     // Create slave callback that will perform depth partitioning
     _dpCallback = new DepthPartitionCallback;
@@ -67,8 +72,13 @@ namespace OpenFrames
     // Remove all depth partitioning objects from current View
     if(_view != NULL)
     {
-      // Reenable current master camera
-      _view->getCamera()->setNodeMask(0xffffffff);
+      // Reattach the current master camera graphics context
+      if(_view->getCamera()->getGraphicsContext() == NULL)
+      {
+        _view->getCamera()->setGraphicsContext(_dpMainSlaveCamera->getGraphicsContext());
+        _dpMainSlaveCamera->setGraphicsContext(NULL);
+        _dpMainSlaveCamera->setViewport(NULL);
+      }
       
       // Detach our main slave Camera from current View
       // This also removes the DepthPartitionCallback
@@ -90,8 +100,8 @@ namespace OpenFrames
       osg::View::Slave *slave = _view->findSlaveForCamera(_dpMainSlaveCamera);
       slave->_updateSlaveCallback = _dpCallback;
       
-      // Disable the new master camera
-      _view->getCamera()->setNodeMask(0x0);
+      // The new master camera's graphics context will be automatically
+      // acquired by the DepthPartitionCallback
     }
     
     return true;
@@ -112,6 +122,7 @@ namespace OpenFrames
     
     // Create a new Camera if needed, and add it as a slave
     virtual void enableCamera(unsigned int camNum,
+                              osg::GraphicsContext* gc,
                               osg::Camera* masterCamera,
                               double &zNear, double &zFar)
     {
@@ -124,7 +135,7 @@ namespace OpenFrames
         newcam->setCullingActive(false);
         newcam->setRenderOrder(masterCamera->getRenderOrder(), camNum);
         newcam->setName(dpCamNamePrefix + std::to_string(camNum));
-        newcam->setGraphicsContext(masterCamera->getGraphicsContext());
+        newcam->setGraphicsContext(gc);
         newcam->setViewport(masterCamera->getViewport());
         newcam->setAllowEventFocus(false);
         
@@ -242,14 +253,49 @@ namespace OpenFrames
   }
   
   /**********************************************/
+  void DepthPartitionCallback::setCameraManager(CameraManager *cameraManager)
+  {
+    if(cameraManager == NULL)
+      _cameraManager = new BasicCameraManager;
+    else
+      _cameraManager = cameraManager;
+  }
+  
+  /**********************************************/
   void DepthPartitionCallback::updateSlave(osg::View& view, osg::View::Slave& slave)
   {
     // If the scene hasn't been defined then don't do anything
     osgViewer::View *sceneView = dynamic_cast<osgViewer::View*>(&view);
     if(!sceneView || !sceneView->getSceneData()) return;
     
-    // Prepare for scene traversal
+    // Capture the master camera's graphics context to the slave camera
     osg::Camera *camera = view.getCamera();
+    if(camera->getGraphicsContext())
+    {
+      if(slave._camera->getGraphicsContext())
+      {
+        std::cerr<< "OpenFrames::DepthPartitionCallback::updateSlave ERROR: Graphics context already exists and cannot be changed." << std::endl;
+        return;
+      }
+      
+      // Copy graphics context and viewport to slave camera
+      slave._camera->setGraphicsContext(camera->getGraphicsContext());
+      slave._camera->setViewport(camera->getViewport());
+      
+      // Disable master camera by detaching its graphics context, which will be
+      // reattached when the DepthPartitioner is moved to another View
+      camera->setGraphicsContext(NULL);
+    }
+    
+    // Make sure there is a valid graphics context
+    osg::GraphicsContext *gc = slave._camera->getGraphicsContext();
+    if(gc == NULL)
+    {
+      std::cerr<< "OpenFrames::DepthPartitionCallback::updateSlave ERROR: No valid Graphics Context!" << std::endl;
+      return;
+    }
+
+    // Prepare for scene traversal
     _distAccumulator->setMatrices(camera->getViewMatrix(), camera->getProjectionMatrix());
     _distAccumulator->setNearFarRatio(camera->getNearFarRatio());
     _distAccumulator->reset();
@@ -267,7 +313,7 @@ namespace OpenFrames
     for(int i = 0; i < numCameras; ++i)
     {
       // Create a new camera if needed, and activate it
-      _cameraManager->enableCamera(i, camera, camPairs[i].first, camPairs[i].second);
+      _cameraManager->enableCamera(i, gc, camera, camPairs[i].first, camPairs[i].second);
     }
     
     // Step 4: Disable remaining unused cameras
