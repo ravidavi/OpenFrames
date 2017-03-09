@@ -93,7 +93,7 @@ namespace OpenFrames
       virtual void enableCamera(unsigned int camNum,
                                 osg::GraphicsContext* gc,
                                 osg::Camera* masterCamera,
-                                double &zNear, double &zFar) = 0;
+                                const double &zNear, const double &zFar) = 0;
       
       // Disable all cameras after specified start camera number
       virtual void disableCameras(unsigned int start) = 0;

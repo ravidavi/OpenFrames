@@ -248,7 +248,7 @@ namespace OpenFrames
         // Although OSG automatically does this, it only applies to cameras attached to the resized
         // graphics context. Since the DepthPartitioner explicitly removes the main camera from the
         // graphics context, its projection matrix will not be updated, so its slaves will have
-        // incorrect projections. Calling this explicitly sets the camera's projection matrix.
+        // incorrect projections. Therefore we explicitly set the camera's projection matrix.
         _window->setupGrid(ea.getWindowWidth(), ea.getWindowHeight());
         break;
       }

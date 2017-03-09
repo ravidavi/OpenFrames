@@ -124,7 +124,7 @@ namespace OpenFrames
     virtual void enableCamera(unsigned int camNum,
                               osg::GraphicsContext* gc,
                               osg::Camera* masterCamera,
-                              double &zNear, double &zFar)
+                              const double &zNear, const double &zFar)
     {
       if(_cameraList.size() <= camNum) _cameraList.resize(camNum+1);
       osg::Camera *newcam = _cameraList[camNum].get();
@@ -133,16 +133,17 @@ namespace OpenFrames
       {
         newcam = new osg::Camera();
         newcam->setCullingActive(false);
+        newcam->setAllowEventFocus(false);
         newcam->setRenderOrder(masterCamera->getRenderOrder(), camNum);
         newcam->setName(dpCamNamePrefix + std::to_string(camNum));
         newcam->setGraphicsContext(gc);
         newcam->setViewport(masterCamera->getViewport());
-        newcam->setAllowEventFocus(false);
         
         // We will compute the projection matrix ourselves
         newcam->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
         newcam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
         
+        // Specify whether first camera should clear color buffer
         if(camNum == 0 && _clearColorBuffer)
           newcam->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         else
@@ -167,6 +168,7 @@ namespace OpenFrames
       newcam->setNodeMask(0xffffffff);
     }
     
+    // Disable all cameras starting with the specified index
     virtual void disableCameras(unsigned int start)
     {
       for(int i = start; i < _cameraList.size(); ++i)
@@ -268,7 +270,7 @@ namespace OpenFrames
     osgViewer::View *sceneView = dynamic_cast<osgViewer::View*>(&view);
     if(!sceneView || !sceneView->getSceneData()) return;
     
-    // Capture the master camera's graphics context to the slave camera
+    // Capture the master camera's graphics context
     osg::Camera *camera = view.getCamera();
     if(camera->getGraphicsContext())
     {
@@ -278,7 +280,8 @@ namespace OpenFrames
         return;
       }
       
-      // Copy graphics context and viewport to slave camera
+      // Copy graphics context and viewport to main slave camera, so that it
+      // can recieve events instead of the disabled master camera.
       slave._camera->setGraphicsContext(camera->getGraphicsContext());
       slave._camera->setViewport(camera->getViewport());
       

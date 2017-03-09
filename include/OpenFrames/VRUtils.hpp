@@ -62,7 +62,7 @@ namespace OpenFrames {
     VRCamera(VRTextureBuffer *texBuffer, int camNum, StereoMode mode);
     
     // Set the projection matrix and enable cameras based on StereoMode
-    void setProjectionMatrix(osg::Matrixd& projmat, double &zNear);
+    void setProjectionMatrix(osg::Matrixd& projmat, const double &zNear);
     
     // Set view matrix
     void setViewMatrix(osg::Matrixd& viewmat);
@@ -95,7 +95,7 @@ namespace OpenFrames {
     virtual void enableCamera(unsigned int camNum,
                               osg::GraphicsContext* gc,
                               osg::Camera* masterCamera,
-                              double &zNear, double &zFar);
+                              const double &zNear, const double &zFar);
     virtual void disableCameras(unsigned int start);
     virtual void reset();
     virtual void setClearColorBuffer(bool clear);

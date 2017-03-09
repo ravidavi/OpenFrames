@@ -95,16 +95,6 @@ namespace OpenFrames{
     _leftCamera->setCullingActive(false);
     _monoCamera->setCullingActive(false);
     
-    // Don't cull small features
-    _rightCamera->setCullingMode(osg::CullSettings::ENABLE_ALL_CULLING & ~osg::CullSettings::SMALL_FEATURE_CULLING);
-    _leftCamera->setCullingMode(osg::CullSettings::ENABLE_ALL_CULLING & ~osg::CullSettings::SMALL_FEATURE_CULLING);
-    _monoCamera->setCullingMode(osg::CullSettings::ENABLE_ALL_CULLING & ~osg::CullSettings::SMALL_FEATURE_CULLING);
-    
-    // Use absolute transform
-    _rightCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
-    _leftCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
-    _monoCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
-    
     // Don't capture events if user clicks on camera viewport
     _rightCamera->setAllowEventFocus(false);
     _leftCamera->setAllowEventFocus(false);
@@ -126,7 +116,7 @@ namespace OpenFrames{
     _monoCamera->attach(osg::Camera::COLOR_BUFFER1, _texBuffer->_leftColorTex);
     _monoCamera->attach(osg::Camera::DEPTH_BUFFER, _texBuffer->_rightDepthTex);
     
-    // Set viewports
+    // Set viewports assuming all textures are same size
     int w = _texBuffer->_rightColorTex->getTextureWidth();
     int h = _texBuffer->_rightColorTex->getTextureHeight();
     _rightCamera->setViewport(0, 0, w, h);
@@ -176,7 +166,9 @@ namespace OpenFrames{
     }
   }
   
-  void VRCamera::setProjectionMatrix(osg::Matrixd& projmat, double &zNear)
+  // Set the projection matrix. If StereoMode is AUTO, then enable/disable
+  // the stereo/mono cameras based on near plane distance
+  void VRCamera::setProjectionMatrix(osg::Matrixd& projmat, const double &zNear)
   {
     if(_mode == MONO)
     {
@@ -187,7 +179,7 @@ namespace OpenFrames{
       _rightCamera->setProjectionMatrix(projmat);
       _leftCamera->setProjectionMatrix(projmat);
     }
-    else
+    else // _mode == AUTO
     {
       if(zNear > 0.1) // Near plane > 100m means no stereo rendering
       {
@@ -209,6 +201,8 @@ namespace OpenFrames{
     }
   }
   
+  
+  // Set each camera's view matrix
   void VRCamera::setViewMatrix(osg::Matrixd& viewmat)
   {
     for(unsigned int i = 0; i < getNumCameras(); ++i)
@@ -217,6 +211,7 @@ namespace OpenFrames{
     }
   }
   
+  // Disable each camera
   void VRCamera::disableCameras()
   {
     for(unsigned int i = 0; i < getNumCameras(); ++i)
@@ -238,7 +233,7 @@ namespace OpenFrames{
   void VRCameraManager::enableCamera(unsigned int camNum,
                                      osg::GraphicsContext* gc,
                                      osg::Camera* masterCamera,
-                                     double &zNear, double &zFar)
+                                     const double &zNear, const double &zFar)
   {
     if(_vrCameraList.size() <= camNum) _vrCameraList.resize(camNum+1);
     VRCamera *vrcam = _vrCameraList[camNum].get();
@@ -253,15 +248,22 @@ namespace OpenFrames{
         cam = vrcam->getCamera(i);
         cam->setGraphicsContext(gc);
         cam->setRenderOrder(masterCamera->getRenderOrder(), camNum);
+        
+        // We will compute the projection matrix ourselves
+        cam->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
         cam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
+        
+        // Specify whether first VRCamera should clear color buffer
         if(camNum == 0 && _clearColorBuffer)
           cam->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         else
           cam->setClearMask(GL_DEPTH_BUFFER_BIT);
         
+        // Add camera as slave, and tell it to use the master Camera's scene
         masterCamera->getView()->addSlave(cam, true);
       }
       
+      // Store new VRCamera in internal camera list
       _vrCameraList[camNum] = vrcam;
     }
     
@@ -274,6 +276,7 @@ namespace OpenFrames{
     vrcam->setViewMatrix(masterCamera->getViewMatrix());
   }
   
+  // Disable all cameras starting with the specified index
   void VRCameraManager::disableCameras(unsigned int start)
   {
     for(int i = start; i < _vrCameraList.size(); ++i)
@@ -282,10 +285,13 @@ namespace OpenFrames{
     }
   }
   
+  // Detach all our cameras from the main scene, then erase the cameras
   void VRCameraManager::reset()
   {
+    // Loop over all our VRCameras
     for(int i = 0; i < _vrCameraList.size(); ++i)
     {
+      // Get every camera and remove it from the parent osg::View
       VRCamera *vrcam = _vrCameraList[i];
       for(int j = 0; j < vrcam->getNumCameras(); ++j)
       {
@@ -294,6 +300,10 @@ namespace OpenFrames{
         {
           unsigned int pos = view->findSlaveIndexForCamera(vrcam->getCamera(j));
           view->removeSlave(pos);
+        }
+        else
+        {
+          std::cerr<< "OpenFrames::VRCameraManager WARNING: " << vrcam->getCamera(j)->getName() << " does not have a parent osg::View. Cannot remove." << std::endl;
         }
       }
     }

@@ -199,11 +199,6 @@ namespace OpenFrames
       // Don't clear color buffer so that background is preserved
       _depthPartitionNode->setClearColorBuffer(false);
       _depthPartitioner->getCallback()->setClearColorBuffer(false);
-      if(_useVR)
-      {
-        //_depthPartitionNode->setVRTextures(_rightEyeColorTex, _rightEyeDepthTex, _leftEyeColorTex, _leftEyeDepthTex);
-        //_depthPartitioner->setVRTexBuffer(_texBuffer);
-      }
       if(!useNewDP) _scene->addChild(_depthPartitionNode.get());
     }
     
