@@ -1,8 +1,16 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.5.2)
 PROJECT(OpenFrames)
 
+# Set where to find extra CMake modules
+SET(CMAKE_MODULE_PATH “${CMAKE_MODULE_PATH}” ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
+
 # Make the makefile output verbose (for compiler error checking)
 #SET(CMAKE_VERBOSE_MAKEFILE on)
+
+# User options
+OPTION( OF_BUILD_TESTS "Build Test Programs" ON )
+OPTION( OF_FORTRAN_MODULE "Compile Fortran Module" OFF )
+OPTION( OF_USE_OPENVR "Compile with OpenVR Support" OFF )
 
 # Default to Release configuration on single-config generators
 # e.g. make, but not VisualStudio or XCode
@@ -37,7 +45,7 @@ ENDIF()
 
 # Find OpenGL
 # On Mac, check if OSG is X11-based. This is required because CMake's
-# FindOpenGL module does not look for X11/GL itself
+# FindOpenGL and does not look for X11/GL itself
 IF(APPLE)
   EXECUTE_PROCESS(
     COMMAND otool -L "${OSGVIEWER_LIBRARY}"
@@ -65,15 +73,16 @@ IF(APPLE)
 ENDIF()
 FIND_PACKAGE(OpenGL)
 
-# User options
-OPTION( OF_BUILD_TESTS "Build Test Programs" ON )
-OPTION( OF_FORTRAN_MODULE "Compile Fortran Module" OFF )
-
 # This is a workaround to the broken OPTIONAL signature in CMake 2.8-10
 IF( OF_FORTRAN_MODULE )
   ENABLE_LANGUAGE(Fortran OPTIONAL)
   GET_FILENAME_COMPONENT(Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 ENDIF( OF_FORTRAN_MODULE )
+
+# Find OpenVR
+IF(OF_USE_OPENVR)
+  FIND_PACKAGE(OpenVR REQUIRED)
+ENDIF(OF_USE_OPENVR)
 
 # Go to the src directory and look for CMake instructions there
 ADD_SUBDIRECTORY(src)

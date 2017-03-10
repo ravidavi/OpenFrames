@@ -421,6 +421,10 @@ namespace OpenFrames
     // VR can only be enabled for 1x1 windows
     if(_useVR)
     {
+#ifndef OF_USE_OPENVR
+      std::cerr<< "OpenFrames::WindowProxy ERROR: OpenFrames not built with OpenVR support. Disabling VR." << std::endl;
+      _useVR = false;
+#else
       if((nrow != 1) || (ncol != 1))
       {
         std::cerr<< "OpenFrames::WindowProxy ERROR: VR only available for 1x1 windows. Disabling VR." << std::endl;
@@ -428,6 +432,7 @@ namespace OpenFrames
       }
       else
         std::cout<< "WindowProxy enabling VR" << std::endl;
+#endif
     }
     
     // Create the RenderRectangles immediately so that they can be modified as needed
