@@ -65,21 +65,26 @@ namespace OpenFrames {
     
     VRCamera(VRTextureBuffer *texBuffer, int camNum, StereoMode mode, bool useMSAA = false);
     
-    // Set the projection matrix and enable cameras based on StereoMode
-    void setProjectionMatrix(osg::Matrixd& projmat, const double &zNear);
-    
-    // Set view matrix
-    void setViewMatrix(osg::Matrixd& viewmat);
-    
     // Get whether MSAA is being used
     bool getUseMSAA() { return _useMSAA; }
     
-    // Update the MSAA-enabled cameras
-    void updateMSAACameras();
+    /** Set the OpenGL clear mask for cameras */
+    void setClearColorBuffer(bool clear);
+    bool getClearColorBuffer() { return (_rightCamera->getClearMask() & GL_COLOR_BUFFER_BIT); }
     
+    /** Get number of cameras in use, depending on StereoMode */
     unsigned int getNumCameras();
-    osg::Camera* getCamera(unsigned int camNum);
+    
+    /** Get the internal osg::Camera at desired position */
+    osg::Camera* getCamera(unsigned int pos);
+    
+    /** Disable all internal cameras */
     void disableCameras();
+    
+    // Update projection/modelview matrices, enable cameras, and handle other
+    // camera-specific operations
+    void updateCameras(osg::Matrixd& viewmat, osg::Matrixd& projmat,
+                       const double &zNear);
     
   protected:
     virtual ~VRCamera();

@@ -202,86 +202,26 @@ namespace OpenFrames{
     else return 3;
   }
   
-  osg::Camera* VRCamera::getCamera(unsigned int camNum)
+  // Get camera at given position
+  osg::Camera* VRCamera::getCamera(unsigned int pos)
   {
     if(_mode == MONO)
     {
-      if(camNum == 0) return _monoCamera;
+      if(pos == 0) return _monoCamera;
       else return NULL;
     }
     else if(_mode == STEREO)
     {
-      if(camNum == 0) return _rightCamera;
-      else if(camNum == 1) return _leftCamera;
+      if(pos == 0) return _rightCamera;
+      else if(pos == 1) return _leftCamera;
       else return NULL;
     }
     else
     {
-      if(camNum == 0) return _rightCamera;
-      else if(camNum == 1) return _leftCamera;
-      else if(camNum == 2) return _monoCamera;
+      if(pos == 0) return _rightCamera;
+      else if(pos == 1) return _leftCamera;
+      else if(pos == 2) return _monoCamera;
       else return NULL;
-    }
-  }
-  
-  void VRCamera::updateMSAACameras()
-  {
-    if(!_useMSAA) return; // Only applies to MSAA cameras
-    
-    // Add texture camera to right camera
-    if(!_rightCamera->containsNode(_texBuffer->_rightTexCamera))
-      _rightCamera->addChild(_texBuffer->_rightTexCamera);
-    
-    // Add texture camera to left camera
-    if(!_leftCamera->containsNode(_texBuffer->_leftTexCamera))
-      _leftCamera->addChild(_texBuffer->_leftTexCamera);
-    
-    // Add texture camera to mono camera
-    if(!_monoCamera->containsNode(_texBuffer->_rightTexCamera))
-      _monoCamera->addChild(_texBuffer->_rightTexCamera);
-  }
-  
-  // Set the projection matrix. If StereoMode is AUTO, then enable/disable
-  // the stereo/mono cameras based on near plane distance
-  void VRCamera::setProjectionMatrix(osg::Matrixd& projmat, const double &zNear)
-  {
-    if(_mode == MONO)
-    {
-      _monoCamera->setProjectionMatrix(projmat);
-    }
-    else if(_mode == STEREO)
-    {
-      _rightCamera->setProjectionMatrix(projmat);
-      _leftCamera->setProjectionMatrix(projmat);
-    }
-    else // _mode == AUTO
-    {
-      if(zNear > 0.1) // Near plane > 100m means no stereo rendering
-      {
-        _monoCamera->setNodeMask(0xffffffff); // Enable mono camera
-        _monoCamera->setProjectionMatrix(projmat);
-        
-        _rightCamera->setNodeMask(0x0); // Disable stereo cameras
-        _leftCamera->setNodeMask(0x0);
-      }
-      else // Near plane <= 100m means stereo rendering
-      {
-        _rightCamera->setNodeMask(0xffffffff); // Enable stereo cameras
-        _leftCamera->setNodeMask(0xffffffff);
-        _rightCamera->setProjectionMatrix(projmat);
-        _leftCamera->setProjectionMatrix(projmat);
-        
-        _monoCamera->setNodeMask(0x0); // Disable mono camera
-      }
-    }
-  }
-  
-  // Set each camera's view matrix
-  void VRCamera::setViewMatrix(osg::Matrixd& viewmat)
-  {
-    for(unsigned int i = 0; i < getNumCameras(); ++i)
-    {
-      getCamera(i)->setViewMatrix(viewmat);
     }
   }
   
@@ -291,6 +231,69 @@ namespace OpenFrames{
     for(unsigned int i = 0; i < getNumCameras(); ++i)
     {
       getCamera(i)->setNodeMask(0x0);
+    }
+  }
+  
+  // Set whether the color buffer is cleared by this VRCamera
+  void VRCamera::setClearColorBuffer(bool clear)
+  {
+    if(clear)
+    {
+      _monoCamera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      _rightCamera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      _leftCamera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+    else
+    {
+      _monoCamera->setClearMask(GL_DEPTH_BUFFER_BIT);
+      _rightCamera->setClearMask(GL_DEPTH_BUFFER_BIT);
+      _leftCamera->setClearMask(GL_DEPTH_BUFFER_BIT);
+    }
+  }
+  
+  void VRCamera::updateCameras(osg::Matrixd& viewmat, osg::Matrixd& projmat,
+                               const double &zNear)
+  {
+    // If MSAA is enabled and we don't need to clear the color buffer, then
+    // use the MSAA camera to chain the existing color texture
+    bool useMSAACam = _useMSAA && !getClearColorBuffer();
+    
+    if((_mode == MONO) || ((_mode == AUTO) && (zNear > 0.1)))
+    {
+      _monoCamera->setNodeMask(0xffffffff); // Enable mono camera
+      _monoCamera->setViewMatrix(viewmat);
+      _monoCamera->setProjectionMatrix(projmat);
+      
+      // Add MSAA texture chaining camera to mono camera
+      if(useMSAACam && !_monoCamera->containsNode(_texBuffer->_rightTexCamera))
+        _monoCamera->addChild(_texBuffer->_rightTexCamera);
+      
+      _rightCamera->setNodeMask(0x0); // Disable stereo cameras
+      _leftCamera->setNodeMask(0x0);
+    }
+    else if(_mode == STEREO || ((_mode == AUTO) && (zNear <= 0.1)))
+    {
+      _rightCamera->setNodeMask(0xffffffff); // Enable right camera
+      _rightCamera->setViewMatrix(viewmat);
+      _rightCamera->setProjectionMatrix(projmat);
+      
+      // Add MSAA texture chaining camera to right camera
+      if(useMSAACam && !_rightCamera->containsNode(_texBuffer->_rightTexCamera))
+        _rightCamera->addChild(_texBuffer->_rightTexCamera);
+      
+      _leftCamera->setNodeMask(0xffffffff); // Enable left camera
+      _leftCamera->setViewMatrix(viewmat);
+      _leftCamera->setProjectionMatrix(projmat);
+      
+      // Add MSAA texture chaining camera to left camera
+      if(useMSAACam && !_leftCamera->containsNode(_texBuffer->_leftTexCamera))
+        _leftCamera->addChild(_texBuffer->_leftTexCamera);
+      
+      _monoCamera->setNodeMask(0x0); // Disable mono camera
+    }
+    else
+    {
+      std::cerr<< "OpenFrames::VRCamera ERROR: Invalid combination of StereoMode (" << _mode << ") and zNear (" << zNear << ")" << std::endl;
     }
   }
   
@@ -331,15 +334,15 @@ namespace OpenFrames{
         cam->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
         cam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
         
-        // Specify whether first VRCamera should also clear color buffer
-        if(camNum == 0 && _clearColorBuffer)
-          cam->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        else
-          cam->setClearMask(GL_DEPTH_BUFFER_BIT);
-        
         // Add camera as slave, and tell it to use the master Camera's scene
         masterCamera->getView()->addSlave(cam, true);
       }
+      
+      // Specify whether first VRCamera should clear color buffer
+      if(camNum == 0 && _clearColorBuffer)
+        vrcam->setClearColorBuffer(true);
+      else
+        vrcam->setClearColorBuffer(false);
       
       // Store new VRCamera in internal camera list
       _vrCameraList[camNum] = vrcam;
@@ -349,12 +352,8 @@ namespace OpenFrames{
     osg::Matrixd projmat = masterCamera->getProjectionMatrix();
     updateProjectionMatrix(projmat, zNear, zFar);
     
-    // Set camera rendering matrices
-    vrcam->setProjectionMatrix(projmat, zNear); // This enables cameras as needed
-    vrcam->setViewMatrix(masterCamera->getViewMatrix());
-    
-    // Make sure MSAA chaining is enabled
-    vrcam->updateMSAACameras();
+    // Update camera matrices and properties
+    vrcam->updateCameras(masterCamera->getViewMatrix(), projmat, zNear);
   }
   
   // Disable all cameras starting with the specified index
@@ -398,18 +397,9 @@ namespace OpenFrames{
     CameraManager::setClearColorBuffer(clear);
     
     // Set first camera's clear color buffer setting if needed
-    if(_vrCameraList.size() > 0)
+    if(!_vrCameraList.empty())
     {
-      VRCamera *vrcam = _vrCameraList[0];
-      osg::Camera *cam;
-      for(unsigned int i = 0; i < vrcam->getNumCameras(); ++i)
-      {
-        cam = vrcam->getCamera(i);
-        if(_clearColorBuffer)
-          cam->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        else
-          cam->setClearMask(GL_DEPTH_BUFFER_BIT);
-      }
+      _vrCameraList[0]->setClearColorBuffer(clear);
     }
     
   }
