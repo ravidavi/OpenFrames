@@ -21,15 +21,22 @@
 
 // Macro to handle compiler function name mangling
 #if defined(GFORTRAN_CALLS)
-        // GFortran appends underscores to function names
+        /// GFortran appends underscores to function names
 	#define OF_FCN(name) name##__ 
 #else
-        // Function names stay as they are on all other interfaces
-        // This includes Intel Fortran and C compilers
+        /// Function names stay as they are on all other interfaces
+        /// This includes Intel Fortran and C compilers
 	#define OF_FCN(name) name 
 #endif
 
 // Macros to handle Fortran hidden string length arguments
+
+/// \def OF_CHARARG(name)
+/// Macro to handle Fortran hidden character length arguments
+
+/// \def OF_STRING(name)
+/// Macro to handle Fortran hidden string length arguments
+
 #if defined(GFORTRAN_CALLS) || defined(IFORT_CALLS)
         // Fortran compilers pass hidden char array lengths
         #define OF_CHARARG(name) const char *name, unsigned int name##len
@@ -40,9 +47,13 @@
 #endif
 
 // Define shortcuts for callback function signatures
+/** Shortcut for a basic callback signature */
 #define BASIC_CALLBACK_SIG unsigned int *winID, unsigned int *row, unsigned int *col
+/** Shortcut for a keypress callback signature */
 #define KEYPRESS_SIG BASIC_CALLBACK_SIG, int *key
+/** Shortcut for a mouse motion callback signature */
 #define MOUSEMOTION_SIG BASIC_CALLBACK_SIG, float *x, float *y
+/** Shortcut for a button press callback signature */
 #define BUTTON_SIG MOUSEMOTION_SIG, unsigned int *button
 
 // Make sure this header can be used by "pure" C compilers (e.g. Matlab)
@@ -51,17 +62,18 @@ extern "C"
 {
 #endif
 
-/** All functions have a prefix indicating what they operate on:
- * ofwin: Acts on the currently active WindowProxy
- * offm: Acts on the specified FrameManager.
- * offrame: Acts on the currently active Reference Frame.
- * of(type of ReferenceFrame): Acts on the currently active ReferenceFrame,
- *   assuming that it is of the subtype given by the function name.
- * oftraj: Acts on the currently active Trajectory.
- * oftrajartist: Acts on the currently active TrajectoryArtist.
- * of(type of TrajectoryArtist): Acts on the currently active TrajectoryArtist,
- *  assuming that it is of the subtype given by the function name.
- * ofview: Acts on the currently active View.
+/** \file
+ * All functions have a prefix indicating what they operate on:
+ * - ofwin: Acts on the currently active WindowProxy
+ * - offm: Acts on the specified FrameManager.
+ * - offrame: Acts on the currently active Reference Frame.
+ * - of(type of ReferenceFrame): Acts on the currently active ReferenceFrame,
+ *     assuming that it is of the subtype given by the function name.
+ * - oftraj: Acts on the currently active Trajectory.
+ * - oftrajartist: Acts on the currently active TrajectoryArtist.
+ * - of(type of TrajectoryArtist): Acts on the currently active TrajectoryArtist,
+ *     assuming that it is of the subtype given by the function name.
+ * - ofview: Acts on the currently active View.
  *
  * In addition, some functions produce integer results. These values
  * can be obtained by calling of_getreturnedvalue().
