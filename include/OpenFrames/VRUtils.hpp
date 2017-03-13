@@ -42,6 +42,10 @@ namespace OpenFrames {
     // Textures for each eye's image
     osg::ref_ptr<osg::Texture2D> _rightColorTex, _rightDepthTex;
     osg::ref_ptr<osg::Texture2D> _leftColorTex, _leftDepthTex;
+    
+    // Cameras that allow color textures to be chained between VRCameras
+    // in case MSAA is being used
+    osg::ref_ptr<osg::Camera> _rightTexCamera, _leftTexCamera;
   };
   
   /******************************************
@@ -59,13 +63,19 @@ namespace OpenFrames {
       AUTO = 2    // Auto-switch between Stereo/Mono based on distance
     };
     
-    VRCamera(VRTextureBuffer *texBuffer, int camNum, StereoMode mode);
+    VRCamera(VRTextureBuffer *texBuffer, int camNum, StereoMode mode, bool useMSAA = false);
     
     // Set the projection matrix and enable cameras based on StereoMode
     void setProjectionMatrix(osg::Matrixd& projmat, const double &zNear);
     
     // Set view matrix
     void setViewMatrix(osg::Matrixd& viewmat);
+    
+    // Get whether MSAA is being used
+    bool getUseMSAA() { return _useMSAA; }
+    
+    // Update the MSAA-enabled cameras
+    void updateMSAACameras();
     
     unsigned int getNumCameras();
     osg::Camera* getCamera(unsigned int camNum);
@@ -83,7 +93,10 @@ namespace OpenFrames {
     /** The texture buffers drawn on by Cameras */
     osg::ref_ptr<VRTextureBuffer> _texBuffer;
     
-    StereoMode _mode;
+    StereoMode _mode; // Stereo rendering mode
+    
+    /** Whether to use multisample antialiasing */
+    bool _useMSAA;
   };
   
   /** Creates and manages VR cameras for the depth partitioner */

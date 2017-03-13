@@ -72,13 +72,46 @@ namespace OpenFrames{
     _leftDepthTex->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
     _leftDepthTex->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
     if(setSize) _leftDepthTex->setTextureSize(width, height);
+    
+    // Set up textured quad that will draw each color texture
+    osg::Geometry* geom = osg::createTexturedQuadGeometry(osg::Vec3(), osg::Vec3(1, 0, 0), osg::Vec3(0, 1, 0));
+    osg::Geode *quad = new osg::Geode;
+    quad->addDrawable(geom);
+    
+    // Create camera that will render the right textured quad
+    _rightTexCamera = new osg::Camera();
+    _rightTexCamera->addChild(quad);
+    _rightTexCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF); // Use our own view/projection matrix
+    _rightTexCamera->setProjectionMatrixAsOrtho2D(0, 1, 0, 1); // Same as textured quad's bounds
+    _rightTexCamera->setRenderOrder(osg::Camera::NESTED_RENDER); // Render within parent Camera's render stage
+    _rightTexCamera->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
+    osg::StateSet *ss = _rightTexCamera->getOrCreateStateSet();
+    ss->setRenderBinDetails(-100, "RenderBin"); // Render before rest of parent Camera's scene
+    ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF); // Don't need lighting to copy a texture
+    ss->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF); // Don't want depth test to clip out texture
+    ss->setTextureAttributeAndModes(0, _rightColorTex, osg::StateAttribute::ON); // Bind colorTex
+
+    
+    // Create camera that will render the left textured quad
+    _leftTexCamera = new osg::Camera();
+    _leftTexCamera->addChild(quad);
+    _leftTexCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF); // Use our own view/projection matrix
+    _leftTexCamera->setProjectionMatrixAsOrtho2D(0, 1, 0, 1); // Same as textured quad's bounds
+    _leftTexCamera->setRenderOrder(osg::Camera::NESTED_RENDER); // Render within parent Camera's render stage
+    _leftTexCamera->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
+    ss = _leftTexCamera->getOrCreateStateSet();
+    ss->setRenderBinDetails(-100, "RenderBin"); // Render before rest of parent Camera's scene
+    ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF); // Don't need lighting to copy a texture
+    ss->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF); // Don't want depth test to clip out texture
+    ss->setTextureAttributeAndModes(0, _leftColorTex, osg::StateAttribute::ON); // Bind colorTex
   }
   
   VRTextureBuffer::~VRTextureBuffer() {}
   
-  VRCamera::VRCamera(VRTextureBuffer *texBuffer, int camNum, StereoMode mode)
+  VRCamera::VRCamera(VRTextureBuffer *texBuffer, int camNum, StereoMode mode, bool useMSAA)
   : _texBuffer(texBuffer),
-  _mode(mode)
+  _mode(mode),
+  _useMSAA(useMSAA)
   {
     // Create camera
     _rightCamera = new osg::Camera();
@@ -100,21 +133,46 @@ namespace OpenFrames{
     _leftCamera->setAllowEventFocus(false);
     _monoCamera->setAllowEventFocus(false);
     
+    // Setup MSAA/CSAA parameters
+    int samples = 0, colorSamples = 0;
+    if(_useMSAA)
+    {
+      samples = 4;
+      colorSamples = 4;
+    }
+    
     // Attach right eye color/depth buffers
     _rightCamera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
-    _rightCamera->attach(osg::Camera::COLOR_BUFFER0, _texBuffer->_rightColorTex);
-    _rightCamera->attach(osg::Camera::DEPTH_BUFFER, _texBuffer->_rightDepthTex);
+    _rightCamera->attach(osg::Camera::COLOR_BUFFER0, _texBuffer->_rightColorTex, 0, 0, false, samples, colorSamples);
+    if(_useMSAA)
+    {
+      // With MSAA, we can save memory by not creating a resolve depth buffer. So don't
+      // attach one, and tell OSG to not create one. It will still create a render
+      // depth buffer since we don't change the render mask.
+      _rightCamera->setImplicitBufferAttachmentResolveMask(0);
+    }
+    else
+    {
+      // Without MSAA, we must attach depth buffer
+      _rightCamera->attach(osg::Camera::DEPTH_BUFFER, _texBuffer->_rightDepthTex);
+    }
     
     // Attach left eye color/depth buffers
     _leftCamera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
-    _leftCamera->attach(osg::Camera::COLOR_BUFFER0, _texBuffer->_leftColorTex);
-    _leftCamera->attach(osg::Camera::DEPTH_BUFFER, _texBuffer->_leftDepthTex);
+    _leftCamera->attach(osg::Camera::COLOR_BUFFER0, _texBuffer->_leftColorTex, 0, 0, false, samples, colorSamples);
+    if(_useMSAA)
+      _leftCamera->setImplicitBufferAttachmentResolveMask(0);
+    else
+      _leftCamera->attach(osg::Camera::DEPTH_BUFFER, _texBuffer->_leftDepthTex);
     
     // Attach mono eye color/depth buffers
     _monoCamera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
-    _monoCamera->attach(osg::Camera::COLOR_BUFFER0, _texBuffer->_rightColorTex);
-    _monoCamera->attach(osg::Camera::COLOR_BUFFER1, _texBuffer->_leftColorTex);
-    _monoCamera->attach(osg::Camera::DEPTH_BUFFER, _texBuffer->_rightDepthTex);
+    _monoCamera->attach(osg::Camera::COLOR_BUFFER0, _texBuffer->_rightColorTex, 0, 0, false, samples, colorSamples);
+    _monoCamera->attach(osg::Camera::COLOR_BUFFER1, _texBuffer->_leftColorTex, 0, 0, false, samples, colorSamples);
+    if(_useMSAA)
+      _monoCamera->setImplicitBufferAttachmentResolveMask(0);
+    else
+      _monoCamera->attach(osg::Camera::DEPTH_BUFFER, _texBuffer->_rightDepthTex);
     
     // Set viewports assuming all textures are same size
     int w = _texBuffer->_rightColorTex->getTextureWidth();
@@ -166,6 +224,23 @@ namespace OpenFrames{
     }
   }
   
+  void VRCamera::updateMSAACameras()
+  {
+    if(!_useMSAA) return; // Only applies to MSAA cameras
+    
+    // Add texture camera to right camera
+    if(!_rightCamera->containsNode(_texBuffer->_rightTexCamera))
+      _rightCamera->addChild(_texBuffer->_rightTexCamera);
+    
+    // Add texture camera to left camera
+    if(!_leftCamera->containsNode(_texBuffer->_leftTexCamera))
+      _leftCamera->addChild(_texBuffer->_leftTexCamera);
+    
+    // Add texture camera to mono camera
+    if(!_monoCamera->containsNode(_texBuffer->_rightTexCamera))
+      _monoCamera->addChild(_texBuffer->_rightTexCamera);
+  }
+  
   // Set the projection matrix. If StereoMode is AUTO, then enable/disable
   // the stereo/mono cameras based on near plane distance
   void VRCamera::setProjectionMatrix(osg::Matrixd& projmat, const double &zNear)
@@ -200,7 +275,6 @@ namespace OpenFrames{
       }
     }
   }
-  
   
   // Set each camera's view matrix
   void VRCamera::setViewMatrix(osg::Matrixd& viewmat)
@@ -240,20 +314,24 @@ namespace OpenFrames{
     
     if(!vrcam) // Create a new VRCamera
     {
-      vrcam = new VRCamera(_texBuffer, camNum, VRCamera::AUTO);
+      vrcam = new VRCamera(_texBuffer, camNum, VRCamera::AUTO, true); // Use MSAA
       
       osg::Camera *cam;
       for(unsigned int i = 0; i < vrcam->getNumCameras(); ++i)
       {
+        // Set camera graphics context
         cam = vrcam->getCamera(i);
         cam->setGraphicsContext(gc);
+        
+        // Cameras are rendered in order of increasing render number, so
+        // set this camera's number as its render number
         cam->setRenderOrder(masterCamera->getRenderOrder(), camNum);
         
         // We will compute the projection matrix ourselves
         cam->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
         cam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
         
-        // Specify whether first VRCamera should clear color buffer
+        // Specify whether first VRCamera should also clear color buffer
         if(camNum == 0 && _clearColorBuffer)
           cam->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         else
@@ -274,6 +352,9 @@ namespace OpenFrames{
     // Set camera rendering matrices
     vrcam->setProjectionMatrix(projmat, zNear); // This enables cameras as needed
     vrcam->setViewMatrix(masterCamera->getViewMatrix());
+    
+    // Make sure MSAA chaining is enabled
+    vrcam->updateMSAACameras();
   }
   
   // Disable all cameras starting with the specified index

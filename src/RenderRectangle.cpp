@@ -98,6 +98,9 @@ namespace OpenFrames
   
   void RenderRectangle::_init()
   {
+    // Master camera reference will be used throughout
+    osg::Camera *masterCam = _sceneView->getCamera();
+    
     // Set up cameras
     {
       // Set up HUD camera render properties
@@ -119,10 +122,17 @@ namespace OpenFrames
       _backCamera->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
       if(_useVR)
       {
+        // Use FBO to render to texture
         _backCamera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
+        
+        // Stars are far away, so render same view to both eyes
         _backCamera->attach(osg::Camera::COLOR_BUFFER0, _texBuffer->_rightColorTex);
         _backCamera->attach(osg::Camera::COLOR_BUFFER1, _texBuffer->_leftColorTex);
-        _backCamera->attach(osg::Camera::DEPTH_BUFFER, _texBuffer->_rightDepthTex);
+        
+        // Don't need a depth buffer since we don't care about depth in the background scene
+        _backCamera->setImplicitBufferAttachmentRenderMask(0);
+        
+        // Render to entire texture
         _backCamera->setViewport(0, 0, vrWidth, vrHeight);
       }
 
@@ -142,8 +152,8 @@ namespace OpenFrames
       if(_useVR) _sceneView->addSlave(_mirrorCamera, false);
       
       // Main camera shouldn't clear its color buffer
-      _sceneView->getCamera()->setClearMask(GL_DEPTH_BUFFER_BIT);
-      if(_useVR) _sceneView->getCamera()->setProjectionResizePolicy(osg::Camera::FIXED);
+      masterCam->setClearMask(GL_DEPTH_BUFFER_BIT);
+      if(_useVR) masterCam->setProjectionResizePolicy(osg::Camera::FIXED);
     }
     
     // Set up border rectangle
@@ -204,7 +214,7 @@ namespace OpenFrames
     
     // Set up the SceneView
     _sceneView->setSceneData(_scene);
-    _sceneView->getCamera()->setCullingMode(osg::CullSettings::DEFAULT_CULLING & ~osg::CullSettings::SMALL_FEATURE_CULLING);
+    masterCam->setCullingMode(osg::CullSettings::DEFAULT_CULLING & ~osg::CullSettings::SMALL_FEATURE_CULLING);
   }
   
   void RenderRectangle::setFrameManager(FrameManager *fm)
