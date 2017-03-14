@@ -89,6 +89,9 @@ namespace OpenFrames
       CameraManager() : _clearColorBuffer(true) {}
       virtual ~CameraManager() {}
       
+      // Get the internal name of a camera
+      virtual std::string getCameraName(unsigned int camNum) = 0;
+      
       // Create a new camera and add it as a slave to the given camera
       virtual void enableCamera(unsigned int camNum,
                                 osg::GraphicsContext* gc,
@@ -98,7 +101,8 @@ namespace OpenFrames
       // Disable all cameras after specified start camera number
       virtual void disableCameras(unsigned int start) = 0;
       
-      // Clear all internal cameras
+      // Clear all internal cameras and revert the CameraManger to an unused
+      // and empty state
       virtual void reset() = 0;
       
       // Updates a projection matrix with specified near/far plane
@@ -120,6 +124,8 @@ namespace OpenFrames
     
     // The camera manager that creates cameras
     osg::ref_ptr<CameraManager> _cameraManager;
+    
+    unsigned int _numActiveCameras;
   };
   
 } // !namespace OpenFrames

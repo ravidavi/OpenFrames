@@ -235,6 +235,9 @@ namespace OpenFrames
     inline void setID(unsigned int id) { _winID = id; }
     inline unsigned int getID() const { return _winID; }
     
+    /** Get whether VR rendering is enabled */
+    bool getUseVR() { return _useVR; }
+    
     /** Inherited from OpenThreads::Thread. Called on thread launch. */
     virtual void run();
     

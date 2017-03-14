@@ -110,6 +110,8 @@ namespace OpenFrames {
     VRCameraManager(VRTextureBuffer *texBuffer);
     virtual ~VRCameraManager();
     
+    virtual std::string getCameraName(unsigned int camNum);
+    
     virtual void enableCamera(unsigned int camNum,
                               osg::GraphicsContext* gc,
                               osg::Camera* masterCamera,

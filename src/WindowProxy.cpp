@@ -343,7 +343,9 @@ namespace OpenFrames
   class CheckPrerequisites : public osg::Operation
   {
   public:
-    CheckPrerequisites() {}
+    CheckPrerequisites(WindowProxy *wp)
+    : _windowProxy(wp)
+    {}
     
     /** Do the actual task of this operation.*/
     virtual void operator () (osg::Object* obj)
@@ -394,11 +396,19 @@ namespace OpenFrames
         std::cerr<< "OpenFrames::WindowProxy WARNING: FBOs not supported, VR support disabled." << std::endl;
       }
       
+      // Check for multisample support
+      if(_windowProxy->getUseVR() && !glext->isRenderbufferMultisampleSupported())
+      {
+        std::cerr<< "OpenFrames::WindowProxy WARNING: Multisample not supported, VR rendering will not be antialiased." << std::endl;
+      }
+      
       // Other OpenGL extension checks can go here
     }
     
   protected:
     virtual ~CheckPrerequisites() {}
+    
+    WindowProxy* _windowProxy;
   };
   
   WindowProxy::WindowProxy( int x, int y, unsigned int width, unsigned int height,
@@ -413,7 +423,7 @@ namespace OpenFrames
     _viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
     
     /** Make sure that OpenGL checks are done when the window is created */
-    _viewer->setRealizeOperation(new CheckPrerequisites);
+    _viewer->setRealizeOperation(new CheckPrerequisites(this));
     
     /** We don't want the OpenGL context being made current then released at every frame, because that slows things down and can cause problems with single-context windowing systems such as Winteracter. It's ok to not do this here, because we know that each WindowProxy will only handle one drawing context in its thread. */
     _viewer->setReleaseContextAtEndOfFrameHint(false);
@@ -455,10 +465,8 @@ namespace OpenFrames
     shutdown();
   }
   
-  class DisableSwap : public osg::GraphicsContext::SwapCallback
+  struct DisableSwap : public osg::GraphicsContext::SwapCallback
   {
-  public:
-    DisableSwap() {}
     virtual void swapBuffersImplementation(osg::GraphicsContext *gc) {}
   };
   

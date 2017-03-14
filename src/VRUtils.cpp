@@ -18,6 +18,8 @@
 
 #include <iostream>
 
+static const std::string vrCamNamePrefix("VRCam");
+
 namespace OpenFrames{
   
   VRTextureBuffer::VRTextureBuffer(int width, int height)
@@ -119,9 +121,9 @@ namespace OpenFrames{
     _monoCamera = new osg::Camera();
     
     // Set camera name
-    _rightCamera->setName("VRRight" + std::to_string(camNum));
-    _leftCamera->setName("VRLeft" + std::to_string(camNum));
-    _monoCamera->setName("VRMono" + std::to_string(camNum));
+    _rightCamera->setName(vrCamNamePrefix + std::to_string(camNum) + "Right");
+    _leftCamera->setName(vrCamNamePrefix + std::to_string(camNum) + "Left");
+    _monoCamera->setName(vrCamNamePrefix + std::to_string(camNum) + "Mono");
     
     // Don't allow cameras to be culled out
     _rightCamera->setCullingActive(false);
@@ -304,6 +306,12 @@ namespace OpenFrames{
   VRCameraManager::~VRCameraManager()
   {
     reset();
+  }
+  
+  std::string VRCameraManager::getCameraName(unsigned int camNum)
+  {
+    if(camNum < _vrCameraList.size()) return (vrCamNamePrefix + std::to_string(camNum));
+    else return "VR Invalid Camera Number";
   }
   
   // Create a new VRCamera if needed, and add it as a slave

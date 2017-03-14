@@ -120,6 +120,12 @@ namespace OpenFrames
     BasicCameraManager() {}
     virtual ~BasicCameraManager() { reset(); }
     
+    virtual std::string getCameraName(unsigned int camNum)
+    {
+      if(camNum < _cameraList.size()) return _cameraList[camNum]->getName();
+      else return "Invalid Camera Number";
+    }
+    
     // Create a new Camera if needed, and add it as a slave
     virtual void enableCamera(unsigned int camNum,
                               osg::GraphicsContext* gc,
@@ -244,6 +250,7 @@ namespace OpenFrames
   
   /**********************************************/
   DepthPartitionCallback::DepthPartitionCallback()
+  : _numActiveCameras(0)
   {
     _distAccumulator = new DistanceAccumulator;
     _cameraManager = new BasicCameraManager;
@@ -313,10 +320,16 @@ namespace OpenFrames
     
     // Step 3: Create the slave Cameras that will draw each depth segment
     unsigned int numCameras = camPairs.size(); // Get the number of cameras
+    if(numCameras != _numActiveCameras)
+    {
+      _numActiveCameras = numCameras;
+      //std::cout<< "OpenFrames::DepthPartitionCallback using " << _numActiveCameras << " cameras" << std::endl;
+    }
     for(int i = 0; i < numCameras; ++i)
     {
       // Create a new camera if needed, and activate it
       _cameraManager->enableCamera(i, gc, camera, camPairs[i].first, camPairs[i].second);
+      //std::cout<< std::defaultfloat << std::setprecision(5) << "Camera " << _cameraManager->getCameraName(i) << " near = " << camPairs[i].first << ", far = " << camPairs[i].second << std::endl;
     }
     
     // Step 4: Disable remaining unused cameras

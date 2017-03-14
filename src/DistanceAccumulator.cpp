@@ -82,7 +82,7 @@ void DistanceAccumulator::pushDistancePair(double zNear, double zFar)
       // using small epsilon relative to the chosen distance unit.
       // This won't present problems with huge/tiny scenes as long as the
       // distance unit is chosen properly for the visualized system.
-      const double epsilon = 1.0e-6;
+      const double epsilon = 1.0e-5;
       if(zNear < epsilon) zNear = epsilon;
 
       // Add distance pair for current drawable
