@@ -38,8 +38,9 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     WindowProxy.cpp
 )
 
+# Include OpenVR support if it was enabled
 IF(OF_USE_OPENVR)
-  #TARGET_SOURCES(${LIB_NAME} PUBLIC blahblah.cpp)
+  TARGET_SOURCES(${LIB_NAME} PRIVATE OpenVRDevice.cpp)
 ENDIF()
 
 # Initialize list of all targets to be installed

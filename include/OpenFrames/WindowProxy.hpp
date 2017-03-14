@@ -20,6 +20,7 @@
 #include <OpenFrames/Export.h>
 #include <OpenFrames/RenderRectangle.hpp>
 #include <OpenFrames/FramerateLimiter.hpp>
+#include <OpenFrames/OpenVRDevice.hpp>
 #include <OpenThreads/Thread>
 #include <osg/FrameStamp>
 #include <osg/Timer>
@@ -283,6 +284,7 @@ namespace OpenFrames
     bool _isAnimating; // Whether the animation loop has started or not (regardless of pause state)
     
     bool _useVR; // Whether to use VR rendering
+    osg::ref_ptr<OpenVRDevice> _ovrDevice; // The OpenVR interface
   };
   
 }
