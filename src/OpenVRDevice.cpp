@@ -166,4 +166,16 @@ namespace OpenFrames{
     }
   }
   
+  /*************************************************************/
+  void OpenVRDevice::submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName)
+  {
+    // Convert from OpenGL texture to OpenVR texture
+    vr::Texture_t rightEyeTexture = {(void*)rightEyeTexName, vr::TextureType_OpenGL, vr::ColorSpace_Gamma};
+    vr::Texture_t leftEyeTexture = {(void*)leftEyeTexName, vr::TextureType_OpenGL, vr::ColorSpace_Gamma};
+    
+    // Submit eye textures to OpenVR
+    vr::EVRCompositorError rightError = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
+    vr::EVRCompositorError leftError = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
+  }
+  
 } // !namespace OpenFrames

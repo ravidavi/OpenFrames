@@ -284,7 +284,8 @@ namespace OpenFrames
     bool _isAnimating; // Whether the animation loop has started or not (regardless of pause state)
     
     bool _useVR; // Whether to use VR rendering
-    osg::ref_ptr<OpenVRDevice> _ovrDevice; // The OpenVR interface
+    osg::ref_ptr<OpenVRDevice> _ovrDevice; // OpenVR interface
+    osg::ref_ptr<VRTextureBuffer> _vrTextureBuffer; // VR texture buffers
   };
   
 }

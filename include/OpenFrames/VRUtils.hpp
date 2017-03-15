@@ -97,7 +97,7 @@ namespace OpenFrames {
     osg::ref_ptr<osg::Camera> _monoCamera;
     
     /** The texture buffers drawn on by Cameras */
-    osg::ref_ptr<VRTextureBuffer> _texBuffer;
+    osg::observer_ptr<VRTextureBuffer> _texBuffer;
     
     StereoMode _mode; // Stereo rendering mode
     
@@ -128,9 +128,9 @@ namespace OpenFrames {
     VRCameraList _vrCameraList;
     
     // The VR eye texture buffers and related utilities
-    osg::ref_ptr<VRTextureBuffer> _texBuffer;
+    osg::observer_ptr<VRTextureBuffer> _texBuffer;
     
-    osg::ref_ptr<OpenVRDevice> _ovrDevice; // OpenVR interface
+    osg::observer_ptr<OpenVRDevice> _ovrDevice; // OpenVR interface
   };
   
 } // !namespace OpenFrames

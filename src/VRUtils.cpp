@@ -325,7 +325,7 @@ namespace OpenFrames{
     
     if(!vrcam) // Create a new VRCamera
     {
-      vrcam = new VRCamera(_texBuffer, camNum, VRCamera::AUTO, true); // Use MSAA
+      vrcam = new VRCamera(_texBuffer.get(), camNum, VRCamera::AUTO, true); // Use MSAA
       
       osg::Camera *cam;
       for(unsigned int i = 0; i < vrcam->getNumCameras(); ++i)

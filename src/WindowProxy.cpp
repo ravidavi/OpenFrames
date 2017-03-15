@@ -453,7 +453,12 @@ namespace OpenFrames
         // Set up OpenVR
         _ovrDevice = new OpenVRDevice(1.0);
         if(_ovrDevice->initVR())
+        {
           osg::notify(osg::INFO) << "WindowProxy enabling VR" << std::endl;
+          int vrWidth, vrHeight;
+          _ovrDevice->getRecommendedTextureSize(vrWidth, vrHeight);
+          _vrTextureBuffer = new VRTextureBuffer(vrWidth, vrHeight);
+        }
         else
         {
           osg::notify(osg::FATAL) << "WindowProxy disabling VR" << std::endl;
@@ -487,9 +492,32 @@ namespace OpenFrames
     shutdown();
   }
   
-  struct DisableSwap : public osg::GraphicsContext::SwapCallback
+  // If VR rendering is enabled, then override the default swap buffers action so that
+  // eye textures are sent to OpenVR
+  class VRSwapBuffers : public osg::GraphicsContext::SwapCallback
   {
-    virtual void swapBuffersImplementation(osg::GraphicsContext *gc) {}
+  public:
+    explicit VRSwapBuffers(OpenVRDevice *ovrDevice, VRTextureBuffer *texBuffer)
+    : _ovrDevice(ovrDevice), _texBuffer(texBuffer)
+    {}
+    
+    virtual void swapBuffersImplementation(osg::GraphicsContext *gc)
+    {
+      // Get OpenGL texture names
+      unsigned int contextID = gc->getState()->getContextID();
+      GLuint rightEyeTexName = _texBuffer->_rightColorTex->getTextureObject(contextID)->id();
+      GLuint leftEyeTexName = _texBuffer->_leftColorTex->getTextureObject(contextID)->id();     
+      
+      // Submit eye textures to OpenVR
+      _ovrDevice->submitFrame(rightEyeTexName, leftEyeTexName);
+      
+      // Run default swap buffers
+      gc->swapBuffersImplementation();
+    }
+    
+  private:
+    osg::observer_ptr<OpenVRDevice> _ovrDevice;
+    osg::observer_ptr<VRTextureBuffer> _texBuffer;
   };
   
   bool WindowProxy::setupWindow()
@@ -537,7 +565,7 @@ namespace OpenFrames
       _window->getState()->setUseModelViewAndProjectionUniforms(true);
       
       // Disable swap buffers
-      //_window->setSwapCallback(new DisableSwap());
+      if(_useVR) _window->setSwapCallback(new VRSwapBuffers(_ovrDevice, _vrTextureBuffer));
     }
     else
     {
@@ -684,7 +712,7 @@ namespace OpenFrames
     for(unsigned int i = oldSize; i < newSize; ++i)
     {
       // Create the new RenderRectangle
-      _renderList[i] = new RenderRectangle(_ovrDevice);
+      _renderList[i] = new RenderRectangle(_ovrDevice, _vrTextureBuffer);
       
       currView = _renderList[i]->getSceneView();
       

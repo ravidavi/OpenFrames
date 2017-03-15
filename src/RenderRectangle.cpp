@@ -44,9 +44,16 @@ namespace OpenFrames
     }
   };
   
-  RenderRectangle::RenderRectangle(OpenVRDevice *ovrDevice)
-  : _ovrDevice(ovrDevice)
+  RenderRectangle::RenderRectangle(OpenVRDevice *ovrDevice, VRTextureBuffer *vrTextureBuffer)
+  : _ovrDevice(ovrDevice), _vrTextureBuffer(vrTextureBuffer)
   {
+    // Test if VR is enabled
+    _useVR = false;
+    if(_ovrDevice.get() && _vrTextureBuffer.get())
+    {
+      if(_ovrDevice->isInitialized()) _useVR = true;
+    }
+    
     // Create the Camera that will draw HUD elements
     _hudCamera = new osg::Camera;
     _hudCamera->setName("HUD");
@@ -76,13 +83,12 @@ namespace OpenFrames
     // Create the auto depth partitioner
     _depthPartitionNode = new DepthPartitionNode;
     _depthPartitioner = new DepthPartitioner;
-    if(useVR())
+    
+    // If VR is used, then tell depth partitioner to use VR camera manager
+    if(_useVR)
     {
-      int vrWidth, vrHeight;
-      _ovrDevice->getRecommendedTextureSize(vrWidth, vrHeight);
-      _texBuffer = new VRTextureBuffer(vrWidth, vrHeight); // VR texture buffer
-      VRCameraManager *vrCamManager = new VRCameraManager(_texBuffer);
-      vrCamManager->setOpenVRDevice(_ovrDevice);
+      VRCameraManager *vrCamManager = new VRCameraManager(_vrTextureBuffer.get());
+      vrCamManager->setOpenVRDevice(_ovrDevice.get());
       _depthPartitioner->getCallback()->setCameraManager(vrCamManager);
     }
     if(useNewDP) _depthPartitioner->setViewToPartition(_sceneView);
@@ -122,14 +128,14 @@ namespace OpenFrames
       _backCamera->setAllowEventFocus(false);
       _backCamera->setRenderOrder(osg::Camera::PRE_RENDER, -1); // Render before other cameras
       _backCamera->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-      if(useVR())
+      if(_useVR)
       {
         // Use FBO to render to texture
         _backCamera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
         
         // Stars are far away, so render same view to both eyes
-        _backCamera->attach(osg::Camera::COLOR_BUFFER0, _texBuffer->_rightColorTex);
-        _backCamera->attach(osg::Camera::COLOR_BUFFER1, _texBuffer->_leftColorTex);
+        _backCamera->attach(osg::Camera::COLOR_BUFFER0, _vrTextureBuffer->_rightColorTex);
+        _backCamera->attach(osg::Camera::COLOR_BUFFER1, _vrTextureBuffer->_leftColorTex);
         
         // Don't need a depth buffer since we don't care about depth in the background scene
         _backCamera->setImplicitBufferAttachmentRenderMask(0);
@@ -148,24 +154,24 @@ namespace OpenFrames
       _mirrorCamera->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
       _mirrorCamera->setViewMatrix(osg::Matrix::identity());
       _mirrorCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));
-      if(useVR()) // Set up mirror camera to show one eye texture
+      if(_useVR) // Set up mirror camera to show one eye texture
       {
         osg::Geometry* geom = osg::createTexturedQuadGeometry(osg::Vec3(), osg::Vec3(1, 0, 0), osg::Vec3(0, 1, 0));
         osg::Geode *quad = new osg::Geode;
         quad->addDrawable(geom);
         _mirrorCamera->addChild(quad);
-        _mirrorCamera->getOrCreateStateSet()->setTextureAttributeAndModes(0, _texBuffer->_rightColorTex, osg::StateAttribute::ON);
+        _mirrorCamera->getOrCreateStateSet()->setTextureAttributeAndModes(0, _vrTextureBuffer->_rightColorTex, osg::StateAttribute::ON);
       }
       
       // Add the HUD and background cameras as a slaves to the main camera
       // Second argument means the camera is not sharing the main camera's scene
       _sceneView->addSlave(_hudCamera, false);
       _sceneView->addSlave(_backCamera, false);
-      if(useVR()) _sceneView->addSlave(_mirrorCamera, false);
+      if(_useVR) _sceneView->addSlave(_mirrorCamera, false);
       
       // Main camera shouldn't clear its color buffer
       masterCam->setClearMask(GL_DEPTH_BUFFER_BIT);
-      if(useVR()) masterCam->setProjectionResizePolicy(osg::Camera::FIXED);
+      if(_useVR) masterCam->setProjectionResizePolicy(osg::Camera::FIXED);
     }
     
     // Set up border rectangle
@@ -261,7 +267,7 @@ namespace OpenFrames
     _sceneView->getCamera()->setViewport(x, y, w, h);
     _hudCamera->setViewport(x, y, w, h);
     _mirrorCamera->setViewport(x, y, w, h);
-    if(!useVR())
+    if(!_useVR)
     {
       _backCamera->setViewport(x, y, w, h);
     }
@@ -487,7 +493,7 @@ namespace OpenFrames
       double fov, ratio;
       view->getPerspective(fov, ratio);
       
-      if(useVR())
+      if(_useVR)
       {
         int vrWidth, vrHeight;
         _ovrDevice->getRecommendedTextureSize(vrWidth, vrHeight);

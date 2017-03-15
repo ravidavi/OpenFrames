@@ -22,6 +22,7 @@
 #include <osg/ref_ptr>
 #include <osg/Referenced>
 #include <osg/Quat>
+#include <osg/Texture>
 #include <osg/Vec3d>
 
 namespace vr {
@@ -60,6 +61,9 @@ namespace OpenFrames {
      at (or near) the end of the OGS update traversal, most likely during
      a slave camera update callback. */
     void waitGetPoses();
+    
+    /** Submits the latest rendered eye textures to OpenVR */
+    void submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName);
     
   protected:
     virtual ~OpenVRDevice();

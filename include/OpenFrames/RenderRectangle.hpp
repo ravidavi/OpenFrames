@@ -49,7 +49,7 @@ namespace OpenFrames
     
     /** Create a new RenderRectangle to render a scene. VR width/height only
      applicable if useVR = true */
-    RenderRectangle(OpenVRDevice *ovrDevice = NULL);
+    RenderRectangle(OpenVRDevice *ovrDevice = NULL, VRTextureBuffer *vrTextureBuffer = NULL);
     
     /** Set the FrameManager containing the scene to be viewed */
     void setFrameManager(FrameManager *fm);
@@ -133,12 +133,12 @@ namespace OpenFrames
     osg::ref_ptr<osg::Camera> _backCamera; // Background camera
     osg::ref_ptr<osg::Camera> _mirrorCamera; // Camera to mirror scene onto window
     
-    // Render textures used for storing each eye's image
-    osg::ref_ptr<VRTextureBuffer> _texBuffer;
+    // Render textures used for storing each eye's image in VR
+    osg::observer_ptr<VRTextureBuffer> _vrTextureBuffer;
     
     // OpenVR device
-    osg::ref_ptr<OpenVRDevice> _ovrDevice;
-    bool useVR() { return (_ovrDevice && _ovrDevice->isInitialized()); }
+    osg::observer_ptr<OpenVRDevice> _ovrDevice;
+    bool _useVR;
     
     osg::ref_ptr<osg::Geode> _borderGeode; // The border rectangle
     osg::ref_ptr<SkySphere> _skySphere; // The background sky
