@@ -184,7 +184,7 @@ namespace OpenFrames
     
     /** Set the desired framerate at which animation should occur. */
     inline void setDesiredFramerate(const double &fps)
-    { _frameThrottle.setDesiredFramerate(fps); }
+    { if(!_useVR) _frameThrottle.setDesiredFramerate(fps); }
     
     /** Get the desired framerate at which animation should occur. */
     inline double getDesiredFramerate()

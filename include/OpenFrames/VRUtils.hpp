@@ -19,6 +19,7 @@
 
 #include <OpenFrames/Export.h>
 #include <OpenFrames/DepthPartitioner.hpp>
+#include <OpenFrames/OpenVRDevice.hpp>
 
 #include <osg/ref_ptr>
 #include <osg/Referenced>
@@ -120,10 +121,16 @@ namespace OpenFrames {
     virtual void reset();
     virtual void setClearColorBuffer(bool clear);
     
+    void setOpenVRDevice(OpenVRDevice *ovrDevice)
+    { _ovrDevice = ovrDevice; }
+    
     typedef std::vector< osg::ref_ptr<VRCamera> > VRCameraList;
     VRCameraList _vrCameraList;
     
+    // The VR eye texture buffers and related utilities
     osg::ref_ptr<VRTextureBuffer> _texBuffer;
+    
+    osg::ref_ptr<OpenVRDevice> _ovrDevice; // OpenVR interface
   };
   
 } // !namespace OpenFrames

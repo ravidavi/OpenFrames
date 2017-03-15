@@ -338,8 +338,9 @@ namespace OpenFrames
       std::cerr<< "OpenFrames::WindowEventHandler ERROR: invalid grid location (row " << row << ", col " << col << ")" << std::endl;
   }
   
-  /** The CheckPrerequisites class checks whether certain necessary OpenGL components exist. If they don't,
-   then it warns the user that there may be problems. */
+  /** 
+   Checks whether certain necessary OpenGL and WindowProxy components exist
+   */
   class CheckPrerequisites : public osg::Operation
   {
   public:
@@ -449,18 +450,19 @@ namespace OpenFrames
         else
         {
           osg::notify(osg::FATAL) << "WindowProxy disabling VR" << std::endl;
+          _ovrDevice = NULL;
           _useVR = false;
         }
       }
 #endif
     }
     
-
-    
     // Create the RenderRectangles immediately so that they can be modified as needed
     setGridSize(nrow, ncol);
     
-    setDesiredFramerate(30.0); // Framerate is in frames per second
+    // Set framerate (in fps) based on whether VR is enabled
+    if(_useVR) setDesiredFramerate(0.0);
+    else setDesiredFramerate(30.0);
   }
   
   // WindowProxy destructor
@@ -495,6 +497,10 @@ namespace OpenFrames
       *traits = *(_embeddedGraphics->getTraits());
       traits->windowDecoration = true; // We want decorations such as window borders
       traits->doubleBuffer = true; // We want double buffered graphics since we're doing animation
+      if(_useVR)
+      {
+        traits->vsync = false; // VR rendering handles its own HMD vblank sync
+      }
       
       osg::GraphicsContext* gc = osg::GraphicsContext::createGraphicsContext(traits.get());
       _window = dynamic_cast<osgViewer::GraphicsWindow*>(gc);
@@ -670,7 +676,7 @@ namespace OpenFrames
     for(unsigned int i = oldSize; i < newSize; ++i)
     {
       // Create the new RenderRectangle
-      _renderList[i] = new RenderRectangle(_useVR);
+      _renderList[i] = new RenderRectangle(_ovrDevice);
       
       currView = _renderList[i]->getSceneView();
       

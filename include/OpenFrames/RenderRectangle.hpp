@@ -21,6 +21,7 @@
 #include <OpenFrames/DepthPartitioner.hpp>
 #include <OpenFrames/DepthPartitionNode.hpp>
 #include <OpenFrames/FrameManager.hpp>
+#include <OpenFrames/OpenVRDevice.hpp>
 #include <OpenFrames/SkySphere.hpp>
 #include <OpenFrames/View.hpp>
 #include <OpenFrames/VRUtils.hpp>
@@ -32,7 +33,6 @@
 
 namespace OpenFrames
 {
-  
   /**********************************************************
    * Ravi Mathur
    * OpenFrames API, class RenderRectangle
@@ -47,7 +47,9 @@ namespace OpenFrames
   public:
     typedef std::vector<osg::ref_ptr<View> > ViewList;
     
-    RenderRectangle(bool useVR = false);
+    /** Create a new RenderRectangle to render a scene. VR width/height only
+     applicable if useVR = true */
+    RenderRectangle(OpenVRDevice *ovrDevice = NULL);
     
     /** Set the FrameManager containing the scene to be viewed */
     void setFrameManager(FrameManager *fm);
@@ -134,7 +136,9 @@ namespace OpenFrames
     // Render textures used for storing each eye's image
     osg::ref_ptr<VRTextureBuffer> _texBuffer;
     
-    bool _useVR; // Enable VR rendering using OpenVR
+    // OpenVR device
+    osg::ref_ptr<OpenVRDevice> _ovrDevice;
+    bool useVR() { return (_ovrDevice && _ovrDevice->isInitialized()); }
     
     osg::ref_ptr<osg::Geode> _borderGeode; // The border rectangle
     osg::ref_ptr<SkySphere> _skySphere; // The background sky

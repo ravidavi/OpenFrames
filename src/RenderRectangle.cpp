@@ -25,8 +25,6 @@
 // New = DepthPartitioner, with slave cameras
 // Old = DepthPartitionNode, with nested cameras
 const bool useNewDP = true;
-const int vrWidth = 1080;
-const int vrHeight = 1200;
 
 namespace OpenFrames
 {
@@ -46,8 +44,8 @@ namespace OpenFrames
     }
   };
   
-  RenderRectangle::RenderRectangle(bool useVR)
-  : _useVR(useVR)
+  RenderRectangle::RenderRectangle(OpenVRDevice *ovrDevice)
+  : _ovrDevice(ovrDevice)
   {
     // Create the Camera that will draw HUD elements
     _hudCamera = new osg::Camera;
@@ -75,14 +73,18 @@ namespace OpenFrames
     _sceneView = new osgViewer::View();
     _sceneView->getCamera()->setName("Master");
     
-    // Create texure buffer for VR
-    _texBuffer = new VRTextureBuffer(vrWidth, vrHeight);
-    
     // Create the auto depth partitioner
     _depthPartitionNode = new DepthPartitionNode;
     _depthPartitioner = new DepthPartitioner;
-    if(_useVR)
-      _depthPartitioner->getCallback()->setCameraManager(new VRCameraManager(_texBuffer));
+    if(useVR())
+    {
+      int vrWidth, vrHeight;
+      _ovrDevice->getRecommendedTextureSize(vrWidth, vrHeight);
+      _texBuffer = new VRTextureBuffer(vrWidth, vrHeight); // VR texture buffer
+      VRCameraManager *vrCamManager = new VRCameraManager(_texBuffer);
+      vrCamManager->setOpenVRDevice(_ovrDevice);
+      _depthPartitioner->getCallback()->setCameraManager(vrCamManager);
+    }
     if(useNewDP) _depthPartitioner->setViewToPartition(_sceneView);
     
     // Create a default view and make it active
@@ -120,7 +122,7 @@ namespace OpenFrames
       _backCamera->setAllowEventFocus(false);
       _backCamera->setRenderOrder(osg::Camera::PRE_RENDER, -1); // Render before other cameras
       _backCamera->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-      if(_useVR)
+      if(useVR())
       {
         // Use FBO to render to texture
         _backCamera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
@@ -133,6 +135,8 @@ namespace OpenFrames
         _backCamera->setImplicitBufferAttachmentRenderMask(0);
         
         // Render to entire texture
+        int vrWidth, vrHeight;
+        _ovrDevice->getRecommendedTextureSize(vrWidth, vrHeight);
         _backCamera->setViewport(0, 0, vrWidth, vrHeight);
       }
 
@@ -144,16 +148,24 @@ namespace OpenFrames
       _mirrorCamera->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
       _mirrorCamera->setViewMatrix(osg::Matrix::identity());
       _mirrorCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));
-
+      if(useVR()) // Set up mirror camera to show one eye texture
+      {
+        osg::Geometry* geom = osg::createTexturedQuadGeometry(osg::Vec3(), osg::Vec3(1, 0, 0), osg::Vec3(0, 1, 0));
+        osg::Geode *quad = new osg::Geode;
+        quad->addDrawable(geom);
+        _mirrorCamera->addChild(quad);
+        _mirrorCamera->getOrCreateStateSet()->setTextureAttributeAndModes(0, _texBuffer->_rightColorTex, osg::StateAttribute::ON);
+      }
+      
       // Add the HUD and background cameras as a slaves to the main camera
       // Second argument means the camera is not sharing the main camera's scene
       _sceneView->addSlave(_hudCamera, false);
       _sceneView->addSlave(_backCamera, false);
-      if(_useVR) _sceneView->addSlave(_mirrorCamera, false);
+      if(useVR()) _sceneView->addSlave(_mirrorCamera, false);
       
       // Main camera shouldn't clear its color buffer
       masterCam->setClearMask(GL_DEPTH_BUFFER_BIT);
-      if(_useVR) masterCam->setProjectionResizePolicy(osg::Camera::FIXED);
+      if(useVR()) masterCam->setProjectionResizePolicy(osg::Camera::FIXED);
     }
     
     // Set up border rectangle
@@ -187,15 +199,6 @@ namespace OpenFrames
       
       _hudCamera->addChild(_borderGeode); // Add border to HUD
       setSelected(false); // Set the border to look deselected by default
-    }
-    
-    // Set up mirror camera to show the right eye
-    {
-      osg::Geometry* geom = osg::createTexturedQuadGeometry(osg::Vec3(), osg::Vec3(1, 0, 0), osg::Vec3(0, 1, 0));
-      osg::Geode *quad = new osg::Geode;
-      quad->addDrawable(geom);
-      _mirrorCamera->addChild(quad);
-      _mirrorCamera->getOrCreateStateSet()->setTextureAttributeAndModes(0, _texBuffer->_leftColorTex, osg::StateAttribute::ON);
     }
     
     // Set up the Sky Sphere
@@ -258,7 +261,7 @@ namespace OpenFrames
     _sceneView->getCamera()->setViewport(x, y, w, h);
     _hudCamera->setViewport(x, y, w, h);
     _mirrorCamera->setViewport(x, y, w, h);
-    if(!_useVR)
+    if(!useVR())
     {
       _backCamera->setViewport(x, y, w, h);
     }
@@ -484,7 +487,12 @@ namespace OpenFrames
       double fov, ratio;
       view->getPerspective(fov, ratio);
       
-      if(_useVR) ratio = (double)vrWidth / (double)vrHeight;
+      if(useVR())
+      {
+        int vrWidth, vrHeight;
+        _ovrDevice->getRecommendedTextureSize(vrWidth, vrHeight);
+        ratio = (double)vrWidth / (double)vrHeight;
+      }
       else
       {
         // Get main camera viewport or depth partitioner's viewport

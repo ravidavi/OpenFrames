@@ -15,10 +15,32 @@
  ***********************************/
 
 #include <OpenFrames/OpenVRDevice.hpp>
+#include <osg/Matrixd>
 #include <osg/Notify>
 #include <openvr.h>
 
 namespace OpenFrames{
+  static osg::Matrixd convertMatrix34(const vr::HmdMatrix34_t &mat34)
+  {
+    osg::Matrixd matrix(
+                       mat34.m[0][0], mat34.m[1][0], mat34.m[2][0], 0.0,
+                       mat34.m[0][1], mat34.m[1][1], mat34.m[2][1], 0.0,
+                       mat34.m[0][2], mat34.m[1][2], mat34.m[2][2], 0.0,
+                       mat34.m[0][3], mat34.m[1][3], mat34.m[2][3], 1.0
+                       );
+    return matrix;
+  }
+  
+  static osg::Matrixd convertMatrix44(const vr::HmdMatrix44_t &mat44)
+  {
+    osg::Matrixd matrix(
+                       mat44.m[0][0], mat44.m[1][0], mat44.m[2][0], mat44.m[3][0],
+                       mat44.m[0][1], mat44.m[1][1], mat44.m[2][1], mat44.m[3][1],
+                       mat44.m[0][2], mat44.m[1][2], mat44.m[2][2], mat44.m[3][2],
+                       mat44.m[0][3], mat44.m[1][3], mat44.m[2][3], mat44.m[3][3]
+                       );
+    return matrix;
+  }
   
   /*************************************************************/
   /** Get the specified OpenVR device property string */
@@ -53,7 +75,10 @@ namespace OpenFrames{
   _vrRenderModels(nullptr)
   {}
   
-  OpenVRDevice::~OpenVRDevice() {}
+  OpenVRDevice::~OpenVRDevice()
+  {
+    shutdownVR();
+  }
   
   /*************************************************************/
   bool OpenVRDevice::initVR()
@@ -83,6 +108,7 @@ namespace OpenFrames{
       osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: Compositor could not be initialized." << std::endl;
       return (_isInitialized = false);
     }
+    vr::VRCompositor()->SetTrackingSpace(vr::TrackingUniverseStanding); // Room-scale VR
     
     // Get render models for HMD components (e.g. controllers)
     _vrRenderModels = (vr::IVRRenderModels*)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &vrError);
@@ -95,15 +121,52 @@ namespace OpenFrames{
       return (_isInitialized = false);
     }
     
+    // Print HMD driver info
     std::string driverName = GetDeviceProperty(_vrSystem, vr::Prop_TrackingSystemName_String);
     std::string deviceSerialNumber = GetDeviceProperty(_vrSystem, vr::Prop_SerialNumber_String);
-    
-    osg::notify(osg::NOTICE) << "OpenVR HMD driver name: "<< driverName << std::endl;
+    osg::notify(osg::NOTICE) << "OpenVR HMD driver name: " << driverName << std::endl;
     osg::notify(osg::NOTICE) << "OpenVR HMD device serial number: " << deviceSerialNumber << std::endl;
+    
+    // Get render texture size
+    uint32_t w, h;
+    _vrSystem->GetRecommendedRenderTargetSize(&w, &h);
+    _width = w;
+    _height = h;
+    osg::notify(osg::NOTICE) << "OpenVR eye texture width = " << _width << ", height = " << _height << std::endl;
     
     return (_isInitialized = true);
   }
   
+  /*************************************************************/
+  void OpenVRDevice::shutdownVR()
+  {
+    if(_isInitialized)
+    {
+      _vrRenderModels = nullptr;
+      _vrSystem = nullptr;
+      vr::VR_Shutdown();
+      _isInitialized = false;
+    }
+  }
   
+  /*************************************************************/
+  void OpenVRDevice::waitGetPoses()
+  {
+    // Get poses for all VR devices, and wait for the signal to start rendering
+    vr::TrackedDevicePose_t poses[vr::k_unMaxTrackedDeviceCount];
+    for (int i = 0; i < vr::k_unMaxTrackedDeviceCount; ++i)
+      poses[i].bPoseIsValid = false;
+    vr::VRCompositor()->WaitGetPoses(poses, vr::k_unMaxTrackedDeviceCount, NULL, 0);
+    
+    // Update view data using HMD pose
+    const vr::TrackedDevicePose_t& hmdPose = poses[vr::k_unTrackedDeviceIndex_Hmd];
+    if (hmdPose.bPoseIsValid)
+    {
+      osg::Matrixd matrix = convertMatrix34(hmdPose.mDeviceToAbsoluteTracking);
+      osg::Matrixd poseTransform = osg::Matrixd::inverse(matrix);
+      _position = poseTransform.getTrans() * _worldUnitsPerMeter;
+      _orientation = poseTransform.getRotate();
+    }
+  }
   
 } // !namespace OpenFrames

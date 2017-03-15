@@ -21,6 +21,8 @@
 
 #include <osg/ref_ptr>
 #include <osg/Referenced>
+#include <osg/Quat>
+#include <osg/Vec3d>
 
 namespace vr {
   class IVRSystem;
@@ -44,26 +46,41 @@ namespace OpenFrames {
      Return status: whether OpenVR was initialized
      */
     bool initVR();
+    void shutdownVR();
     
-    /**
-     Get the per-eye texture size suggested by OpenVR
-     */
-    void getSuggestedTextureSize(unsigned int& w, unsigned int& h)
+    /** Get the per-eye texture size recommended by OpenVR */
+    void getRecommendedTextureSize(int& w, int& h)
     { w = _width; h = _height; }
     
     /** Get whether OpenVR has been initialized */
-    bool getIsInitialized() { return _isInitialized; }
+    bool isInitialized() { return _isInitialized; }
+    
+    /** Update poses (positions/orientations) of all VR devices, and wait
+     for the signal to start rendering. Note that this should be called
+     at (or near) the end of the OGS update traversal, most likely during
+     a slave camera update callback. */
+    void waitGetPoses();
     
   protected:
     virtual ~OpenVRDevice();
     
     double _worldUnitsPerMeter; // Distance units per real-world meter
-    unsigned int _width, _height; // Per-eye texture dimensions
+    int _width, _height; // Per-eye texture dimensions
     
     bool _isInitialized; // Whether OpenVR is initialized
     
     vr::IVRSystem* _vrSystem; // OpenVR interface
     vr::IVRRenderModels* _vrRenderModels; // Controller models
+    
+    // Projection matrix clip planes
+    struct ProjectionValues
+    {
+      double _left, _right, _bottom, _top;
+    } _rightProjVals, _leftProjVals;
+    
+    // Head to world view transformation
+    osg::Vec3d _position;
+    osg::Quat _orientation;
   };
   
 } // !namespace OpenFrames
