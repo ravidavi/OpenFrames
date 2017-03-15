@@ -46,22 +46,19 @@ namespace OpenFrames{
   /** Get the specified OpenVR device property string */
   /*************************************************************/
   std::string GetDeviceProperty(vr::IVRSystem* vrSystem, vr::TrackedDeviceProperty prop)
-  {
-    // Get the length of the property string
+  { 
+    // Allocate and populate the property string
+    char buffer[vr::k_unMaxPropertyStringSize];
     vr::ETrackedPropertyError propError = vr::TrackedProp_Success;
-    uint32_t bufferLen = vrSystem->GetStringTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, prop, NULL, 0, &propError);
-    if(propError != vr::TrackedProp_Success)
+    vrSystem->GetStringTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, prop, buffer, vr::k_unMaxPropertyStringSize, &propError);
+    if (propError != vr::TrackedProp_Success)
     {
       osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: Could not get device property " << vrSystem->GetPropErrorNameFromEnum(propError) << std::endl;
       return "";
     }
-    
-    // Allocate and populate the property string
-    char buffer[bufferLen];
-    bufferLen = vrSystem->GetStringTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, prop, buffer, bufferLen);
-    
+
     // Copy property string to std::string
-    std::string propval = buffer;
+    std::string propval(buffer);
     return propval;
   }
   

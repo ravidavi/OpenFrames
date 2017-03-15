@@ -325,7 +325,7 @@ namespace OpenFrames
       _numActiveCameras = numCameras;
       //std::cout<< "OpenFrames::DepthPartitionCallback using " << _numActiveCameras << " cameras" << std::endl;
     }
-    for(int i = 0; i < numCameras; ++i)
+    for(unsigned int i = 0; i < numCameras; ++i)
     {
       // Create a new camera if needed, and activate it
       _cameraManager->enableCamera(i, gc, camera, camPairs[i].first, camPairs[i].second);

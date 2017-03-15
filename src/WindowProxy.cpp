@@ -402,6 +402,13 @@ namespace OpenFrames
       {
         std::cerr<< "OpenFrames::WindowProxy WARNING: Multisample not supported, VR rendering will not be antialiased." << std::endl;
       }
+
+      // Disable vsync since VR does its own frame synchronization
+      if (_windowProxy->getUseVR())
+      {
+        osgViewer::GraphicsWindow *gw = dynamic_cast<osgViewer::GraphicsWindow*>(gc);
+        if (gw) gw->setSyncToVBlank(false);
+      }
       
       // Other OpenGL extension checks can go here
     }
@@ -446,7 +453,7 @@ namespace OpenFrames
         // Set up OpenVR
         _ovrDevice = new OpenVRDevice(1.0);
         if(_ovrDevice->initVR())
-          osg::notify(osg::INFO) << "WindowProxy enabled VR" << std::endl;
+          osg::notify(osg::INFO) << "WindowProxy enabling VR" << std::endl;
         else
         {
           osg::notify(osg::FATAL) << "WindowProxy disabling VR" << std::endl;
@@ -471,6 +478,7 @@ namespace OpenFrames
   {
     shutdown();
     join();
+    if (_useVR) _ovrDevice->shutdownVR();
   }
   
   void WindowProxy::cancelCleanup()
@@ -785,6 +793,8 @@ namespace OpenFrames
     _window->close();
     
     _isAnimating = false; // Indicate that animation has stopped
+
+    if (_useVR) _ovrDevice->shutdownVR();
   }
   
   /** Handle one frame of animation, including event handling */

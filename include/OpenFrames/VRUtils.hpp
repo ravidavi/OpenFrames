@@ -71,7 +71,7 @@ namespace OpenFrames {
     
     /** Set the OpenGL clear mask for cameras */
     void setClearColorBuffer(bool clear);
-    bool getClearColorBuffer() { return (_rightCamera->getClearMask() & GL_COLOR_BUFFER_BIT); }
+    bool getClearColorBuffer() { return ((_rightCamera->getClearMask() & GL_COLOR_BUFFER_BIT) != 0x0); }
     
     /** Get number of cameras in use, depending on StereoMode */
     unsigned int getNumCameras();

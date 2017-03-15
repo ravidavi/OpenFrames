@@ -377,11 +377,11 @@ namespace OpenFrames{
   void VRCameraManager::reset()
   {
     // Loop over all our VRCameras
-    for(int i = 0; i < _vrCameraList.size(); ++i)
+    for(unsigned int i = 0; i < _vrCameraList.size(); ++i)
     {
       // Get every camera and remove it from the parent osg::View
       VRCamera *vrcam = _vrCameraList[i];
-      for(int j = 0; j < vrcam->getNumCameras(); ++j)
+      for(unsigned int j = 0; j < vrcam->getNumCameras(); ++j)
       {
         osg::View *view = vrcam->getCamera(j)->getView();
         if(view)
