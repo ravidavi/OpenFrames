@@ -56,6 +56,13 @@ namespace OpenFrames {
     /** Get whether OpenVR has been initialized */
     bool isInitialized() { return _isInitialized; }
     
+    /** Update the per-eye projection matrix bounds, and get the
+     matrices using the given depth clip bounds. */
+    void updateProjectionMatrices();
+    osg::Matrixf& getRightEyeProjectionMatrix() { return _rightProj; }
+    osg::Matrixf& getLeftEyeProjectionMatrix() { return _leftProj; }
+    osg::Matrixf& getCenterProjectionMatrix() { return _centerProj; }
+
     /** Update poses (positions/orientations) of all VR devices, and wait
      for the signal to start rendering. Note that this should be called
      at (or near) the end of the OGS update traversal, most likely during
@@ -76,11 +83,7 @@ namespace OpenFrames {
     vr::IVRSystem* _vrSystem; // OpenVR interface
     vr::IVRRenderModels* _vrRenderModels; // Controller models
     
-    // Projection matrix clip planes
-    struct ProjectionValues
-    {
-      double _left, _right, _bottom, _top;
-    } _rightProjVals, _leftProjVals;
+    osg::Matrixf _rightProj, _leftProj, _centerProj; // Per-eye projection matrices
     
     // Head to world view transformation
     osg::Vec3d _position;

@@ -117,6 +117,8 @@ namespace OpenFrames{
       osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: " << vr::VR_GetVRInitErrorAsEnglishDescription(vrError) << std::endl;
       return (_isInitialized = false);
     }
+
+    _isInitialized = true;
     
     // Print HMD driver info
     std::string driverName = GetDeviceProperty(_vrSystem, vr::Prop_TrackingSystemName_String);
@@ -130,8 +132,10 @@ namespace OpenFrames{
     _width = w;
     _height = h;
     osg::notify(osg::NOTICE) << "OpenVR eye texture width = " << _width << ", height = " << _height << std::endl;
+
+    updateProjectionMatrices(); // Update the per-eye projection matrices
     
-    return (_isInitialized = true);
+    return _isInitialized;
   }
   
   /*************************************************************/
@@ -146,6 +150,25 @@ namespace OpenFrames{
     }
   }
   
+  /*************************************************************/
+  void OpenVRDevice::updateProjectionMatrices()
+  {
+    if (!isInitialized()) return;
+
+    vr::HmdMatrix44_t proj;
+
+    // Get right eye unit projection bounds
+    proj = _vrSystem->GetProjectionMatrix(vr::Eye_Right, 1.0, 2.0);
+    _rightProj = convertMatrix44(proj);
+
+    // Get left eye unit projection bounds
+    proj = _vrSystem->GetProjectionMatrix(vr::Eye_Left, 1.0, 2.0);
+    _leftProj = convertMatrix44(proj);
+
+    // Center projection is average of right and left
+    _centerProj = (_rightProj + _leftProj)*0.5;
+  }
+
   /*************************************************************/
   void OpenVRDevice::waitGetPoses()
   {

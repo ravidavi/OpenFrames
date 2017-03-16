@@ -59,6 +59,18 @@ namespace OpenFrames
   private:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
   };
+
+  // Slave callback to inherit master camera view matrix but not its projection matrix
+  // Used by the background camera for VR rendering
+  class BackCameraViewCallback : public osg::View::Slave::UpdateSlaveCallback
+  {
+  public:
+    virtual void updateSlave(osg::View& view, osg::View::Slave& slave)
+    {
+      slave._camera->setViewMatrix(view.getCamera()->getViewMatrix());
+      slave._camera->inheritCullSettings(*(view.getCamera()), slave._camera->getInheritanceMask());
+    }
+  };
   
   RenderRectangle::RenderRectangle(OpenVRDevice *ovrDevice, VRTextureBuffer *vrTextureBuffer)
   : _ovrDevice(ovrDevice), _vrTextureBuffer(vrTextureBuffer)
@@ -167,6 +179,9 @@ namespace OpenFrames
         int vrWidth, vrHeight;
         _ovrDevice->getRecommendedTextureSize(vrWidth, vrHeight);
         _backCamera->setViewport(0, 0, vrWidth, vrHeight);
+        
+        // Set projection matrix
+        _backCamera->setProjectionMatrix(_ovrDevice->getCenterProjectionMatrix());
       }
 
       // Set up mirror camera render properties
@@ -190,8 +205,12 @@ namespace OpenFrames
       // Second argument means the camera is not sharing the main camera's scene
       _sceneView->addSlave(_hudCamera, false);
       _sceneView->addSlave(_backCamera, false);
-      if(_useVR) _sceneView->addSlave(_mirrorCamera, false);
-      
+      if (_useVR)
+      {
+        _sceneView->addSlave(_mirrorCamera, false);
+        _sceneView->findSlaveForCamera(_backCamera)->_updateSlaveCallback = new BackCameraViewCallback;
+      }
+
       // Main camera shouldn't clear its color buffer
       masterCam->setClearMask(GL_DEPTH_BUFFER_BIT);
       if(_useVR) masterCam->setProjectionResizePolicy(osg::Camera::FIXED);

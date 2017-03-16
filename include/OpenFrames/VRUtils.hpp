@@ -84,9 +84,13 @@ namespace OpenFrames {
     
     // Update projection/modelview matrices, enable cameras, and handle other
     // camera-specific operations
-    void updateCameras(osg::Matrixd& viewmat, osg::Matrixd& projmat,
-                       const double &zNear);
-    
+    void updateCameras(osg::Matrixd& viewmat, osg::Matrixd& projmat, const double &zNear)
+    {
+      updateCameras(viewmat, projmat, projmat, projmat, zNear);
+    }
+    void updateCameras(osg::Matrixd& viewmat, osg::Matrixd& rightProj, 
+      osg::Matrixd& leftProj, osg::Matrixd& centerProj, const double &zNear);
+
   protected:
     virtual ~VRCamera();
     

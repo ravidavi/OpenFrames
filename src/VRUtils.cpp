@@ -253,7 +253,8 @@ namespace OpenFrames{
     }
   }
   
-  void VRCamera::updateCameras(osg::Matrixd& viewmat, osg::Matrixd& projmat,
+  void VRCamera::updateCameras(osg::Matrixd& viewmat, osg::Matrixd& rightProj,
+                               osg::Matrixd& leftProj, osg::Matrixd& centerProj,
                                const double &zNear)
   {
     // If MSAA is enabled and we don't need to clear the color buffer, then
@@ -264,7 +265,7 @@ namespace OpenFrames{
     {
       _monoCamera->setNodeMask(0xffffffff); // Enable mono camera
       _monoCamera->setViewMatrix(viewmat);
-      _monoCamera->setProjectionMatrix(projmat);
+      _monoCamera->setProjectionMatrix(centerProj);
       
       // Add MSAA texture chaining camera to mono camera
       if(useMSAACam && !_monoCamera->containsNode(_texBuffer->_rightTexCamera))
@@ -277,7 +278,7 @@ namespace OpenFrames{
     {
       _rightCamera->setNodeMask(0xffffffff); // Enable right camera
       _rightCamera->setViewMatrix(viewmat);
-      _rightCamera->setProjectionMatrix(projmat);
+      _rightCamera->setProjectionMatrix(rightProj);
       
       // Add MSAA texture chaining camera to right camera
       if(useMSAACam && !_rightCamera->containsNode(_texBuffer->_rightTexCamera))
@@ -285,7 +286,7 @@ namespace OpenFrames{
       
       _leftCamera->setNodeMask(0xffffffff); // Enable left camera
       _leftCamera->setViewMatrix(viewmat);
-      _leftCamera->setProjectionMatrix(projmat);
+      _leftCamera->setProjectionMatrix(leftProj);
       
       // Add MSAA texture chaining camera to left camera
       if(useMSAACam && !_leftCamera->containsNode(_texBuffer->_leftTexCamera))
@@ -357,11 +358,26 @@ namespace OpenFrames{
     }
     
     // Update projection matrix depth planes
-    osg::Matrixd projmat = masterCamera->getProjectionMatrix();
-    updateProjectionMatrix(projmat, zNear, zFar);
+    if (_ovrDevice.get())
+    {
+      // Update camera matrices and properties using VR data
+      osg::Matrixd rightProj = _ovrDevice->getRightEyeProjectionMatrix();
+      osg::Matrixd leftProj = _ovrDevice->getLeftEyeProjectionMatrix();
+      osg::Matrixd centerProj = _ovrDevice->getCenterProjectionMatrix();
+      updateProjectionMatrix(rightProj, zNear, zFar);
+      updateProjectionMatrix(leftProj, zNear, zFar);
+      updateProjectionMatrix(centerProj, zNear, zFar);
+      vrcam->updateCameras(masterCamera->getViewMatrix(), rightProj, leftProj, centerProj, zNear);
+    }
+    else
+    {
+      // Update camera matrices and properties using master camera data
+      osg::Matrixd projmat = masterCamera->getProjectionMatrix();
+      updateProjectionMatrix(projmat, zNear, zFar);
+      vrcam->updateCameras(masterCamera->getViewMatrix(), projmat, zNear);
+    }
+
     
-    // Update camera matrices and properties
-    vrcam->updateCameras(masterCamera->getViewMatrix(), projmat, zNear);
   }
   
   // Disable all cameras starting with the specified index
