@@ -26,6 +26,34 @@ static const std::string dpMainCamName(dpCamNamePrefix+"Main");
 namespace OpenFrames
 {
   /**********************************************/
+  void updateProjectionMatrix(osg::Matrix& proj, const double &zNear, const double &zFar)
+  {
+    double left, right, bottom, top, oldNear, oldFar;
+
+    // Clamp the projection matrix z values to the range (near, far)
+    double epsilon = 1.0e-6;
+    if (fabs(proj(0, 3)) < epsilon &&
+      fabs(proj(1, 3)) < epsilon &&
+      fabs(proj(2, 3)) < epsilon) // Projection is Orthographic
+    {
+      // Get the current orthographic projection parameters
+      proj.getOrtho(left, right, bottom, top, oldNear, oldFar);
+
+      // Use the custom computed near/far values
+      proj.makeOrtho(left, right, bottom, top, zNear, zFar);
+    }
+    else // Projection is Perspective
+    {
+      // Get the current perspective projection parameters
+      proj.getFrustum(left, right, bottom, top, oldNear, oldFar);
+
+      // Use the custom computed near/far values
+      const double nz = zNear / oldNear;
+      proj.makeFrustum(left*nz, right*nz, bottom*nz, top*nz, zNear, zFar);
+    }
+  }
+
+  /**********************************************/
   DepthPartitioner::DepthPartitioner()
   : _view(NULL)
   {
@@ -164,7 +192,7 @@ namespace OpenFrames
       
       // Update projection depth planes
       osg::Matrixd projmat = masterCamera->getProjectionMatrix();
-      updateProjectionMatrix(projmat, zNear, zFar);
+      OpenFrames::updateProjectionMatrix(projmat, zNear, zFar);
       
       // Set camera rendering matrices
       newcam->setProjectionMatrix(projmat);
@@ -219,34 +247,6 @@ namespace OpenFrames
     typedef std::vector< osg::ref_ptr<osg::Camera> > CameraList;
     CameraList _cameraList;
   };
-  
-  /**********************************************/
-  void DepthPartitionCallback::CameraManager::updateProjectionMatrix(osg::Matrix& proj, const double &zNear, const double &zFar)
-  {
-    double left, right, bottom, top, oldNear, oldFar;
-    
-    // Clamp the projection matrix z values to the range (near, far)
-    double epsilon = 1.0e-6;
-    if(fabs(proj(0,3)) < epsilon &&
-       fabs(proj(1,3)) < epsilon &&
-       fabs(proj(2,3)) < epsilon) // Projection is Orthographic
-    {
-      // Get the current orthographic projection parameters
-      proj.getOrtho(left, right, bottom, top, oldNear, oldFar);
-      
-      // Use the custom computed near/far values
-      proj.makeOrtho(left, right, bottom, top, zNear, zFar);
-    }
-    else // Projection is Perspective
-    {
-      // Get the current perspective projection parameters
-      proj.getFrustum(left, right, bottom, top, oldNear, oldFar);
-      
-      // Use the custom computed near/far values
-      const double nz = zNear/oldNear;
-      proj.makeFrustum(left*nz, right*nz, bottom*nz, top*nz, zNear, zFar);
-    }
-  }
   
   /**********************************************/
   DepthPartitionCallback::DepthPartitionCallback()

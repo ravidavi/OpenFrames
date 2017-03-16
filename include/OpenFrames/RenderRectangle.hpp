@@ -132,6 +132,8 @@ namespace OpenFrames
     osg::ref_ptr<osg::Camera> _hudCamera; // Heads-up-display camera
     osg::ref_ptr<osg::Camera> _backCamera; // Background camera
     osg::ref_ptr<osg::Camera> _mirrorCamera; // Camera to mirror scene onto window
+
+    osg::ref_ptr<VRCamera> _backCameraVR; // VR version of background camera
     
     // Render textures used for storing each eye's image in VR
     osg::observer_ptr<VRTextureBuffer> _vrTextureBuffer;

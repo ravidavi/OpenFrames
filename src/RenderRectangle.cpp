@@ -96,6 +96,9 @@ namespace OpenFrames
     _backCamera = new osg::Camera;
     _backCamera->setName("Background");
     
+    // If using VR, then create a stereo VR camera for background elements
+    if (_useVR) _backCameraVR = new VRCamera(_vrTextureBuffer.get(), -1, VRCamera::STEREO, false);
+
     // Create the Camera that will mirror the VR scene to the window
     _mirrorCamera = new osg::Camera;
     _mirrorCamera->setName("Mirror");
@@ -156,32 +159,50 @@ namespace OpenFrames
       _hudCamera->setViewMatrix(osg::Matrix::identity());
       _hudCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));
       _hudCamera->setProjectionResizePolicy(osg::Camera::FIXED); // Resizing should not affect projection matrix
+      _sceneView->addSlave(_hudCamera, false);
       
       // Set up background camera render properties
-      _backCamera->setReferenceFrame(osg::Transform::RELATIVE_RF);
-      _backCamera->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-      _backCamera->setAllowEventFocus(false);
-      _backCamera->setRenderOrder(osg::Camera::PRE_RENDER, -1); // Render before other cameras
-      _backCamera->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
       if(_useVR)
+      { 
+        // Set individual VR subcamera properties
+        osg::Camera *cam;
+        for (unsigned int i = 0; i < _backCameraVR->getNumCameras(); ++i)
+        {
+          cam = _backCameraVR->getCamera(i);
+
+          // Cameras are rendered in order of increasing render number, so
+          // set this camera's number as its render number
+          cam->setRenderOrder(osg::Camera::PRE_RENDER, -1);
+
+          // We will compute the view and projection matrices ourselves
+          // NOTE: Change this to ABSOLUTE_RF after VR view matrix has been implemented
+          cam->setReferenceFrame(osg::Transform::RELATIVE_RF);
+          //cam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
+
+          // Add camera as slave, and tell it not to use the master Camera's scene
+          _sceneView->addSlave(cam, false);
+
+          // Add callback to only use master camera's view matrix
+          // NOTE: Remvove this after VR view matrix has been implemented 
+          _sceneView->findSlaveForCamera(cam)->_updateSlaveCallback = new BackCameraViewCallback;
+        }
+
+        // Set general VR camera properties
+        _backCameraVR->setClearColorBuffer(true);
+        osg::Matrixd rightProj = _ovrDevice->getRightEyeProjectionMatrix();
+        osg::Matrixd leftProj = _ovrDevice->getLeftEyeProjectionMatrix();
+        osg::Matrixd centerProj = _ovrDevice->getCenterProjectionMatrix();
+        _backCameraVR->updateCameras(osg::Matrixd(), rightProj, leftProj, centerProj, 1.0);
+        masterCam->setProjectionMatrix(centerProj);
+      }
+      else
       {
-        // Use FBO to render to texture
-        _backCamera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
-        
-        // Stars are far away, so render same view to both eyes
-        _backCamera->attach(osg::Camera::COLOR_BUFFER0, _vrTextureBuffer->_rightColorTex);
-        _backCamera->attach(osg::Camera::COLOR_BUFFER1, _vrTextureBuffer->_leftColorTex);
-        
-        // Don't need a depth buffer since we don't care about depth in the background scene
-        _backCamera->setImplicitBufferAttachmentRenderMask(0);
-        
-        // Render to entire texture
-        int vrWidth, vrHeight;
-        _ovrDevice->getRecommendedTextureSize(vrWidth, vrHeight);
-        _backCamera->setViewport(0, 0, vrWidth, vrHeight);
-        
-        // Set projection matrix
-        _backCamera->setProjectionMatrix(_ovrDevice->getCenterProjectionMatrix());
+        _backCamera->setReferenceFrame(osg::Transform::RELATIVE_RF);
+        _backCamera->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        _backCamera->setAllowEventFocus(false);
+        _backCamera->setRenderOrder(osg::Camera::PRE_RENDER, -1); // Render before other cameras
+        _backCamera->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+        _sceneView->addSlave(_backCamera, false);
       }
 
       // Set up mirror camera render properties
@@ -199,16 +220,7 @@ namespace OpenFrames
         quad->addDrawable(geom);
         _mirrorCamera->addChild(quad);
         _mirrorCamera->getOrCreateStateSet()->setTextureAttributeAndModes(0, _vrTextureBuffer->_rightColorTex, osg::StateAttribute::ON);
-      }
-      
-      // Add the HUD and background cameras as a slaves to the main camera
-      // Second argument means the camera is not sharing the main camera's scene
-      _sceneView->addSlave(_hudCamera, false);
-      _sceneView->addSlave(_backCamera, false);
-      if (_useVR)
-      {
         _sceneView->addSlave(_mirrorCamera, false);
-        _sceneView->findSlaveForCamera(_backCamera)->_updateSlaveCallback = new BackCameraViewCallback;
       }
 
       // Main camera shouldn't clear its color buffer
@@ -252,7 +264,17 @@ namespace OpenFrames
     // Set up the Sky Sphere
     {
       _skySphere->setDrawMode(SkySphere::NONE); // Disabled by default
-      _backCamera->addChild(_skySphere->getGroup());
+      if (_useVR)
+      {
+        osg::Camera *cam;
+        for (unsigned int i = 0; i < _backCameraVR->getNumCameras(); ++i)
+        {
+          cam = _backCameraVR->getCamera(i);
+          cam->addChild(_skySphere->getGroup());
+        }
+      }
+      else
+        _backCamera->addChild(_skySphere->getGroup());
     }
     
     // Set up the depth partitioner
@@ -300,8 +322,18 @@ namespace OpenFrames
   {
     _sceneView->getCamera()->setGraphicsContext(gc);
     _hudCamera->setGraphicsContext(gc);
-    _backCamera->setGraphicsContext(gc);
     _mirrorCamera->setGraphicsContext(gc);
+    if (_useVR)
+    {
+      osg::Camera *cam;
+      for (unsigned int i = 0; i < _backCameraVR->getNumCameras(); ++i)
+      {
+        cam = _backCameraVR->getCamera(i);
+        cam->setGraphicsContext(gc);
+      }
+    }
+    else
+      _backCamera->setGraphicsContext(gc);
   }
   
   void RenderRectangle::setViewport(int x, int y, int w, int h)
@@ -526,6 +558,8 @@ namespace OpenFrames
   
   void RenderRectangle::applyCurrentViewProjection()
   {
+    if (_useVR) return; // VR applies its own projection
+
     View *view = getCurrentView();
     
     /** Adjust the perspective projection with the current viewport size */
@@ -535,18 +569,9 @@ namespace OpenFrames
       double fov, ratio;
       view->getPerspective(fov, ratio);
       
-      if(_useVR)
-      {
-        int vrWidth, vrHeight;
-        _ovrDevice->getRecommendedTextureSize(vrWidth, vrHeight);
-        ratio = (double)vrWidth / (double)vrHeight;
-      }
-      else
-      {
-        // Get main camera viewport or depth partitioner's viewport
-        osg::Viewport *vp = _sceneView->getCamera()->getViewport();
-        if(vp) ratio = (double)vp->width() / (double)vp->height();
-      }
+      // Get main camera viewport or depth partitioner's viewport
+      osg::Viewport *vp = _sceneView->getCamera()->getViewport();
+      if(vp) ratio = (double)vp->width() / (double)vp->height();
       
       // Set new aspect ratio
       view->setPerspective(fov, ratio); // Set new aspect ratio

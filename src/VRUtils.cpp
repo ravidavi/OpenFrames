@@ -326,7 +326,7 @@ namespace OpenFrames{
     
     if(!vrcam) // Create a new VRCamera
     {
-      vrcam = new VRCamera(_texBuffer.get(), camNum, VRCamera::AUTO, true); // Use MSAA
+      vrcam = new VRCamera(_texBuffer.get(), camNum, VRCamera::STEREO, true); // Use MSAA
       
       osg::Camera *cam;
       for(unsigned int i = 0; i < vrcam->getNumCameras(); ++i)
@@ -337,9 +337,9 @@ namespace OpenFrames{
         
         // Cameras are rendered in order of increasing render number, so
         // set this camera's number as its render number
-        cam->setRenderOrder(masterCamera->getRenderOrder(), camNum);
+        cam->setRenderOrder(osg::Camera::PRE_RENDER, camNum);
         
-        // We will compute the projection matrix ourselves
+        // We will compute the view and projection matrices ourselves
         cam->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
         cam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
         
@@ -364,16 +364,16 @@ namespace OpenFrames{
       osg::Matrixd rightProj = _ovrDevice->getRightEyeProjectionMatrix();
       osg::Matrixd leftProj = _ovrDevice->getLeftEyeProjectionMatrix();
       osg::Matrixd centerProj = _ovrDevice->getCenterProjectionMatrix();
-      updateProjectionMatrix(rightProj, zNear, zFar);
-      updateProjectionMatrix(leftProj, zNear, zFar);
-      updateProjectionMatrix(centerProj, zNear, zFar);
+      OpenFrames::updateProjectionMatrix(rightProj, zNear, zFar);
+      OpenFrames::updateProjectionMatrix(leftProj, zNear, zFar);
+      OpenFrames::updateProjectionMatrix(centerProj, zNear, zFar);
       vrcam->updateCameras(masterCamera->getViewMatrix(), rightProj, leftProj, centerProj, zNear);
     }
     else
     {
       // Update camera matrices and properties using master camera data
       osg::Matrixd projmat = masterCamera->getProjectionMatrix();
-      updateProjectionMatrix(projmat, zNear, zFar);
+      OpenFrames::updateProjectionMatrix(projmat, zNear, zFar);
       vrcam->updateCameras(masterCamera->getViewMatrix(), projmat, zNear);
     }
 

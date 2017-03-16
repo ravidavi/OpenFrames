@@ -25,7 +25,10 @@
 namespace OpenFrames
 {
   class DepthPartitionCallback;
-  
+
+  /** OpenFrames function that updates a projection matrix with specified near/far plane */
+  void updateProjectionMatrix(osg::Matrix& proj, const double &zNear, const double &zfar);
+
   /**********************************************************
    * Ravi Mathur
    * OpenFrames API, class DepthPartitioner
@@ -52,7 +55,7 @@ namespace OpenFrames
     osg::ref_ptr<DepthPartitionCallback> _dpCallback;
     osgViewer::View *_view;
   };
-  
+
   /**********************************************************
    * Ravi Mathur
    * OpenFrames API, class DepthPartitionCallback
@@ -104,9 +107,6 @@ namespace OpenFrames
       // Clear all internal cameras and revert the CameraManger to an unused
       // and empty state
       virtual void reset() = 0;
-      
-      // Updates a projection matrix with specified near/far plane
-      void updateProjectionMatrix(osg::Matrix& proj, const double &zNear, const double &zfar);
       
       // Have first camera clear the color buffer
       virtual void setClearColorBuffer(bool clear) { _clearColorBuffer = clear; }
