@@ -44,6 +44,22 @@ namespace OpenFrames
     }
   };
   
+  class GetPosesCallback : public osg::View::Slave::UpdateSlaveCallback
+  {
+  public:
+    GetPosesCallback(OpenVRDevice *ovrDevice)
+    : _ovrDevice(ovrDevice)
+    { }
+    
+    virtual void updateSlave(osg::View& view, osg::View::Slave& slave)
+    {
+      _ovrDevice->waitGetPoses();
+    }
+    
+  private:
+    osg::observer_ptr<OpenVRDevice> _ovrDevice;
+  };
+  
   RenderRectangle::RenderRectangle(OpenVRDevice *ovrDevice, VRTextureBuffer *vrTextureBuffer)
   : _ovrDevice(ovrDevice), _vrTextureBuffer(vrTextureBuffer)
   {
@@ -84,12 +100,19 @@ namespace OpenFrames
     _depthPartitionNode = new DepthPartitionNode;
     _depthPartitioner = new DepthPartitioner;
     
-    // If VR is used, then tell depth partitioner to use VR camera manager
+    // If VR is used, then update depth partitioner with VR callbacks
     if(_useVR)
     {
+      // Create a camera manager to handle VR cameras
       VRCameraManager *vrCamManager = new VRCameraManager(_vrTextureBuffer.get());
       vrCamManager->setOpenVRDevice(_ovrDevice.get());
+      
+      // Create callback to update VR poses
+      GetPosesCallback *poseCallback = new GetPosesCallback(_ovrDevice.get());
+      
+      // Customize depth partitioner with callbacks
       _depthPartitioner->getCallback()->setCameraManager(vrCamManager);
+      _depthPartitioner->getCallback()->setUpdateCallback(poseCallback);
     }
     if(useNewDP) _depthPartitioner->setViewToPartition(_sceneView);
     

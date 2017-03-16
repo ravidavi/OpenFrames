@@ -277,6 +277,10 @@ namespace OpenFrames
     osgViewer::View *sceneView = dynamic_cast<osgViewer::View*>(&view);
     if(!sceneView || !sceneView->getSceneData()) return;
     
+    // Call the camera update callback if defined
+    if(_updateCallback)
+      _updateCallback->updateSlave(view, slave);
+    
     // Capture the master camera's graphics context
     osg::Camera *camera = view.getCamera();
     if(camera->getGraphicsContext())
