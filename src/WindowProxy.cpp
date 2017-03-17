@@ -451,7 +451,7 @@ namespace OpenFrames
       else
       {
         // Set up OpenVR
-        _ovrDevice = new OpenVRDevice(1.0);
+        _ovrDevice = new OpenVRDevice(0.001, 1.6764); // 5'6" user height
         if(_ovrDevice->initVR())
         {
           osg::notify(osg::INFO) << "WindowProxy enabling VR" << std::endl;

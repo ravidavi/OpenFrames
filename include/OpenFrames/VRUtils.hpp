@@ -86,9 +86,10 @@ namespace OpenFrames {
     // camera-specific operations
     void updateCameras(osg::Matrixd& viewmat, osg::Matrixd& projmat, const double &zNear)
     {
-      updateCameras(viewmat, projmat, projmat, projmat, zNear);
+      updateCameras(viewmat, viewmat, viewmat, projmat, projmat, projmat, zNear);
     }
-    void updateCameras(osg::Matrixd& viewmat, osg::Matrixd& rightProj, 
+    void updateCameras(osg::Matrixd& rightView, osg::Matrixd& leftView, 
+      osg::Matrixd& centerView, osg::Matrixd& rightProj, 
       osg::Matrixd& leftProj, osg::Matrixd& centerProj, const double &zNear);
 
   protected:

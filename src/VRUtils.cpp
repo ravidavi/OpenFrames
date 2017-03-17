@@ -253,7 +253,8 @@ namespace OpenFrames{
     }
   }
   
-  void VRCamera::updateCameras(osg::Matrixd& viewmat, osg::Matrixd& rightProj,
+  void VRCamera::updateCameras(osg::Matrixd& rightView, osg::Matrixd& leftView,
+                               osg::Matrixd& centerView, osg::Matrixd& rightProj,
                                osg::Matrixd& leftProj, osg::Matrixd& centerProj,
                                const double &zNear)
   {
@@ -264,7 +265,7 @@ namespace OpenFrames{
     if((_mode == MONO) || ((_mode == AUTO) && (zNear > 0.1)))
     {
       _monoCamera->setNodeMask(0xffffffff); // Enable mono camera
-      _monoCamera->setViewMatrix(viewmat);
+      _monoCamera->setViewMatrix(centerView);
       _monoCamera->setProjectionMatrix(centerProj);
       
       // Add MSAA texture chaining camera to mono camera
@@ -277,7 +278,7 @@ namespace OpenFrames{
     else if(_mode == STEREO || ((_mode == AUTO) && (zNear <= 0.1)))
     {
       _rightCamera->setNodeMask(0xffffffff); // Enable right camera
-      _rightCamera->setViewMatrix(viewmat);
+      _rightCamera->setViewMatrix(rightView);
       _rightCamera->setProjectionMatrix(rightProj);
       
       // Add MSAA texture chaining camera to right camera
@@ -285,7 +286,7 @@ namespace OpenFrames{
         _rightCamera->addChild(_texBuffer->_rightTexCamera);
       
       _leftCamera->setNodeMask(0xffffffff); // Enable left camera
-      _leftCamera->setViewMatrix(viewmat);
+      _leftCamera->setViewMatrix(leftView);
       _leftCamera->setProjectionMatrix(leftProj);
       
       // Add MSAA texture chaining camera to left camera
@@ -360,14 +361,30 @@ namespace OpenFrames{
     // Update projection matrix depth planes
     if (_ovrDevice.get())
     {
-      // Update camera matrices and properties using VR data
+      // Get per-eye projection matrices and update them with new depth planes
       osg::Matrixd rightProj = _ovrDevice->getRightEyeProjectionMatrix();
       osg::Matrixd leftProj = _ovrDevice->getLeftEyeProjectionMatrix();
       osg::Matrixd centerProj = _ovrDevice->getCenterProjectionMatrix();
       OpenFrames::updateProjectionMatrix(rightProj, zNear, zFar);
       OpenFrames::updateProjectionMatrix(leftProj, zNear, zFar);
       OpenFrames::updateProjectionMatrix(centerProj, zNear, zFar);
-      vrcam->updateCameras(masterCamera->getViewMatrix(), rightProj, leftProj, centerProj, zNear);
+
+      // Get eye offset matrices
+      osg::Matrixd rightOffset, leftOffset, centerOffset;
+      rightOffset = _ovrDevice->getRightEyeViewOffsetMatrix();
+      leftOffset = _ovrDevice->getLeftEyeViewOffsetMatrix();
+      centerOffset = _ovrDevice->getCenterViewOffsetMatrix();
+
+      // Compose per-eye view matrix as: Camera*HMD*EyeOffset
+      // At this point, the master camera view matrix already contains the HMD pose
+      // so we only need to add the eye offset matrix
+      osg::Matrixd& masterView = masterCamera->getViewMatrix();
+      osg::Matrixd rightView(masterView), leftView(masterView), centerView(masterView);
+      rightView.postMult(rightOffset);
+      leftView.postMult(leftOffset);
+      centerView.postMult(centerOffset);
+
+      vrcam->updateCameras(rightView, leftView, centerView, rightProj, leftProj, centerProj, zNear);
     }
     else
     {
@@ -376,8 +393,6 @@ namespace OpenFrames{
       OpenFrames::updateProjectionMatrix(projmat, zNear, zFar);
       vrcam->updateCameras(masterCamera->getViewMatrix(), projmat, zNear);
     }
-
-    
   }
   
   // Disable all cameras starting with the specified index

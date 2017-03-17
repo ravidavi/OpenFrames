@@ -20,26 +20,24 @@
 #include <openvr.h>
 
 namespace OpenFrames{
-  static osg::Matrixd convertMatrix34(const vr::HmdMatrix34_t &mat34)
+  static void convertMatrix34(osg::Matrixf &mat, const vr::HmdMatrix34_t &mat34)
   {
-    osg::Matrixd matrix(
-                       mat34.m[0][0], mat34.m[1][0], mat34.m[2][0], 0.0,
-                       mat34.m[0][1], mat34.m[1][1], mat34.m[2][1], 0.0,
-                       mat34.m[0][2], mat34.m[1][2], mat34.m[2][2], 0.0,
-                       mat34.m[0][3], mat34.m[1][3], mat34.m[2][3], 1.0
-                       );
-    return matrix;
+    mat.set(
+            mat34.m[0][0], mat34.m[1][0], mat34.m[2][0], 0.0,
+            mat34.m[0][1], mat34.m[1][1], mat34.m[2][1], 0.0,
+            mat34.m[0][2], mat34.m[1][2], mat34.m[2][2], 0.0,
+            mat34.m[0][3], mat34.m[1][3], mat34.m[2][3], 1.0
+            );
   }
   
-  static osg::Matrixd convertMatrix44(const vr::HmdMatrix44_t &mat44)
+  static void convertMatrix44(osg::Matrixf &mat, const vr::HmdMatrix44_t &mat44)
   {
-    osg::Matrixd matrix(
-                       mat44.m[0][0], mat44.m[1][0], mat44.m[2][0], mat44.m[3][0],
-                       mat44.m[0][1], mat44.m[1][1], mat44.m[2][1], mat44.m[3][1],
-                       mat44.m[0][2], mat44.m[1][2], mat44.m[2][2], mat44.m[3][2],
-                       mat44.m[0][3], mat44.m[1][3], mat44.m[2][3], mat44.m[3][3]
-                       );
-    return matrix;
+    mat.set(
+            mat44.m[0][0], mat44.m[1][0], mat44.m[2][0], mat44.m[3][0],
+            mat44.m[0][1], mat44.m[1][1], mat44.m[2][1], mat44.m[3][1],
+            mat44.m[0][2], mat44.m[1][2], mat44.m[2][2], mat44.m[3][2],
+            mat44.m[0][3], mat44.m[1][3], mat44.m[2][3], mat44.m[3][3]
+            );
   }
   
   /*************************************************************/
@@ -63,13 +61,15 @@ namespace OpenFrames{
   }
   
   /*************************************************************/
-  OpenVRDevice::OpenVRDevice(double worldUnitsPerMeter)
+  OpenVRDevice::OpenVRDevice(float worldUnitsPerMeter, float userHeightInMeters)
   : _worldUnitsPerMeter(worldUnitsPerMeter),
+  _userHeightInMeters(userHeightInMeters),
   _width(0),
   _height(0),
   _isInitialized(false),
   _vrSystem(nullptr),
-  _vrRenderModels(nullptr)
+  _vrRenderModels(nullptr),
+  _ipd(0.0)
   {}
   
   OpenVRDevice::~OpenVRDevice()
@@ -133,7 +133,9 @@ namespace OpenFrames{
     _height = h;
     osg::notify(osg::NOTICE) << "OpenVR eye texture width = " << _width << ", height = " << _height << std::endl;
 
-    updateProjectionMatrices(); // Update the per-eye projection matrices
+    // Update the per-eye projection matrices
+    // The view offset matrices will be computed per-frame since IPD can change
+    updateProjectionMatrices();
     
     return _isInitialized;
   }
@@ -157,16 +159,54 @@ namespace OpenFrames{
 
     vr::HmdMatrix44_t proj;
 
-    // Get right eye unit projection bounds
+    // Get right eye projection. Using unit depth minimizes
+    // precision losses in the projection matrix
     proj = _vrSystem->GetProjectionMatrix(vr::Eye_Right, 1.0, 2.0);
-    _rightProj = convertMatrix44(proj);
+    convertMatrix44(_rightProj, proj);
 
-    // Get left eye unit projection bounds
+    // Get left eye projection. Using unit depth minimizes
+    // precision losses in the projection matrix
     proj = _vrSystem->GetProjectionMatrix(vr::Eye_Left, 1.0, 2.0);
-    _leftProj = convertMatrix44(proj);
+    convertMatrix44(_leftProj, proj);
 
     // Center projection is average of right and left
     _centerProj = (_rightProj + _leftProj)*0.5;
+  }
+
+  /*************************************************************/
+  void OpenVRDevice::updateViewOffsets()
+  {
+    if (!isInitialized()) return;
+
+    vr::HmdMatrix34_t view;
+    osg::Matrixf viewMat;
+
+    // Get right eye view
+    view = _vrSystem->GetEyeToHeadTransform(vr::Eye_Right);
+    convertMatrix34(viewMat, view);
+    osg::Vec3f rightVec = viewMat.getTrans();
+
+    // Get left eye view
+    view = _vrSystem->GetEyeToHeadTransform(vr::Eye_Left);
+    convertMatrix34(viewMat, view);
+    osg::Vec3f leftVec = viewMat.getTrans();
+
+    // If IPD has changed, then recompute offset matrices
+    float ipd = (rightVec - leftVec).length();
+    if (ipd != _ipd)
+    {
+      osg::notify(osg::ALWAYS) << "OpenVR Interpupillary Distance: " << ipd * 1000.0f << "mm" << std::endl;
+
+      // Scale offsets according to world unit scale
+      rightVec *= -_worldUnitsPerMeter; // Flip direction since we want Head to Eye transform for OSG
+      leftVec *= -_worldUnitsPerMeter;
+      osg::Vec3f centerVec = (rightVec + leftVec)*0.5;
+
+      _rightViewOffset.makeTranslate(rightVec);
+      _leftViewOffset.makeTranslate(leftVec);
+      _centerViewOffset.makeTranslate(centerVec);
+      _ipd = ipd;
+    }
   }
 
   /*************************************************************/
@@ -182,10 +222,12 @@ namespace OpenFrames{
     const vr::TrackedDevicePose_t& hmdPose = poses[vr::k_unTrackedDeviceIndex_Hmd];
     if (hmdPose.bPoseIsValid)
     {
-      osg::Matrixd matrix = convertMatrix34(hmdPose.mDeviceToAbsoluteTracking);
-      osg::Matrixd poseTransform = osg::Matrixd::inverse(matrix);
-      _position = poseTransform.getTrans() * _worldUnitsPerMeter;
-      _orientation = poseTransform.getRotate();
+      osg::Matrixf matrix;
+      convertMatrix34(matrix, hmdPose.mDeviceToAbsoluteTracking);
+      matrix(3, 0) *= _worldUnitsPerMeter;
+      matrix(3, 1) = (matrix(3,1) - _userHeightInMeters)*_worldUnitsPerMeter;
+      matrix(3, 2) *= _worldUnitsPerMeter;
+      _hmdPose.invert(matrix);
     }
   }
   

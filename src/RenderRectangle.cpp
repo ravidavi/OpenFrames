@@ -53,7 +53,18 @@ namespace OpenFrames
     
     virtual void updateSlave(osg::View& view, osg::View::Slave& slave)
     {
+      // Get updated poses for all devices
       _ovrDevice->waitGetPoses();
+
+      // Get updated view offset matrices
+      // These can change if the user changes the HMD's IPD
+      _ovrDevice->updateViewOffsets();
+
+      // Incorporate the HMD pose into the master camera view matrix
+      // NOTE: this should really be done in OpenFrames::View
+      osg::Camera *masterCamera = view.getCamera(); // Get master camera
+      osg::Matrixd hmdPose = _ovrDevice->getHMDPoseMatrix(); // Get HMD pose
+      masterCamera->getViewMatrix().postMult(hmdPose);
     }
     
   private:
@@ -65,11 +76,19 @@ namespace OpenFrames
   class BackCameraViewCallback : public osg::View::Slave::UpdateSlaveCallback
   {
   public:
+    BackCameraViewCallback(OpenVRDevice *ovrDevice)
+      : _ovrDevice(ovrDevice)
+    { }
+
     virtual void updateSlave(osg::View& view, osg::View::Slave& slave)
     {
-      slave._camera->setViewMatrix(view.getCamera()->getViewMatrix());
-      slave._camera->inheritCullSettings(*(view.getCamera()), slave._camera->getInheritanceMask());
+      osg::Camera *masterCamera = view.getCamera(); // Get master camera
+      slave._camera->setViewMatrix(masterCamera->getViewMatrix());
+      slave._camera->inheritCullSettings(*masterCamera, slave._camera->getInheritanceMask());
     }
+
+  private:
+    osg::observer_ptr<OpenVRDevice> _ovrDevice;
   };
   
   RenderRectangle::RenderRectangle(OpenVRDevice *ovrDevice, VRTextureBuffer *vrTextureBuffer)
@@ -97,6 +116,7 @@ namespace OpenFrames
     _backCamera->setName("Background");
     
     // If using VR, then create a stereo VR camera for background elements
+    // MSAA isn't need here since background elements are currently only point stars and images
     if (_useVR) _backCameraVR = new VRCamera(_vrTextureBuffer.get(), -1, VRCamera::STEREO, false);
 
     // Create the Camera that will mirror the VR scene to the window
@@ -184,7 +204,7 @@ namespace OpenFrames
 
           // Add callback to only use master camera's view matrix
           // NOTE: Remvove this after VR view matrix has been implemented 
-          _sceneView->findSlaveForCamera(cam)->_updateSlaveCallback = new BackCameraViewCallback;
+          _sceneView->findSlaveForCamera(cam)->_updateSlaveCallback = new BackCameraViewCallback(_ovrDevice.get());
         }
 
         // Set general VR camera properties
@@ -192,7 +212,8 @@ namespace OpenFrames
         osg::Matrixd rightProj = _ovrDevice->getRightEyeProjectionMatrix();
         osg::Matrixd leftProj = _ovrDevice->getLeftEyeProjectionMatrix();
         osg::Matrixd centerProj = _ovrDevice->getCenterProjectionMatrix();
-        _backCameraVR->updateCameras(osg::Matrixd(), rightProj, leftProj, centerProj, 1.0);
+        osg::Matrixd view; // Dummy argument, will be overridden by master camera view matrix
+        _backCameraVR->updateCameras(view, view, view, rightProj, leftProj, centerProj, 1.0);
         masterCam->setProjectionMatrix(centerProj);
       }
       else

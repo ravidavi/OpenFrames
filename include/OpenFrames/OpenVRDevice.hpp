@@ -40,34 +40,42 @@ namespace OpenFrames {
   class OF_EXPORT OpenVRDevice : public osg::Referenced
   {
   public:
-    OpenVRDevice(double worldUnitsPerMeter);
-    
+    OpenVRDevice(float worldUnitsPerMeter, float userHeightInMeters);
+
     /**
      Initialize OpenVR and connect to the HMD
      Return status: whether OpenVR was initialized
      */
     bool initVR();
     void shutdownVR();
-    
+
     /** Get the per-eye texture size recommended by OpenVR */
     void getRecommendedTextureSize(int& w, int& h)
-    { w = _width; h = _height; }
-    
+    {
+      w = _width; h = _height;
+    }
+
     /** Get whether OpenVR has been initialized */
-    bool isInitialized() { return _isInitialized; }
-    
-    /** Update the per-eye projection matrix bounds, and get the
-     matrices using the given depth clip bounds. */
+    inline bool isInitialized() { return _isInitialized; }
+
+    /** Update and get the per-eye projection matrix */
     void updateProjectionMatrices();
     osg::Matrixf& getRightEyeProjectionMatrix() { return _rightProj; }
     osg::Matrixf& getLeftEyeProjectionMatrix() { return _leftProj; }
     osg::Matrixf& getCenterProjectionMatrix() { return _centerProj; }
+
+    /** Update and get the per-eye view matrix */
+    void updateViewOffsets();
+    osg::Matrixf& getRightEyeViewOffsetMatrix() { return _rightViewOffset; }
+    osg::Matrixf& getLeftEyeViewOffsetMatrix() { return _leftViewOffset; }
+    osg::Matrixf& getCenterViewOffsetMatrix() { return _centerViewOffset; }
 
     /** Update poses (positions/orientations) of all VR devices, and wait
      for the signal to start rendering. Note that this should be called
      at (or near) the end of the OGS update traversal, most likely during
      a slave camera update callback. */
     void waitGetPoses();
+    osg::Matrixf& getHMDPoseMatrix() { return _hmdPose; }
     
     /** Submits the latest rendered eye textures to OpenVR */
     void submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName);
@@ -75,7 +83,8 @@ namespace OpenFrames {
   protected:
     virtual ~OpenVRDevice();
     
-    double _worldUnitsPerMeter; // Distance units per real-world meter
+    float _worldUnitsPerMeter; // Distance units per real-world meter
+    float _userHeightInMeters; // Height of user's HMD origin (approx forehead)
     int _width, _height; // Per-eye texture dimensions
     
     bool _isInitialized; // Whether OpenVR is initialized
@@ -84,10 +93,11 @@ namespace OpenFrames {
     vr::IVRRenderModels* _vrRenderModels; // Controller models
     
     osg::Matrixf _rightProj, _leftProj, _centerProj; // Per-eye projection matrices
-    
+    osg::Matrixf _rightViewOffset, _leftViewOffset, _centerViewOffset; // Per-eye view matrices
+    float _ipd; // Interpupillary distance
+
     // Head to world view transformation
-    osg::Vec3d _position;
-    osg::Quat _orientation;
+    osg::Matrixf _hmdPose;
   };
   
 } // !namespace OpenFrames
