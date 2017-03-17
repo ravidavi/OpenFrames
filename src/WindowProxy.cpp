@@ -222,8 +222,31 @@ namespace OpenFrames
         }
         
         // Spacebar resets current view
-        else if(key == osgGA::GUIEventAdapter::KEY_Space)
+        else if (key == osgGA::GUIEventAdapter::KEY_Space)
+        {
           _window->getGridPosition(_currentRow, _currentCol)->getCurrentView()->resetTrackball();
+        }
+
+        // Scale world if VR is used
+        else if (key == osgGA::GUIEventAdapter::KEY_Up)
+        {
+          if (_window->getUseVR())
+          {
+            float scale = _window->getWorldUnitsPerMeter();
+            scale /= 2.0; // Make world bigger
+            _window->setWorldUnitsPerMeter(scale);
+          }
+        }
+
+        else if (key == osgGA::GUIEventAdapter::KEY_Down)
+        {
+          if (_window->getUseVR())
+          {
+            float scale = _window->getWorldUnitsPerMeter();
+            scale *= 2.0; // Make world smaller
+            _window->setWorldUnitsPerMeter(scale);
+          }
+        }
         
         // Call the keypress callback
         unsigned int id = _window->getID();

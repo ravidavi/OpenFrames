@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2016 Ravishankar Mathur
+   Copyright 2017 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -64,7 +64,8 @@ class OF_EXPORT SkySphere : public OpenFrames::Sphere {
     /// catalog, so sorting the catalog allows drawing brightest/dimmest
     /// stars first.
     /// Limits: minMag < maxMag AND numStars >= 1
-    bool setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int maxNumStars, float starScale = 4.0);
+    bool setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int maxNumStars,
+                     float minPixSize, float maxPixSize, float minDimRatio);
 
     ///
     /// Convert a Star to a XYZ position, RGB color, and size (in color[3])
@@ -84,7 +85,8 @@ class OF_EXPORT SkySphere : public OpenFrames::Sphere {
     std::string _starCatalogFile; // File containing star catalog
     float _minMag, _maxMag; // Range of drawn star magnitudes
     unsigned int _maxNumStars; // Maximum number of drawn stars
-    float _starScale; // Pixel size scale
+    float _minPixSize, _maxPixSize; // Limits on final star pixel size
+    float _minDimRatio; // Minimum dimming ratio for any star
 
     // Stars are grouped by position into star bins. Bins are arranged
     // in a cube superscribed on the star unit sphere. Each cube face

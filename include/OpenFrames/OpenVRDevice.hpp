@@ -77,6 +77,14 @@ namespace OpenFrames {
     void waitGetPoses();
     osg::Matrixf& getHMDPoseMatrix() { return _hmdPose; }
     
+    /** Get/set the world units in meters */
+    void setWorldUnitsPerMeter(float worldUnitsPerMeter)
+    {
+      _worldUnitsPerMeter = worldUnitsPerMeter;
+      _ipd = 0.0f;
+    }
+    float getWorldUnitsPerMeter() { return _worldUnitsPerMeter; }
+
     /** Submits the latest rendered eye textures to OpenVR */
     void submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName);
     

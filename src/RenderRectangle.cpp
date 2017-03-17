@@ -310,6 +310,7 @@ namespace OpenFrames
     _sceneView->setSceneData(_scene);
     masterCam->setCullingMode(osg::CullSettings::DEFAULT_CULLING & ~osg::CullSettings::SMALL_FEATURE_CULLING);
     masterCam->setNearFarRatio(0.0001);
+    //if (_useVR) _sceneView->setLightingMode(osg::View::SKY_LIGHT);
   }
   
   void RenderRectangle::setFrameManager(FrameManager *fm)
@@ -426,10 +427,10 @@ namespace OpenFrames
   bool RenderRectangle::setSkySphereStarData(const std::string& catalogName,
                                              float minMag, float maxMag,
                                              unsigned int maxNumStars,
-                                             float starScale)
+                                             float minPixSize, float maxPixSize, float minDimRatio)
   {
     unsigned int currDrawMode = _skySphere->getDrawMode();
-    bool success = _skySphere->setStarData(catalogName, minMag, maxMag, maxNumStars, starScale);
+    bool success = _skySphere->setStarData(catalogName, minMag, maxMag, maxNumStars, minPixSize, maxPixSize, minDimRatio);
     if(success)
       // Add STARFIELD to existing drawmode
       _skySphere->setDrawMode(currDrawMode | SkySphere::STARFIELD);

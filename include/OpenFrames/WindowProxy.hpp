@@ -238,6 +238,16 @@ namespace OpenFrames
     
     /** Get whether VR rendering is enabled */
     bool getUseVR() { return _useVR; }
+
+    void setWorldUnitsPerMeter(float worldUnitsPerMeter)
+    {
+      if (_useVR) _ovrDevice->setWorldUnitsPerMeter(worldUnitsPerMeter);
+    }
+    float getWorldUnitsPerMeter()
+    {
+      if (_useVR) return _ovrDevice->getWorldUnitsPerMeter();
+      else return 1.0; // Unused if VR is disabled
+    }
     
     /** Inherited from OpenThreads::Thread. Called on thread launch. */
     virtual void run();

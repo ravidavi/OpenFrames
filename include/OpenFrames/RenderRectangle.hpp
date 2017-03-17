@@ -76,7 +76,8 @@ namespace OpenFrames
     void setSkySphereTexture(const std::string& fname);
     
     /** Set the star field data */
-    bool setSkySphereStarData(const std::string& catalogName, float minMag, float maxMag, unsigned int maxNumStars = 100000, float starScale = 4.0);
+    bool setSkySphereStarData(const std::string& catalogName, float minMag, float maxMag, unsigned int maxNumStars = 100000, 
+                              float minPixSize = 1.0, float maxPixSize = 10.0, float minDimRatio = 0.5f);
     
     /** Set the background color. Only valid if no sky texture or stars are specified */
     void setBackgroundColor(float r, float g, float b);

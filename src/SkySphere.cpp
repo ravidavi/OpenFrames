@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2016 Ravishankar Mathur
+   Copyright 2017 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -81,7 +81,8 @@ void SkySphere::_init()
   _minMag = -2.0;
   _maxMag = 8.0;
   _maxNumStars = 10000;
-  _starScale = 4.0;
+  _minPixSize = 1.0;
+  _maxPixSize = 10.0;
 
   // Hide Sphere's axes and labels
   showAxes(ReferenceFrame::NO_AXES);
@@ -167,15 +168,30 @@ unsigned int SkySphere::getDrawMode()
 }
 
 
-bool SkySphere::setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int maxNumStars, float starScale)
+bool SkySphere::setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int maxNumStars,
+                            float minPixSize, float maxPixSize, float minDimRatio)
 {
-  if((minMag >= maxMag) || (maxNumStars == 0) || (starScale <= 0.0)) return false;
+  if((minMag >= maxMag) || (maxNumStars == 0) || (minPixSize >= maxPixSize) ||
+     (minDimRatio > 1.0) || (minDimRatio < 0.0)) return false;
   _starCatalogFile = catalogName;
   _minMag = minMag;
   _maxMag = maxMag;
   _maxNumStars = maxNumStars;
-  _starScale = starScale;
+  _minPixSize = minPixSize;
+  _maxPixSize = maxPixSize;
+  _minDimRatio = minDimRatio;
   return processStars();
+}
+
+// Compute star's pixel size from its apparent magnitude
+// See SkySphere::StarToPoint() implementation for equation reference
+float getStarPixelSizeFromMagnitude(float mag)
+{
+  // Diameter computation takes both brightness and luminance into account
+  float La = std::pow(100.0, -2.0 / 5.0); // Transition luminance
+  float L = std::pow(100.0, -mag / 5.0); // Relative luminance
+  float pixSize = 2.0*std::sqrt(L / (std::pow(L, 2.0 / 3.0) + La)); // Pixel diameter
+  return pixSize;
 }
 
 bool SkySphere::processStars()
@@ -202,11 +218,15 @@ bool SkySphere::processStars()
   std::string line;
   std::getline(starfile, line);
 
+  // Find the scale needed to ensure all stars are in the right pixel size range
+  float maxRawSize = getStarPixelSizeFromMagnitude(_minMag); // minimum magnitude = maximum size
+  float minRawSize = getStarPixelSizeFromMagnitude(_maxMag);
+
   // Loop over all stars
   float ra, dec, mag, colorindex;
   unsigned int numStars = 0;
-  float maxSize = 0.0, minSize = 10000.0;
-  float maxMag = 0.0, minMag = 10000.0;
+  float maxSize = 0.0, minSize = 10000.0; // Largest/smallest pixel sizes of processed stars
+  float maxMag = 0.0, minMag = 10000.0; // Largest/smallest magnitudes of processed stars
   Star currStar;
   osg::Vec3Array *vertices;
   osg::Vec4Array *colors;
@@ -228,32 +248,48 @@ bool SkySphere::processStars()
     if((mag < _minMag) || (mag > _maxMag)) continue;
 
     // Prepare star data for processing
-    //currStar.ra = ra*osg::PI/12.0 + 2.0*osg::PI_2;
+    //currStar.ra = ra*osg::PI/12.0 + 2.0*osg::PI_2; // Debugging: Rotate stars to compare with rotated textures
     currStar.ra = ra*osg::PI/12.0;    // Hours to radians
     currStar.dec = dec*osg::PI/180.0; // Degrees to radians
     currStar.mag = mag;
     currStar.colorindex = colorindex;
 
-    // Process current star
-    StarToPoint(currStar, currVert, currColor);
-    currColor[3] *= _starScale; // Scale star pixel size
-    //if(currStar.dec > 89.2*osg::PI/180.0) currColor[3] = 20.0;
+    // Get current star location, color, and size
+    StarToPoint(currStar, currVert, currColor); // Size in currColor[3]
+
+    // Linearly interpolate star size between specified bounds
+    float ratio = (currColor[3] - minRawSize) / (maxRawSize - minRawSize); // Interpolation size ratio
+    currColor[3] = _minPixSize + ratio*(_maxPixSize - _minPixSize);
+
+    // Dim star color according to its size ratio
+    // With this, big stars have their full color, but small stars are dimmed towards black
+    float dimRatio = std::max(_minDimRatio, ratio);
+    currColor[0] *= dimRatio;
+    currColor[1] *= dimRatio;
+    currColor[2] *= dimRatio;
+
+    //if(currStar.dec > 89.2*osg::PI/180.0) currColor[3] = 20.0; // Debugging: Make polar stars huge
+
+    // Place star in the appropriate bin according to its location
     currBin = getStarBin(currVert);
     vertices = static_cast<osg::Vec3Array*>(_starBinGeoms[currBin]->getVertexArray());
     colors = static_cast<osg::Vec4Array*>(_starBinGeoms[currBin]->getColorArray());
     vertices->push_back(currVert);
     colors->push_back(currColor);
+
+    // Update statistics
     ++numStars;
     if(mag > maxMag) maxMag = mag;
     if(mag < minMag) minMag = mag;
     if(currColor[3] > maxSize) maxSize = currColor[3];
     if(currColor[3] < minSize) minSize = currColor[3];
   }
-  starfile.close();
+
+  starfile.close(); // Close star database file
 
   std::cout<< std::setprecision(2) << std::fixed << "OpenFrames plotting " << numStars << " stars in magnitude range [" << minMag << "," << maxMag << "], and pixel size range [" << minSize << "," << maxSize << "]" << std::endl;
 
-  // Tell all star bins to draw their 
+  // Tell all star bins to draw their stars
   for(unsigned int i = 0; i < _starBinGeoms.size(); ++i)
   {
     vertices = static_cast<osg::Vec3Array*>(_starBinGeoms[i]->getVertexArray());
@@ -274,7 +310,7 @@ bool SkySphere::processStars()
 // http://ww.nightscapes.net/techniques/TechnicalPapers/StarColors.pdf
 // See the following URL for color equation
 // http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
-void SkySphere::StarToPoint(const Star &star, osg::Vec3 &pos, osg::Vec4 & color)
+void SkySphere::StarToPoint(const Star &star, osg::Vec3 &pos, osg::Vec4 &color)
 {
   // Star position, spherical to cartesian, assuming unit sphere
   pos[0] = std::cos(star.ra)*std::cos(star.dec);
@@ -282,10 +318,7 @@ void SkySphere::StarToPoint(const Star &star, osg::Vec3 &pos, osg::Vec4 & color)
   pos[2] = std::sin(star.dec);
 
   // Star pixel diameter (use color alpha to send this to vertex shader)
-  // Diameter computation takes both brightness and luminance into account
-  const float La = std::pow(100.0, -2.0/5.0); // Transition luminance
-  float L = std::pow(100.0, -star.mag/5.0); // Relative luminance
-  color[3] = 2.0*std::sqrt(L / (std::pow(L, 2.0/3.0) + La)); // Pixel diameter 
+  color[3] = getStarPixelSizeFromMagnitude(star.mag);
 
   // Star color index to temperature (Kelvin) using Ballesteros' formula
   double T = 4600.0*(1.0/(0.92*star.colorindex + 1.7) + 1.0/(0.92*star.colorindex + 0.62));
