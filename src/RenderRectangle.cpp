@@ -310,7 +310,10 @@ namespace OpenFrames
     _sceneView->setSceneData(_scene);
     masterCam->setCullingMode(osg::CullSettings::DEFAULT_CULLING & ~osg::CullSettings::SMALL_FEATURE_CULLING);
     masterCam->setNearFarRatio(0.0001);
-    //if (_useVR) _sceneView->setLightingMode(osg::View::SKY_LIGHT);
+    if (_useVR)
+    {
+      _sceneView->setLightingMode(osg::View::SKY_LIGHT);
+    }
   }
   
   void RenderRectangle::setFrameManager(FrameManager *fm)

@@ -88,20 +88,20 @@ class OF_EXPORT View : public osg::Referenced
 	inline ProjectionType getProjectionType() { return _projType; }
 
 	/** Set a symmetric perspective view. */
-	inline void setPerspective(const double fov, const double ratio)
+	inline void setPerspective(const double fovy, const double ratio)
 	{
 	  _projType = PERSPECTIVE;
-	  _projection.makePerspective(fov, _aspectMultiplier*ratio, 1, 10000);
+	  _projection.makePerspective(fovy, _aspectMultiplier*ratio, 1, 10000);
 	}
 
 	/** Get the parameters for a symmetric perspective view.  Only valid
 	    if a perspective view has been previously set. */
-	inline void getPerspective(double &fov, double &ratio) const
+	inline void getPerspective(double &fovy, double &ratio) const
 	{
 	  if(_projType == PERSPECTIVE)
 	  {
 	    double zNear, zFar;
-	    _projection.getPerspective(fov, ratio, zNear, zFar);
+	    _projection.getPerspective(fovy, ratio, zNear, zFar);
 	  }
 	}
 

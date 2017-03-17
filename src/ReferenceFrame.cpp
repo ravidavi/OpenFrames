@@ -30,6 +30,10 @@
 
 namespace OpenFrames{
 
+  // Convenience constants for enabling/disabling nodes 
+  const osg::Node::NodeMask enabled = 0xffffffff;
+  const osg::Node::NodeMask disabled = 0x0;
+
 ReferenceFrame::ReferenceFrame( const std::string &name ) 
 {
 	osg::Vec4 color(1, 1, 1, 0.9);
@@ -125,9 +129,20 @@ void ReferenceFrame::_init( const std::string &n, const osg::Vec4& c )
 	_nameLabel->setCharacterSize(30.0);
 	_nameLabel->setFont("arial.ttf");
 
-	// Create group to which axes & labels will be added
+	// Create groups to which axes & labels will be added
 	_axes = new osg::Geode;
+    _labels = new osg::Geode;
 	_xform->addChild(_axes.get());
+    _xform->addChild(_labels.get());
+
+    // Add axes and labels to their groups
+    _axes->addDrawable(_xAxis->getVector());
+    _axes->addDrawable(_yAxis->getVector());
+    _axes->addDrawable(_zAxis->getVector());
+    _labels->addDrawable(_xLabel);
+    _labels->addDrawable(_yLabel);
+    _labels->addDrawable(_zLabel);
+    _labels->addDrawable(_nameLabel);
 
 	setName(n); // Set the name of this ReferenceFrame
 
@@ -143,11 +158,15 @@ void ReferenceFrame::_init( const std::string &n, const osg::Vec4& c )
 	showAxesLabels(X_AXIS | Y_AXIS | Z_AXIS); // Show all axes labels
 	showNameLabel(true); // Show the frame's name label
 
-	// Disable culling on the axes
+	// Disable culling on the axes and labels
 	_axes->setCullingActive(false);
+    _labels->setCullingActive(false);
 
 	// Rescale axes normals in case we have scales in the scene
 	_axes->getOrCreateStateSet()->setMode( GL_RESCALE_NORMAL, osg::StateAttribute::ON );
+
+    // Disable lighting for labels
+    _labels->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 }
 
 /**
@@ -160,6 +179,7 @@ void ReferenceFrame::setName( const std::string& name )
 	_name = name;
 	_nameLabel->setText(name);
 	_axes->setName(_name + " axes");
+    _labels->setName(_name + " labels");
 	_xform->setName(_name + " transform");
 }
 
@@ -252,11 +272,11 @@ osg::Group* ReferenceFrame::getGroup()
 const osg::BoundingSphere& ReferenceFrame::getBound() const
 {
 	_bound.init();
-	if(_axes->containsDrawable(_xAxis->getVector()))
+    if (_xAxis->getVector()->getNodeMask() != 0x0)
 	  _bound.expandBy(_xAxis->getVector()->getBound());
-	if(_axes->containsDrawable(_yAxis->getVector()))
+    if (_yAxis->getVector()->getNodeMask() != 0x0)
 	  _bound.expandBy(_yAxis->getVector()->getBound());
-	if(_axes->containsDrawable(_zAxis->getVector()))
+    if (_zAxis->getVector()->getNodeMask() != 0x0)
 	  _bound.expandBy(_zAxis->getVector()->getBound());
 
 	return _bound;
@@ -269,53 +289,29 @@ const osg::BoundingSphere& ReferenceFrame::getBound() const
 */
 void ReferenceFrame::showAxes(unsigned int axes)
 { 
-	bool xexists = _axes->containsDrawable(_xAxis->getVector());
-	bool yexists = _axes->containsDrawable(_yAxis->getVector());
-	bool zexists = _axes->containsDrawable(_zAxis->getVector());
+  // Disable entire axes geode if there's nothing to show
+  if (axes == NO_AXES) _axes->setNodeMask(disabled);
+  else _axes->setNodeMask(enabled);
 
-	if((axes & X_AXIS) && !xexists) // Need to add x-axis
-	{
-		_axes->addDrawable(_xAxis->getVector());
-		xexists = true; // Reuse this variable to tell if x-labels need to be repositioned
-	}
-	else if(!(axes & X_AXIS) && xexists) // Need to remove x-axis
-	{
-		_axes->removeDrawable(_xAxis->getVector());
-		xexists = true;
-	}
-	else xexists = false;
+  if(axes & X_AXIS) // Need to enable x-axis
+    _xAxis->getVector()->setNodeMask(enabled);
+  else
+    _xAxis->getVector()->setNodeMask(disabled);
 
-	if((axes & Y_AXIS) && !yexists) // Need to add y-axis
-	{
-		_axes->addDrawable(_yAxis->getVector());
-		yexists = true; // Reuse this variable to tell if y-labels need to be repositioned
-	}
-	else if(!(axes & Y_AXIS) && yexists) // Need to remove y-axis
-	{
-		_axes->removeDrawable(_yAxis->getVector());
-		yexists = true;
-	}
-	else yexists = false;
+  if (axes & Y_AXIS) // Need to enable y-axis
+    _yAxis->getVector()->setNodeMask(enabled);
+  else
+    _yAxis->getVector()->setNodeMask(disabled);
 
-	if((axes & Z_AXIS) && !zexists) // Need to add z-axis
-	{
-		_axes->addDrawable(_zAxis->getVector());
-		zexists = true; // Reuse this variable to tell if y-labels need to be repositioned
-	}
-	else if(!(axes & Z_AXIS) && zexists) // Need to remove z-axis
-	{
-		_axes->removeDrawable(_zAxis->getVector());
-		zexists = true;
-	}
-	else zexists = false;
-
-	// Reposition axes labels if needed
-	if(xexists)
-	  moveXAxis(_xAxis->getBasePosition(), _xAxis->getTotalLength());
-	if(yexists)
-	  moveYAxis(_yAxis->getBasePosition(), _yAxis->getTotalLength());
-	if(zexists)
-	  moveZAxis(_zAxis->getBasePosition(), _zAxis->getTotalLength());
+  if (axes & Z_AXIS) // Need to enable z-axis
+    _zAxis->getVector()->setNodeMask(enabled);
+  else
+    _zAxis->getVector()->setNodeMask(disabled);
+	
+  // Reposition axes labels
+  moveXAxis(_xAxis->getBasePosition(), _xAxis->getTotalLength());
+  moveYAxis(_yAxis->getBasePosition(), _yAxis->getTotalLength());
+  moveZAxis(_zAxis->getBasePosition(), _zAxis->getTotalLength());
 }
 
 /**
@@ -325,39 +321,28 @@ void ReferenceFrame::showAxes(unsigned int axes)
 */
 void ReferenceFrame::showAxesLabels(unsigned int labels)
 {
-	bool xexists = _axes->containsDrawable(_xLabel.get());
-	bool yexists = _axes->containsDrawable(_yLabel.get());
-	bool zexists = _axes->containsDrawable(_zLabel.get());
+  // Disable entire label geode if there's nothing to show
+  if ((labels == NO_AXES) && (_nameLabel->getNodeMask() == disabled)) _labels->setNodeMask(disabled);
+  else _labels->setNodeMask(enabled);
 
-	// Check if we need to add/remove x-axis label
-	if((labels & X_AXIS) && !xexists) _axes->addDrawable(_xLabel.get());
-	else if(!(labels & X_AXIS) && xexists) _axes->removeDrawable(_xLabel.get());
+  // Enable x-label
+  if (labels & X_AXIS) _xLabel->setNodeMask(enabled);
+  else _xLabel->setNodeMask(disabled);
 
-	// Check if we need to add/remove y-axis label
-	if((labels & Y_AXIS) && !yexists) _axes->addDrawable(_yLabel.get());
-	else if(!(labels & Y_AXIS) && yexists) _axes->removeDrawable(_yLabel.get());
+  // Enable y-label
+  if (labels & Y_AXIS) _yLabel->setNodeMask(enabled);
+  else _yLabel->setNodeMask(disabled);
 
-	if((labels & Z_AXIS) && !zexists) // Need to add z-axis label
-	{
-		_axes->addDrawable(_zLabel.get());
-		zexists = true; // Reuse this variable to tell if z-labels need to be repositioned
-	}
-	else if(!(labels & Z_AXIS) && zexists) // Need to remove z-axis label
-	{
-		_axes->removeDrawable(_zLabel.get());
-		zexists = true;
-	}
-	else zexists = false;
+  // Enable z-label
+  if (labels & Z_AXIS) _zLabel->setNodeMask(enabled);
+  else _zLabel->setNodeMask(disabled);
 
-	// Reposition z-axis labels if needed
-	if(zexists)
-	{
-	  double bodyLen, headLen, bodyRadius, headRadius;
-	  _zAxis->getLength(bodyLen, headLen);
-	  _zAxis->getRadius(bodyRadius, headRadius);
-	  double totalLen = bodyLen + headLen;
-	  moveZAxis(_zAxis->getBasePosition(), totalLen, headLen/totalLen, bodyRadius, headRadius);
-	}
+  // Reposition z-axis label
+  double bodyLen, headLen, bodyRadius, headRadius;
+  _zAxis->getLength(bodyLen, headLen);
+  _zAxis->getRadius(bodyRadius, headRadius);
+  double totalLen = bodyLen + headLen;
+  moveZAxis(_zAxis->getBasePosition(), totalLen, headLen/totalLen, bodyRadius, headRadius);
 }
 
 /**
@@ -367,14 +352,15 @@ void ReferenceFrame::showAxesLabels(unsigned int labels)
 */
 void ReferenceFrame::showNameLabel(bool show)
 {
-	// Check if the name label is already being drawn
-	bool exists = _axes->containsDrawable(_nameLabel.get());
+  // Disable entire label geode if there's nothing to show
+  if (!show && ((_xLabel->getNodeMask() | _yLabel->getNodeMask() | _zLabel->getNodeMask()) == disabled))
+    _labels->setNodeMask(disabled);
+  else
+    _labels->setNodeMask(enabled);
 
-	// Add the name label to the list of objects to be drawn
-	if(show && !exists) _axes->addDrawable(_nameLabel.get());
-
-	// Remove the name label from the list of objects to be drawn
-	else if(!show && exists) _axes->removeDrawable(_nameLabel.get());
+  // Enable name label
+  if (show) _nameLabel->setNodeMask(enabled);
+  else _nameLabel->setNodeMask(disabled);
 }
 
 /**
@@ -388,19 +374,19 @@ void ReferenceFrame::showNameLabel(bool show)
 */
 void ReferenceFrame::moveXAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
 {
-	bool xexists = _axes->containsDrawable(_xAxis->getVector());
+  bool xexists = (_xAxis->getVector()->getNodeMask() == enabled);
 
-	if(headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
-	if(bodyRadius <= 0.0) bodyRadius = 0.05*len;
-	if(headRadius <= 0.0) headRadius = 0.1*len;
+  if(headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
+  if(bodyRadius <= 0.0) bodyRadius = 0.05*len;
+  if(headRadius <= 0.0) headRadius = 0.1*len;
 
-	_xAxis->setBasePosition(base);
-	_xAxis->setLength((1.0-headRatio)*len, headRatio*len);
-	_xAxis->setRadius(bodyRadius, headRadius);
+  _xAxis->setBasePosition(base);
+  _xAxis->setLength((1.0-headRatio)*len, headRatio*len);
+  _xAxis->setRadius(bodyRadius, headRadius);
 
-	_xLabel->setCharacterSize(0.4*len);
-	if(xexists) _xLabel->setPosition(base + osg::Vec3d(len, 0, 0));
-	else _xLabel->setPosition(base);
+  _xLabel->setCharacterSize(0.4*len);
+  if(xexists) _xLabel->setPosition(base + osg::Vec3d(len, 0, 0));
+  else _xLabel->setPosition(base);
 }
 
 /**
@@ -414,19 +400,19 @@ void ReferenceFrame::moveXAxis(osg::Vec3d base, double len, double headRatio, do
 */
 void ReferenceFrame::moveYAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
 {
-	bool yexists = _axes->containsDrawable(_yAxis->getVector());
+  bool yexists = (_yAxis->getVector()->getNodeMask() == enabled);
 
-	if(headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
-	if(bodyRadius <= 0.0) bodyRadius = 0.05*len;
-	if(headRadius <= 0.0) headRadius = 0.1*len;
+  if(headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
+  if(bodyRadius <= 0.0) bodyRadius = 0.05*len;
+  if(headRadius <= 0.0) headRadius = 0.1*len;
 
-	_yAxis->setBasePosition(base);
-	_yAxis->setLength((1.0-headRatio)*len, headRatio*len);
-	_yAxis->setRadius(bodyRadius, headRadius);
+  _yAxis->setBasePosition(base);
+  _yAxis->setLength((1.0-headRatio)*len, headRatio*len);
+  _yAxis->setRadius(bodyRadius, headRadius);
 
-	_yLabel->setCharacterSize(0.4*len);
-	if(yexists) _yLabel->setPosition(base + osg::Vec3d(0, len, 0));
-	else _yLabel->setPosition(base);
+  _yLabel->setCharacterSize(0.4*len);
+  if(yexists) _yLabel->setPosition(base + osg::Vec3d(0, len, 0));
+  else _yLabel->setPosition(base);
 }
 
 /**
@@ -440,8 +426,8 @@ void ReferenceFrame::moveYAxis(osg::Vec3d base, double len, double headRatio, do
 */
 void ReferenceFrame::moveZAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
 {
-	bool zaxisexists = _axes->containsDrawable(_zAxis->getVector());
-	bool zlabelexists = _axes->containsDrawable(_zLabel.get());
+	bool zaxisexists = (_zAxis->getVector()->getNodeMask() == enabled);
+	bool zlabelexists = (_zLabel->getNodeMask() == enabled);
 
 	if(headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
 	if(bodyRadius <= 0.0) bodyRadius = 0.05*len;

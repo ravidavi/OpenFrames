@@ -313,6 +313,7 @@ class OF_EXPORT ReferenceFrame : public osg::Referenced {
     mutable osg::ref_ptr<osgText::Text> _zLabel; ///< Z-Axes label
     mutable osg::ref_ptr<osgText::Text> _nameLabel; ///< Name of reference frame that is displayed
 	osg::ref_ptr<osg::Geode> _axes; ///< x,y,z axes together
+    osg::ref_ptr<osg::Geode> _labels; ///< axes and name labels
 
 	mutable osg::BoundingSphere _bound; ///< Frame's bounding sphere
 

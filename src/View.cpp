@@ -204,10 +204,22 @@ void View::resetTrackball()
 
 	// Set default distance if needed
 	if(_defaultViewDistance > 0.0) bs._radius = _defaultViewDistance;
-	else if(bs._radius <= 0.0) bs._radius = 1.0;
+	else if(bs._radius <= 0.0) bs._radius = 1;
 
-	// Set the trackball's home position based on this bounding sphere
-	_trackball->setHomePosition(bs._center+osg::Vec3(0.0, -2.0*bs._radius, 0.0),
+    // Compute view distance based on bounding sphere size and field of view
+    double dist = 2.0*bs._radius; // Default
+    if (_projType == PERSPECTIVE)
+    {
+      double fovy, ratio;
+      getPerspective(fovy, ratio); // Get projection field of view
+
+      // Trig time! Compute distance such that fov covers bounding sphere radius
+      // Include buffer for decorations (e.g. axes, labels)
+      dist = 2.0*bs._radius / std::tan(fovy*osg::PI/180.0);
+    }
+
+	// Set the trackball's home position
+	_trackball->setHomePosition(bs._center+osg::Vec3(0.0, -dist, 0.0),
 	                            bs._center, osg::Vec3(0.0, 0.0, 1.0));
 	_trackball->home(0.0); // Tell trackball to reset
 }
