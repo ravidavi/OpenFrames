@@ -69,7 +69,7 @@ namespace OpenFrames{
   _isInitialized(false),
   _vrSystem(nullptr),
   _vrRenderModels(nullptr),
-  _ipd(0.0)
+  _ipd(-1.0)
   {}
   
   OpenVRDevice::~OpenVRDevice()
@@ -117,8 +117,6 @@ namespace OpenFrames{
       osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: " << vr::VR_GetVRInitErrorAsEnglishDescription(vrError) << std::endl;
       return (_isInitialized = false);
     }
-
-    _isInitialized = true;
     
     // Print HMD driver info
     std::string driverName = GetDeviceProperty(_vrSystem, vr::Prop_TrackingSystemName_String);
@@ -137,7 +135,7 @@ namespace OpenFrames{
     // The view offset matrices will be computed per-frame since IPD can change
     updateProjectionMatrices();
     
-    return _isInitialized;
+    return (_isInitialized = true);
   }
   
   /*************************************************************/
@@ -155,8 +153,6 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRDevice::updateProjectionMatrices()
   {
-    if (!isInitialized()) return;
-
     vr::HmdMatrix44_t proj;
 
     // Get right eye projection. Using unit depth minimizes
@@ -176,8 +172,6 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRDevice::updateViewOffsets()
   {
-    if (!isInitialized()) return;
-
     vr::HmdMatrix34_t view;
     osg::Matrixf viewMat;
 
@@ -222,12 +216,16 @@ namespace OpenFrames{
     const vr::TrackedDevicePose_t& hmdPose = poses[vr::k_unTrackedDeviceIndex_Hmd];
     if (hmdPose.bPoseIsValid)
     {
-      osg::Matrixf matrix;
-      convertMatrix34(matrix, hmdPose.mDeviceToAbsoluteTracking);
-      matrix(3, 0) *= _worldUnitsPerMeter;
-      matrix(3, 1) = (matrix(3,1) - _userHeightInMeters)*_worldUnitsPerMeter;
-      matrix(3, 2) *= _worldUnitsPerMeter;
-      _hmdPose.invert(matrix);
+      // Extract the HMD's Head to World matrix
+      osg::Matrixf hmdHeadToWorld;
+      convertMatrix34(hmdHeadToWorld, hmdPose.mDeviceToAbsoluteTracking);
+      
+      // Apply scale, and subtract user's height from Y component
+      // Note that the OpenVR world frame is Y-up
+      hmdHeadToWorld(3, 0) *= _worldUnitsPerMeter;
+      hmdHeadToWorld(3, 1) = (hmdHeadToWorld(3,1) - _userHeightInMeters)*_worldUnitsPerMeter;
+      hmdHeadToWorld(3, 2) *= _worldUnitsPerMeter;
+      _hmdPose.invert(hmdHeadToWorld);
     }
   }
   

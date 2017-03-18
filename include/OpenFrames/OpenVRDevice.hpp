@@ -25,6 +25,7 @@
 #include <osg/Texture>
 #include <osg/Vec3d>
 
+/** Classes declared in OpenVR header */
 namespace vr {
   class IVRSystem;
   class IVRRenderModels;
@@ -72,8 +73,7 @@ namespace OpenFrames {
 
     /** Update poses (positions/orientations) of all VR devices, and wait
      for the signal to start rendering. Note that this should be called
-     at (or near) the end of the OGS update traversal, most likely during
-     a slave camera update callback. */
+     just before the start of the rendering pass. */
     void waitGetPoses();
     osg::Matrixf& getHMDPoseMatrix() { return _hmdPose; }
     
@@ -100,11 +100,14 @@ namespace OpenFrames {
     vr::IVRSystem* _vrSystem; // OpenVR interface
     vr::IVRRenderModels* _vrRenderModels; // Controller models
     
-    osg::Matrixf _rightProj, _leftProj, _centerProj; // Per-eye projection matrices
-    osg::Matrixf _rightViewOffset, _leftViewOffset, _centerViewOffset; // Per-eye view matrices
+    // Per-eye asymmetric projection matrices
+    osg::Matrixf _rightProj, _leftProj, _centerProj;
+    
+    // Per-eye view matrices, transform Head to Eye space
+    osg::Matrixf _rightViewOffset, _leftViewOffset, _centerViewOffset;
     float _ipd; // Interpupillary distance
 
-    // Head to world view transformation
+    // World to Head view transformation
     osg::Matrixf _hmdPose;
   };
   

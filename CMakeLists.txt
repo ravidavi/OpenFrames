@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.5.2)
 PROJECT(OpenFrames)
 
 # Set where to find extra CMake modules
-SET(CMAKE_MODULE_PATH “${CMAKE_MODULE_PATH}” ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
+SET(CMAKE_MODULE_PATH "{CMAKE_MODULE_PATH}" ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
 
 # Make the makefile output verbose (for compiler error checking)
 #SET(CMAKE_VERBOSE_MAKEFILE on)
@@ -10,7 +10,13 @@ SET(CMAKE_MODULE_PATH “${CMAKE_MODULE_PATH}” ${CMAKE_CURRENT_SOURCE_DIR}/cma
 # User options
 OPTION( OF_BUILD_TESTS "Build Test Programs" ON )
 OPTION( OF_FORTRAN_MODULE "Compile Fortran Module" OFF )
-OPTION( OF_USE_OPENVR "Compile with OpenVR Support" OFF )
+
+# Options for VR support
+SET( VR_Off "Off" )
+SET( VR_OpenVR "OpenVR" )
+SET( VR_OpenVRStub "OpenVR Stub" )
+SET( OF_VR_TYPE ${VR_Off} CACHE STRING "Compile with VR support")
+SET_PROPERTY( CACHE OF_VR_TYPE PROPERTY STRINGS ${VR_Off} ${VR_OpenVR} ${VR_OpenVRStub} )
 
 # Default to Release configuration on single-config generators
 # e.g. make, but not VisualStudio or XCode
@@ -85,9 +91,12 @@ IF( OF_FORTRAN_MODULE )
 ENDIF( OF_FORTRAN_MODULE )
 
 # Find OpenVR
-IF(OF_USE_OPENVR)
+IF( ${OF_VR_TYPE} MATCHES ${VR_OpenVRStub} )
+  MESSAGE(STATUS "OpenFrames enabling stub OpenVR support")
+ELSEIF( ${OF_VR_TYPE} MATCHES ${VR_OpenVR} )
+  MESSAGE(STATUS "OpenFrames enabling OpenVR support")
   FIND_PACKAGE(OpenVR REQUIRED)
-ENDIF(OF_USE_OPENVR)
+ENDIF()
 
 # Go to the src directory and look for CMake instructions there
 ADD_SUBDIRECTORY(src)
