@@ -15,7 +15,9 @@
  ***********************************/
 
 #include <OpenFrames/VRUtils.hpp>
+#include <OpenFrames/OpenVRDevice.hpp>
 
+#include <osg/notify>
 #include <iostream>
 
 static const std::string vrCamNamePrefix("VRCam");
@@ -110,8 +112,9 @@ namespace OpenFrames{
   
   VRTextureBuffer::~VRTextureBuffer() {}
   
-  VRCamera::VRCamera(VRTextureBuffer *texBuffer, int camNum, StereoMode mode, bool useMSAA)
+  VRCamera::VRCamera(VRTextureBuffer *texBuffer, OpenVRDevice *ovrDevice, int camNum, StereoMode mode, bool useMSAA)
   : _texBuffer(texBuffer),
+  _ovrDevice(ovrDevice),
   _mode(mode),
   _useMSAA(useMSAA)
   {
@@ -253,8 +256,7 @@ namespace OpenFrames{
     }
   }
   
-  void VRCamera::updateCameras(osg::Matrixd& rightView, osg::Matrixd& leftView,
-                               osg::Matrixd& centerView, osg::Matrixd& rightProj,
+  void VRCamera::updateCameras(osg::Matrixd& rightProj,
                                osg::Matrixd& leftProj, osg::Matrixd& centerProj,
                                const double &zNear)
   {
@@ -265,7 +267,6 @@ namespace OpenFrames{
     if((_mode == MONO) || ((_mode == AUTO) && (zNear > 0.1)))
     {
       _monoCamera->setNodeMask(0xffffffff); // Enable mono camera
-      _monoCamera->setViewMatrix(centerView);
       _monoCamera->setProjectionMatrix(centerProj);
       
       // Add MSAA texture chaining camera to mono camera
@@ -278,7 +279,6 @@ namespace OpenFrames{
     else if(_mode == STEREO || ((_mode == AUTO) && (zNear <= 0.1)))
     {
       _rightCamera->setNodeMask(0xffffffff); // Enable right camera
-      _rightCamera->setViewMatrix(rightView);
       _rightCamera->setProjectionMatrix(rightProj);
       
       // Add MSAA texture chaining camera to right camera
@@ -286,7 +286,6 @@ namespace OpenFrames{
         _rightCamera->addChild(_texBuffer->_rightTexCamera);
       
       _leftCamera->setNodeMask(0xffffffff); // Enable left camera
-      _leftCamera->setViewMatrix(leftView);
       _leftCamera->setProjectionMatrix(leftProj);
       
       // Add MSAA texture chaining camera to left camera
@@ -298,6 +297,27 @@ namespace OpenFrames{
     else
     {
       std::cerr<< "OpenFrames::VRCamera ERROR: Invalid combination of StereoMode (" << _mode << ") and zNear (" << zNear << ")" << std::endl;
+    }
+  }
+  
+  /*******************************************/
+  void VRCamera::addSlaveCamerasToView(osg::View *view, bool useMastersSceneData)
+  {
+    // Add the mono camera and set its update callback
+    if((_mode == MONO) || (_mode == AUTO))
+    {
+      view->addSlave(_monoCamera, useMastersSceneData);
+      view->findSlaveForCamera(_monoCamera)->_updateSlaveCallback = new OpenVRSlaveCallback(OpenVRSlaveCallback::MONO_CAMERA, _ovrDevice.get());
+    }
+    
+    // Add the stereo cameras and set their update callbacks
+    if((_mode == STEREO) || (_mode == AUTO))
+    {
+      view->addSlave(_rightCamera, useMastersSceneData);
+      view->findSlaveForCamera(_rightCamera)->_updateSlaveCallback = new OpenVRSlaveCallback(OpenVRSlaveCallback::RIGHT_CAMERA, _ovrDevice.get());
+      
+      view->addSlave(_leftCamera, useMastersSceneData);
+      view->findSlaveForCamera(_leftCamera)->_updateSlaveCallback = new OpenVRSlaveCallback(OpenVRSlaveCallback::LEFT_CAMERA, _ovrDevice.get());
     }
   }
   
@@ -327,7 +347,7 @@ namespace OpenFrames{
     
     if(!vrcam) // Create a new VRCamera
     {
-      vrcam = new VRCamera(_texBuffer.get(), camNum, VRCamera::STEREO, true); // Use MSAA
+      vrcam = new VRCamera(_texBuffer.get(), _ovrDevice.get(), camNum, VRCamera::STEREO, true); // Use MSAA
       
       osg::Camera *cam;
       for(unsigned int i = 0; i < vrcam->getNumCameras(); ++i)
@@ -343,10 +363,10 @@ namespace OpenFrames{
         // We will compute the view and projection matrices ourselves
         cam->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
         cam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
-        
-        // Add camera as slave, and tell it to use the master Camera's scene
-        masterCamera->getView()->addSlave(cam, true);
       }
+      
+      // Add VR cameras as slaves, and tell them to use the master camera's scene
+      vrcam->addSlaveCamerasToView(masterCamera->getView(), true);
       
       // Specify whether first VRCamera should clear color buffer
       if(camNum == 0 && _clearColorBuffer)
@@ -370,30 +390,14 @@ namespace OpenFrames{
       OpenFrames::updateProjectionMatrix(rightProj, zNear, zFar);
       OpenFrames::updateProjectionMatrix(leftProj, zNear, zFar);
       OpenFrames::updateProjectionMatrix(centerProj, zNear, zFar);
-
-      // Get eye offset matrices, providing HMD->Eye transformations
-      osg::Matrixd rightOffset, leftOffset, centerOffset;
-      rightOffset = _ovrDevice->getRightEyeViewOffsetMatrix();
-      leftOffset = _ovrDevice->getLeftEyeViewOffsetMatrix();
-      centerOffset = _ovrDevice->getCenterViewOffsetMatrix();
-
-      // Compose per-eye view matrix as: Camera*HMD*EyeOffset
-      // At this point, the master camera view matrix already contains the HMD pose
-      // so we only need to add the eye offset matrix
-      osg::Matrixd& masterView = masterCamera->getViewMatrix();
-      osg::Matrixd rightView(masterView), leftView(masterView), centerView(masterView);
-      rightView.postMult(rightOffset);
-      leftView.postMult(leftOffset);
-      centerView.postMult(centerOffset);
-
-      vrcam->updateCameras(rightView, leftView, centerView, rightProj, leftProj, centerProj, zNear);
+      
+      // Set per-eye projection matrices. Note that view matrices will be set
+      // from the VR camera slave update callback
+      vrcam->updateCameras(rightProj, leftProj, centerProj, zNear);
     }
     else
     {
-      // Update camera matrices and properties using master camera data
-      osg::Matrixd projmat = masterCamera->getProjectionMatrix();
-      OpenFrames::updateProjectionMatrix(projmat, zNear, zFar);
-      vrcam->updateCameras(masterCamera->getViewMatrix(), projmat, zNear);
+      osg::notify(osg::WARN) << "VRCameraManager doesn't have an OpenVR device!" << std::endl;
     }
   }
   

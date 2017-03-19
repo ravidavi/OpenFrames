@@ -12,11 +12,10 @@ OPTION( OF_BUILD_TESTS "Build Test Programs" ON )
 OPTION( OF_FORTRAN_MODULE "Compile Fortran Module" OFF )
 
 # Options for VR support
-SET( VR_Off "Off" )
 SET( VR_OpenVR "OpenVR" )
 SET( VR_OpenVRStub "OpenVR Stub" )
-SET( OF_VR_TYPE ${VR_Off} CACHE STRING "Compile with VR support")
-SET_PROPERTY( CACHE OF_VR_TYPE PROPERTY STRINGS ${VR_Off} ${VR_OpenVR} ${VR_OpenVRStub} )
+SET( OF_VR_TYPE ${VR_OpenVRStub} CACHE STRING "Compile with VR support")
+SET_PROPERTY( CACHE OF_VR_TYPE PROPERTY STRINGS ${VR_OpenVR} ${VR_OpenVRStub} )
 
 # Default to Release configuration on single-config generators
 # e.g. make, but not VisualStudio or XCode

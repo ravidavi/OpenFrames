@@ -19,7 +19,6 @@
 
 #include <OpenFrames/Export.h>
 #include <OpenFrames/DepthPartitioner.hpp>
-#include <OpenFrames/OpenVRDevice.hpp>
 
 #include <osg/ref_ptr>
 #include <osg/Referenced>
@@ -27,6 +26,8 @@
 #include <osg/Texture2D>
 
 namespace OpenFrames {
+  
+  class OpenVRDevice; // Used by VRCameraManager below
   
   /******************************************
    * Ravi Mathur
@@ -64,7 +65,7 @@ namespace OpenFrames {
       AUTO = 2    // Auto-switch between Stereo/Mono based on distance
     };
     
-    VRCamera(VRTextureBuffer *texBuffer, int camNum, StereoMode mode, bool useMSAA = false);
+    VRCamera(VRTextureBuffer *texBuffer, OpenVRDevice *ovrDevice, int camNum, StereoMode mode, bool useMSAA = false);
     
     // Get whether MSAA is being used
     bool getUseMSAA() { return _useMSAA; }
@@ -82,15 +83,12 @@ namespace OpenFrames {
     /** Disable all internal cameras */
     void disableCameras();
     
-    // Update projection/modelview matrices, enable cameras, and handle other
-    // camera-specific operations
-    void updateCameras(osg::Matrixd& viewmat, osg::Matrixd& projmat, const double &zNear)
-    {
-      updateCameras(viewmat, viewmat, viewmat, projmat, projmat, projmat, zNear);
-    }
-    void updateCameras(osg::Matrixd& rightView, osg::Matrixd& leftView, 
-      osg::Matrixd& centerView, osg::Matrixd& rightProj, 
+    /** Update projection/modelview matrices, enable cameras, and handle other camera-specific operations */
+    void updateCameras(osg::Matrixd& rightProj,
       osg::Matrixd& leftProj, osg::Matrixd& centerProj, const double &zNear);
+    
+    /** Add cameras as slaves to the specified View */
+    void addSlaveCamerasToView(osg::View *view, bool useMastersSceneData);
 
   protected:
     virtual ~VRCamera();
@@ -103,6 +101,8 @@ namespace OpenFrames {
     
     /** The texture buffers drawn on by Cameras */
     osg::observer_ptr<VRTextureBuffer> _texBuffer;
+    
+    osg::observer_ptr<OpenVRDevice> _ovrDevice; // OpenVR interface
     
     StereoMode _mode; // Stereo rendering mode
     

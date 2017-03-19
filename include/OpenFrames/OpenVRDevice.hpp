@@ -112,31 +112,43 @@ namespace OpenFrames {
   };
   
   /******************************************
-   * OpenFrames API, class UpdateOpenVRCallback
+   * OpenFrames API, class OpenVRPoseCallback
    * Updates HMD and pose data from OpenVR. This should be attached as an
    * update callback to the view's master camera
    ******************************************/
-  class UpdateOpenVRCallback : public osg::Callback
+  class OpenVRPoseCallback : public osg::Callback
   {
   public:
-    UpdateOpenVRCallback(OpenVRDevice *ovrDevice)
+    OpenVRPoseCallback(OpenVRDevice *ovrDevice)
     : _ovrDevice(ovrDevice)
     { }
     
-    virtual bool run(osg::Object* object, osg::Object* data)
-    {
-      // Get updated view offset matrices
-      // These can change if the user changes the HMD's IPD
-      _ovrDevice->updateViewOffsets();
-      
-      // Get updated poses for all devices
-      _ovrDevice->waitGetPoses();
-      
-      // Continue traversing if needed
-      return traverse(object, data);
-    }
+    virtual bool run(osg::Object* object, osg::Object* data);
     
   private:
+    osg::observer_ptr<OpenVRDevice> _ovrDevice;
+  };
+  
+  /******************************************
+   * OpenFrames API, class OpenVRSlaveCallback
+   * Inherit master camera view matrix but not its projection matrix
+   ******************************************/
+  struct OpenVRSlaveCallback : public osg::View::Slave::UpdateSlaveCallback
+  {
+    enum CameraType
+    {
+      RIGHT_CAMERA,
+      LEFT_CAMERA,
+      MONO_CAMERA
+    };
+    
+    OpenVRSlaveCallback(CameraType cameraType, OpenVRDevice *ovrDevice)
+    : _cameraType(cameraType), _ovrDevice(ovrDevice)
+    { }
+    
+    virtual void updateSlave(osg::View& view, osg::View::Slave& slave);
+    
+    CameraType _cameraType;
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
   };
   
@@ -156,18 +168,7 @@ namespace OpenFrames {
     virtual const char* className() const { return "OpenVRManipulator"; }
 
     // Get World to Head matrix
-    virtual osg::Matrixd getInverseMatrix() const
-    {
-      // Get Local to Head matrix
-      osg::Matrixd hmdPose = _ovrDevice->getHMDPoseMatrix();
-
-      // Get World to Local view matrix
-      osg::Matrixd matrix = FollowingTrackball::getInverseMatrix();
-      
-      // Compute World to Head matrix
-      matrix.postMult(hmdPose);
-      return matrix;
-    }
+    virtual osg::Matrixd getInverseMatrix() const;
 
   private:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
