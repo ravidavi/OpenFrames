@@ -43,26 +43,6 @@ namespace OpenFrames
       }
     }
   };
-  
-  class UpdateViewMatrixCallback : public osg::View::Slave::UpdateSlaveCallback
-  {
-  public:
-    UpdateViewMatrixCallback(OpenVRDevice *ovrDevice)
-    : _ovrDevice(ovrDevice)
-    { }
-    
-    virtual void updateSlave(osg::View& view, osg::View::Slave& slave)
-    {
-      // Incorporate the HMD pose into the master camera view matrix
-      // NOTE: this should really be done in OpenFrames::View
-      osg::Camera *masterCamera = view.getCamera(); // Get master camera
-      osg::Matrixd hmdPose = _ovrDevice->getHMDPoseMatrix(); // Get HMD pose
-      masterCamera->getViewMatrix().postMult(hmdPose);
-    }
-    
-  private:
-    osg::observer_ptr<OpenVRDevice> _ovrDevice;
-  };
 
   // Slave callback to inherit master camera view matrix but not its projection matrix
   // Used by the background camera for VR rendering
@@ -132,25 +112,32 @@ namespace OpenFrames
     if(_useVR)
     {
       // Create a camera manager to handle VR cameras
-      VRCameraManager *vrCamManager = new VRCameraManager(_vrTextureBuffer.get());
-      vrCamManager->setOpenVRDevice(_ovrDevice.get());
+      VRCameraManager *vrCamManager = new VRCameraManager(_vrTextureBuffer.get(), _ovrDevice.get());
       
       // Create callbacks to update VR poses and master camera view matrix
       UpdateOpenVRCallback *poseCallback = new UpdateOpenVRCallback(_ovrDevice.get());
-      UpdateViewMatrixCallback *viewCallback = new UpdateViewMatrixCallback(_ovrDevice.get());
       
-      // Customize depth partitioner with callbacks
+      // Customize depth partitioner with VR callback
       _depthPartitioner->getCallback()->setCameraManager(vrCamManager);
-      _depthPartitioner->getCallback()->setUpdateCallback(viewCallback);
       
-      // Customize master camera with callback
+      // Customize master camera with VR callback
       _sceneView->getCamera()->setUpdateCallback(poseCallback);
     }
     if(useNewDP) _depthPartitioner->setViewToPartition(_sceneView);
     
-    // Create a default view and make it active
+    // Create a default view
     _defaultView = new View;
     _currView = 0;
+    
+    // Use an OpenVR-enabled trackball if needed
+    if(_useVR)
+    {
+      OpenVRTrackball *vrTrackball = new OpenVRTrackball(_ovrDevice.get());
+      getCurrentView()->setTrackball(vrTrackball);
+      getCurrentView()->resetTrackball();
+    }
+    
+    // Enable the view's trackball
     _sceneView->setCameraManipulator(getCurrentView()->getTrackball());
     
     // Initialize parameters
@@ -450,6 +437,19 @@ namespace OpenFrames
   {
     if(view != NULL)
     {
+      // Set a VR-enabled trackball for the view if needed
+      if(_useVR)
+      {
+        OpenVRTrackball *vrTrackball = dynamic_cast<OpenVRTrackball*>(view->getTrackball());
+        if(!vrTrackball)
+        {
+          vrTrackball = new OpenVRTrackball(_ovrDevice.get());
+          view->setTrackball(vrTrackball);
+          view->resetTrackball();
+        }
+      }
+      
+      // Add view to the view list
       _views.push_back(view);
       
       // Added first view, so make sure that it is selected

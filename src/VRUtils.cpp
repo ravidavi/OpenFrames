@@ -301,8 +301,8 @@ namespace OpenFrames{
     }
   }
   
-  VRCameraManager::VRCameraManager(VRTextureBuffer *texBuffer)
-  : _texBuffer(texBuffer)
+  VRCameraManager::VRCameraManager(VRTextureBuffer *texBuffer, OpenVRDevice *ovrDevice)
+  : _texBuffer(texBuffer), _ovrDevice(ovrDevice)
   {}
   
   VRCameraManager::~VRCameraManager()
@@ -362,6 +362,8 @@ namespace OpenFrames{
     if (_ovrDevice.get())
     {
       // Get per-eye projection matrices and update them with new depth planes
+      // Note that we are converting from Matrixf to Matrixd here, since OpenVR
+      // works with Matrixf but OSG works with Matrixd
       osg::Matrixd rightProj = _ovrDevice->getRightEyeProjectionMatrix();
       osg::Matrixd leftProj = _ovrDevice->getLeftEyeProjectionMatrix();
       osg::Matrixd centerProj = _ovrDevice->getCenterProjectionMatrix();
@@ -369,7 +371,7 @@ namespace OpenFrames{
       OpenFrames::updateProjectionMatrix(leftProj, zNear, zFar);
       OpenFrames::updateProjectionMatrix(centerProj, zNear, zFar);
 
-      // Get eye offset matrices
+      // Get eye offset matrices, providing HMD->Eye transformations
       osg::Matrixd rightOffset, leftOffset, centerOffset;
       rightOffset = _ovrDevice->getRightEyeViewOffsetMatrix();
       leftOffset = _ovrDevice->getLeftEyeViewOffsetMatrix();

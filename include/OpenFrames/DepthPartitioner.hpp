@@ -116,10 +116,6 @@ namespace OpenFrames
     /** Specify a new camera manager. NULL means reset to basic camera manager */
     void setCameraManager(CameraManager *cameraManager);
     
-    /** Specify a callback used to perform user-defined work */
-    void setUpdateCallback(osg::View::Slave::UpdateSlaveCallback *updateCallback)
-    { _updateCallback = updateCallback; }
-    
   protected:
     virtual ~DepthPartitionCallback();
     
@@ -128,9 +124,6 @@ namespace OpenFrames
     
     // The camera manager that creates cameras
     osg::ref_ptr<CameraManager> _cameraManager;
-    
-    // Callback that performs user-defined work
-    osg::ref_ptr<osg::View::Slave::UpdateSlaveCallback> _updateCallback;
     
     unsigned int _numActiveCameras;
   };

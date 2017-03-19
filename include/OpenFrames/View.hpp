@@ -26,6 +26,7 @@
 
 namespace OpenFrames
 {
+  class FollowingTrackball;
   
   /******************************************************************
    * Ravi Mathur
@@ -137,7 +138,7 @@ namespace OpenFrames
     
     /** Get the projection and view matrices. */
     inline osg::Matrixd getProjectionMatrix() { return _projection; }
-    osg::Matrixd getViewMatrix() { return _trackball->getInverseMatrix(); }
+    osg::Matrixd getViewMatrix();
     
     /** Set the Trackball's default view distance. This is applied when the trackball
 	    is reset. A default distance <= 0.0 means that the default distance should
@@ -145,9 +146,12 @@ namespace OpenFrames
     void setDefaultViewDistance(double distance) { _defaultViewDistance = distance; }
     double getDefaultViewDistance() const { return _defaultViewDistance; }
     
+    /** Get or set the trackball manipulator */
+    FollowingTrackball* getTrackball() const { return _trackball.get(); }
+    void setTrackball(FollowingTrackball *trackball);
+    
     /** Reset the Trackball's home position to the default. */
     void resetTrackball();
-    osgGA::TrackballManipulator* getTrackball() const { return _trackball.get(); }
     
     /** Save the current trackball view as the home view */
     void saveTrackball();
@@ -198,7 +202,7 @@ namespace OpenFrames
     double _defaultViewDistance;
     
     /** The transform for user interactivity. */
-    osg::ref_ptr<osgGA::TrackballManipulator> _trackball;
+    osg::ref_ptr<FollowingTrackball> _trackball;
   };
   
   /******************************************************************
@@ -212,9 +216,12 @@ namespace OpenFrames
   class FollowingTrackball : public osgGA::TrackballManipulator
   {
   public:
-    FollowingTrackball(TransformAccumulator *xform, TransformAccumulator *xform_lookat, View::ViewFrameType &frameType, View::ViewRotationType &rotationType);
+    FollowingTrackball();
     
     virtual const char* className() const { return "FollowingTrackball"; }
+    
+    // Set the frame transform sources
+    void setTransformSources(TransformAccumulator *xform, TransformAccumulator *xform_lookat, View::ViewFrameType frameType, View::ViewRotationType rotationType);
 
     // Inherited from TrackballManipulator
     virtual osg::Matrixd getMatrix() const; // Get local to world matrix
@@ -225,9 +232,9 @@ namespace OpenFrames
     virtual ~FollowingTrackball();
     
     // The ReferenceFrame being followed.
-    osg::ref_ptr<TransformAccumulator> _xform, _xform_lookat;
-    View::ViewFrameType &_frameType;
-    View::ViewRotationType &_rotationType;
+    osg::observer_ptr<TransformAccumulator> _xform, _xform_lookat;
+    View::ViewFrameType _frameType;
+    View::ViewRotationType _rotationType;
   };
   
 } // !namespace OpenFrames

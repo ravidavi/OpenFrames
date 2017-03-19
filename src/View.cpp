@@ -21,9 +21,9 @@
 
 namespace OpenFrames
 {
-  
-  FollowingTrackball::FollowingTrackball(TransformAccumulator *xform, TransformAccumulator *xform_lookat, View::ViewFrameType &frameType, View::ViewRotationType &rotationType)
-  : _xform(xform), _xform_lookat(xform_lookat), _frameType(frameType), _rotationType(rotationType)
+  /*******************************************************/
+  FollowingTrackball::FollowingTrackball()
+  : _frameType(View::ABSOLUTE), _rotationType(View::DIRECT)
   {
     // We will compute the home position manually
     setAutoComputeHomePosition(false);
@@ -33,9 +33,19 @@ namespace OpenFrames
     setMinimumDistance(0.0, false);
   }
   
+  /*******************************************************/
   FollowingTrackball::~FollowingTrackball() {}
   
+  /*******************************************************/
+  void FollowingTrackball::setTransformSources(TransformAccumulator *xform, TransformAccumulator *xform_lookat, View::ViewFrameType frameType, View::ViewRotationType rotationType)
+  {
+    _xform = xform;
+    _xform_lookat = xform_lookat;
+    _frameType = frameType;
+    _rotationType = rotationType;
+  }
   
+  /*******************************************************/
   // Get the Viewpoint to World transformation matrix
   osg::Matrixd FollowingTrackball::getMatrix() const
   {
@@ -43,6 +53,7 @@ namespace OpenFrames
     return osg::Matrix::inverse(getInverseMatrix());
   }
   
+  /*******************************************************/
   // Get the World to Viewpoint transformation matrix
   osg::Matrixd FollowingTrackball::getInverseMatrix() const
   {
@@ -121,6 +132,7 @@ namespace OpenFrames
     return matrix;
   }
   
+  /*******************************************************/
   bool FollowingTrackball::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
   {
     osgViewer::View *view = dynamic_cast<osgViewer::View*>(&us);
@@ -141,12 +153,14 @@ namespace OpenFrames
     }
   }
   
+  /*******************************************************/
   View::View()
   {
     _init();
     resetTrackball();
   }
   
+  /*******************************************************/
   View::View(ReferenceFrame *root, ReferenceFrame *viewFrame, ViewFrameType frameType)
   {
     _init();
@@ -154,6 +168,7 @@ namespace OpenFrames
     resetTrackball();
   }
   
+  /*******************************************************/
   View::View(ReferenceFrame *root, ReferenceFrame *viewFrame, ReferenceFrame *lookatFrame, ViewFrameType frameType, ViewRotationType rotationType)
   {
     _init();
@@ -161,8 +176,10 @@ namespace OpenFrames
     resetTrackball();
   }
   
+  /*******************************************************/
   View::~View() {}
   
+  /*******************************************************/
   void View::_init()
   {
     // Set up the ReferenceFrame transform accumulator
@@ -172,7 +189,7 @@ namespace OpenFrames
     _rotationType = AZEL;
     
     // Setup the trackball view manipulator
-    _trackball = new FollowingTrackball(_xform.get(), _xform_lookat.get(), _frameType, _rotationType);
+    setTrackball(NULL);
     
     // Set the default view distance to be auto computed
     _defaultViewDistance = 0.0;
@@ -183,6 +200,23 @@ namespace OpenFrames
     setPerspective(30.0, 640.0/480.0);
   }
   
+  /*******************************************************/
+  osg::Matrixd View::getViewMatrix()
+  {
+    return _trackball->getInverseMatrix();
+  }
+  
+  /*******************************************************/
+  /** Use a new trackball manipulator, and set its data sources */
+  void View::setTrackball(FollowingTrackball *trackball)
+  {
+    if(trackball == NULL) trackball = new FollowingTrackball;
+    
+    _trackball = trackball;
+    _trackball->setTransformSources(_xform.get(), _xform_lookat.get(), _frameType, _rotationType);
+  }
+  
+  /*******************************************************/
   /** Reset the trackball to look at the origin frame */
   void View::resetTrackball()
   {
@@ -213,6 +247,7 @@ namespace OpenFrames
     _trackball->home(0.0); // Tell trackball to reset
   }
   
+  /*******************************************************/
   /** Save the trackball's current view */
   void View::saveTrackball()
   {
@@ -225,6 +260,7 @@ namespace OpenFrames
     _trackball->setHomePosition(eye, center, up);
   }
   
+  /*******************************************************/
   void View::setViewFrame( ReferenceFrame* root,
                           ReferenceFrame* viewFrame,
                           ViewFrameType frameType )
@@ -233,9 +269,10 @@ namespace OpenFrames
     _xform->setOrigin(viewFrame);
     _frameType = frameType;
     _xform_lookat->setRoot(NULL);
-    
+    _trackball->setTransformSources(_xform.get(), _xform_lookat.get(), _frameType, _rotationType);
   }
   
+  /*******************************************************/
   void View::setViewBetweenFrames( ReferenceFrame* root,
                                   ReferenceFrame* viewFrame,
                                   ReferenceFrame* lookatFrame,
@@ -248,6 +285,7 @@ namespace OpenFrames
     _xform_lookat->setRoot(root);
     _xform_lookat->setOrigin(lookatFrame);
     _rotationType = rotationType;
+    _trackball->setTransformSources(_xform.get(), _xform_lookat.get(), _frameType, _rotationType);
   }
   
 }

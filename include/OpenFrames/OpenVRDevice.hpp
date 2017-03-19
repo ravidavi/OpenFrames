@@ -18,7 +18,7 @@
 #define _OF_OPENVRDEVICE_
 
 #include <OpenFrames/Export.h>
-
+#include <OpenFrames/View.hpp>
 #include <osg/ref_ptr>
 #include <osg/Referenced>
 #include <osg/Quat>
@@ -136,6 +136,39 @@ namespace OpenFrames {
       return traverse(object, data);
     }
     
+  private:
+    osg::observer_ptr<OpenVRDevice> _ovrDevice;
+  };
+  
+  /******************************************
+   * OpenFrames API, class OpenVRTrackball
+   * Extends FollowingTrackball to include the OpenVR HMD transform.
+   * This results in the World->Head transform, which can be combined
+   * with the Head->Eye transform to create the per-eye view matrix.
+   ******************************************/
+  class OpenVRTrackball : public FollowingTrackball
+  {
+  public:
+    OpenVRTrackball(OpenVRDevice *ovrDevice)
+    : _ovrDevice(ovrDevice)
+    { }
+    
+    virtual const char* className() const { return "OpenVRManipulator"; }
+
+    // Get World to Head matrix
+    virtual osg::Matrixd getInverseMatrix() const
+    {
+      // Get Local to Head matrix
+      osg::Matrixd hmdPose = _ovrDevice->getHMDPoseMatrix();
+
+      // Get World to Local view matrix
+      osg::Matrixd matrix = FollowingTrackball::getInverseMatrix();
+      
+      // Compute World to Head matrix
+      matrix.postMult(hmdPose);
+      return matrix;
+    }
+
   private:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
   };

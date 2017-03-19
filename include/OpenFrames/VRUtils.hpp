@@ -113,7 +113,7 @@ namespace OpenFrames {
   /** Creates and manages VR cameras for the depth partitioner */
   struct OF_EXPORT VRCameraManager : public DepthPartitionCallback::CameraManager
   {
-    VRCameraManager(VRTextureBuffer *texBuffer);
+    VRCameraManager(VRTextureBuffer *texBuffer, OpenVRDevice *ovrDevice);
     virtual ~VRCameraManager();
     
     virtual std::string getCameraName(unsigned int camNum);
@@ -125,9 +125,6 @@ namespace OpenFrames {
     virtual void disableCameras(unsigned int start);
     virtual void reset();
     virtual void setClearColorBuffer(bool clear);
-    
-    void setOpenVRDevice(OpenVRDevice *ovrDevice)
-    { _ovrDevice = ovrDevice; }
     
     typedef std::vector< osg::ref_ptr<VRCamera> > VRCameraList;
     VRCameraList _vrCameraList;
