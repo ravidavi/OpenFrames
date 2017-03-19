@@ -43,8 +43,8 @@ namespace OpenFrames{
     osg::notify(osg::NOTICE) << "Using OpenVR stub" << std::endl;
     
     // Set texture size similar to what OpenVR would return
-    _width = 1680;  // 1.4*1200
-    _height = 1512; // 1.4*1080
+    _width = 1512;  // 1.4*1080
+    _height = 1680; // 1.4*1200
     osg::notify(osg::NOTICE) << "VR eye texture width = " << _width << ", height = " << _height << std::endl;
 
     // Update the per-eye projection matrices

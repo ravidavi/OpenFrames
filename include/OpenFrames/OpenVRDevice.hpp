@@ -81,7 +81,7 @@ namespace OpenFrames {
     void setWorldUnitsPerMeter(float worldUnitsPerMeter)
     {
       _worldUnitsPerMeter = worldUnitsPerMeter;
-      _ipd = 0.0f;
+      _ipd = -1.0f; // Indicate that eye offsets should be recomputed
     }
     float getWorldUnitsPerMeter() { return _worldUnitsPerMeter; }
 
@@ -109,6 +109,35 @@ namespace OpenFrames {
 
     // World to Head view transformation
     osg::Matrixf _hmdPose;
+  };
+  
+  /******************************************
+   * OpenFrames API, class UpdateOpenVRCallback
+   * Updates HMD and pose data from OpenVR. This should be attached as an
+   * update callback to the view's master camera
+   ******************************************/
+  class UpdateOpenVRCallback : public osg::Callback
+  {
+  public:
+    UpdateOpenVRCallback(OpenVRDevice *ovrDevice)
+    : _ovrDevice(ovrDevice)
+    { }
+    
+    virtual bool run(osg::Object* object, osg::Object* data)
+    {
+      // Get updated view offset matrices
+      // These can change if the user changes the HMD's IPD
+      _ovrDevice->updateViewOffsets();
+      
+      // Get updated poses for all devices
+      _ovrDevice->waitGetPoses();
+      
+      // Continue traversing if needed
+      return traverse(object, data);
+    }
+    
+  private:
+    osg::observer_ptr<OpenVRDevice> _ovrDevice;
   };
   
 } // !namespace OpenFrames

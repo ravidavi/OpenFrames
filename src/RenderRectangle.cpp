@@ -44,22 +44,15 @@ namespace OpenFrames
     }
   };
   
-  class GetPosesCallback : public osg::View::Slave::UpdateSlaveCallback
+  class UpdateViewMatrixCallback : public osg::View::Slave::UpdateSlaveCallback
   {
   public:
-    GetPosesCallback(OpenVRDevice *ovrDevice)
+    UpdateViewMatrixCallback(OpenVRDevice *ovrDevice)
     : _ovrDevice(ovrDevice)
     { }
     
     virtual void updateSlave(osg::View& view, osg::View::Slave& slave)
     {
-      // Get updated poses for all devices
-      _ovrDevice->waitGetPoses();
-
-      // Get updated view offset matrices
-      // These can change if the user changes the HMD's IPD
-      _ovrDevice->updateViewOffsets();
-
       // Incorporate the HMD pose into the master camera view matrix
       // NOTE: this should really be done in OpenFrames::View
       osg::Camera *masterCamera = view.getCamera(); // Get master camera
@@ -142,12 +135,16 @@ namespace OpenFrames
       VRCameraManager *vrCamManager = new VRCameraManager(_vrTextureBuffer.get());
       vrCamManager->setOpenVRDevice(_ovrDevice.get());
       
-      // Create callback to update VR poses
-      GetPosesCallback *poseCallback = new GetPosesCallback(_ovrDevice.get());
+      // Create callbacks to update VR poses and master camera view matrix
+      UpdateOpenVRCallback *poseCallback = new UpdateOpenVRCallback(_ovrDevice.get());
+      UpdateViewMatrixCallback *viewCallback = new UpdateViewMatrixCallback(_ovrDevice.get());
       
       // Customize depth partitioner with callbacks
       _depthPartitioner->getCallback()->setCameraManager(vrCamManager);
-      _depthPartitioner->getCallback()->setUpdateCallback(poseCallback);
+      _depthPartitioner->getCallback()->setUpdateCallback(viewCallback);
+      
+      // Customize master camera with callback
+      _sceneView->getCamera()->setUpdateCallback(poseCallback);
     }
     if(useNewDP) _depthPartitioner->setViewToPartition(_sceneView);
     
