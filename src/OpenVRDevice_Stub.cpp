@@ -22,9 +22,9 @@
 namespace OpenFrames{
 
   /*************************************************************/
-  OpenVRDevice::OpenVRDevice(float worldUnitsPerMeter, float userHeightInMeters)
+  OpenVRDevice::OpenVRDevice(float worldUnitsPerMeter, float userHeight)
   : _worldUnitsPerMeter(worldUnitsPerMeter),
-  _userHeightInMeters(userHeightInMeters),
+  _userHeight(userHeight),
   _width(0),
   _height(0),
   _isInitialized(false),
@@ -59,6 +59,18 @@ namespace OpenFrames{
   void OpenVRDevice::shutdownVR()
   {
     _isInitialized = false;
+  }
+  
+  /*************************************************************/
+  void OpenVRDevice::updateDeviceRenderModels()
+  {
+    // Nothing to do here
+  }
+  
+  /*************************************************************/
+  void OpenVRDevice::setupRenderModelForTrackedDevice(std::string deviceName)
+  {
+    // Nothing to do here
   }
   
   /*************************************************************/

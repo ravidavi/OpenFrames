@@ -29,6 +29,8 @@
 namespace vr {
   class IVRSystem;
   class IVRRenderModels;
+  struct RenderModel_t;
+  struct RenderModel_TextureMap_t;
 }
 
 namespace OpenFrames {
@@ -42,7 +44,9 @@ namespace OpenFrames {
   class OF_EXPORT OpenVRDevice : public osg::Referenced
   {
   public:
-    OpenVRDevice(float worldUnitsPerMeter, float userHeightInMeters);
+    /** Create a new OpenVR device, specifying relationship between world units and
+     real-world meters, and the user height in meters. */
+    OpenVRDevice(float worldUnitsPerMeter, float userHeight);
 
     /**
      Initialize OpenVR and connect to the HMD
@@ -59,6 +63,9 @@ namespace OpenFrames {
 
     /** Get whether OpenVR has been initialized */
     inline bool isInitialized() { return _isInitialized; }
+    
+    /** Get render models for devices */
+    void updateDeviceRenderModels();
 
     /** Update and get the per-eye projection matrix */
     void updateProjectionMatrices();
@@ -85,6 +92,10 @@ namespace OpenFrames {
       _ipd = -1.0f; // Indicate that eye offsets should be recomputed
     }
     float getWorldUnitsPerMeter() { return _worldUnitsPerMeter; }
+    
+    /** Get/set the user height in meters */
+    void setUserHeight(float userHeight) { _userHeight = userHeight; }
+    float getUserHeightInMeters() { return _userHeight; }
 
     /** Submits the latest rendered eye textures to OpenVR */
     void submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName);
@@ -93,13 +104,25 @@ namespace OpenFrames {
     virtual ~OpenVRDevice();
     
     float _worldUnitsPerMeter; // Distance units per real-world meter
-    float _userHeightInMeters; // Height of user's HMD origin (approx forehead)
+    float _userHeight; // Height of user's HMD origin in meters
     int _width, _height; // Per-eye texture dimensions
     
     bool _isInitialized; // Whether OpenVR is initialized
     
     vr::IVRSystem* _vrSystem; // OpenVR interface
     vr::IVRRenderModels* _vrRenderModels; // Controller models
+    
+    /** Encapsulates a device's model rendering data */
+    struct DeviceModel
+    {
+      vr::RenderModel_t* _model;
+      vr::RenderModel_TextureMap_t* _texture;
+    };
+    typedef std::map<std::string, DeviceModel> DeviceModelMap;
+    DeviceModelMap _deviceModels; // All models by name
+    
+    /** Load a device's render model by its name */
+    void setupRenderModelForTrackedDevice(std::string deviceName);
     
     // Per-eye asymmetric projection matrices
     osg::Matrixf _rightProj, _leftProj, _centerProj;
@@ -132,7 +155,8 @@ namespace OpenFrames {
   
   /******************************************
    * OpenFrames API, class OpenVRSlaveCallback
-   * Inherit master camera view matrix but not its projection matrix
+   * Compute per-eye view matrix without changing projection matrix. This should
+   * be attached as a slave update callback to each VR camera.
    ******************************************/
   struct OpenVRSlaveCallback : public osg::View::Slave::UpdateSlaveCallback
   {
@@ -164,7 +188,7 @@ namespace OpenFrames {
   public:
     OpenVRTrackball(OpenVRDevice *ovrDevice);
     
-    virtual const char* className() const { return "OpenVRManipulator"; }
+    virtual const char* className() const { return "OpenVRTrackball"; }
 
     // Get World to Head matrix
     virtual osg::Matrixd getInverseMatrix() const;
@@ -175,7 +199,8 @@ namespace OpenFrames {
   
   /******************************************
    * OpenFrames API, class OpenVRSwapBuffers
-   * Submit eye textures to OpenVR.
+   * Submit eye textures to OpenVR. This should be attached as a swapbuffers
+   * callback to a graphics context.
    ******************************************/
   struct OpenVRSwapBuffers : public osg::GraphicsContext::SwapCallback
   {
