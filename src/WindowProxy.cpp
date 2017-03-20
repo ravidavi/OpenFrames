@@ -462,7 +462,7 @@ namespace OpenFrames
     // VR can only be enabled for 1x1 windows
     if(_useVR)
     {
-      if((nrow != 1) || (ncol != 1))
+      if(nrow*ncol > 1)
       {
         osg::notify(osg::FATAL)<< "OpenFrames::WindowProxy ERROR: VR only available for 1x1 windows. Disabling VR." << std::endl;
         _useVR = false;
@@ -491,7 +491,7 @@ namespace OpenFrames
     setGridSize(nrow, ncol);
     
     // Set framerate (in fps) based on whether VR is enabled
-    if(_useVR) setDesiredFramerate(0.0);
+    if(_useVR) setDesiredFramerate(0.0); // Don't limit framerate
     else setDesiredFramerate(30.0);
   }
   
@@ -509,34 +509,6 @@ namespace OpenFrames
     std::cout<< "WindowProxy::cancelCleanup()" << std::endl;
     shutdown();
   }
-  
-  // If VR rendering is enabled, then override the default swap buffers action so that
-  // eye textures are sent to OpenVR
-  class VRSwapBuffers : public osg::GraphicsContext::SwapCallback
-  {
-  public:
-    explicit VRSwapBuffers(OpenVRDevice *ovrDevice, VRTextureBuffer *texBuffer)
-    : _ovrDevice(ovrDevice), _texBuffer(texBuffer)
-    {}
-    
-    virtual void swapBuffersImplementation(osg::GraphicsContext *gc)
-    {
-      // Get OpenGL texture names
-      unsigned int contextID = gc->getState()->getContextID();
-      GLuint rightEyeTexName = _texBuffer->_rightColorTex->getTextureObject(contextID)->id();
-      GLuint leftEyeTexName = _texBuffer->_leftColorTex->getTextureObject(contextID)->id();     
-      
-      // Submit eye textures to OpenVR
-      _ovrDevice->submitFrame(rightEyeTexName, leftEyeTexName);
-      
-      // Run default swap buffers
-      gc->swapBuffersImplementation();
-    }
-    
-  private:
-    osg::observer_ptr<OpenVRDevice> _ovrDevice;
-    osg::observer_ptr<VRTextureBuffer> _texBuffer;
-  };
   
   bool WindowProxy::setupWindow()
   {
@@ -583,7 +555,7 @@ namespace OpenFrames
       _window->getState()->setUseModelViewAndProjectionUniforms(true);
       
       // Disable swap buffers
-      if(_useVR) _window->setSwapCallback(new VRSwapBuffers(_ovrDevice, _vrTextureBuffer));
+      if(_useVR) _window->setSwapCallback(new OpenVRSwapBuffers(_ovrDevice, _vrTextureBuffer));
     }
     else
     {

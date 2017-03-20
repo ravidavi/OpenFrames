@@ -15,6 +15,7 @@
  ***********************************/
 
 #include <OpenFrames/OpenVRDevice.hpp>
+#include <OpenFrames/VRUtils.hpp>
 #include <osg/Matrixd>
 
 namespace OpenFrames{
@@ -64,6 +65,11 @@ namespace OpenFrames{
   }
   
   /*************************************************************/
+  OpenVRTrackball::OpenVRTrackball(OpenVRDevice *ovrDevice)
+  : _ovrDevice(ovrDevice)
+  { }
+  
+  /*************************************************************/
   osg::Matrixd OpenVRTrackball::getInverseMatrix() const
   {
     // Get Local to Head matrix
@@ -75,6 +81,26 @@ namespace OpenFrames{
     // Compute World to Head matrix
     matrix.postMult(hmdPose);
     return matrix;
+  }
+
+  /*************************************************************/
+  OpenVRSwapBuffers::OpenVRSwapBuffers(OpenVRDevice *ovrDevice, VRTextureBuffer *texBuffer)
+  : _ovrDevice(ovrDevice), _texBuffer(texBuffer)
+  { }
+
+  /*************************************************************/
+  void OpenVRSwapBuffers::swapBuffersImplementation(osg::GraphicsContext *gc)
+  {
+    // Get OpenGL texture names
+    unsigned int contextID = gc->getState()->getContextID();
+    GLuint rightEyeTexName = _texBuffer->_rightColorTex->getTextureObject(contextID)->id();
+    GLuint leftEyeTexName = _texBuffer->_leftColorTex->getTextureObject(contextID)->id();
+    
+    // Submit eye textures to OpenVR
+    _ovrDevice->submitFrame(rightEyeTexName, leftEyeTexName);
+    
+    // Run default swap buffers
+    gc->swapBuffersImplementation();
   }
 
 } // !namespace OpenFrames

@@ -32,6 +32,7 @@ namespace vr {
 }
 
 namespace OpenFrames {
+  class VRTextureBuffer; // Used by OpenVRSwapBuffers below
   
   /******************************************
    * Ravi Mathur
@@ -161,9 +162,7 @@ namespace OpenFrames {
   class OpenVRTrackball : public FollowingTrackball
   {
   public:
-    OpenVRTrackball(OpenVRDevice *ovrDevice)
-    : _ovrDevice(ovrDevice)
-    { }
+    OpenVRTrackball(OpenVRDevice *ovrDevice);
     
     virtual const char* className() const { return "OpenVRManipulator"; }
 
@@ -172,6 +171,22 @@ namespace OpenFrames {
 
   private:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
+  };
+  
+  /******************************************
+   * OpenFrames API, class OpenVRSwapBuffers
+   * Submit eye textures to OpenVR.
+   ******************************************/
+  struct OpenVRSwapBuffers : public osg::GraphicsContext::SwapCallback
+  {
+  public:
+    OpenVRSwapBuffers(OpenVRDevice *ovrDevice, VRTextureBuffer *texBuffer);
+    
+    // Submit eye textures to OpenVR and do standard swap buffers
+    virtual void swapBuffersImplementation(osg::GraphicsContext *gc);
+    
+    osg::observer_ptr<OpenVRDevice> _ovrDevice;
+    osg::observer_ptr<VRTextureBuffer> _texBuffer;
   };
   
 } // !namespace OpenFrames
