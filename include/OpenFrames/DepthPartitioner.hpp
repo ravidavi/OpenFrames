@@ -95,10 +95,9 @@ namespace OpenFrames
       // Get the internal name of a camera
       virtual std::string getCameraName(unsigned int camNum) = 0;
       
-      // Create a new camera and add it as a slave to the given camera
+      // Create a new camera and add it as a slave to the main view
       virtual void enableCamera(unsigned int camNum,
-                                osg::GraphicsContext* gc,
-                                osg::Camera* masterCamera,
+                                osg::Camera* mainCam,
                                 const double &zNear, const double &zFar) = 0;
       
       // Disable all cameras after specified start camera number

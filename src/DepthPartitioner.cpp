@@ -156,8 +156,7 @@ namespace OpenFrames
     
     // Create a new Camera if needed, and add it as a slave
     virtual void enableCamera(unsigned int camNum,
-                              osg::GraphicsContext* gc,
-                              osg::Camera* masterCamera,
+                              osg::Camera* mainCam,
                               const double &zNear, const double &zFar)
     {
       if(_cameraList.size() <= camNum) _cameraList.resize(camNum+1);
@@ -168,10 +167,10 @@ namespace OpenFrames
         newcam = new osg::Camera();
         newcam->setCullingActive(false);
         newcam->setAllowEventFocus(false);
-        newcam->setRenderOrder(masterCamera->getRenderOrder(), camNum);
+        newcam->setRenderOrder(mainCam->getRenderOrder(), camNum);
         newcam->setName(dpCamNamePrefix + std::to_string(camNum));
-        newcam->setGraphicsContext(gc);
-        newcam->setViewport(masterCamera->getViewport());
+        newcam->setGraphicsContext(mainCam->getGraphicsContext());
+        newcam->setViewport(mainCam->getViewport());
         
         // We will compute the projection matrix ourselves
         newcam->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
@@ -184,19 +183,19 @@ namespace OpenFrames
           newcam->setClearMask(GL_DEPTH_BUFFER_BIT);
         
         // Add Camera as slave, and tell it to use the master Camera's scene
-        masterCamera->getView()->addSlave(newcam, true);
+        mainCam->getView()->addSlave(newcam, true);
         
         // Store new camera in internal camera list
         _cameraList[camNum] = newcam;
       }
       
       // Update projection depth planes
-      osg::Matrixd projmat = masterCamera->getProjectionMatrix();
+      osg::Matrixd projmat = mainCam->getProjectionMatrix();
       OpenFrames::updateProjectionMatrix(projmat, zNear, zFar);
       
       // Set camera rendering matrices
       newcam->setProjectionMatrix(projmat);
-      newcam->setViewMatrix(masterCamera->getViewMatrix());
+      newcam->setViewMatrix(mainCam->getViewMatrix());
       
       // Activate camera
       newcam->setNodeMask(0xffffffff);
@@ -278,10 +277,11 @@ namespace OpenFrames
     if(!sceneView || !sceneView->getSceneData()) return;
     
     // Capture the master camera's graphics context
-    osg::Camera *camera = view.getCamera();
-    if(camera->getGraphicsContext())
+    osg::Camera *masterCam = view.getCamera();
+    osg::Camera *dpMainSlaveCam = slave._camera;
+    if(masterCam->getGraphicsContext())
     {
-      if(slave._camera->getGraphicsContext())
+      if(dpMainSlaveCam->getGraphicsContext())
       {
         std::cerr<< "OpenFrames::DepthPartitionCallback::updateSlave ERROR: Graphics context already exists and cannot be changed." << std::endl;
         return;
@@ -289,25 +289,35 @@ namespace OpenFrames
       
       // Copy graphics context and viewport to main slave camera, so that it
       // can recieve events instead of the disabled master camera.
-      slave._camera->setGraphicsContext(camera->getGraphicsContext());
-      slave._camera->setViewport(camera->getViewport());
+      dpMainSlaveCam->setGraphicsContext(masterCam->getGraphicsContext());
+      dpMainSlaveCam->setViewport(masterCam->getViewport());
       
       // Disable master camera by detaching its graphics context, which will be
       // reattached when the DepthPartitioner is moved to another View
-      camera->setGraphicsContext(NULL);
+      masterCam->setGraphicsContext(NULL);
+      
+      // Keep master camera's viewport attached, since it is used in various places
+      // within OpenFrames. e.g. resizing windows
     }
     
     // Make sure there is a valid graphics context
-    osg::GraphicsContext *gc = slave._camera->getGraphicsContext();
+    osg::GraphicsContext *gc = dpMainSlaveCam->getGraphicsContext();
     if(gc == NULL)
     {
       std::cerr<< "OpenFrames::DepthPartitionCallback::updateSlave ERROR: No valid Graphics Context!" << std::endl;
       return;
     }
-
+    
+    // Get the master camera's view/projection matrices and cull settings
+    // NOTE: Eventually should be replaced by slave.updateSlaveImplementation once
+    // the projection resizing issues are figured out
+    dpMainSlaveCam->setViewMatrix(masterCam->getViewMatrix());
+    dpMainSlaveCam->setProjectionMatrix(masterCam->getProjectionMatrix());
+    dpMainSlaveCam->inheritCullSettings(*masterCam, dpMainSlaveCam->getInheritanceMask());
+    
     // Prepare for scene traversal
-    _distAccumulator->setMatrices(camera->getViewMatrix(), camera->getProjectionMatrix());
-    _distAccumulator->setNearFarRatio(camera->getNearFarRatio());
+    _distAccumulator->setMatrices(dpMainSlaveCam->getViewMatrix(), dpMainSlaveCam->getProjectionMatrix());
+    _distAccumulator->setNearFarRatio(dpMainSlaveCam->getNearFarRatio());
     _distAccumulator->reset();
     
     // Step 1: Traverse the scene, collecting near/far distances.
@@ -328,7 +338,7 @@ namespace OpenFrames
     for(unsigned int i = 0; i < numCameras; ++i)
     {
       // Create a new camera if needed, and activate it
-      _cameraManager->enableCamera(i, gc, camera, camPairs[i].first, camPairs[i].second);
+      _cameraManager->enableCamera(i, dpMainSlaveCam, camPairs[i].first, camPairs[i].second);
       //std::cout<< std::defaultfloat << std::setprecision(5) << "Camera " << _cameraManager->getCameraName(i) << " near = " << camPairs[i].first << ", far = " << camPairs[i].second << std::endl;
     }
     

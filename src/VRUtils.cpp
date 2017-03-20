@@ -338,8 +338,7 @@ namespace OpenFrames{
   
   // Create a new VRCamera if needed, and add it as a slave
   void VRCameraManager::enableCamera(unsigned int camNum,
-                                     osg::GraphicsContext* gc,
-                                     osg::Camera* masterCamera,
+                                     osg::Camera* mainCam,
                                      const double &zNear, const double &zFar)
   {
     if(_vrCameraList.size() <= camNum) _vrCameraList.resize(camNum+1);
@@ -354,7 +353,7 @@ namespace OpenFrames{
       {
         // Set camera graphics context
         cam = vrcam->getCamera(i);
-        cam->setGraphicsContext(gc);
+        cam->setGraphicsContext(mainCam->getGraphicsContext());
         
         // Cameras are rendered in order of increasing render number, so
         // set this camera's number as its render number
@@ -366,7 +365,7 @@ namespace OpenFrames{
       }
       
       // Add VR cameras as slaves, and tell them to use the master camera's scene
-      vrcam->addSlaveCamerasToView(masterCamera->getView(), true);
+      vrcam->addSlaveCamerasToView(mainCam->getView(), true);
       
       // Specify whether first VRCamera should clear color buffer
       if(camNum == 0 && _clearColorBuffer)

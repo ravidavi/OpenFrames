@@ -119,8 +119,7 @@ namespace OpenFrames {
     virtual std::string getCameraName(unsigned int camNum);
     
     virtual void enableCamera(unsigned int camNum,
-                              osg::GraphicsContext* gc,
-                              osg::Camera* masterCamera,
+                              osg::Camera* mainCam,
                               const double &zNear, const double &zFar);
     virtual void disableCameras(unsigned int start);
     virtual void reset();
