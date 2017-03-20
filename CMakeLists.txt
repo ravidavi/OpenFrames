@@ -4,6 +4,9 @@ PROJECT(OpenFrames)
 # Make the makefile output verbose (for compiler error checking)
 #SET(CMAKE_VERBOSE_MAKEFILE on)
 
+SET(OpenFrames_SOURCE_DIR ${OpenFrames_SOURCE_DIR})
+SET(CMAKE_MODULE_PATH "${OpenFrames_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
+
 # Default to Release configuration on single-config generators
 # e.g. make, but not VisualStudio or XCode
 # Note that CMAKE_BUILD_TYPE is initialized to "" on the initial cmake
@@ -32,8 +35,20 @@ FIND_PACKAGE(OpenSceneGraph 3.4.0 COMPONENTS osg osgText osgGA osgDB osgUtil osg
 
 # Give user a hint if OSG was not found
 IF(NOT OPENSCENEGRAPH_FOUND)
-  MESSAGE(FATAL_ERROR "OpenSceneGraph NOT FOUND: Please set OSG_DIR variable to the OpenSceneGraph path and re-configure.")
+  MESSAGE(FATAL_ERROR "OpenSceneGraph NOT FOUND: Please set OSG_DIR variable to the OpenSceneGraph install path and re-configure.")
 ENDIF()
+
+OPTION( OF_ENABLE_OSGEARTH "Enable osgEarth" OFF )
+
+IF( OF_ENABLE_OSGEARTH )
+    # Find OsgEarth
+    FIND_PACKAGE(OsgEarth)
+
+    # Give user a hint if OsgEarth was not found
+    IF(NOT OSGEARTH_FOUND)
+      MESSAGE(FATAL_ERROR "OsgEarth NOT FOUND: Please set OSGEARTH_DIR variable to the OsgEarth install path and re-configure.")
+    ENDIF()
+ENDIF( OF_ENABLE_OSGEARTH )
 
 # Find OpenGL
 # On Mac, check if OSG is X11-based. This is required because CMake's
