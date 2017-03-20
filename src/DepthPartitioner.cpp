@@ -15,6 +15,7 @@
  ***********************************/
 
 #include <OpenFrames/DepthPartitioner.hpp>
+#include <OpenFrames/Utilities.hpp>
 #include <osgUtil/CullVisitor>
 #include <iostream>
 #include <iomanip>
@@ -25,33 +26,6 @@ static const std::string dpMainCamName(dpCamNamePrefix+"Main");
 
 namespace OpenFrames
 {
-  /**********************************************/
-  void updateProjectionMatrix(osg::Matrix& proj, const double &zNear, const double &zFar)
-  {
-    double left, right, bottom, top, oldNear, oldFar;
-
-    // Clamp the projection matrix z values to the range (near, far)
-    double epsilon = 1.0e-6;
-    if (fabs(proj(0, 3)) < epsilon &&
-      fabs(proj(1, 3)) < epsilon &&
-      fabs(proj(2, 3)) < epsilon) // Projection is Orthographic
-    {
-      // Get the current orthographic projection parameters
-      proj.getOrtho(left, right, bottom, top, oldNear, oldFar);
-
-      // Use the custom computed near/far values
-      proj.makeOrtho(left, right, bottom, top, zNear, zFar);
-    }
-    else // Projection is Perspective
-    {
-      // Get the current perspective projection parameters
-      proj.getFrustum(left, right, bottom, top, oldNear, oldFar);
-
-      // Use the custom computed near/far values
-      const double nz = zNear / oldNear;
-      proj.makeFrustum(left*nz, right*nz, bottom*nz, top*nz, zNear, zFar);
-    }
-  }
 
   /**********************************************/
   DepthPartitioner::DepthPartitioner()
@@ -69,6 +43,10 @@ namespace OpenFrames
     // Allow main slave camera to recieve events. Needed since master camera won't
     // recieve events after its graphics context is detached
     _dpMainSlaveCamera->setAllowEventFocus(true);
+    
+    // We will set the projection matrix ourselves. Needed since master camera
+    // won't be resized once its graphics context is detached
+    _dpMainSlaveCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
     
     // Create slave callback that will perform depth partitioning
     _dpCallback = new DepthPartitionCallback;
@@ -100,10 +78,11 @@ namespace OpenFrames
     // Remove all depth partitioning objects from current View
     if(_view != NULL)
     {
-      // Reattach the current master camera graphics context
+      // Reattach the current master camera graphics context and viewport
       if(_view->getCamera()->getGraphicsContext() == NULL)
       {
         _view->getCamera()->setGraphicsContext(_dpMainSlaveCamera->getGraphicsContext());
+        _view->getCamera()->setViewport(_dpMainSlaveCamera->getViewport());
         _dpMainSlaveCamera->setGraphicsContext(NULL);
         _dpMainSlaveCamera->setViewport(NULL);
       }
@@ -128,8 +107,8 @@ namespace OpenFrames
       osg::View::Slave *slave = _view->findSlaveForCamera(_dpMainSlaveCamera);
       slave->_updateSlaveCallback = _dpCallback;
       
-      // The new master camera's graphics context will be automatically
-      // acquired by the DepthPartitionCallback
+      // The new master camera's graphics context and viewport will be
+      // automatically acquired by the DepthPartitionCallback
     }
     
     return true;
@@ -172,8 +151,9 @@ namespace OpenFrames
         newcam->setGraphicsContext(mainCam->getGraphicsContext());
         newcam->setViewport(mainCam->getViewport());
         
-        // We will compute the projection matrix ourselves
+        // We will manage the projection matrix ourselves
         newcam->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+        newcam->setProjectionResizePolicy(osg::Camera::FIXED);
         newcam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
         
         // Specify whether first camera should clear color buffer
@@ -295,9 +275,7 @@ namespace OpenFrames
       // Disable master camera by detaching its graphics context, which will be
       // reattached when the DepthPartitioner is moved to another View
       masterCam->setGraphicsContext(NULL);
-      
-      // Keep master camera's viewport attached, since it is used in various places
-      // within OpenFrames. e.g. resizing windows
+      masterCam->setViewport(NULL);
     }
     
     // Make sure there is a valid graphics context
@@ -308,12 +286,10 @@ namespace OpenFrames
       return;
     }
     
-    // Get the master camera's view/projection matrices and cull settings
-    // NOTE: Eventually should be replaced by slave.updateSlaveImplementation once
-    // the projection resizing issues are figured out
+    // Get the master camera's view matrix and cull settings
+    // The projection matrix is automatically adjusted by OSG
     dpMainSlaveCam->setViewMatrix(masterCam->getViewMatrix());
-    dpMainSlaveCam->setProjectionMatrix(masterCam->getProjectionMatrix());
-    dpMainSlaveCam->inheritCullSettings(*masterCam, dpMainSlaveCam->getInheritanceMask());
+    slave.updateSlaveImplementation(view);
     
     // Prepare for scene traversal
     _distAccumulator->setMatrices(dpMainSlaveCam->getViewMatrix(), dpMainSlaveCam->getProjectionMatrix());

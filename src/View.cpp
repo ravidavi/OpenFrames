@@ -14,13 +14,15 @@
  limitations under the License.
  ***********************************/
 
-#include <OpenFrames/View.hpp>
 #include <OpenFrames/ReferenceFrame.hpp>
+#include <OpenFrames/Utilities.hpp>
+#include <OpenFrames/View.hpp>
 #include <osgViewer/View>
 #include <iostream>
 
 namespace OpenFrames
 {
+  
   /*******************************************************/
   FollowingTrackball::FollowingTrackball()
   : _frameType(View::ABSOLUTE), _rotationType(View::DIRECT)
@@ -136,7 +138,7 @@ namespace OpenFrames
   bool FollowingTrackball::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
   {
     osgViewer::View *view = dynamic_cast<osgViewer::View*>(&us);
-    osg::Viewport *vp = view->getCamera()->getViewport();
+    osg::Viewport *vp = OpenFrames::getMainViewport(view);
     
     // For the trackballs to work correctly, we need to specify that each
     // osgViewer::View has its own range of (x,y) coordinates

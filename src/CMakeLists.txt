@@ -33,6 +33,7 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     Trajectory.cpp
     TrajectoryArtist.cpp
     TransformAccumulator.cpp
+    Utilities.cpp
     Vector.cpp
     View.cpp
     VRUtils.cpp

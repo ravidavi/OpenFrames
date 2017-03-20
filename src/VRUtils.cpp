@@ -14,8 +14,9 @@
  limitations under the License.
  ***********************************/
 
-#include <OpenFrames/VRUtils.hpp>
 #include <OpenFrames/OpenVRDevice.hpp>
+#include <OpenFrames/Utilities.hpp>
+#include <OpenFrames/VRUtils.hpp>
 
 #include <osg/notify>
 #include <iostream>

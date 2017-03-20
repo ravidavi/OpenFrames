@@ -26,9 +26,6 @@ namespace OpenFrames
 {
   class DepthPartitionCallback;
 
-  /** OpenFrames function that updates a projection matrix with specified near/far plane */
-  void updateProjectionMatrix(osg::Matrix& proj, const double &zNear, const double &zfar);
-
   /**********************************************************
    * Ravi Mathur
    * OpenFrames API, class DepthPartitioner
@@ -47,6 +44,9 @@ namespace OpenFrames
     
     /** Get the update callback that does the actual partitioning */
     DepthPartitionCallback* getCallback() { return _dpCallback; }
+    
+    /** Get the main slave camera that manages depth partition settings */
+    osg::Camera* getDPCamera() { return _dpMainSlaveCamera; }
     
   protected:
     ~DepthPartitioner();

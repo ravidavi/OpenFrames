@@ -15,6 +15,7 @@
  ***********************************/
 
 #include <OpenFrames/RenderRectangle.hpp>
+#include <OpenFrames/Utilities.hpp>
 #include <osg/Geometry>
 #include <osg/Group>
 #include <osg/LineWidth>
@@ -174,6 +175,7 @@ namespace OpenFrames
         osg::Matrixd centerProj = _ovrDevice->getCenterProjectionMatrix();
         _backCameraVR->updateCameras(rightProj, leftProj, centerProj, 1.0);
         masterCam->setProjectionMatrix(centerProj);
+        _depthPartitioner->getDPCamera()->setProjectionMatrix(centerProj);
       }
       else
       {
@@ -567,7 +569,7 @@ namespace OpenFrames
       view->getPerspective(fov, ratio);
       
       // Get main camera viewport or depth partitioner's viewport
-      osg::Viewport *vp = _sceneView->getCamera()->getViewport();
+      osg::Viewport *vp = OpenFrames::getMainViewport(_sceneView);
       if(vp) ratio = (double)vp->width() / (double)vp->height();
       
       // Set new aspect ratio
@@ -580,6 +582,7 @@ namespace OpenFrames
     
     // Apply the projection matrix
     _sceneView->getCamera()->setProjectionMatrix(view->getProjectionMatrix());
+    _depthPartitioner->getDPCamera()->setProjectionMatrix(view->getProjectionMatrix());
   }
   
 }
