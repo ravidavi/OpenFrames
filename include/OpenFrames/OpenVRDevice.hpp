@@ -32,7 +32,7 @@ namespace vr {
 }
 
 namespace OpenFrames {
-  class VRTextureBuffer; // Used by OpenVRSwapBuffers below
+  struct VRTextureBuffer; // Used by OpenVRSwapBuffers below
   
   /******************************************
    * Ravi Mathur

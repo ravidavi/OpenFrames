@@ -15,6 +15,7 @@
  ***********************************/
 
 #include <OpenFrames/OpenVRDevice.hpp>
+#include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/VRUtils.hpp>
 #include <osg/Matrixd>
 
@@ -43,7 +44,7 @@ namespace OpenFrames{
     {
       viewOffset = _ovrDevice->getRightEyeViewOffsetMatrix();
     }
-    if(_cameraType == LEFT_CAMERA)
+    else if(_cameraType == LEFT_CAMERA)
     {
       viewOffset = _ovrDevice->getLeftEyeViewOffsetMatrix();
     }

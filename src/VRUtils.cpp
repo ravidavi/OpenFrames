@@ -15,6 +15,7 @@
  ***********************************/
 
 #include <OpenFrames/OpenVRDevice.hpp>
+#include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/Utilities.hpp>
 #include <OpenFrames/VRUtils.hpp>
 

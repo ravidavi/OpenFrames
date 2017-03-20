@@ -15,6 +15,7 @@
  ***********************************/
 
 #include <OpenFrames/OpenVRDevice.hpp>
+#include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Matrixd>
 #include <osg/Notify>
 #include <openvr.h>
