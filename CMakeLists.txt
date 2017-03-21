@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.5.2)
 PROJECT(OpenFrames)
 
 # Set where to find extra CMake modules
-SET(CMAKE_MODULE_PATH "{CMAKE_MODULE_PATH}" ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
+SET(CMAKE_MODULE_PATH "{CMAKE_MODULE_PATH}" ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules)
 
 # Make the makefile output verbose (for compiler error checking)
 #SET(CMAKE_VERBOSE_MAKEFILE on)
@@ -10,6 +10,7 @@ SET(CMAKE_MODULE_PATH "{CMAKE_MODULE_PATH}" ${CMAKE_CURRENT_SOURCE_DIR}/cmake_mo
 # User options
 OPTION( OF_BUILD_TESTS "Build Test Programs" ON )
 OPTION( OF_FORTRAN_MODULE "Compile Fortran Module" OFF )
+OPTION( OF_USE_OSGEARTH "Enable osgEarth" OFF )
 
 # Options for VR support
 SET( VR_OpenVR "OpenVR" )
@@ -50,7 +51,17 @@ FIND_PACKAGE(OpenSceneGraph 3.4.0 COMPONENTS osg osgText osgGA osgDB osgUtil osg
 
 # Give user a hint if OSG was not found
 IF(NOT OPENSCENEGRAPH_FOUND)
-  MESSAGE(FATAL_ERROR "OpenSceneGraph NOT FOUND: Please set OSG_DIR variable to the OpenSceneGraph path and re-configure.")
+  MESSAGE(FATAL_ERROR "OpenSceneGraph NOT FOUND: Please set OSG_DIR variable to the OpenSceneGraph install path and re-configure.")
+ENDIF()
+
+IF( OF_USE_OSGEARTH )
+    # Find OsgEarth
+    FIND_PACKAGE(OsgEarth)
+
+    # Give user a hint if OsgEarth was not found
+    IF(NOT OSGEARTH_FOUND)
+      MESSAGE(FATAL_ERROR "OsgEarth NOT FOUND: Please set OSGEARTH_DIR variable to the OsgEarth install path and re-configure.")
+    ENDIF()
 ENDIF()
 
 # Find OpenGL

@@ -20,6 +20,12 @@
 #include <osg/Notify>
 #include <openvr.h>
 
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <unistd>
+#endif
+
 namespace OpenFrames{
   
   /** Sleep for specified number of milliseconds */
