@@ -359,7 +359,7 @@ namespace OpenFrames{
         
         // Cameras are rendered in order of increasing render number, so
         // set this camera's number as its render number
-        cam->setRenderOrder(osg::Camera::PRE_RENDER, camNum);
+        cam->setRenderOrder(osg::Camera::POST_RENDER, camNum);
         
         // We will compute the view and projection matrices ourselves
         cam->setReferenceFrame(osg::Transform::ABSOLUTE_RF);

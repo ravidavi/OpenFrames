@@ -146,7 +146,7 @@ namespace OpenFrames
         newcam = new osg::Camera();
         newcam->setCullingActive(false);
         newcam->setAllowEventFocus(false);
-        newcam->setRenderOrder(mainCam->getRenderOrder(), camNum);
+        newcam->setRenderOrder(osg::Camera::POST_RENDER, camNum);
         newcam->setName(dpCamNamePrefix + std::to_string(camNum));
         newcam->setGraphicsContext(mainCam->getGraphicsContext());
         newcam->setViewport(mainCam->getViewport());
