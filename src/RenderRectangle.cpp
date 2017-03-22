@@ -23,10 +23,6 @@
 #include <osg/StateSet>
 #include <iostream>
 
-// New = DepthPartitioner, with slave cameras
-// Old = DepthPartitionNode, with nested cameras
-const bool useNewDP = true;
-
 namespace OpenFrames
 {
   // Print name of each camera that tries to cull-traverse a scene
@@ -86,7 +82,6 @@ namespace OpenFrames
     _sceneView->getCamera()->setName("Master");
     
     // Create the auto depth partitioner
-    _depthPartitionNode = new DepthPartitionNode;
     _depthPartitioner = new DepthPartitioner;
     
     // If VR is used, then update depth partitioner with VR callbacks
@@ -104,7 +99,9 @@ namespace OpenFrames
       // Customize master camera with VR callback
       _sceneView->getCamera()->setUpdateCallback(poseCallback);
     }
-    if(useNewDP) _depthPartitioner->setViewToPartition(_sceneView);
+
+    // Point depth partitioner to osg::View that should be analyzed
+    _depthPartitioner->setViewToPartition(_sceneView);
     
     // Create a default view
     _defaultView = new View;
@@ -262,9 +259,7 @@ namespace OpenFrames
     // Set up the depth partitioner
     {
       // Don't clear color buffer so that background is preserved
-      _depthPartitionNode->setClearColorBuffer(false);
       _depthPartitioner->getCallback()->setClearColorBuffer(false);
-      if(!useNewDP) _scene->addChild(_depthPartitionNode.get());
     }
     
     // Set up the SceneView
@@ -282,11 +277,6 @@ namespace OpenFrames
     // We're already using the given FrameManager
     if(_frameManager.get() == fm) return;
     
-    if(_frameManager.valid()) // Remove the old scene
-    {
-      _depthPartitionNode->removeChild(_frameManager->getData());
-    }
-    
     // Set a default view
     if(fm == NULL)
     {
@@ -295,8 +285,7 @@ namespace OpenFrames
     }
     else
     {
-      if(useNewDP) _scene->addChild(fm->getData());
-      _depthPartitionNode->addChild(fm->getData()); // Set the new scene
+      _scene->addChild(fm->getData());
       _defaultView->setViewFrame(fm->getFrame(), fm->getFrame());
       _defaultView->resetTrackball();
     }

@@ -19,7 +19,6 @@
 
 #include <OpenFrames/Export.h>
 #include <OpenFrames/DepthPartitioner.hpp>
-#include <OpenFrames/DepthPartitionNode.hpp>
 #include <OpenFrames/FrameManager.hpp>
 #include <OpenFrames/OpenVRDevice.hpp>
 #include <OpenFrames/SkySphere.hpp>
@@ -83,8 +82,7 @@ namespace OpenFrames
     void setBackgroundColor(float r, float g, float b);
     
     /** Enable/disable the automatic depth partitioner */
-    void setDepthPartitioningEnabled(bool enable)
-    { _depthPartitionNode->setActive(enable); }
+    void setDepthPartitioningEnabled(bool enable) {}
     
     /** Add/remove a view to the view list that can be iterated through */
     void addView(View *view);    // Adds view to the end of the view list
@@ -122,9 +120,7 @@ namespace OpenFrames
     // a box around this RenderRectangle
     osg::ref_ptr<osgViewer::View> _sceneView;
     
-    // The root of the entire scene. This node makes sure that the scene is
-    // rendered correctly, even if it has large depth ranges.
-    osg::ref_ptr<DepthPartitionNode> _depthPartitionNode;
+    // Uses multipass rendering on scenes with large depth ranges
     osg::ref_ptr<DepthPartitioner> _depthPartitioner;
     
     osg::ref_ptr<osg::Group> _scene; // Everything to be drawn

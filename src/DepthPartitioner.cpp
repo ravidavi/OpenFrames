@@ -314,7 +314,9 @@ namespace OpenFrames
     for(unsigned int i = 0; i < numCameras; ++i)
     {
       // Create a new camera if needed, and activate it
-      _cameraManager->enableCamera(i, dpMainSlaveCam, camPairs[i].first, camPairs[i].second);
+      // Note that we slightly extend the far plane to get rid of the "seam" between depth segments
+      // Extending the far plane does not really degrade depth precision
+      _cameraManager->enableCamera(i, dpMainSlaveCam, camPairs[i].first, camPairs[i].second*1.002);
       //std::cout<< std::defaultfloat << std::setprecision(5) << "Camera " << _cameraManager->getCameraName(i) << " near = " << camPairs[i].first << ", far = " << camPairs[i].second << std::endl;
     }
     

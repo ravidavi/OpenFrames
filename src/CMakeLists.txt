@@ -11,7 +11,6 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     CoordinateAxes.cpp
     CurveArtist.cpp
     DepthPartitioner.cpp
-    DepthPartitionNode.cpp
     DescendantTracker.cpp
     DistanceAccumulator.cpp
     DrawableTrajectory.cpp

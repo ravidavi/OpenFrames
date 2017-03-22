@@ -180,9 +180,7 @@ namespace OpenFrames{
   
   /*************************************************************/
   void OpenVRDevice::updateDeviceRenderModels()
-  {
-    if(!_isInitialized) return;
-    
+  {    
     // Loop through all possible tracked devices except the HMD (already loaded)
     for(uint32_t i = vr::k_unTrackedDeviceIndex_Hmd + 1; i < vr::k_unMaxTrackedDeviceCount; ++i)
     {
@@ -190,7 +188,7 @@ namespace OpenFrames{
       if( !_vrSystem->IsTrackedDeviceConnected(i) ) continue;
       
       // Get device name and set up its render model
-      std::string deviceName = GetTrackedDeviceString(_vrSystem, i, vr::Prop_TrackingSystemName_String);
+      std::string deviceName = GetTrackedDeviceString(_vrSystem, i, vr::Prop_RenderModelName_String);
       setupRenderModelForTrackedDevice(deviceName);
     }
   }
@@ -212,7 +210,6 @@ namespace OpenFrames{
     DeviceModel newDevice; // The new device to be set up
     
     osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Setting up render model for device " << deviceName << std::endl;
-    
     
     // Load model render data
     while(true)
