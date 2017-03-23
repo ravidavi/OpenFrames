@@ -19,6 +19,9 @@
 #include <osg/Matrixd>
 #include <osg/Notify>
 
+// Assume 3 stub tracked devices here: HMD + 2 base stations
+const unsigned int numTrackedDevices = 3;
+
 namespace OpenFrames{
 
   /*************************************************************/
@@ -31,7 +34,11 @@ namespace OpenFrames{
   _vrSystem(nullptr),
   _vrRenderModels(nullptr),
   _ipd(-1.0)
-  { }
+  {
+    // Allocate render data for each possible tracked device
+    // The render data struct is a light wrapper, so there is no size concern here
+    _deviceIDToModel.resize(numTrackedDevices);
+  }
   
   OpenVRDevice::~OpenVRDevice()
   {
@@ -52,25 +59,58 @@ namespace OpenFrames{
     // The view offset matrices will be computed per-frame since IPD can change
     updateProjectionMatrices();
     
+    // Get render models for controllers and other devices
+    updateDeviceRenderModels();
+    
     return (_isInitialized = true);
   }
   
   /*************************************************************/
   void OpenVRDevice::shutdownVR()
   {
+    _deviceNameToModel.clear();
+    _deviceIDToModel.clear();
     _isInitialized = false;
   }
   
   /*************************************************************/
   void OpenVRDevice::updateDeviceRenderModels()
   {
-    // Nothing to do here
+    // Loop through all possible tracked devices except the HMD (already loaded)
+    for(unsigned int deviceID = 1; deviceID < numTrackedDevices; ++deviceID)
+    {
+      // Get device name and set up its render model
+      setupRenderModelForTrackedDevice(deviceID);
+    }
   }
   
   /*************************************************************/
-  void OpenVRDevice::setupRenderModelForTrackedDevice(std::string deviceName)
+  void OpenVRDevice::setupRenderModelForTrackedDevice(uint32_t deviceID)
   {
-    // Nothing to do here
+    // Get name of tracked device
+    std::string deviceName;
+    if(deviceID == 0) deviceName = "HMD_Stub";
+    else deviceName = "BaseStation_Stub";
+    
+    // Find device model by name
+    DeviceModelMap::iterator i = _deviceNameToModel.find(deviceName);
+    
+    // If found, then just make sure it is properly referenced by its ID
+    if(i != _deviceNameToModel.end())
+    {
+      _deviceIDToModel[deviceID] = i->second;
+      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Render model already set up for device " << deviceName << std::endl;
+      return;
+    }
+    
+    DeviceModel newDevice; // The new device to be set up
+    
+    osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Setting up render model for device " << deviceName << std::endl;
+    
+    // Model is set up now, so initialize its ReferenceFrame
+    newDevice._refFrame = new ReferenceFrame(deviceName);
+    _deviceNameToModel[deviceName] = newDevice;
+    _deviceIDToModel[deviceID] = newDevice;
   }
   
   /*************************************************************/
@@ -117,6 +157,21 @@ namespace OpenFrames{
   {
     // Stub HMD has no transformation
     _hmdPose.makeIdentity();
+    
+    // Simulate pose for base stations
+    for(unsigned int i = 1; i < numTrackedDevices; ++i)
+    {
+      _deviceIDToModel[i]._valid = true; // Always valid
+      
+      // This should be set to simulated base station pose
+      _deviceIDToModel[i]._pose.makeIdentity();
+      
+      // Set base station model's location from its pose
+      osg::Quat att = _deviceIDToModel[i]._pose.getRotate();
+      osg::Vec3d pos = _deviceIDToModel[i]._pose.getTrans();
+      _deviceIDToModel[i]._refFrame->setPosition(pos[0], pos[1], pos[2]);
+      _deviceIDToModel[i]._refFrame->setAttitude(att[0], att[1], att[2], att[3]);
+    }
   }
   
   /*************************************************************/

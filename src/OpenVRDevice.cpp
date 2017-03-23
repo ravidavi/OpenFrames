@@ -24,7 +24,7 @@
 #ifdef _WIN32
 #include <Windows.h>
 #else
-#include <unistd>
+#include <unistd.h>
 #endif
 
 namespace OpenFrames{
