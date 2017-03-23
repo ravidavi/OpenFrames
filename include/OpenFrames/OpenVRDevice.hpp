@@ -25,7 +25,10 @@
 #include <osg/Texture>
 #include <osg/Vec3d>
 
-/** Classes declared in OpenVR header */
+/** 
+Classes declared in OpenVR header. We don't include the OpenVR header here because
+the user might want to use the Stub version of the OpenVR device.
+*/
 namespace vr {
   class IVRSystem;
   class IVRRenderModels;
@@ -66,6 +69,8 @@ namespace OpenFrames {
     
     /** Get render models for devices */
     void updateDeviceRenderModels();
+    unsigned int getNumDeviceModels() { return _deviceIDToModel.size(); }
+    ReferenceFrame* getDeviceModel(unsigned int i) { return _deviceIDToModel[i]._refFrame; }
 
     /** Update and get the per-eye projection matrix */
     void updateProjectionMatrices();
@@ -115,14 +120,24 @@ namespace OpenFrames {
     /** Encapsulates a device's model rendering data */
     struct DeviceModel
     {
+      DeviceModel() : _model(NULL), _texture(NULL), _valid(false) {}
       vr::RenderModel_t* _model;
       vr::RenderModel_TextureMap_t* _texture;
+      osg::Matrixf _pose;
+      osg::ref_ptr<ReferenceFrame> _refFrame;
+      bool _valid;
     };
+
+    /** Map between a device's OpenVR name and its rendering data */
     typedef std::map<std::string, DeviceModel> DeviceModelMap;
-    DeviceModelMap _deviceModels; // All models by name
+    DeviceModelMap _deviceNameToModel;
+
+    /** Vector of each device's rendering data indexed by its OpenVR id */
+    typedef std::vector<DeviceModel> DeviceModelVector;
+    DeviceModelVector _deviceIDToModel;
     
-    /** Load a device's render model by its name */
-    void setupRenderModelForTrackedDevice(std::string deviceName);
+    /** Load a device's render model by its OpenVR ID */
+    void setupRenderModelForTrackedDevice(uint32_t deviceID);
     
     // Per-eye asymmetric projection matrices
     osg::Matrixf _rightProj, _leftProj, _centerProj;

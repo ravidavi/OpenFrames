@@ -261,6 +261,21 @@ namespace OpenFrames
       // Don't clear color buffer so that background is preserved
       _depthPartitioner->getCallback()->setClearColorBuffer(false);
     }
+
+    // Set up device models
+    if (_useVR)
+    {
+      ReferenceFrame *model = NULL;
+      for (unsigned int i = 0; i < _ovrDevice->getNumDeviceModels(); ++i)
+      {
+        model = _ovrDevice->getDeviceModel(i);
+        if (model)
+        {
+          osg::notify(osg::NOTICE) << "OpenFrames::RenderRectangle adding device " << model->getName() << std::endl;
+          _scene->addChild(model->getGroup());
+        }
+      }
+    }
     
     // Set up the SceneView
     _sceneView->setSceneData(_scene);

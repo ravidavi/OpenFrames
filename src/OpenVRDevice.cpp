@@ -18,6 +18,7 @@
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Matrixd>
 #include <osg/Notify>
+#include <osg/io_utils>
 #include <openvr.h>
 
 #ifdef _WIN32
@@ -94,7 +95,11 @@ namespace OpenFrames{
   _vrSystem(nullptr),
   _vrRenderModels(nullptr),
   _ipd(-1.0)
-  {}
+  {
+    // Allocate render data for each possible tracked device
+    // The render data struct is a light wrapper, so there is no size concern here
+    _deviceIDToModel.resize(vr::k_unMaxTrackedDeviceCount);
+  }
   
   /*************************************************************/
   OpenVRDevice::~OpenVRDevice()
@@ -173,6 +178,8 @@ namespace OpenFrames{
     {
       _vrRenderModels = nullptr;
       _vrSystem = nullptr;
+      _deviceNameToModel.clear();
+      _deviceIDToModel.clear();
       vr::VR_Shutdown();
       _isInitialized = false;
     }
@@ -182,26 +189,30 @@ namespace OpenFrames{
   void OpenVRDevice::updateDeviceRenderModels()
   {    
     // Loop through all possible tracked devices except the HMD (already loaded)
-    for(uint32_t i = vr::k_unTrackedDeviceIndex_Hmd + 1; i < vr::k_unMaxTrackedDeviceCount; ++i)
+    for(vr::TrackedDeviceIndex_t deviceID = vr::k_unTrackedDeviceIndex_Hmd + 1; 
+      deviceID < vr::k_unMaxTrackedDeviceCount; ++deviceID)
     {
       // Make sure device is connected
-      if( !_vrSystem->IsTrackedDeviceConnected(i) ) continue;
+      if( !_vrSystem->IsTrackedDeviceConnected(deviceID) ) continue;
       
       // Get device name and set up its render model
-      std::string deviceName = GetTrackedDeviceString(_vrSystem, i, vr::Prop_RenderModelName_String);
-      setupRenderModelForTrackedDevice(deviceName);
+      setupRenderModelForTrackedDevice(deviceID);
     }
   }
   
   /*************************************************************/
-  void OpenVRDevice::setupRenderModelForTrackedDevice(std::string deviceName)
+  void OpenVRDevice::setupRenderModelForTrackedDevice(uint32_t deviceID)
   {
-    // Find device by name
-    DeviceModelMap::iterator i = _deviceModels.find(deviceName);
+    // Get device name by OpenVR ID
+    std::string deviceName = GetTrackedDeviceString(_vrSystem, deviceID, vr::Prop_RenderModelName_String);
+
+    // Find device model by name
+    DeviceModelMap::iterator i = _deviceNameToModel.find(deviceName);
     
-    // If it exists, then do nothing
-    if(i != _deviceModels.end())
+    // If found, then just make sure it is properly referenced by its ID
+    if(i != _deviceNameToModel.end())
     {
+      _deviceIDToModel[deviceID] = i->second;
       osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Render model already set up for device " << deviceName << std::endl;
       return;
     }
@@ -242,8 +253,12 @@ namespace OpenFrames{
       return;
     }
     
-    // Model is set up now, so add it to the model list
-    _deviceModels[deviceName] = newDevice;
+    // Model is set up now, so initialize its ReferenceFrame
+    newDevice._refFrame = new ReferenceFrame(deviceName);
+    //newDevice._refFrame->getTransform()->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+    newDevice._refFrame->getTransform()->setFollowEye(true);
+    _deviceNameToModel[deviceName] = newDevice;
+    _deviceIDToModel[deviceID] = newDevice;
   }
   
   /*************************************************************/
@@ -308,20 +323,54 @@ namespace OpenFrames{
       poses[i].bPoseIsValid = false;
     vr::VRCompositor()->WaitGetPoses(poses, vr::k_unMaxTrackedDeviceCount, NULL, 0);
     
+    osg::Matrixf matDeviceToWorld; // Device to World transform
+
     // Update view data using HMD pose
     const vr::TrackedDevicePose_t& hmdPose = poses[vr::k_unTrackedDeviceIndex_Hmd];
     if (hmdPose.bPoseIsValid)
     {
       // Extract the HMD's Head to World matrix
-      osg::Matrixf hmdHeadToWorld;
-      convertMatrix34(hmdHeadToWorld, hmdPose.mDeviceToAbsoluteTracking);
+      convertMatrix34(matDeviceToWorld, hmdPose.mDeviceToAbsoluteTracking);
       
       // Apply scale, and subtract user's height from Y component
       // Note that the OpenVR world frame is Y-up
-      hmdHeadToWorld(3, 0) *= _worldUnitsPerMeter;
-      hmdHeadToWorld(3, 1) = (hmdHeadToWorld(3,1) - _userHeight)*_worldUnitsPerMeter;
-      hmdHeadToWorld(3, 2) *= _worldUnitsPerMeter;
-      _hmdPose.invert(hmdHeadToWorld);
+      matDeviceToWorld(3, 0) *= _worldUnitsPerMeter;
+      matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) - _userHeight)*_worldUnitsPerMeter;
+      matDeviceToWorld(3, 2) *= _worldUnitsPerMeter;
+
+      // Invert since we want World to HMD transform
+      _hmdPose.invert(matDeviceToWorld);
+    }
+
+    // Get poses of all devices
+    for (int i = vr::k_unTrackedDeviceIndex_Hmd + 1; i < vr::k_unMaxTrackedDeviceCount; ++i)
+    {
+      _deviceIDToModel[i]._valid = poses[i].bPoseIsValid;
+
+      // Only extract data if pose is valid
+      if (_deviceIDToModel[i]._valid)
+      {
+        convertMatrix34(matDeviceToWorld, poses[i].mDeviceToAbsoluteTracking);
+        _deviceIDToModel[i]._pose.invert(matDeviceToWorld); // Invert to get World to Device transform
+        //_deviceIDToModel[i]._pose = matDeviceToWorld;
+
+        // If a model exists for this device, then activate it and set its pose
+        if (_deviceIDToModel[i]._refFrame.valid())
+        {
+          osg::Quat att = _deviceIDToModel[i]._pose.getRotate();
+          osg::Vec3d pos = _deviceIDToModel[i]._pose.getTrans();
+          //osg::notify(osg::NOTICE) << "device " << i << " pos = " << pos << std::endl;
+          _deviceIDToModel[i]._refFrame->setPosition(pos[0], pos[1], pos[2]);
+          _deviceIDToModel[i]._refFrame->setAttitude(att[0], att[1], att[2], att[3]);
+          _deviceIDToModel[i]._refFrame->getGroup()->setNodeMask(0xffffffff);
+        }
+      }
+
+      // Otherwise disable its model if it has one
+      else if (_deviceIDToModel[i]._refFrame.valid())
+      {
+        _deviceIDToModel[i]._refFrame->getGroup()->setNodeMask(0x0);
+      }
     }
   }
   
