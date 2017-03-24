@@ -18,7 +18,7 @@
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Matrixd>
 #include <osg/Notify>
-#include <osg/PositionAttitudeTransform>
+#include <osg/MatrixTransform>
 
 // Assume 3 stub tracked devices here: HMD + 2 base stations
 const unsigned int numTrackedDevices = 3;
@@ -51,6 +51,10 @@ namespace OpenFrames{
     
     // Make sure to render device models in the same context/viewport as parent camera
     _deviceModels->setRenderOrder(osg::Camera::NESTED_RENDER);
+
+    // We will scale device models according to the provided WorldUnit/Meter ratio, so
+    // make sure that model normals are rescaled by OpenGL
+    _deviceModels->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
   }
   
   OpenVRDevice::~OpenVRDevice()
@@ -132,7 +136,7 @@ namespace OpenFrames{
       // Create device model's render model and add it to the render group
       osg::Geode *geode = new osg::Geode;
       geode->addDrawable(new osg::ShapeDrawable(new osg::Capsule(osg::Vec3(),radius, height)));
-      osg::PositionAttitudeTransform *xform = new osg::PositionAttitudeTransform;
+      osg::MatrixTransform *xform = new osg::MatrixTransform;
       xform->addChild(geode);
       _deviceIDToModel[deviceID]._renderModel = xform;
       _deviceModels->addChild(xform);
@@ -155,10 +159,10 @@ namespace OpenFrames{
   void OpenVRDevice::updateViewOffsets()
   {
     // Get right eye view
-    osg::Vec3f rightVec;
+    osg::Vec3f rightVec(0.03, 0, 0);
 
     // Get left eye view
-    osg::Vec3f leftVec;
+    osg::Vec3f leftVec(-0.03, 0, 0);
 
     // If IPD has changed, then recompute offset matrices
     float ipd = (rightVec - leftVec).length();
@@ -181,34 +185,52 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRDevice::waitGetPoses()
   {
-    // Stub HMD has no transformation
-    _hmdPose.makeIdentity();
+    osg::Matrixf matDeviceToWorld; // Device to World transform
+
+    // Simulate HMD pose in meters
+    matDeviceToWorld.makeIdentity(); // Look at scene head-on from the OpenVR origin
+    matDeviceToWorld(3, 1) = 1.6764; // 5'6" user height in meters
+
+    // The OpenVR HMD units are in meters, so we need to convert its position
+    // to world units. Here we also subtract the user's height from Y component.
+    // Note that the OpenVR world frame is Y-up
+    matDeviceToWorld(3, 0) *= _worldUnitsPerMeter;
+    matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) - _userHeight)*_worldUnitsPerMeter;
+    matDeviceToWorld(3, 2) *= _worldUnitsPerMeter;
+
+    // Invert since we want World to HMD transform
+    _hmdPose.invert(matDeviceToWorld);
     
     // Simulate pose for base stations
     for(unsigned int i = 1; i < numTrackedDevices; ++i)
     {
       _deviceIDToModel[i]._valid = true; // Always valid
       
-      osg::Matrixf matDeviceToWorld; // Device to World transform
-      
-      // Set simulated base station pose
+      // Set simulated base station pose in meters
       if(i == 1)
       {
         matDeviceToWorld.makeRotate(osg::Quat(10.0, osg::Vec3d(1, 0, 0)));
-        matDeviceToWorld.postMultTranslate(osg::Vec3d(-3, 0, -3));
+        matDeviceToWorld.postMultTranslate(osg::Vec3d(-3, 3, -3));
       }
       else if(i == 2)
       {
         matDeviceToWorld.makeRotate(osg::Quat(10.0, osg::Vec3d(0, 1, 0)));
-        matDeviceToWorld.postMultTranslate(osg::Vec3d(2, 0, -2));
+        matDeviceToWorld.postMultTranslate(osg::Vec3d(2, 3, -2));
       }
+
+      // Apply world unit translation, and subtract user's height from Y component
+      // Note that the OpenVR world frame is Y-up
+      matDeviceToWorld(3, 0) *= _worldUnitsPerMeter;
+      matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) - _userHeight)*_worldUnitsPerMeter;
+      matDeviceToWorld(3, 2) *= _worldUnitsPerMeter;
+
+      // Since the device model is assumed in meters, we need to scale it to world units
+      // The normals will need to be rescaled, which is done by the containing Camera
+      matDeviceToWorld.preMultScale(osg::Vec3d(_worldUnitsPerMeter, _worldUnitsPerMeter, _worldUnitsPerMeter));
       
       // Set base station model's location from its pose
-      osg::PositionAttitudeTransform *xform = static_cast<osg::PositionAttitudeTransform*>(_deviceIDToModel[i]._renderModel.get());
-      osg::Vec3d pos = matDeviceToWorld.getTrans();
-      osg::Quat att = matDeviceToWorld.getRotate();
-      xform->setPosition(pos);
-      xform->setAttitude(att);
+      osg::MatrixTransform *xform = static_cast<osg::MatrixTransform*>(_deviceIDToModel[i]._renderModel.get());
+      xform->setMatrix(matDeviceToWorld);
     }
   }
   

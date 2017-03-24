@@ -111,6 +111,10 @@ namespace OpenFrames{
     
     // Make sure to render device models in the same context/viewport as parent camera
     _deviceModels->setRenderOrder(osg::Camera::NESTED_RENDER);
+
+    // We will scale device models according to the provided WorldUnit/Meter ratio, so
+    // make sure that model normals are rescaled by OpenGL
+    _deviceModels->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
   }
   
   /*************************************************************/
@@ -278,7 +282,7 @@ namespace OpenFrames{
       
       // Create device model's render model and add it to the render group
       osg::Geode *geode = new osg::Geode;
-      geode->addDrawable(new osg::ShapeDrawable(new osg::Capsule(osg::Vec3(),radius, height)));
+      geode->addDrawable(new osg::ShapeDrawable(new osg::Capsule(osg::Vec3(), radius, height)));
       osg::MatrixTransform *xform = new osg::MatrixTransform;
       xform->addChild(geode);
       _deviceIDToModel[deviceID]._renderModel = xform;
@@ -325,7 +329,7 @@ namespace OpenFrames{
     float ipd = (rightVec - leftVec).length();
     if (ipd != _ipd)
     {
-      osg::notify(osg::ALWAYS) << "OpenVR Interpupillary Distance: " << ipd * 1000.0f << "mm" << std::endl;
+      osg::notify(osg::NOTICE) << "OpenVR Interpupillary Distance: " << ipd * 1000.0f << "mm" << std::endl;
 
       // Scale offsets according to world unit scale
       rightVec *= -_worldUnitsPerMeter; // Flip direction since we want Head to Eye transform for OSG
@@ -357,7 +361,8 @@ namespace OpenFrames{
       // Extract the HMD's Head to World matrix
       convertMatrix34(matDeviceToWorld, hmdPose.mDeviceToAbsoluteTracking);
       
-      // Apply scale, and subtract user's height from Y component
+      // The OpenVR HMD units are in meters, so we need to convert its position
+      // to world units. Here we also subtract the user's height from Y component.
       // Note that the OpenVR world frame is Y-up
       matDeviceToWorld(3, 0) *= _worldUnitsPerMeter;
       matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) - _userHeight)*_worldUnitsPerMeter;
@@ -367,7 +372,7 @@ namespace OpenFrames{
       _hmdPose.invert(matDeviceToWorld);
     }
 
-    // Get poses of all devices
+    // Get poses for remaining devices (e.g. controllers, base stations, etc.)
     for (int i = vr::k_unTrackedDeviceIndex_Hmd + 1; i < vr::k_unMaxTrackedDeviceCount; ++i)
     {
       // Only process device if it has been set up
@@ -384,9 +389,20 @@ namespace OpenFrames{
       // Only extract data if pose is valid
       if (_deviceIDToModel[i]._valid)
       {
+        // Extract the device's Local to World matrix
         convertMatrix34(matDeviceToWorld, poses[i].mDeviceToAbsoluteTracking);
-        
-        // Set device model's location from its pose
+
+        // Apply world unit translation, and subtract user's height from Y component
+        // Note that the OpenVR world frame is Y-up
+        matDeviceToWorld(3, 0) *= _worldUnitsPerMeter;
+        matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) - _userHeight)*_worldUnitsPerMeter;
+        matDeviceToWorld(3, 2) *= _worldUnitsPerMeter;
+
+        // Since the device model is assumed in meters, we need to scale it to world units
+        // The normals will need to be rescaled, which is done by the containing Camera
+        matDeviceToWorld.preMultScale(osg::Vec3d(_worldUnitsPerMeter, _worldUnitsPerMeter, _worldUnitsPerMeter));
+
+        // Set device model's transform from its adjusted pose in world units
         osg::MatrixTransform *xform = static_cast<osg::MatrixTransform*>(_deviceIDToModel[i]._renderModel.get());
         xform->setMatrix(matDeviceToWorld);
         
