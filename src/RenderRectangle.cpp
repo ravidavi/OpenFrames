@@ -265,16 +265,8 @@ namespace OpenFrames
     // Set up device models
     if (_useVR)
     {
-      ReferenceFrame *model = NULL;
-      for (unsigned int i = 0; i < _ovrDevice->getNumDeviceModels(); ++i)
-      {
-        model = _ovrDevice->getDeviceModel(i);
-        if (model)
-        {
-          osg::notify(osg::NOTICE) << "OpenFrames::RenderRectangle adding device " << model->getName() << std::endl;
-          _scene->addChild(model->getGroup());
-        }
-      }
+      _scene->addChild(_ovrDevice->getDeviceRenderModels());
+      osg::notify(osg::NOTICE) << "Adding " << _ovrDevice->getDeviceRenderModels()->getNumChildren() << " render models" << std::endl;
     }
     
     // Set up the SceneView

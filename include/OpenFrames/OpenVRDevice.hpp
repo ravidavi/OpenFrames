@@ -46,6 +46,9 @@ namespace OpenFrames {
    ******************************************/
   class OF_EXPORT OpenVRDevice : public osg::Referenced
   {
+    // The trackball needs access to the device render model camera
+    friend class OpenVRTrackball;
+    
   public:
     /** Create a new OpenVR device, specifying relationship between world units and
      real-world meters, and the user height in meters. */
@@ -69,8 +72,7 @@ namespace OpenFrames {
     
     /** Get render models for devices */
     void updateDeviceRenderModels();
-    unsigned int getNumDeviceModels() { return _deviceIDToModel.size(); }
-    ReferenceFrame* getDeviceModel(unsigned int i) { return _deviceIDToModel[i]._refFrame; }
+    osg::Group* getDeviceRenderModels() { return _deviceModels; }
 
     /** Update and get the per-eye projection matrix */
     void updateProjectionMatrices();
@@ -108,6 +110,9 @@ namespace OpenFrames {
   protected:
     virtual ~OpenVRDevice();
     
+    /** Load a device's render model by its OpenVR ID */
+    void setupRenderModelForTrackedDevice(uint32_t deviceID);
+    
     float _worldUnitsPerMeter; // Distance units per real-world meter
     float _userHeight; // Height of user's HMD origin in meters
     int _width, _height; // Per-eye texture dimensions
@@ -117,27 +122,34 @@ namespace OpenFrames {
     vr::IVRSystem* _vrSystem; // OpenVR interface
     vr::IVRRenderModels* _vrRenderModels; // Controller models
     
-    /** Encapsulates a device's model rendering data */
-    struct DeviceModel
+    /** Encapsulates an OpenVR device's data */
+    struct DeviceData
     {
-      DeviceModel() : _model(NULL), _texture(NULL), _valid(false) {}
+      DeviceData() : _model(NULL), _texture(NULL) {}
       vr::RenderModel_t* _model;
       vr::RenderModel_TextureMap_t* _texture;
-      osg::Matrixf _pose;
-      osg::ref_ptr<ReferenceFrame> _refFrame;
-      bool _valid;
     };
 
     /** Map between a device's OpenVR name and its rendering data */
-    typedef std::map<std::string, DeviceModel> DeviceModelMap;
-    DeviceModelMap _deviceNameToModel;
+    typedef std::map<std::string, DeviceData> DeviceDataMap;
+    DeviceDataMap _deviceNameToData;
+    
+    /** Encapsulates an OpenVR device's model */
+    struct DeviceModel
+    {
+      DeviceModel() : _data(NULL), _valid(false) {}
+      DeviceData *_data;
+      osg::ref_ptr<osg::Node> _renderModel;
+      osg::Matrixf _pose;
+      bool _valid;
+    };
 
     /** Vector of each device's rendering data indexed by its OpenVR id */
     typedef std::vector<DeviceModel> DeviceModelVector;
     DeviceModelVector _deviceIDToModel;
     
-    /** Load a device's render model by its OpenVR ID */
-    void setupRenderModelForTrackedDevice(uint32_t deviceID);
+    // Group that contains all device models
+    osg::ref_ptr<osg::Camera> _deviceModels;
     
     // Per-eye asymmetric projection matrices
     osg::Matrixf _rightProj, _leftProj, _centerProj;

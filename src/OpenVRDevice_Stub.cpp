@@ -18,6 +18,7 @@
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Matrixd>
 #include <osg/Notify>
+#include <osg/PositionAttitudeTransform>
 
 // Assume 3 stub tracked devices here: HMD + 2 base stations
 const unsigned int numTrackedDevices = 3;
@@ -38,6 +39,18 @@ namespace OpenFrames{
     // Allocate render data for each possible tracked device
     // The render data struct is a light wrapper, so there is no size concern here
     _deviceIDToModel.resize(numTrackedDevices);
+    
+    // Set up a camera for the device render models
+    // These models exist in local space (the room), so their view matrix should have
+    // the World->Local transform removed. This is done by premultiplying by the inverse
+    // of the World->Local transform. OpenVRTrackball automatically sets this inverse
+    // as the view matrix for the render model Camera, so we just need to specify the
+    // pre-multiply transform order here.
+    _deviceModels = new osg::Camera();
+    _deviceModels->setTransformOrder(osg::Camera::PRE_MULTIPLY);
+    
+    // Make sure to render device models in the same context/viewport as parent camera
+    _deviceModels->setRenderOrder(osg::Camera::NESTED_RENDER);
   }
   
   OpenVRDevice::~OpenVRDevice()
@@ -68,7 +81,7 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRDevice::shutdownVR()
   {
-    _deviceNameToModel.clear();
+    _deviceNameToData.clear();
     _deviceIDToModel.clear();
     _isInitialized = false;
   }
@@ -79,7 +92,7 @@ namespace OpenFrames{
     // Loop through all possible tracked devices except the HMD (already loaded)
     for(unsigned int deviceID = 1; deviceID < numTrackedDevices; ++deviceID)
     {
-      // Get device name and set up its render model
+      // Set up device render model
       setupRenderModelForTrackedDevice(deviceID);
     }
   }
@@ -92,25 +105,37 @@ namespace OpenFrames{
     if(deviceID == 0) deviceName = "HMD_Stub";
     else deviceName = "BaseStation_Stub";
     
-    // Find device model by name
-    DeviceModelMap::iterator i = _deviceNameToModel.find(deviceName);
+    // Find device data by name
+    DeviceDataMap::iterator i = _deviceNameToData.find(deviceName);
     
-    // If found, then just make sure it is properly referenced by its ID
-    if(i != _deviceNameToModel.end())
+    // If not found, then create device data
+    if(i == _deviceNameToData.end())
     {
-      _deviceIDToModel[deviceID] = i->second;
-      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Render model already set up for device " << deviceName << std::endl;
-      return;
+      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Setting up render data for device " << deviceName << std::endl;
+
+      DeviceData newDevice; // Empty device data since this is a stub
+      _deviceNameToData[deviceName] = newDevice;
     }
     
-    DeviceModel newDevice; // The new device to be set up
-    
-    osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Setting up render model for device " << deviceName << std::endl;
-    
-    // Model is set up now, so initialize its ReferenceFrame
-    newDevice._refFrame = new ReferenceFrame(deviceName);
-    _deviceNameToModel[deviceName] = newDevice;
-    _deviceIDToModel[deviceID] = newDevice;
+    // Set up device model if needed
+    if(_deviceIDToModel[deviceID]._data == NULL)
+    {
+      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Setting up render model for device " << deviceName << deviceID << std::endl;
+      
+      // Create new device model and set its data
+      _deviceIDToModel[deviceID]._data = &_deviceNameToData[deviceName];
+      
+      float radius = 0.1f;
+      float height = 0.2f;
+      
+      // Create device model's render model and add it to the render group
+      osg::Geode *geode = new osg::Geode;
+      geode->addDrawable(new osg::ShapeDrawable(new osg::Capsule(osg::Vec3(),radius, height)));
+      osg::PositionAttitudeTransform *xform = new osg::PositionAttitudeTransform;
+      xform->addChild(geode);
+      _deviceIDToModel[deviceID]._renderModel = xform;
+      _deviceModels->addChild(xform);
+    }
   }
   
   /*************************************************************/
@@ -163,14 +188,26 @@ namespace OpenFrames{
     {
       _deviceIDToModel[i]._valid = true; // Always valid
       
-      // This should be set to simulated base station pose
-      _deviceIDToModel[i]._pose.makeIdentity();
+      // Set simulated base station pose
+      if(i == 1)
+      {
+        osg::Matrixf pose(osg::Quat(10.0, osg::Vec3d(1, 0, 0)));
+        pose.postMultTranslate(osg::Vec3d(-3, 0, -3));
+        _deviceIDToModel[i]._pose = pose;
+      }
+      else if(i == 2)
+      {
+        osg::Matrixf pose(osg::Quat(10.0, osg::Vec3d(0, 1, 0)));
+        pose.postMultTranslate(osg::Vec3d(2, 0, -2));
+        _deviceIDToModel[i]._pose = pose;
+      }
       
       // Set base station model's location from its pose
-      osg::Quat att = _deviceIDToModel[i]._pose.getRotate();
+      osg::PositionAttitudeTransform *xform = static_cast<osg::PositionAttitudeTransform*>(_deviceIDToModel[i]._renderModel.get());
       osg::Vec3d pos = _deviceIDToModel[i]._pose.getTrans();
-      _deviceIDToModel[i]._refFrame->setPosition(pos[0], pos[1], pos[2]);
-      _deviceIDToModel[i]._refFrame->setAttitude(att[0], att[1], att[2], att[3]);
+      osg::Quat att = _deviceIDToModel[i]._pose.getRotate();
+      xform->setPosition(pos);
+      xform->setAttitude(att);
     }
   }
   

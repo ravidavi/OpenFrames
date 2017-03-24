@@ -73,15 +73,23 @@ namespace OpenFrames{
   /*************************************************************/
   osg::Matrixd OpenVRTrackball::getInverseMatrix() const
   {
+    // Get World to Local view matrix
+    osg::Matrixd matWorldToLocal = FollowingTrackball::getInverseMatrix();
+    
+    // OpenVR device models exist in local space, not in world space, so premult their
+    // transform by the inverse of the World->Local matrix. We do this by setting
+    // the render model Camera's view matrix as the inverse, and telling it to
+    // use the pre-multiply transform order (see OpenVRDevice ctor)
+    osg::Matrixd matLocalToWorld;
+    matLocalToWorld.invert(matWorldToLocal);
+    _ovrDevice->_deviceModels->setViewMatrix(matLocalToWorld);
+    
     // Get Local to Head matrix
     osg::Matrixd hmdPose = _ovrDevice->getHMDPoseMatrix();
     
-    // Get World to Local view matrix
-    osg::Matrixd matrix = FollowingTrackball::getInverseMatrix();
-    
-    // Compute World to Head matrix
-    matrix.postMult(hmdPose);
-    return matrix;
+    // Compute World to Head matrix, which will be returned
+    matWorldToLocal.postMult(hmdPose);
+    return matWorldToLocal;
   }
 
   /*************************************************************/
