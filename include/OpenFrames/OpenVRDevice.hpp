@@ -140,7 +140,6 @@ namespace OpenFrames {
       DeviceModel() : _data(NULL), _valid(false) {}
       DeviceData *_data;
       osg::ref_ptr<osg::Node> _renderModel;
-      osg::Matrixf _pose;
       bool _valid;
     };
 

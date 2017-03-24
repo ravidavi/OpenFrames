@@ -83,6 +83,7 @@ namespace OpenFrames{
   {
     _deviceNameToData.clear();
     _deviceIDToModel.clear();
+    _deviceModels->removeChildren(0, _deviceModels->getNumChildren());
     _isInitialized = false;
   }
   
@@ -122,7 +123,7 @@ namespace OpenFrames{
     {
       osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Setting up render model for device " << deviceName << deviceID << std::endl;
       
-      // Create new device model and set its data
+      // Set data for current device model
       _deviceIDToModel[deviceID]._data = &_deviceNameToData[deviceName];
       
       float radius = 0.1f;
@@ -188,24 +189,24 @@ namespace OpenFrames{
     {
       _deviceIDToModel[i]._valid = true; // Always valid
       
+      osg::Matrixf matDeviceToWorld; // Device to World transform
+      
       // Set simulated base station pose
       if(i == 1)
       {
-        osg::Matrixf pose(osg::Quat(10.0, osg::Vec3d(1, 0, 0)));
-        pose.postMultTranslate(osg::Vec3d(-3, 0, -3));
-        _deviceIDToModel[i]._pose = pose;
+        matDeviceToWorld.makeRotate(osg::Quat(10.0, osg::Vec3d(1, 0, 0)));
+        matDeviceToWorld.postMultTranslate(osg::Vec3d(-3, 0, -3));
       }
       else if(i == 2)
       {
-        osg::Matrixf pose(osg::Quat(10.0, osg::Vec3d(0, 1, 0)));
-        pose.postMultTranslate(osg::Vec3d(2, 0, -2));
-        _deviceIDToModel[i]._pose = pose;
+        matDeviceToWorld.makeRotate(osg::Quat(10.0, osg::Vec3d(0, 1, 0)));
+        matDeviceToWorld.postMultTranslate(osg::Vec3d(2, 0, -2));
       }
       
       // Set base station model's location from its pose
       osg::PositionAttitudeTransform *xform = static_cast<osg::PositionAttitudeTransform*>(_deviceIDToModel[i]._renderModel.get());
-      osg::Vec3d pos = _deviceIDToModel[i]._pose.getTrans();
-      osg::Quat att = _deviceIDToModel[i]._pose.getRotate();
+      osg::Vec3d pos = matDeviceToWorld.getTrans();
+      osg::Quat att = matDeviceToWorld.getRotate();
       xform->setPosition(pos);
       xform->setAttitude(att);
     }

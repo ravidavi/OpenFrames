@@ -18,7 +18,7 @@
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Matrixd>
 #include <osg/Notify>
-#include <osg/io_utils>
+#include <osg/MatrixTransform>
 #include <openvr.h>
 
 #ifdef _WIN32
@@ -99,6 +99,18 @@ namespace OpenFrames{
     // Allocate render data for each possible tracked device
     // The render data struct is a light wrapper, so there is no size concern here
     _deviceIDToModel.resize(vr::k_unMaxTrackedDeviceCount);
+    
+    // Set up a camera for the device render models
+    // These models exist in local space (the room), so their view matrix should have
+    // the World->Local transform removed. This is done by premultiplying by the inverse
+    // of the World->Local transform. OpenVRTrackball automatically sets this inverse
+    // as the view matrix for the render model Camera, so we just need to specify the
+    // pre-multiply transform order here.
+    _deviceModels = new osg::Camera();
+    _deviceModels->setTransformOrder(osg::Camera::PRE_MULTIPLY);
+    
+    // Make sure to render device models in the same context/viewport as parent camera
+    _deviceModels->setRenderOrder(osg::Camera::NESTED_RENDER);
   }
   
   /*************************************************************/
@@ -178,8 +190,9 @@ namespace OpenFrames{
     {
       _vrRenderModels = nullptr;
       _vrSystem = nullptr;
-      _deviceNameToModel.clear();
+      _deviceNameToData.clear();
       _deviceIDToModel.clear();
+      _deviceModels->removeChildren(0, _deviceModels->getNumChildren());
       vr::VR_Shutdown();
       _isInitialized = false;
     }
@@ -207,58 +220,70 @@ namespace OpenFrames{
     std::string deviceName = GetTrackedDeviceString(_vrSystem, deviceID, vr::Prop_RenderModelName_String);
 
     // Find device model by name
-    DeviceModelMap::iterator i = _deviceNameToModel.find(deviceName);
+    DeviceDataMap::iterator i = _deviceNameToData.find(deviceName);
     
-    // If found, then just make sure it is properly referenced by its ID
-    if(i != _deviceNameToModel.end())
+    // If not found, then load device data
+    if(i == _deviceNameToData.end())
     {
-      _deviceIDToModel[deviceID] = i->second;
-      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Render model already set up for device " << deviceName << std::endl;
-      return;
-    }
-    
-    vr::EVRRenderModelError error; // Error code
-    DeviceModel newDevice; // The new device to be set up
-    
-    osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Setting up render model for device " << deviceName << std::endl;
-    
-    // Load model render data
-    while(true)
-    {
-      error = vr::VRRenderModels()->LoadRenderModel_Async(deviceName.c_str(), &(newDevice._model));
-      if(error != vr::VRRenderModelError_Loading) break; // Only valid error
+      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Setting up render data for device " << deviceName << std::endl;
       
-      ThreadSleep(10);
-    }
-    
-    if(error != vr::VRRenderModelError_None)
-    {
-      osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: Unable to load render model for device " << deviceName << ". OpenVR says: " << vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error) << std::endl;
-      return;
-    }
-    
-    // Load model texture data
-    while(true)
-    {
-      error = vr::VRRenderModels()->LoadTexture_Async(newDevice._model->diffuseTextureId, &(newDevice._texture));
-      if(error != vr::VRRenderModelError_Loading) break; // Only valid error
+      vr::EVRRenderModelError error; // Error code
+      DeviceData newDevice; // The new device to be set up
       
-      ThreadSleep(10);
+      // Load device render data
+      while(true)
+      {
+        error = vr::VRRenderModels()->LoadRenderModel_Async(deviceName.c_str(), &(newDevice._model));
+        if(error != vr::VRRenderModelError_Loading) break; // Only valid error
+        
+        ThreadSleep(10);
+      }
+      
+      if(error != vr::VRRenderModelError_None)
+      {
+        osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: Unable to load render model for device " << deviceName << ". OpenVR says: " << vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error) << std::endl;
+        return;
+      }
+      
+      // Load device texture data
+      while(true)
+      {
+        error = vr::VRRenderModels()->LoadTexture_Async(newDevice._model->diffuseTextureId, &(newDevice._texture));
+        if(error != vr::VRRenderModelError_Loading) break; // Only valid error
+        
+        ThreadSleep(10);
+      }
+
+      if(error != vr::VRRenderModelError_None)
+      {
+        osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: Unable to load render texture for device " << deviceName << ". OpenVR says: " << vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error) << std::endl;
+        vr::VRRenderModels()->FreeRenderModel(newDevice._model); // Free model data
+        return;
+      }
+      
+      // Assign render data to map
+      _deviceNameToData[deviceName] = newDevice;
     }
     
-    if(error != vr::VRRenderModelError_None)
+    // Set up device model if needed
+    if(_deviceIDToModel[deviceID]._data == NULL)
     {
-      osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: Unable to load render texture for device " << deviceName << ". OpenVR says: " << vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error) << std::endl;
-      vr::VRRenderModels()->FreeRenderModel(newDevice._model); // Free model data
-      return;
+      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Setting up render model for device " << deviceName << deviceID << std::endl;
+      
+      // Set data for current device model
+      _deviceIDToModel[deviceID]._data = &_deviceNameToData[deviceName];
+      
+      float radius = 0.1f;
+      float height = 0.2f;
+      
+      // Create device model's render model and add it to the render group
+      osg::Geode *geode = new osg::Geode;
+      geode->addDrawable(new osg::ShapeDrawable(new osg::Capsule(osg::Vec3(),radius, height)));
+      osg::MatrixTransform *xform = new osg::MatrixTransform;
+      xform->addChild(geode);
+      _deviceIDToModel[deviceID]._renderModel = xform;
+      _deviceModels->addChild(xform);
     }
-    
-    // Model is set up now, so initialize its ReferenceFrame
-    newDevice._refFrame = new ReferenceFrame(deviceName);
-    //newDevice._refFrame->getTransform()->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
-    newDevice._refFrame->getTransform()->setFollowEye(true);
-    _deviceNameToModel[deviceName] = newDevice;
-    _deviceIDToModel[deviceID] = newDevice;
   }
   
   /*************************************************************/
@@ -345,31 +370,34 @@ namespace OpenFrames{
     // Get poses of all devices
     for (int i = vr::k_unTrackedDeviceIndex_Hmd + 1; i < vr::k_unMaxTrackedDeviceCount; ++i)
     {
-      _deviceIDToModel[i]._valid = poses[i].bPoseIsValid;
+      // Only process device if it has been set up
+      if(_deviceIDToModel[i]._renderModel.valid())
+      {
+        _deviceIDToModel[i]._valid = poses[i].bPoseIsValid;
+      }
+      else
+      {
+        _deviceIDToModel[i]._valid = false;
+        continue;
+      }
 
       // Only extract data if pose is valid
       if (_deviceIDToModel[i]._valid)
       {
         convertMatrix34(matDeviceToWorld, poses[i].mDeviceToAbsoluteTracking);
-        _deviceIDToModel[i]._pose.invert(matDeviceToWorld); // Invert to get World to Device transform
-        //_deviceIDToModel[i]._pose = matDeviceToWorld;
-
-        // If a model exists for this device, then activate it and set its pose
-        if (_deviceIDToModel[i]._refFrame.valid())
-        {
-          osg::Quat att = _deviceIDToModel[i]._pose.getRotate();
-          osg::Vec3d pos = _deviceIDToModel[i]._pose.getTrans();
-          //osg::notify(osg::NOTICE) << "device " << i << " pos = " << pos << std::endl;
-          _deviceIDToModel[i]._refFrame->setPosition(pos[0], pos[1], pos[2]);
-          _deviceIDToModel[i]._refFrame->setAttitude(att[0], att[1], att[2], att[3]);
-          _deviceIDToModel[i]._refFrame->getGroup()->setNodeMask(0xffffffff);
-        }
+        
+        // Set device model's location from its pose
+        osg::MatrixTransform *xform = static_cast<osg::MatrixTransform*>(_deviceIDToModel[i]._renderModel.get());
+        xform->setMatrix(matDeviceToWorld);
+        
+        // Enable device model
+        _deviceIDToModel[i]._renderModel->setNodeMask(0xffffffff);
       }
 
-      // Otherwise disable its model if it has one
-      else if (_deviceIDToModel[i]._refFrame.valid())
+      // Otherwise disable its model
+      else
       {
-        _deviceIDToModel[i]._refFrame->getGroup()->setNodeMask(0x0);
+        _deviceIDToModel[i]._renderModel->setNodeMask(0x0);
       }
     }
   }
