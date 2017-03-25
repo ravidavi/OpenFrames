@@ -114,7 +114,8 @@ namespace OpenFrames{
 
     // We will scale device models according to the provided WorldUnit/Meter ratio, so
     // make sure that model normals are rescaled by OpenGL
-    _deviceModels->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+    //_deviceModels->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+    _deviceModels->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
   }
   
   /*************************************************************/
@@ -237,7 +238,7 @@ namespace OpenFrames{
       // Load device render data
       while(true)
       {
-        error = vr::VRRenderModels()->LoadRenderModel_Async(deviceName.c_str(), &(newDevice._model));
+        error = vr::VRRenderModels()->LoadRenderModel_Async(deviceName.c_str(), &(newDevice._deviceModel));
         if(error != vr::VRRenderModelError_Loading) break; // Only valid error
         
         ThreadSleep(10);
@@ -252,7 +253,7 @@ namespace OpenFrames{
       // Load device texture data
       while(true)
       {
-        error = vr::VRRenderModels()->LoadTexture_Async(newDevice._model->diffuseTextureId, &(newDevice._texture));
+        error = vr::VRRenderModels()->LoadTexture_Async(newDevice._deviceModel->diffuseTextureId, &(newDevice._deviceTexture));
         if(error != vr::VRRenderModelError_Loading) break; // Only valid error
         
         ThreadSleep(10);
@@ -261,10 +262,75 @@ namespace OpenFrames{
       if(error != vr::VRRenderModelError_None)
       {
         osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: Unable to load render texture for device " << deviceName << ". OpenVR says: " << vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error) << std::endl;
-        vr::VRRenderModels()->FreeRenderModel(newDevice._model); // Free model data
+        vr::VRRenderModels()->FreeRenderModel(newDevice._deviceModel); // Free model data
         return;
       }
       
+      uint32_t numVertices = newDevice._deviceModel->unVertexCount;
+      uint32_t vertexSize = sizeof(vr::RenderModel_Vertex_t);
+      osg::notify(osg::NOTICE) << numVertices << " vertices = " << numVertices*vertexSize << " bytes" << std::endl;
+
+      // Copy vertex positions into an OSG array
+      osg::Vec3Array *positions = new osg::Vec3Array(numVertices);
+      for (uint32_t i = 0; i < numVertices; ++i)
+      {
+        std::memcpy((*positions)[i]._v, (newDevice._deviceModel->rVertexData)[i].vPosition.v, sizeof(vr::HmdVector3_t));
+      }
+      osg::notify(osg::NOTICE) << "position size = " << positions->size()*sizeof(vr::HmdVector3_t) << std::endl;
+
+      // Copy vertex normals into an OSG array
+      osg::Vec3Array *normals = new osg::Vec3Array(numVertices);
+      for (uint32_t i = 0; i < numVertices; ++i)
+      {
+        std::memcpy((*normals)[i]._v, (newDevice._deviceModel->rVertexData)[i].vNormal.v, sizeof(vr::HmdVector3_t));
+      }
+      osg::notify(osg::NOTICE) << "normal size = " << normals->size()*sizeof(vr::HmdVector3_t) << std::endl;
+
+      // Copy vertex texture coordinates into an OSG array
+      osg::Vec2Array *texCoords = new osg::Vec2Array(numVertices);
+      for (uint32_t i = 0; i < numVertices; ++i)
+      {
+        std::memcpy((*texCoords)[i]._v, (newDevice._deviceModel->rVertexData)[i].rfTextureCoord, 2 * sizeof(float));
+      }
+      osg::notify(osg::NOTICE) << "texcoord size = " << texCoords->size()*2*sizeof(float) << std::endl;
+
+      // Set up a geometry object to draw the device model
+      osg::Geometry *deviceGeom = new osg::Geometry;
+      deviceGeom->setUseDisplayList(false);
+      deviceGeom->setUseVertexBufferObjects(true);
+      deviceGeom->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);
+      deviceGeom->setVertexArray(positions);
+      deviceGeom->setNormalArray(normals, osg::Array::BIND_PER_VERTEX);
+      deviceGeom->setTexCoordArray(0, texCoords, osg::Array::BIND_PER_VERTEX);
+      uint32_t numIndices = 3 * newDevice._deviceModel->unTriangleCount;
+      osg::DrawElementsUShort *indices = new osg::DrawElementsUShort(osg::PrimitiveSet::TRIANGLES, numIndices, newDevice._deviceModel->rIndexData);
+      deviceGeom->addPrimitiveSet(indices);
+      osg::notify(osg::NOTICE) << "Number of indices = " << numIndices << std::endl;
+
+      // Create OSG image to hold OpenVR image data
+      uint16_t width = newDevice._deviceTexture->unWidth;
+      uint16_t height = newDevice._deviceTexture->unHeight;
+      osg::notify(osg::NOTICE) << "Texture width = " << width << ", height = " << height << std::endl;
+      osg::Image *image = new osg::Image;
+      image->setImage(width, height, 1, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, 
+        (unsigned char*)(newDevice._deviceTexture->rubTextureMapData), osg::Image::NO_DELETE);
+
+      // Create OSG texture to hold image
+      osg::Texture2D *tex = new osg::Texture2D;
+      tex->setSourceFormat(GL_RGBA);
+      tex->setInternalFormat(GL_RGBA8);
+      tex->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR);
+      tex->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR);
+      tex->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+      tex->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+      tex->setTextureSize(width, height);
+      tex->setImage(image);
+      newDevice._osgTexture = tex;
+
+      // Create OSG model
+      newDevice._osgModel = new osg::Geode();
+      newDevice._osgModel->addDrawable(deviceGeom);
+
       // Assign render data to map
       _deviceNameToData[deviceName] = newDevice;
     }
@@ -277,14 +343,17 @@ namespace OpenFrames{
       // Set data for current device model
       _deviceIDToModel[deviceID]._data = &_deviceNameToData[deviceName];
       
-      float radius = 0.1f;
-      float height = 0.2f;
+      float radius = 0.05f;
+      float height = 0.1f;
       
       // Create device model's render model and add it to the render group
-      osg::Geode *geode = new osg::Geode;
-      geode->addDrawable(new osg::ShapeDrawable(new osg::Capsule(osg::Vec3(), radius, height)));
+      //osg::Geode *geode = new osg::Geode;
+      //geode->addDrawable(new osg::ShapeDrawable(new osg::Capsule(osg::Vec3(), radius, height)));
       osg::MatrixTransform *xform = new osg::MatrixTransform;
-      xform->addChild(geode);
+      osg::StateSet *ss = xform->getOrCreateStateSet();
+      ss->setTextureAttributeAndModes(0, _deviceNameToData[deviceName]._osgTexture, osg::StateAttribute::ON); // Bind texture
+      //xform->addChild(geode);
+      xform->addChild(_deviceNameToData[deviceName]._osgModel);
       _deviceIDToModel[deviceID]._renderModel = xform;
       _deviceModels->addChild(xform);
     }

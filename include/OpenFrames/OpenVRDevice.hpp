@@ -125,9 +125,11 @@ namespace OpenFrames {
     /** Encapsulates an OpenVR device's data */
     struct DeviceData
     {
-      DeviceData() : _model(NULL), _texture(NULL) {}
-      vr::RenderModel_t* _model;
-      vr::RenderModel_TextureMap_t* _texture;
+      DeviceData() : _deviceModel(NULL), _deviceTexture(NULL) {}
+      vr::RenderModel_t* _deviceModel;
+      vr::RenderModel_TextureMap_t* _deviceTexture;
+      osg::ref_ptr<osg::Geode> _osgModel;
+      osg::ref_ptr<osg::Texture2D> _osgTexture;
     };
 
     /** Map between a device's OpenVR name and its rendering data */
