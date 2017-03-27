@@ -18,7 +18,6 @@
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Matrixd>
 #include <osg/Notify>
-#include <osg/MatrixTransform>
 #include <openvr.h>
 
 #ifdef _WIN32
@@ -195,7 +194,7 @@ namespace OpenFrames{
     {
       _vrRenderModels = nullptr;
       _vrSystem = nullptr;
-      _deviceNameToData.clear();
+      _deviceNameToModel.clear();
       _deviceIDToModel.clear();
       _deviceModels->removeChildren(0, _deviceModels->getNumChildren());
       vr::VR_Shutdown();
@@ -225,20 +224,20 @@ namespace OpenFrames{
     std::string deviceName = GetTrackedDeviceString(_vrSystem, deviceID, vr::Prop_RenderModelName_String);
 
     // Find device model by name
-    DeviceDataMap::iterator i = _deviceNameToData.find(deviceName);
+    DeviceModelMap::iterator i = _deviceNameToModel.find(deviceName);
     
     // If not found, then load device data
-    if(i == _deviceNameToData.end())
+    if(i == _deviceNameToModel.end())
     {
-      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Setting up render data for device " << deviceName << std::endl;
+      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Setting up model for device " << deviceName << std::endl;
       
       vr::EVRRenderModelError error; // Error code
-      DeviceData newDevice; // The new device to be set up
       
       // Load device render data
+      vr::RenderModel_t* deviceModel;
       while(true)
       {
-        error = vr::VRRenderModels()->LoadRenderModel_Async(deviceName.c_str(), &(newDevice._deviceModel));
+        error = vr::VRRenderModels()->LoadRenderModel_Async(deviceName.c_str(), &deviceModel);
         if(error != vr::VRRenderModelError_Loading) break; // Only valid error
         
         ThreadSleep(10);
@@ -251,9 +250,10 @@ namespace OpenFrames{
       }
       
       // Load device texture data
+      vr::RenderModel_TextureMap_t* deviceTexture;
       while(true)
       {
-        error = vr::VRRenderModels()->LoadTexture_Async(newDevice._deviceModel->diffuseTextureId, &(newDevice._deviceTexture));
+        error = vr::VRRenderModels()->LoadTexture_Async(deviceModel->diffuseTextureId, &deviceTexture);
         if(error != vr::VRRenderModelError_Loading) break; // Only valid error
         
         ThreadSleep(10);
@@ -262,11 +262,11 @@ namespace OpenFrames{
       if(error != vr::VRRenderModelError_None)
       {
         osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: Unable to load render texture for device " << deviceName << ". OpenVR says: " << vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error) << std::endl;
-        vr::VRRenderModels()->FreeRenderModel(newDevice._deviceModel); // Free model data
+        vr::VRRenderModels()->FreeRenderModel(deviceModel); // Free model data
         return;
       }
       
-      uint32_t numVertices = newDevice._deviceModel->unVertexCount;
+      uint32_t numVertices = deviceModel->unVertexCount;
       uint32_t vertexSize = sizeof(vr::RenderModel_Vertex_t);
       osg::notify(osg::NOTICE) << numVertices << " vertices = " << numVertices*vertexSize << " bytes" << std::endl;
 
@@ -274,7 +274,7 @@ namespace OpenFrames{
       osg::Vec3Array *positions = new osg::Vec3Array(numVertices);
       for (uint32_t i = 0; i < numVertices; ++i)
       {
-        std::memcpy((*positions)[i]._v, (newDevice._deviceModel->rVertexData)[i].vPosition.v, sizeof(vr::HmdVector3_t));
+        std::memcpy((*positions)[i]._v, (deviceModel->rVertexData)[i].vPosition.v, sizeof(vr::HmdVector3_t));
       }
       osg::notify(osg::NOTICE) << "position size = " << positions->size()*sizeof(vr::HmdVector3_t) << std::endl;
 
@@ -282,7 +282,7 @@ namespace OpenFrames{
       osg::Vec3Array *normals = new osg::Vec3Array(numVertices);
       for (uint32_t i = 0; i < numVertices; ++i)
       {
-        std::memcpy((*normals)[i]._v, (newDevice._deviceModel->rVertexData)[i].vNormal.v, sizeof(vr::HmdVector3_t));
+        std::memcpy((*normals)[i]._v, (deviceModel->rVertexData)[i].vNormal.v, sizeof(vr::HmdVector3_t));
       }
       osg::notify(osg::NOTICE) << "normal size = " << normals->size()*sizeof(vr::HmdVector3_t) << std::endl;
 
@@ -290,7 +290,7 @@ namespace OpenFrames{
       osg::Vec2Array *texCoords = new osg::Vec2Array(numVertices);
       for (uint32_t i = 0; i < numVertices; ++i)
       {
-        std::memcpy((*texCoords)[i]._v, (newDevice._deviceModel->rVertexData)[i].rfTextureCoord, 2 * sizeof(float));
+        std::memcpy((*texCoords)[i]._v, (deviceModel->rVertexData)[i].rfTextureCoord, 2 * sizeof(float));
       }
       osg::notify(osg::NOTICE) << "texcoord size = " << texCoords->size()*2*sizeof(float) << std::endl;
 
@@ -302,18 +302,18 @@ namespace OpenFrames{
       deviceGeom->setVertexArray(positions);
       deviceGeom->setNormalArray(normals, osg::Array::BIND_PER_VERTEX);
       deviceGeom->setTexCoordArray(0, texCoords, osg::Array::BIND_PER_VERTEX);
-      uint32_t numIndices = 3 * newDevice._deviceModel->unTriangleCount;
-      osg::DrawElementsUShort *indices = new osg::DrawElementsUShort(osg::PrimitiveSet::TRIANGLES, numIndices, newDevice._deviceModel->rIndexData);
+      uint32_t numIndices = 3 * deviceModel->unTriangleCount;
+      osg::DrawElementsUShort *indices = new osg::DrawElementsUShort(osg::PrimitiveSet::TRIANGLES, numIndices, deviceModel->rIndexData);
       deviceGeom->addPrimitiveSet(indices);
       osg::notify(osg::NOTICE) << "Number of indices = " << numIndices << std::endl;
 
       // Create OSG image to hold OpenVR image data
-      uint16_t width = newDevice._deviceTexture->unWidth;
-      uint16_t height = newDevice._deviceTexture->unHeight;
+      uint16_t width = deviceTexture->unWidth;
+      uint16_t height = deviceTexture->unHeight;
       osg::notify(osg::NOTICE) << "Texture width = " << width << ", height = " << height << std::endl;
       osg::Image *image = new osg::Image;
       image->setImage(width, height, 1, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, 
-        (unsigned char*)(newDevice._deviceTexture->rubTextureMapData), osg::Image::NO_DELETE);
+        (unsigned char*)(deviceTexture->rubTextureMapData), osg::Image::NO_DELETE);
 
       // Create OSG texture to hold image
       osg::Texture2D *tex = new osg::Texture2D;
@@ -325,36 +325,30 @@ namespace OpenFrames{
       tex->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
       tex->setTextureSize(width, height);
       tex->setImage(image);
-      newDevice._osgTexture = tex;
 
-      // Create OSG model
-      newDevice._osgModel = new osg::Geode();
-      newDevice._osgModel->addDrawable(deviceGeom);
+      // Create OSG geode to hold the model and texture
+      osg::Geode *geode = new osg::Geode();
+      osg::StateSet *ss = geode->getOrCreateStateSet();
+      ss->setTextureAttributeAndModes(0, tex, osg::StateAttribute::ON); // Bind texture
+      geode->addDrawable(deviceGeom);
 
       // Assign render data to map
-      _deviceNameToData[deviceName] = newDevice;
+      _deviceNameToModel[deviceName] = geode;
+
+      // Free up OpenVR device model and texture memory
+      vr::VRRenderModels()->FreeRenderModel(deviceModel);
+      vr::VRRenderModels()->FreeTexture(deviceTexture);
     }
     
     // Set up device model if needed
-    if(_deviceIDToModel[deviceID]._data == NULL)
+    if(_deviceIDToModel[deviceID]._modelTransform == NULL)
     {
-      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Setting up render model for device " << deviceName << deviceID << std::endl;
+      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Setting up transform for device " << deviceName << deviceID << std::endl;
       
-      // Set data for current device model
-      _deviceIDToModel[deviceID]._data = &_deviceNameToData[deviceName];
-      
-      float radius = 0.05f;
-      float height = 0.1f;
-      
-      // Create device model's render model and add it to the render group
-      //osg::Geode *geode = new osg::Geode;
-      //geode->addDrawable(new osg::ShapeDrawable(new osg::Capsule(osg::Vec3(), radius, height)));
+      // Create device model's transform and add it to the group of all devices
       osg::MatrixTransform *xform = new osg::MatrixTransform;
-      osg::StateSet *ss = xform->getOrCreateStateSet();
-      ss->setTextureAttributeAndModes(0, _deviceNameToData[deviceName]._osgTexture, osg::StateAttribute::ON); // Bind texture
-      //xform->addChild(geode);
-      xform->addChild(_deviceNameToData[deviceName]._osgModel);
-      _deviceIDToModel[deviceID]._renderModel = xform;
+      xform->addChild(_deviceNameToModel[deviceName]);
+      _deviceIDToModel[deviceID]._modelTransform = xform;
       _deviceModels->addChild(xform);
     }
   }
@@ -445,7 +439,7 @@ namespace OpenFrames{
     for (int i = vr::k_unTrackedDeviceIndex_Hmd + 1; i < vr::k_unMaxTrackedDeviceCount; ++i)
     {
       // Only process device if it has been set up
-      if(_deviceIDToModel[i]._renderModel.valid())
+      if(_deviceIDToModel[i]._modelTransform.valid())
       {
         _deviceIDToModel[i]._valid = poses[i].bPoseIsValid;
       }
@@ -472,17 +466,16 @@ namespace OpenFrames{
         matDeviceToWorld.preMultScale(osg::Vec3d(_worldUnitsPerMeter, _worldUnitsPerMeter, _worldUnitsPerMeter));
 
         // Set device model's transform from its adjusted pose in world units
-        osg::MatrixTransform *xform = static_cast<osg::MatrixTransform*>(_deviceIDToModel[i]._renderModel.get());
-        xform->setMatrix(matDeviceToWorld);
+        _deviceIDToModel[i]._modelTransform->setMatrix(matDeviceToWorld);
         
-        // Enable device model
-        _deviceIDToModel[i]._renderModel->setNodeMask(0xffffffff);
+        // Enable device model's transform
+        _deviceIDToModel[i]._modelTransform->setNodeMask(0xffffffff);
       }
 
-      // Otherwise disable its model
+      // Otherwise disable its model transform
       else
       {
-        _deviceIDToModel[i]._renderModel->setNodeMask(0x0);
+        _deviceIDToModel[i]._modelTransform->setNodeMask(0x0);
       }
     }
   }

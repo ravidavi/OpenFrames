@@ -22,6 +22,7 @@
 #include <osg/ref_ptr>
 #include <osg/Referenced>
 #include <osg/Quat>
+#include <osg/MatrixTransform>
 #include <osg/Texture>
 #include <osg/Vec3d>
 
@@ -32,8 +33,8 @@ the user might want to use the Stub version of the OpenVR device.
 namespace vr {
   class IVRSystem;
   class IVRRenderModels;
-  struct RenderModel_t;
-  struct RenderModel_TextureMap_t;
+  //struct RenderModel_t;
+  //struct RenderModel_TextureMap_t;
 }
 
 namespace OpenFrames {
@@ -121,27 +122,16 @@ namespace OpenFrames {
     
     vr::IVRSystem* _vrSystem; // OpenVR interface
     vr::IVRRenderModels* _vrRenderModels; // Controller models
-    
-    /** Encapsulates an OpenVR device's data */
-    struct DeviceData
-    {
-      DeviceData() : _deviceModel(NULL), _deviceTexture(NULL) {}
-      vr::RenderModel_t* _deviceModel;
-      vr::RenderModel_TextureMap_t* _deviceTexture;
-      osg::ref_ptr<osg::Geode> _osgModel;
-      osg::ref_ptr<osg::Texture2D> _osgTexture;
-    };
 
-    /** Map between a device's OpenVR name and its rendering data */
-    typedef std::map<std::string, DeviceData> DeviceDataMap;
-    DeviceDataMap _deviceNameToData;
+    /** Map between a device's OpenVR name and its OSG render model */
+    typedef std::map<std::string, osg::ref_ptr<osg::Geode> > DeviceModelMap;
+    DeviceModelMap _deviceNameToModel;
     
     /** Encapsulates an OpenVR device's model */
     struct DeviceModel
     {
-      DeviceModel() : _data(NULL), _valid(false) {}
-      DeviceData *_data;
-      osg::ref_ptr<osg::Node> _renderModel;
+      DeviceModel() : _valid(false) {}
+      osg::ref_ptr<osg::MatrixTransform> _modelTransform;
       bool _valid;
     };
 
