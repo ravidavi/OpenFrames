@@ -111,13 +111,17 @@ namespace OpenFrames
     if(_useVR)
     {
       OpenVRTrackball *vrTrackball = new OpenVRTrackball(_ovrDevice.get());
-      getCurrentView()->setTrackball(vrTrackball);
-      getCurrentView()->resetTrackball();
+      _defaultView->setTrackball(vrTrackball);
+      _defaultView->resetTrackball();
     }
     
     // Enable the view's trackball
-    _sceneView->setCameraManipulator(getCurrentView()->getTrackball());
+    _sceneView->setCameraManipulator(_defaultView->getTrackball());
     
+    // Add an event generating device to the View to check for OpenVR events
+    if (_useVR)
+      _sceneView->addDevice(new OpenVREventDevice(_ovrDevice.get()));
+
     // Initialize parameters
     _init();
   }

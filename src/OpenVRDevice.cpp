@@ -350,6 +350,24 @@ namespace OpenFrames{
       xform->addChild(_deviceNameToModel[deviceName]);
       _deviceIDToModel[deviceID]._modelTransform = xform;
       _deviceModels->addChild(xform);
+
+      // Get device class
+      vr::ETrackedDeviceClass devClass = _vrSystem->GetTrackedDeviceClass(deviceID);
+      switch (devClass)
+      {
+      case vr::TrackedDeviceClass_HMD:
+        _deviceIDToModel[deviceID]._class = HMD;
+        break;
+      case vr::TrackedDeviceClass_Controller:
+        _deviceIDToModel[deviceID]._class = CONTROLLER;
+        break;
+      case vr::TrackedDeviceClass_TrackingReference:
+        _deviceIDToModel[deviceID]._class = BASESTATION;
+        break;
+      default:
+        _deviceIDToModel[deviceID]._class = NONE;
+        break;
+      }
     }
   }
   
@@ -492,4 +510,63 @@ namespace OpenFrames{
     vr::EVRCompositorError leftError = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
   }
   
+  /*************************************************************/
+  bool OpenVRDevice::pollNextEvent(vr::VREvent_t *pEvent)
+  {
+    bool hasEvent = _vrSystem->PollNextEvent(pEvent, sizeof(vr::VREvent_t));
+    if (hasEvent)
+    {
+      switch (pEvent->eventType)
+      {
+      case vr::VREvent_TrackedDeviceActivated:
+      {
+        // Set up the render model for the new device
+        setupRenderModelForTrackedDevice(pEvent->trackedDeviceIndex);
+      }
+      }
+    }
+    return hasEvent;
+  }
+
+  /*************************************************************/
+  bool OpenVREventDevice::checkEvents()
+  {
+    //vr::VREvent_t event;
+    osg::ref_ptr<OpenVREvent> event = new OpenVREvent;
+    bool hasEvents = false;
+
+    // Loop while OpenVR events are available
+    while (_ovrDevice->pollNextEvent(event->_ovrEvent))
+    {
+      _eventQueue->addEvent(event);
+      event = new OpenVREvent;
+      hasEvents = true;
+    }
+    return hasEvents;
+  }
+
+  /*************************************************************/
+  OpenVREvent::OpenVREvent()
+  {
+    _ovrEvent = new vr::VREvent_t;
+    setEventType(osgGA::GUIEventAdapter::USER);
+  }
+
+  /*************************************************************/
+  bool OpenVRTrackball::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
+  {
+    // Check if incoming event is an OpenVR event
+    const OpenVREvent *event = dynamic_cast<const OpenVREvent*>(&ea);
+    if (event)
+    {
+      vr::VREvent_t *ovrEvent = event->_ovrEvent;
+      vr::TrackedDeviceIndex_t deviceID = ovrEvent->trackedDeviceIndex;
+      return false;
+    }
+    else // Otherwise process it as a regular trackball event
+    {
+      return FollowingTrackball::handle(ea, us);
+    }
+  }
+
 } // !namespace OpenFrames

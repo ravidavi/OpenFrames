@@ -25,6 +25,7 @@
 #include <osg/MatrixTransform>
 #include <osg/Texture>
 #include <osg/Vec3d>
+#include <osgGA/Device>
 
 /** 
 Classes declared in OpenVR header. We don't include the OpenVR header here because
@@ -33,8 +34,7 @@ the user might want to use the Stub version of the OpenVR device.
 namespace vr {
   class IVRSystem;
   class IVRRenderModels;
-  //struct RenderModel_t;
-  //struct RenderModel_TextureMap_t;
+  struct VREvent_t;
 }
 
 namespace OpenFrames {
@@ -73,7 +73,7 @@ namespace OpenFrames {
     
     /** Get render models for devices */
     void updateDeviceRenderModels();
-    osg::Group* getDeviceRenderModels() { return _deviceModels; }
+    osg::Camera* getDeviceRenderModels() { return _deviceModels; }
 
     /** Update and get the per-eye projection matrix */
     void updateProjectionMatrices();
@@ -107,6 +107,9 @@ namespace OpenFrames {
 
     /** Submits the latest rendered eye textures to OpenVR */
     void submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName);
+
+    /** Get the next OpenVR event */
+    bool pollNextEvent(vr::VREvent_t *pEvent);
     
   protected:
     virtual ~OpenVRDevice();
@@ -127,12 +130,21 @@ namespace OpenFrames {
     typedef std::map<std::string, osg::ref_ptr<osg::Geode> > DeviceModelMap;
     DeviceModelMap _deviceNameToModel;
     
+    enum DeviceClass
+    {
+      NONE = 0,
+      HMD = 1,
+      BASESTATION = 2,
+      CONTROLLER = 3
+    };
+
     /** Encapsulates an OpenVR device's model */
     struct DeviceModel
     {
-      DeviceModel() : _valid(false) {}
+      DeviceModel() : _valid(false), _class(NONE) {}
       osg::ref_ptr<osg::MatrixTransform> _modelTransform;
       bool _valid;
+      DeviceClass _class;
     };
 
     /** Vector of each device's rendering data indexed by its OpenVR id */
@@ -153,6 +165,36 @@ namespace OpenFrames {
     osg::Matrixf _hmdPose;
   };
   
+  /******************************************
+  * OpenFrames API, class OpenVREventDevice
+  * Polls for OpenVR events and passes them on event handlers
+  ******************************************/
+  class OpenVREventDevice : public osgGA::Device
+  {
+  public:
+    OpenVREventDevice(OpenVRDevice *ovrDevice)
+      : _ovrDevice(ovrDevice)
+    {
+      setCapabilities(osgGA::Device::RECEIVE_EVENTS);
+    }
+
+    virtual bool checkEvents();
+
+  private:
+    osg::observer_ptr<OpenVRDevice> _ovrDevice;
+  };
+
+  /******************************************
+  * OpenFrames API, class OpenVREvent
+  * Wrap OpenVR events in an OSG-compatible event adapter
+  ******************************************/
+  class OpenVREvent : public osgGA::GUIEventAdapter
+  {
+  public:
+    OpenVREvent();
+    vr::VREvent_t *_ovrEvent;
+  };
+
   /******************************************
    * OpenFrames API, class OpenVRPoseCallback
    * Updates HMD and pose data from OpenVR. This should be attached as an
@@ -210,6 +252,9 @@ namespace OpenFrames {
 
     // Get World to Head matrix
     virtual osg::Matrixd getInverseMatrix() const;
+
+    // Handle event
+    virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us);
 
   private:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
