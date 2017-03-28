@@ -83,7 +83,28 @@ namespace OpenFrames{
     std::string propval(buffer);
     return propval;
   }
-  
+
+  /*************************************************************/
+  OpenVREvent::VREvent::VREvent()
+  {
+    _ovrEvent = new vr::VREvent_t;
+    _controllerState = new vr::VRControllerState_t;
+  }
+
+  /*************************************************************/
+  OpenVREvent::VREvent::~VREvent()
+  {
+    delete _ovrEvent;
+    delete _controllerState;
+  }
+
+  /*************************************************************/
+  void OpenVREvent::VREvent::operator=(const OpenVREvent::VREvent &other)
+  {
+    *_ovrEvent = *(other._ovrEvent);
+    *_controllerState = *(other._controllerState);
+  }
+
   /*************************************************************/
   OpenVRDevice::OpenVRDevice(float worldUnitsPerMeter, float userHeight)
   : _worldUnitsPerMeter(worldUnitsPerMeter),
@@ -511,19 +532,24 @@ namespace OpenFrames{
   }
   
   /*************************************************************/
-  bool OpenVRDevice::pollNextEvent(vr::VREvent_t *pEvent)
+  bool OpenVRDevice::pollNextEvent(OpenVREvent *event)
   {
+    // Get one OpenVR event
+    vr::VREvent_t *pEvent = event->_vrEventData._ovrEvent;
     bool hasEvent = _vrSystem->PollNextEvent(pEvent, sizeof(vr::VREvent_t));
     if (hasEvent)
     {
       switch (pEvent->eventType)
       {
       case vr::VREvent_TrackedDeviceActivated:
-      {
         // Set up the render model for the new device
         setupRenderModelForTrackedDevice(pEvent->trackedDeviceIndex);
+        break;
       }
-      }
+
+      // Get the controller state for the event
+      vr::VRControllerState_t *state = event->_vrEventData._controllerState;
+      _vrSystem->GetControllerState(pEvent->trackedDeviceIndex, state, sizeof(vr::VRControllerState_t));
     }
     return hasEvent;
   }
@@ -531,12 +557,11 @@ namespace OpenFrames{
   /*************************************************************/
   bool OpenVREventDevice::checkEvents()
   {
-    //vr::VREvent_t event;
     osg::ref_ptr<OpenVREvent> event = new OpenVREvent;
     bool hasEvents = false;
 
     // Loop while OpenVR events are available
-    while (_ovrDevice->pollNextEvent(event->_ovrEvent))
+    while (_ovrDevice->pollNextEvent(event))
     {
       _eventQueue->addEvent(event);
       event = new OpenVREvent;
@@ -546,10 +571,15 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
-  OpenVREvent::OpenVREvent()
+  OpenVRTrackball::OpenVRTrackball(OpenVRDevice *ovrDevice)
+    : _ovrDevice(ovrDevice)
   {
-    _ovrEvent = new vr::VREvent_t;
-    setEventType(osgGA::GUIEventAdapter::USER);
+    // Allocate render data for each possible tracked device
+    _deviceIDToEvent.resize(vr::k_unMaxTrackedDeviceCount);
+
+    _motionData._mode = NONE;
+    _motionData._device1ID = 0;
+    _motionData._device2ID = 0;
   }
 
   /*************************************************************/
@@ -559,8 +589,69 @@ namespace OpenFrames{
     const OpenVREvent *event = dynamic_cast<const OpenVREvent*>(&ea);
     if (event)
     {
-      vr::VREvent_t *ovrEvent = event->_ovrEvent;
+      const vr::VREvent_t *ovrEvent = event->_vrEventData._ovrEvent;
       vr::TrackedDeviceIndex_t deviceID = ovrEvent->trackedDeviceIndex;
+      const vr::VRControllerState_t *state = event->_vrEventData._controllerState;
+
+      // If event has an associated device, then save the event info
+      if (deviceID < vr::k_unMaxTrackedDeviceCount) _deviceIDToEvent[deviceID] = event->_vrEventData;
+      else return false;
+
+      switch (ovrEvent->eventType)
+      {
+      case(vr::VREvent_ButtonPress) :
+        osg::notify(osg::NOTICE) << "ButtonPress: DeviceID" << deviceID << ", ButtonID " << ovrEvent->data.controller.button
+          << ", ButtonPressed " << state->ulButtonPressed << std::endl;
+        if (state->ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_Grip))
+        {
+          if (_motionData._mode == NONE)
+          {
+            _motionData._mode = TRANSLATE;
+            _motionData._device1ID = deviceID;
+            _motionData._device2ID = 0;
+            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[deviceID]._modelTransform->getMatrix();
+          }
+          else if ((_motionData._mode == TRANSLATE) && (_motionData._device1ID != deviceID))
+          {
+            _motionData._mode = ZOOM;
+            vr::TrackedDeviceIndex_t device1ID = _motionData._device1ID;
+            _motionData._device2ID = deviceID;
+            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[device1ID]._modelTransform->getMatrix();
+            _motionData._device2InitPose = _ovrDevice->_deviceIDToModel[deviceID]._modelTransform->getMatrix();
+          }
+
+          osg::notify(osg::NOTICE) << "Switching to ";
+          if (_motionData._mode == TRANSLATE) osg::notify(osg::NOTICE) << "TRANSLATE" << std::endl;
+          else if (_motionData._mode == ZOOM) osg::notify(osg::NOTICE) << "ZOOM" << std::endl;
+        }
+        break;
+
+      case(vr::VREvent_ButtonUnpress) :
+        osg::notify(osg::NOTICE) << "ButtonUnpress: DeviceID" << deviceID << ", ButtonID " << ovrEvent->data.controller.button
+          << ", ButtonPressed " << state->ulButtonPressed << std::endl;
+        if (state->ulButtonPressed == 0)
+        {
+          if ((_motionData._mode == TRANSLATE) && (_motionData._device1ID == deviceID))
+          {
+            _motionData._mode = NONE;
+            _motionData._device1ID = 0;
+            _motionData._device2ID = 0;
+          }
+          else if ((_motionData._mode == ZOOM) &&
+            (_motionData._device1ID == deviceID) || (_motionData._device2ID == deviceID))
+          {
+            _motionData._mode = TRANSLATE;
+            _motionData._device1ID = _motionData._device1ID + _motionData._device2ID - deviceID;
+            _motionData._device2ID = 0;
+            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[deviceID]._modelTransform->getMatrix();
+          }
+
+          osg::notify(osg::NOTICE) << "Switching to ";
+          if (_motionData._mode == NONE) osg::notify(osg::NOTICE) << "NONE" << std::endl;
+          else if (_motionData._mode == TRANSLATE) osg::notify(osg::NOTICE) << "TRANSLATE" << std::endl;
+        }
+        break;
+      }
       return false;
     }
     else // Otherwise process it as a regular trackball event
@@ -569,4 +660,17 @@ namespace OpenFrames{
     }
   }
 
+  /*************************************************************/
+  void OpenVRTrackball::updateCamera(osg::Camera& camera)
+  {
+    switch (_motionData._mode)
+    {
+    case(TRANSLATE) :
+      break;
+    case(ZOOM) :
+      break;
+    }
+
+    camera.setViewMatrix(getInverseMatrix());
+  }
 } // !namespace OpenFrames

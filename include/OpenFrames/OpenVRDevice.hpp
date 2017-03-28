@@ -35,11 +35,37 @@ namespace vr {
   class IVRSystem;
   class IVRRenderModels;
   struct VREvent_t;
+  struct VRControllerState001_t;
+  typedef VRControllerState001_t VRControllerState_t;
 }
 
 namespace OpenFrames {
   struct VRTextureBuffer; // Used by OpenVRSwapBuffers below
   
+  /******************************************
+  * OpenFrames API, class OpenVREvent
+  * Wrap OpenVR events in an OSG-compatible event adapter
+  ******************************************/
+  class OpenVREvent : public osgGA::GUIEventAdapter
+  {
+  public:
+    OpenVREvent()
+    {
+      setEventType(osgGA::GUIEventAdapter::USER);
+    }
+
+    struct VREvent
+    {
+      VREvent();
+      ~VREvent();
+
+      void operator=(const VREvent &other);
+
+      vr::VREvent_t *_ovrEvent;
+      vr::VRControllerState_t *_controllerState;
+    } _vrEventData;
+  };
+
   /******************************************
    * Ravi Mathur
    * OpenFrames API, class OpenVRDevice
@@ -109,7 +135,7 @@ namespace OpenFrames {
     void submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName);
 
     /** Get the next OpenVR event */
-    bool pollNextEvent(vr::VREvent_t *pEvent);
+    bool pollNextEvent(OpenVREvent *event);
     
   protected:
     virtual ~OpenVRDevice();
@@ -167,7 +193,7 @@ namespace OpenFrames {
   
   /******************************************
   * OpenFrames API, class OpenVREventDevice
-  * Polls for OpenVR events and passes them on event handlers
+  * Polls for OpenVR events and stores them in its OSG event queue
   ******************************************/
   class OpenVREventDevice : public osgGA::Device
   {
@@ -178,21 +204,11 @@ namespace OpenFrames {
       setCapabilities(osgGA::Device::RECEIVE_EVENTS);
     }
 
+    // Check for events and store them in event queue
     virtual bool checkEvents();
 
   private:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
-  };
-
-  /******************************************
-  * OpenFrames API, class OpenVREvent
-  * Wrap OpenVR events in an OSG-compatible event adapter
-  ******************************************/
-  class OpenVREvent : public osgGA::GUIEventAdapter
-  {
-  public:
-    OpenVREvent();
-    vr::VREvent_t *_ovrEvent;
   };
 
   /******************************************
@@ -256,8 +272,32 @@ namespace OpenFrames {
     // Handle event
     virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us);
 
+    // Update internal view matrix and update the specified camera
+    virtual void updateCamera(osg::Camera& camera);
+
   private:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
+
+    /** Vector of each device's latest event data indexed by its OpenVR id */
+    typedef std::vector<OpenVREvent::VREvent> DeviceEventVector;
+    DeviceEventVector _deviceIDToEvent;
+
+    enum MotionMode
+    {
+      NONE = 0,
+      TRANSLATE = 1,
+      ROTATE = 2,
+      ZOOM = 3
+    };
+
+    struct MotionData
+    {
+      MotionMode _mode;
+      unsigned int _device1ID;
+      unsigned int _device2ID;
+      osg::Matrixd _device1InitPose;
+      osg::Matrixd _device2InitPose;
+    } _motionData;
   };
   
   /******************************************

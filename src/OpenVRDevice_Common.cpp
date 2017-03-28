@@ -66,11 +66,6 @@ namespace OpenFrames{
   }
   
   /*************************************************************/
-  OpenVRTrackball::OpenVRTrackball(OpenVRDevice *ovrDevice)
-  : _ovrDevice(ovrDevice)
-  { }
-  
-  /*************************************************************/
   osg::Matrixd OpenVRTrackball::getInverseMatrix() const
   {
     // Get World to Local view matrix
