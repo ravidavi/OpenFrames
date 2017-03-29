@@ -287,6 +287,7 @@ namespace OpenFrames {
       ZOOM = 3
     };
 
+    /** Data used when computing world transformations during user events */
     struct MotionData
     {
       MotionMode _mode;
@@ -294,7 +295,8 @@ namespace OpenFrames {
       unsigned int _device2ID;
       osg::Matrixd _device1InitPose;
       osg::Matrixd _device2InitPose;
-      double _initWorldUnitsPerMeter;
+      double _origWorldUnitsPerMeter;
+      osg::Vec3d _origCenter;
     } _motionData;
   };
   

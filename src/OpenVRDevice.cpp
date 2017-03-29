@@ -591,37 +591,45 @@ namespace OpenFrames{
     const OpenVREvent *event = dynamic_cast<const OpenVREvent*>(&ea);
     if (event)
     {
+      // Get OpenVR event data
       const vr::VREvent_t *ovrEvent = event->_vrEventData._ovrEvent;
       vr::TrackedDeviceIndex_t deviceID = ovrEvent->trackedDeviceIndex;
       const vr::VRControllerState_t *state = event->_vrEventData._controllerState;
 
-      // If event has an associated device, then save the event info
+      // If event is from a controller, then save the event info
       if ((deviceID < vr::k_unMaxTrackedDeviceCount) && (_ovrDevice->_deviceIDToModel[deviceID]._class == OpenVRDevice::CONTROLLER)) 
         _deviceIDToEvent[deviceID] = event->_vrEventData;
       else return false;
 
+      // Convert controller event types to scene changes in VR space
       switch (ovrEvent->eventType)
       {
       case(vr::VREvent_ButtonPress) :
         osg::notify(osg::NOTICE) << "ButtonPress: DeviceID" << deviceID << ", ButtonID " << ovrEvent->data.controller.button
           << ", ButtonPressed " << state->ulButtonPressed << std::endl;
+
+        // Grip button pressed state transitions: No Motion -> Translate -> Zoom
         if (state->ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_Grip))
         {
+          // Go from No Motion -> Translate when a controller's grip button is pressed
           if (_motionData._mode == NONE)
           {
+            // Translation uses Device 1 to change the trackball's center (i.e. look-at point)
             _motionData._mode = TRANSLATE;
             _motionData._device1ID = deviceID;
-            _motionData._device2ID = 0;
-            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[deviceID]._rawDeviceToWorld;
+            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld;
+            _motionData._origCenter = getCenter();
           }
+
+          // Go from Translate -> Zoom when the "other" controller's grip button is pressed
           else if ((_motionData._mode == TRANSLATE) && (_motionData._device1ID != deviceID))
           {
+            // Zoom uses Device 1 & 2 to change the WorldUnits/Meter ratio
             _motionData._mode = ZOOM;
-            vr::TrackedDeviceIndex_t device1ID = _motionData._device1ID;
             _motionData._device2ID = deviceID;
-            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[device1ID]._rawDeviceToWorld;
-            _motionData._device2InitPose = _ovrDevice->_deviceIDToModel[deviceID]._rawDeviceToWorld;
-            _motionData._initWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
+            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld;
+            _motionData._device2InitPose = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._rawDeviceToWorld;
+            _motionData._origWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
           }
 
           osg::notify(osg::NOTICE) << "Switching to ";
@@ -633,21 +641,28 @@ namespace OpenFrames{
       case(vr::VREvent_ButtonUnpress) :
         osg::notify(osg::NOTICE) << "ButtonUnpress: DeviceID" << deviceID << ", ButtonID " << ovrEvent->data.controller.button
           << ", ButtonPressed " << state->ulButtonPressed << std::endl;
+
+        // Button unpressed state transitions: Zoom -> Translate -> No Motion
         if (state->ulButtonPressed == 0)
         {
+          // Go from Translate -> No Motion when translation controller's grip is unpressed
           if ((_motionData._mode == TRANSLATE) && (_motionData._device1ID == deviceID))
           {
             _motionData._mode = NONE;
-            _motionData._device1ID = 0;
-            _motionData._device2ID = 0;
           }
+
+          // Go from Zoom -> Translate when either zoom controller's grip is unpressed
           else if ((_motionData._mode == ZOOM) &&
             (_motionData._device1ID == deviceID) || (_motionData._device2ID == deviceID))
           {
+            // Translation uses Device 1 to change the trackball's center (i.e. look-at point)
+            // So indicate that the controller with grip button still pressed should be used
+            // for translation computations
             _motionData._mode = TRANSLATE;
             _motionData._device1ID = _motionData._device1ID + _motionData._device2ID - deviceID;
             _motionData._device2ID = 0;
-            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[deviceID]._rawDeviceToWorld;
+            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld;
+            _motionData._origCenter = getCenter();
           }
 
           osg::notify(osg::NOTICE) << "Switching to ";
@@ -667,19 +682,45 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRTrackball::updateCamera(osg::Camera& camera)
   {
+    // Handle world transformations based on current motion mode
     switch (_motionData._mode)
     {
     case(TRANSLATE) :
+    {
+      // Set the trackball center (i.e. look-at point) based on controller location
+      // Start by getting the controller location when the translation was started
+      osg::Vec3d origPos = _motionData._device1InitPose.getTrans();
+
+      // Next get the current controller location
+      osg::Vec3d currPos = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld.getTrans();
+
+      // Compute new center position based on controller motion
+      osg::Vec3d deltaCenter = (origPos - currPos)*_ovrDevice->getWorldUnitsPerMeter();
+      osg::Quat trackballRotation = getRotation();
+      deltaCenter = trackballRotation * deltaCenter; // Convert to trackball reference frame
+      osg::Vec3d newCenter = _motionData._origCenter + deltaCenter;
+      setCenter(newCenter);
       break;
+    }
+
     case(ZOOM) :
+    {
+      // Set the WorldUnits/Meter ratio based on how the controllers are moved together/apart
+      // Start by getting the controller distance when the zoom was started
       osg::Vec3d device1Trans = _motionData._device1InitPose.getTrans();
       osg::Vec3d device2Trans = _motionData._device2InitPose.getTrans();
       double initDist = (device1Trans - device2Trans).length();
+
+      // Next get the current controller distance
       device1Trans = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld.getTrans();
       device2Trans = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._rawDeviceToWorld.getTrans();
       double currDist = (device1Trans - device2Trans).length();
-      _ovrDevice->setWorldUnitsPerMeter(_motionData._initWorldUnitsPerMeter * std::exp((initDist / currDist) - 1.0));
+
+      // Compute new WorldUnits/Meter ratio based on scaled ratio of controller distances
+      double newWorldUnitsPerMeter = _motionData._origWorldUnitsPerMeter * std::exp((initDist / currDist) - 1.0);
+      _ovrDevice->setWorldUnitsPerMeter(newWorldUnitsPerMeter);
       break;
+    }
     }
 
     camera.setViewMatrix(getInverseMatrix());
