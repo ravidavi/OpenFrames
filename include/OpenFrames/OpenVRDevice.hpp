@@ -120,11 +120,7 @@ namespace OpenFrames {
     osg::Matrixf& getHMDPoseMatrix() { return _hmdPose; }
     
     /** Get/set the world units in meters */
-    void setWorldUnitsPerMeter(float worldUnitsPerMeter)
-    {
-      _worldUnitsPerMeter = worldUnitsPerMeter;
-      _ipd = -1.0f; // Indicate that eye offsets should be recomputed
-    }
+    void setWorldUnitsPerMeter(float worldUnitsPerMeter) { _worldUnitsPerMeter = worldUnitsPerMeter; }
     float getWorldUnitsPerMeter() { return _worldUnitsPerMeter; }
     
     /** Get/set the user height in meters */
@@ -169,6 +165,7 @@ namespace OpenFrames {
     {
       DeviceModel() : _valid(false), _class(NONE) {}
       osg::ref_ptr<osg::MatrixTransform> _modelTransform;
+      osg::Matrixd _rawDeviceToWorld;
       bool _valid;
       DeviceClass _class;
     };
@@ -297,6 +294,7 @@ namespace OpenFrames {
       unsigned int _device2ID;
       osg::Matrixd _device1InitPose;
       osg::Matrixd _device2InitPose;
+      double _initWorldUnitsPerMeter;
     } _motionData;
   };
   

@@ -19,6 +19,7 @@
 #include <osg/Matrixd>
 #include <osg/Notify>
 #include <openvr.h>
+#include <cmath>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -432,17 +433,17 @@ namespace OpenFrames{
     if (ipd != _ipd)
     {
       osg::notify(osg::NOTICE) << "OpenVR Interpupillary Distance: " << ipd * 1000.0f << "mm" << std::endl;
-
-      // Scale offsets according to world unit scale
-      rightVec *= -_worldUnitsPerMeter; // Flip direction since we want Head to Eye transform for OSG
-      leftVec *= -_worldUnitsPerMeter;
-      osg::Vec3f centerVec = (rightVec + leftVec)*0.5;
-
-      _rightViewOffset.makeTranslate(rightVec);
-      _leftViewOffset.makeTranslate(leftVec);
-      _centerViewOffset.makeTranslate(centerVec);
       _ipd = ipd;
     }
+
+    // Scale offsets according to world unit scale
+    rightVec *= -_worldUnitsPerMeter; // Flip direction since we want Head to Eye transform for OSG
+    leftVec *= -_worldUnitsPerMeter;
+    osg::Vec3f centerVec = (rightVec + leftVec)*0.5;
+
+    _rightViewOffset.makeTranslate(rightVec);
+    _leftViewOffset.makeTranslate(leftVec);
+    _centerViewOffset.makeTranslate(centerVec);
   }
 
   /*************************************************************/
@@ -491,8 +492,9 @@ namespace OpenFrames{
       // Only extract data if pose is valid
       if (_deviceIDToModel[i]._valid)
       {
-        // Extract the device's Local to World matrix
+        // Extract the device's raw Local to World matrix, given in room coordinates
         convertMatrix34(matDeviceToWorld, poses[i].mDeviceToAbsoluteTracking);
+        _deviceIDToModel[i]._rawDeviceToWorld = matDeviceToWorld;
 
         // Apply world unit translation, and subtract user's height from Y component
         // Note that the OpenVR world frame is Y-up
@@ -594,7 +596,8 @@ namespace OpenFrames{
       const vr::VRControllerState_t *state = event->_vrEventData._controllerState;
 
       // If event has an associated device, then save the event info
-      if (deviceID < vr::k_unMaxTrackedDeviceCount) _deviceIDToEvent[deviceID] = event->_vrEventData;
+      if ((deviceID < vr::k_unMaxTrackedDeviceCount) && (_ovrDevice->_deviceIDToModel[deviceID]._class == OpenVRDevice::CONTROLLER)) 
+        _deviceIDToEvent[deviceID] = event->_vrEventData;
       else return false;
 
       switch (ovrEvent->eventType)
@@ -609,15 +612,16 @@ namespace OpenFrames{
             _motionData._mode = TRANSLATE;
             _motionData._device1ID = deviceID;
             _motionData._device2ID = 0;
-            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[deviceID]._modelTransform->getMatrix();
+            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[deviceID]._rawDeviceToWorld;
           }
           else if ((_motionData._mode == TRANSLATE) && (_motionData._device1ID != deviceID))
           {
             _motionData._mode = ZOOM;
             vr::TrackedDeviceIndex_t device1ID = _motionData._device1ID;
             _motionData._device2ID = deviceID;
-            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[device1ID]._modelTransform->getMatrix();
-            _motionData._device2InitPose = _ovrDevice->_deviceIDToModel[deviceID]._modelTransform->getMatrix();
+            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[device1ID]._rawDeviceToWorld;
+            _motionData._device2InitPose = _ovrDevice->_deviceIDToModel[deviceID]._rawDeviceToWorld;
+            _motionData._initWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
           }
 
           osg::notify(osg::NOTICE) << "Switching to ";
@@ -643,7 +647,7 @@ namespace OpenFrames{
             _motionData._mode = TRANSLATE;
             _motionData._device1ID = _motionData._device1ID + _motionData._device2ID - deviceID;
             _motionData._device2ID = 0;
-            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[deviceID]._modelTransform->getMatrix();
+            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[deviceID]._rawDeviceToWorld;
           }
 
           osg::notify(osg::NOTICE) << "Switching to ";
@@ -668,6 +672,13 @@ namespace OpenFrames{
     case(TRANSLATE) :
       break;
     case(ZOOM) :
+      osg::Vec3d device1Trans = _motionData._device1InitPose.getTrans();
+      osg::Vec3d device2Trans = _motionData._device2InitPose.getTrans();
+      double initDist = (device1Trans - device2Trans).length();
+      device1Trans = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld.getTrans();
+      device2Trans = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._rawDeviceToWorld.getTrans();
+      double currDist = (device1Trans - device2Trans).length();
+      _ovrDevice->setWorldUnitsPerMeter(_motionData._initWorldUnitsPerMeter * std::exp((initDist / currDist) - 1.0));
       break;
     }
 
