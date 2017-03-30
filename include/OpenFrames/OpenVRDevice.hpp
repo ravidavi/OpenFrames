@@ -186,6 +186,9 @@ namespace OpenFrames {
 
     // World to Head view transformation
     osg::Matrixf _hmdPose;
+
+    // Translational offset for each device pose (in VR room-space coordinates)
+    osg::Vec3d _poseOffsetRaw;
   };
   
   /******************************************
@@ -293,11 +296,16 @@ namespace OpenFrames {
       MotionMode _mode;
       unsigned int _device1ID;
       unsigned int _device2ID;
-      osg::Matrixd _device1InitPose;
-      osg::Matrixd _device2InitPose;
+      osg::Matrixd _device1OrigPose;
+      osg::Matrixd _device1OrigPoseRaw;
+      osg::Matrixd _device2OrigPose;
+      osg::Matrixd _device2OrigPoseRaw;
       double _origWorldUnitsPerMeter;
       osg::Vec3d _origCenter;
+      osg::Matrixd _origTrackball;
+      osg::Vec3d _origPoseOffsetRaw;
     } _motionData;
+    void saveCurrentMotionData();
   };
   
   /******************************************

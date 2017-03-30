@@ -463,13 +463,13 @@ namespace OpenFrames{
     {
       // Extract the HMD's Head to World matrix
       convertMatrix34(matDeviceToWorld, hmdPose.mDeviceToAbsoluteTracking);
+      matDeviceToWorld(3, 1) -= _userHeight; // Subtract user's height, OpenVR world is Y-up
+      _deviceIDToModel[0]._rawDeviceToWorld = matDeviceToWorld;
       
-      // The OpenVR HMD units are in meters, so we need to convert its position
-      // to world units. Here we also subtract the user's height from Y component.
-      // Note that the OpenVR world frame is Y-up
-      matDeviceToWorld(3, 0) *= _worldUnitsPerMeter;
-      matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) - _userHeight)*_worldUnitsPerMeter;
-      matDeviceToWorld(3, 2) *= _worldUnitsPerMeter;
+      // Apply apply translational offset and convert from meters to world units
+      matDeviceToWorld(3, 0) = (matDeviceToWorld(3, 0) + _poseOffsetRaw[0])*_worldUnitsPerMeter;
+      matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) + _poseOffsetRaw[1])*_worldUnitsPerMeter;
+      matDeviceToWorld(3, 2) = (matDeviceToWorld(3, 2) + _poseOffsetRaw[2])*_worldUnitsPerMeter;
 
       // Invert since we want World to HMD transform
       _hmdPose.invert(matDeviceToWorld);
@@ -494,13 +494,13 @@ namespace OpenFrames{
       {
         // Extract the device's raw Local to World matrix, given in room coordinates
         convertMatrix34(matDeviceToWorld, poses[i].mDeviceToAbsoluteTracking);
+        matDeviceToWorld(3, 1) -= _userHeight; // Subtract user's height, OpenVR world is Y-up
         _deviceIDToModel[i]._rawDeviceToWorld = matDeviceToWorld;
 
-        // Apply world unit translation, and subtract user's height from Y component
-        // Note that the OpenVR world frame is Y-up
-        matDeviceToWorld(3, 0) *= _worldUnitsPerMeter;
-        matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) - _userHeight)*_worldUnitsPerMeter;
-        matDeviceToWorld(3, 2) *= _worldUnitsPerMeter;
+        // Apply apply translational offset and convert from meters to world units
+        matDeviceToWorld(3, 0) = (matDeviceToWorld(3, 0) + _poseOffsetRaw[0])*_worldUnitsPerMeter;
+        matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) + _poseOffsetRaw[1])*_worldUnitsPerMeter;
+        matDeviceToWorld(3, 2) = (matDeviceToWorld(3, 2) + _poseOffsetRaw[2])*_worldUnitsPerMeter;
 
         // Since the device model is assumed in meters, we need to scale it to world units
         // The normals will need to be rescaled, which is done by the containing Camera
@@ -579,9 +579,9 @@ namespace OpenFrames{
     // Allocate render data for each possible tracked device
     _deviceIDToEvent.resize(vr::k_unMaxTrackedDeviceCount);
 
+    // The motion mode defines how controllers change the scene in response
+    // to user inputs. Start with no motion.
     _motionData._mode = NONE;
-    _motionData._device1ID = 0;
-    _motionData._device2ID = 0;
   }
 
   /*************************************************************/
@@ -617,8 +617,8 @@ namespace OpenFrames{
             // Translation uses Device 1 to change the trackball's center (i.e. look-at point)
             _motionData._mode = TRANSLATE;
             _motionData._device1ID = deviceID;
-            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld;
-            _motionData._origCenter = getCenter();
+            _motionData._device2ID = vr::k_unMaxTrackedDeviceCount; // Disable
+            saveCurrentMotionData();
           }
 
           // Go from Translate -> Zoom when the "other" controller's grip button is pressed
@@ -627,9 +627,7 @@ namespace OpenFrames{
             // Zoom uses Device 1 & 2 to change the WorldUnits/Meter ratio
             _motionData._mode = ZOOM;
             _motionData._device2ID = deviceID;
-            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld;
-            _motionData._device2InitPose = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._rawDeviceToWorld;
-            _motionData._origWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
+            saveCurrentMotionData();
           }
 
           osg::notify(osg::NOTICE) << "Switching to ";
@@ -660,9 +658,8 @@ namespace OpenFrames{
             // for translation computations
             _motionData._mode = TRANSLATE;
             _motionData._device1ID = _motionData._device1ID + _motionData._device2ID - deviceID;
-            _motionData._device2ID = 0;
-            _motionData._device1InitPose = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld;
-            _motionData._origCenter = getCenter();
+            _motionData._device2ID = vr::k_unMaxTrackedDeviceCount; // Disable
+            saveCurrentMotionData();
           }
 
           osg::notify(osg::NOTICE) << "Switching to ";
@@ -689,7 +686,7 @@ namespace OpenFrames{
     {
       // Set the trackball center (i.e. look-at point) based on controller location
       // Start by getting the controller location when the translation was started
-      osg::Vec3d origPos = _motionData._device1InitPose.getTrans();
+      osg::Vec3d origPos = _motionData._device1OrigPoseRaw.getTrans();
 
       // Next get the current controller location
       osg::Vec3d currPos = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld.getTrans();
@@ -699,7 +696,7 @@ namespace OpenFrames{
       osg::Quat trackballRotation = getRotation();
       deltaCenter = trackballRotation * deltaCenter; // Convert to trackball reference frame
       osg::Vec3d newCenter = _motionData._origCenter + deltaCenter;
-      setCenter(newCenter);
+      //setCenter(newCenter);
       break;
     }
 
@@ -707,22 +704,60 @@ namespace OpenFrames{
     {
       // Set the WorldUnits/Meter ratio based on how the controllers are moved together/apart
       // Start by getting the controller distance when the zoom was started
-      osg::Vec3d device1Trans = _motionData._device1InitPose.getTrans();
-      osg::Vec3d device2Trans = _motionData._device2InitPose.getTrans();
-      double initDist = (device1Trans - device2Trans).length();
+      osg::Vec3d device1Trans = _motionData._device1OrigPoseRaw.getTrans();
+      osg::Vec3d device2Trans = _motionData._device2OrigPoseRaw.getTrans();
+      double origDist = (device1Trans - device2Trans).length();
 
-      // Next get the current controller distance
+      // Get the center point between controllers when zoom was started
+      osg::Vec3d origCenter = (device1Trans + device2Trans) * 0.5;
+
+      // Get the current controller distance
       device1Trans = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld.getTrans();
       device2Trans = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._rawDeviceToWorld.getTrans();
       double currDist = (device1Trans - device2Trans).length();
+      double distRatio = origDist / currDist;
+      distRatio = std::pow(distRatio - 1.0, 3.0) + 1.0;
 
       // Compute new WorldUnits/Meter ratio based on scaled ratio of controller distances
-      double newWorldUnitsPerMeter = _motionData._origWorldUnitsPerMeter * std::exp((initDist / currDist) - 1.0);
+      double newWorldUnitsPerMeter = _motionData._origWorldUnitsPerMeter * distRatio;
       _ovrDevice->setWorldUnitsPerMeter(newWorldUnitsPerMeter);
+
+      osg::Vec3d fullOffsetChange, newPoseOffsetRaw;
+      if (distRatio >= 1.0)
+      {
+        fullOffsetChange = -origCenter - _motionData._origPoseOffsetRaw;
+        newPoseOffsetRaw = _motionData._origPoseOffsetRaw + fullOffsetChange*(1.0 - 1.0 / distRatio);
+      }
+      else
+      {
+        fullOffsetChange = -_motionData._origPoseOffsetRaw;
+        newPoseOffsetRaw = _motionData._origPoseOffsetRaw + fullOffsetChange*(1.0 - distRatio);
+        newPoseOffsetRaw = _ovrDevice->_poseOffsetRaw;
+      }
+      _ovrDevice->_poseOffsetRaw = newPoseOffsetRaw;
+
       break;
     }
     }
 
     camera.setViewMatrix(getInverseMatrix());
+  }
+
+  /*************************************************************/
+  void OpenVRTrackball::saveCurrentMotionData()
+  {
+    _motionData._device1OrigPoseRaw = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld;
+    _motionData._device1OrigPose = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._modelTransform->getMatrix();
+
+    if (_motionData._device2ID < vr::k_unMaxTrackedDeviceCount)
+    {
+      _motionData._device2OrigPoseRaw = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._rawDeviceToWorld;
+      _motionData._device2OrigPose = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._modelTransform->getMatrix();
+    }
+
+    _motionData._origWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
+    _motionData._origCenter = osgGA::TrackballManipulator::getCenter();
+    _motionData._origTrackball = osgGA::TrackballManipulator::getMatrix();
+    _motionData._origPoseOffsetRaw = _ovrDevice->_poseOffsetRaw;
   }
 } // !namespace OpenFrames
