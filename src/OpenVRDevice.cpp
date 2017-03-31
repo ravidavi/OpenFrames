@@ -689,15 +689,26 @@ namespace OpenFrames{
       osg::Vec3d origPos = _motionData._device1OrigPose.getTrans();
 
       // Convert to position relative to trackball center
-      origPos = origPos * _motionData._origTrackball;
+      osg::Vec3d origPosWorld = origPos * _motionData._origTrackball;
 
       // Next get the current controller location relative to trackball center
       osg::Vec3d currPos = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._modelTransform->getMatrix().getTrans();
-      currPos = currPos * _motionData._origTrackball;
+      osg::Vec3d currPosWorld = currPos * _motionData._origTrackball;
 
+      // Compute the rotation from current -> original controller positions
       osg::Quat deltaRotation;
-      deltaRotation.makeRotate(currPos, origPos);
+      deltaRotation.makeRotate(currPosWorld, origPosWorld);
       osgGA::TrackballManipulator::setRotation(_motionData._origRotation*deltaRotation);
+
+      // Change in original -> current controller distances
+      double deltaDistance = currPosWorld.length() - origPosWorld.length();
+
+      // Zoom direction transformed back to room space (but still in world units)
+      currPosWorld.normalize();
+      osg::Vec3d deltaOffsetDirection = osgGA::TrackballManipulator::getRotation()*currPosWorld;
+
+      // Current controller vector
+      //_ovrDevice->_poseOffsetRaw = _motionData._origPoseOffsetRaw + deltaOffsetDirection*deltaDistance / _motionData._origWorldUnitsPerMeter;
 
       break;
     }
@@ -763,6 +774,7 @@ namespace OpenFrames{
     _motionData._origWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
     _motionData._origCenter = osgGA::TrackballManipulator::getCenter();
     _motionData._origRotation = osgGA::TrackballManipulator::getRotation();
+    _motionData._origDistance = osgGA::TrackballManipulator::getDistance();
     _motionData._origTrackball = osgGA::TrackballManipulator::getMatrix();
     _motionData._origPoseOffsetRaw = _ovrDevice->_poseOffsetRaw;
   }
