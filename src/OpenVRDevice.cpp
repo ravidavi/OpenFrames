@@ -722,17 +722,9 @@ namespace OpenFrames{
       double newWorldUnitsPerMeter = _motionData._origWorldUnitsPerMeter * distRatio;
       _ovrDevice->setWorldUnitsPerMeter(newWorldUnitsPerMeter);
 
-      osg::Vec3d fullOffsetChange, newPoseOffsetRaw;
-      if (distRatio >= 1.0)
-      {
-        fullOffsetChange = -origCenter - _motionData._origPoseOffsetRaw;
-        newPoseOffsetRaw = _motionData._origPoseOffsetRaw + fullOffsetChange*(1.0 - 1.0 / distRatio);
-      }
-      else
-      {
-        newPoseOffsetRaw = _ovrDevice->_poseOffsetRaw;
-      }
-      _ovrDevice->_poseOffsetRaw = newPoseOffsetRaw;
+      // Compute new pose offset location
+      osg::Vec3d fullOffsetChange = -origCenter - _motionData._origPoseOffsetRaw;
+      _ovrDevice->_poseOffsetRaw = _motionData._origPoseOffsetRaw + fullOffsetChange*(1.0 - 1.0 / distRatio);
 
       break;
     }
