@@ -111,7 +111,10 @@ namespace OpenFrames
     if(_useVR)
     {
       OpenVRTrackball *vrTrackball = new OpenVRTrackball(_ovrDevice.get());
+      float fovy, ratio, zNear, zFar;
+      _ovrDevice->getCenterProjectionMatrix().getPerspective(fovy, ratio, zNear, zFar);
       _defaultView->setTrackball(vrTrackball);
+      _defaultView->setPerspective(fovy, ratio);
       _defaultView->resetTrackball();
     }
     
@@ -421,7 +424,10 @@ namespace OpenFrames
         if(!vrTrackball)
         {
           vrTrackball = new OpenVRTrackball(_ovrDevice.get());
+          float fovy, ratio, zNear, zFar;
+          _ovrDevice->getCenterProjectionMatrix().getPerspective(fovy, ratio, zNear, zFar);
           view->setTrackball(vrTrackball);
+          view->setPerspective(fovy, ratio);
           view->resetTrackball();
         }
       }

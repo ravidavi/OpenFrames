@@ -240,7 +240,7 @@ namespace OpenFrames
       
       // Trig time! Compute distance such that fov covers bounding sphere radius
       // Include buffer for decorations (e.g. axes, labels)
-      dist = 2.0*bs._radius / std::tan(fovy*osg::PI/180.0);
+      dist = 2.0*bs._radius / std::tan((fovy/2.0)*(osg::PI/180.0));
     }
     
     // Set the trackball's home position
