@@ -285,9 +285,9 @@ namespace OpenFrames {
     enum MotionMode
     {
       NONE = 0,
-      TRANSLATE = 1,
-      ROTATE = 2,
-      ZOOM = 3
+      TRANSLATE,
+      ROTATEZOOM,
+      SCALE
     };
 
     /** Data used when computing world transformations during user events */
