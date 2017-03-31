@@ -302,6 +302,7 @@ namespace OpenFrames {
       osg::Matrixd _device2OrigPoseRaw;
       double _origWorldUnitsPerMeter;
       osg::Vec3d _origCenter;
+      osg::Quat _origRotation;
       osg::Matrixd _origTrackball;
       osg::Vec3d _origPoseOffsetRaw;
     } _motionData;

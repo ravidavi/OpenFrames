@@ -684,12 +684,27 @@ namespace OpenFrames{
     {
     case(ROTATEZOOM) :
     {
+      // Set the trackball rotation and distance based on controller motion
+      // Start by getting the controller location when the button was pressed
+      osg::Vec3d origPos = _motionData._device1OrigPose.getTrans();
+
+      // Convert to position relative to trackball center
+      origPos = origPos * _motionData._origTrackball;
+
+      // Next get the current controller location relative to trackball center
+      osg::Vec3d currPos = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._modelTransform->getMatrix().getTrans();
+      currPos = currPos * _motionData._origTrackball;
+
+      osg::Quat deltaRotation;
+      deltaRotation.makeRotate(currPos, origPos);
+      osgGA::TrackballManipulator::setRotation(_motionData._origRotation*deltaRotation);
+
       break;
     }
     case(TRANSLATE) :
     {
       // Set the device pose offset based on controller location
-      // Start by getting the controller location when the translation was started
+      // Start by getting the controller location when the button was pressed
       osg::Vec3d origPos = _motionData._device1OrigPoseRaw.getTrans();
 
       // Next get the current controller location
@@ -703,7 +718,7 @@ namespace OpenFrames{
     case(SCALE) :
     {
       // Set the WorldUnits/Meter ratio based on how the controllers are moved together/apart
-      // Start by getting the controller distance when the scale operation was started
+      // Start by getting the controller distance when the action was started
       osg::Vec3d device1Trans = _motionData._device1OrigPoseRaw.getTrans();
       osg::Vec3d device2Trans = _motionData._device2OrigPoseRaw.getTrans();
       double origDist = (device1Trans - device2Trans).length();
@@ -747,6 +762,7 @@ namespace OpenFrames{
 
     _motionData._origWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
     _motionData._origCenter = osgGA::TrackballManipulator::getCenter();
+    _motionData._origRotation = osgGA::TrackballManipulator::getRotation();
     _motionData._origTrackball = osgGA::TrackballManipulator::getMatrix();
     _motionData._origPoseOffsetRaw = _ovrDevice->_poseOffsetRaw;
   }
