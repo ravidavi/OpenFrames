@@ -332,7 +332,7 @@ namespace OpenFrames{
       // Create OSG image to hold OpenVR image data
       uint16_t width = deviceTexture->unWidth;
       uint16_t height = deviceTexture->unHeight;
-      osg::notify(osg::NOTICE) << "Texture width = " << width << ", height = " << height << std::endl;
+      //osg::notify(osg::NOTICE) << "Texture width = " << width << ", height = " << height << std::endl;
       osg::Image *image = new osg::Image;
       image->setImage(width, height, 1, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, 
         (unsigned char*)(deviceTexture->rubTextureMapData), osg::Image::NO_DELETE);
@@ -372,6 +372,9 @@ namespace OpenFrames{
       xform->addChild(_deviceNameToModel[deviceName]);
       _deviceIDToModel[deviceID]._modelTransform = xform;
       _deviceModels->addChild(xform);
+
+      // Disable all devices, controllers will be enabled when getting their pose
+      xform->setNodeMask(0x0);
 
       // Get device class
       vr::ETrackedDeviceClass devClass = _vrSystem->GetTrackedDeviceClass(deviceID);
@@ -488,6 +491,9 @@ namespace OpenFrames{
         _deviceIDToModel[i]._valid = false;
         continue;
       }
+
+      // Only extract data for controllers
+      if (_deviceIDToModel[i]._class != CONTROLLER) continue;
 
       // Only extract data if pose is valid
       if (_deviceIDToModel[i]._valid)
@@ -700,15 +706,15 @@ namespace OpenFrames{
       deltaRotation.makeRotate(currPosWorld, origPosWorld);
       osgGA::TrackballManipulator::setRotation(_motionData._origRotation*deltaRotation);
 
-      // Change in original -> current controller distances
+      // Change in original -> current controller distance
       double deltaDistance = currPosWorld.length() - origPosWorld.length();
 
-      // Zoom direction transformed back to room space (but still in world units)
+      // Zoom direction transformed back to room space
       currPosWorld.normalize();
-      osg::Vec3d deltaOffsetDirection = osgGA::TrackballManipulator::getRotation()*currPosWorld;
+      osg::Vec3d deltaOffsetDirection = osgGA::TrackballManipulator::getRotation().inverse()*currPosWorld;
 
-      // Current controller vector
-      //_ovrDevice->_poseOffsetRaw = _motionData._origPoseOffsetRaw + deltaOffsetDirection*deltaDistance / _motionData._origWorldUnitsPerMeter;
+      // Move pose offset in the appropriate direction
+      _ovrDevice->_poseOffsetRaw = _motionData._origPoseOffsetRaw - deltaOffsetDirection*deltaDistance / _motionData._origWorldUnitsPerMeter;
 
       break;
     }
