@@ -569,11 +569,13 @@ namespace OpenFrames{
     bool hasEvents = false;
 
     // Loop while OpenVR events are available
+    event->setTime(osg::Timer::instance()->delta_s(_eventQueue->getStartTick(), osg::Timer::instance()->tick()));
     while (_ovrDevice->pollNextEvent(event))
     {
+      hasEvents = true;
       _eventQueue->addEvent(event);
       event = new OpenVREvent;
-      hasEvents = true;
+      event->setTime(osg::Timer::instance()->delta_s(_eventQueue->getStartTick(), osg::Timer::instance()->tick()));
     }
     return hasEvents;
   }
@@ -588,6 +590,8 @@ namespace OpenFrames{
     // The motion mode defines how controllers change the scene in response
     // to user inputs. Start with no motion.
     _motionData._mode = NONE;
+    _motionData._prevMode = ROTATE; // Initial button press will go to Rotate mode
+    _motionData._prevTime = 0.0;
   }
 
   /*************************************************************/
@@ -607,28 +611,30 @@ namespace OpenFrames{
         _deviceIDToEvent[deviceID] = event->_vrEventData;
       else return false;
 
-      // Convert controller event types to scene changes in VR space
+      // Convert controller event types to view changes in VR space
       switch (ovrEvent->eventType)
       {
       case(vr::VREvent_ButtonPress) :
 
-        // Grip button pressed state transitions: No Motion -> RotateZoom -> Scale
+        // Grip button pressed state transitions: No Motion -> Translate/Rotate -> Scale
         if (state->ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_Grip))
         {
-          // Go from No Motion -> Translate when a controller's grip button is pressed
+          // Go from No Motion -> Translate/Rotate when a controller's grip button is pressed
           if (_motionData._mode == NONE)
           {
-            // Rotation/Zoom uses Device 1 to rotate the trackball
-            _motionData._mode = ROTATEZOOM;
+            // Translate/Rotate uses Device 1 to control the view
+            _motionData._mode = _motionData._prevMode;
             _motionData._device1ID = deviceID;
-            _motionData._device2ID = vr::k_unMaxTrackedDeviceCount; // Disable
+            _motionData._device2ID = vr::k_unMaxTrackedDeviceCount; // Ignore device 2
             saveCurrentMotionData();
           }
 
-          // Go from Rotate/Zoom -> Scale when the "other" controller's grip button is pressed
-          else if (((_motionData._mode == ROTATEZOOM) || (_motionData._mode == TRANSLATE)) && (_motionData._device1ID != deviceID))
+          // Go from Translate/Rotate -> Scale when the "other" controller's grip button is pressed
+          else if (((_motionData._mode == TRANSLATE) || (_motionData._mode == ROTATE)) && (_motionData._device1ID != deviceID))
           {
             // Scale uses Device 1 & 2 to change the WorldUnits/Meter ratio
+            _motionData._prevMode = _motionData._mode; // Save current mode
+            _motionData._prevTime = event->getTime(); // Save event time
             _motionData._mode = SCALE;
             _motionData._device2ID = deviceID;
             saveCurrentMotionData();
@@ -636,31 +642,50 @@ namespace OpenFrames{
 
           osg::notify(osg::NOTICE) << "Switching to ";
           if (_motionData._mode == NONE) osg::notify(osg::NOTICE) << "NONE" << std::endl;
-          else if (_motionData._mode == ROTATEZOOM) osg::notify(osg::NOTICE) << "ROTATEZOOM" << std::endl;
           else if (_motionData._mode == TRANSLATE) osg::notify(osg::NOTICE) << "TRANSLATE" << std::endl;
+          else if (_motionData._mode == ROTATE) osg::notify(osg::NOTICE) << "ROTATE" << std::endl;
           else if (_motionData._mode == SCALE) osg::notify(osg::NOTICE) << "SCALE" << std::endl;
         }
         break;
 
       case(vr::VREvent_ButtonUnpress) :
 
-        // Button unpressed state transitions: Scale -> Translate -> No Motion
+        // Button unpressed state transitions: Scale -> Translate/Rotate -> No Motion
         if (state->ulButtonPressed == 0)
         {
-          // Go from Translate -> No Motion when translation controller's grip is unpressed
-          if (((_motionData._mode == TRANSLATE) || (_motionData._mode == ROTATEZOOM)) && (_motionData._device1ID == deviceID))
+          // Go from Translate/Rotate -> No Motion when controller's grip is unpressed
+          if (((_motionData._mode == TRANSLATE) || (_motionData._mode == ROTATE)) && (_motionData._device1ID == deviceID))
           {
+            _motionData._prevMode = _motionData._mode;
             _motionData._mode = NONE;
           }
 
-          // Go from Scale -> Translate when either controller's grip is unpressed
+          // Go from Scale -> Translate/Rotate when either controller's grip is unpressed
           else if ((_motionData._mode == SCALE) &&
             (_motionData._device1ID == deviceID) || (_motionData._device2ID == deviceID))
           {
-            // Translation uses Device 1 to change the trackball's center (i.e. look-at point)
-            // So indicate that the controller with grip button still pressed should be used
-            // for translation computations
-            _motionData._mode = TRANSLATE;
+            // If the second grip button was just tapped, then switch translate/rotate modes
+            // Otherwise it was actually pressed so keep the previous translate/rotate mode
+            // Alternatively, if the WorldUnits/Meter scale was actually changed, then keep
+            // the previous translate/rotate mode even if the grip button was just tapped.
+            const double tapDuration = 0.5;
+            const double maxScaleChange = 0.01;
+            double pressDuration = event->getTime() - _motionData._prevTime;
+            double scaleChange = std::abs(_motionData._origWorldUnitsPerMeter / _ovrDevice->getWorldUnitsPerMeter() - 1.0);
+            if ((pressDuration >= tapDuration) || (scaleChange > maxScaleChange))
+            {
+              _motionData._mode = _motionData._prevMode;
+            }
+            else if (_motionData._prevMode == TRANSLATE) _motionData._mode = ROTATE;
+            else if (_motionData._prevMode == ROTATE) _motionData._mode = TRANSLATE;
+            else
+            {
+              osg::notify(osg::WARN) << "OpenFrames::OpenVRTrackball WARNING: previous mode invalid. Defaulting to TRANSLATE." << std::endl;
+              _motionData._mode = TRANSLATE;
+            }
+
+            // Translate/Rotate uses Device 1 to control the view, so indicate that the
+            // controller with grip button still pressed should be used for view changes
             _motionData._device1ID = _motionData._device1ID + _motionData._device2ID - deviceID;
             _motionData._device2ID = vr::k_unMaxTrackedDeviceCount; // Disable
             saveCurrentMotionData();
@@ -668,8 +693,8 @@ namespace OpenFrames{
 
           osg::notify(osg::NOTICE) << "Switching to ";
           if (_motionData._mode == NONE) osg::notify(osg::NOTICE) << "NONE" << std::endl;
-          else if (_motionData._mode == ROTATEZOOM) osg::notify(osg::NOTICE) << "ROTATEZOOM" << std::endl;
           else if (_motionData._mode == TRANSLATE) osg::notify(osg::NOTICE) << "TRANSLATE" << std::endl;
+          else if (_motionData._mode == ROTATE) osg::notify(osg::NOTICE) << "ROTATE" << std::endl;
           else if (_motionData._mode == SCALE) osg::notify(osg::NOTICE) << "SCALE" << std::endl;
         }
         break;
@@ -688,7 +713,7 @@ namespace OpenFrames{
     // Handle world transformations based on current motion mode
     switch (_motionData._mode)
     {
-    case(ROTATEZOOM) :
+    case(ROTATE) :
     {
       // Set the trackball rotation and distance based on controller motion
       // Start by getting the controller location when the button was pressed
@@ -698,23 +723,24 @@ namespace OpenFrames{
       osg::Vec3d origPosWorld = origPos * _motionData._origTrackball;
 
       // Next get the current controller location relative to trackball center
-      osg::Vec3d currPos = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._modelTransform->getMatrix().getTrans();
+      osg::Matrixd device1CurrPose = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._modelTransform->getMatrix();
+      osg::Vec3d currPos = device1CurrPose.getTrans();
       osg::Vec3d currPosWorld = currPos * _motionData._origTrackball;
 
       // Compute the rotation from current -> original controller positions
       osg::Quat deltaRotation;
       deltaRotation.makeRotate(currPosWorld, origPosWorld);
-      osgGA::TrackballManipulator::setRotation(_motionData._origRotation*deltaRotation);
+      osg::Quat newRotation(_motionData._origRotation);
+      newRotation *= deltaRotation;
+      osgGA::TrackballManipulator::setRotation(newRotation);
 
-      // Change in original -> current controller distance
-      double deltaDistance = currPosWorld.length() - origPosWorld.length();
-
-      // Zoom direction transformed back to room space
-      currPosWorld.normalize();
-      osg::Vec3d deltaOffsetDirection = osgGA::TrackballManipulator::getRotation().inverse()*currPosWorld;
-
-      // Move pose offset in the appropriate direction
-      _ovrDevice->_poseOffsetRaw = _motionData._origPoseOffsetRaw - deltaOffsetDirection*deltaDistance / _motionData._origWorldUnitsPerMeter;
+      // If we keep the original state constant, then it's likely that the user will try to do
+      // a 180-degree rotation which is singular (no Quat::makeRotate solution). Therefore we save
+      // the new pose state at each frame, which results in incremental rotations instead of one
+      // big rotation from the initial to final controller positions.
+      _motionData._device1OrigPose = device1CurrPose;
+      _motionData._origTrackball = osgGA::TrackballManipulator::getMatrix();
+      _motionData._origRotation = newRotation;
 
       break;
     }

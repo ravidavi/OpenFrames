@@ -286,7 +286,7 @@ namespace OpenFrames {
     {
       NONE = 0,
       TRANSLATE,
-      ROTATEZOOM,
+      ROTATE,
       SCALE
     };
 
@@ -294,6 +294,8 @@ namespace OpenFrames {
     struct MotionData
     {
       MotionMode _mode;
+      MotionMode _prevMode;
+      double _prevTime;
       unsigned int _device1ID;
       unsigned int _device2ID;
       osg::Matrixd _device1OrigPose;
