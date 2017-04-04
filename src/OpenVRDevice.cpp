@@ -42,7 +42,7 @@ namespace OpenFrames{
   /*************************************************************/
   /** Transpose a 3x4 OpenVR matrix to an osg::Matrix */
   /*************************************************************/
-  static void convertMatrix34(osg::Matrixf &mat, const vr::HmdMatrix34_t &mat34)
+  static void convertMatrix34(osg::Matrixd &mat, const vr::HmdMatrix34_t &mat34)
   {
     mat.set(
             mat34.m[0][0], mat34.m[1][0], mat34.m[2][0], 0.0,
@@ -55,7 +55,7 @@ namespace OpenFrames{
   /*************************************************************/
   /** Transpose a 4x4 OpenVR matrix to an osg::Matrix */
   /*************************************************************/
-  static void convertMatrix44(osg::Matrixf &mat, const vr::HmdMatrix44_t &mat44)
+  static void convertMatrix44(osg::Matrixd &mat, const vr::HmdMatrix44_t &mat44)
   {
     mat.set(
             mat44.m[0][0], mat44.m[1][0], mat44.m[2][0], mat44.m[3][0],
@@ -412,24 +412,27 @@ namespace OpenFrames{
     convertMatrix44(_leftProj, proj);
 
     // Center projection is average of right and left
-    _centerProj = (_rightProj + _leftProj)*0.5;
+    // OSG doesn't have a matrix addition for Matrixd (facepalm)
+    osg::Matrixf rightProjf = _rightProj;
+    osg::Matrixf leftProjf = _leftProj;
+    _centerProj = (rightProjf + leftProjf)*0.5;
   }
 
   /*************************************************************/
   void OpenVRDevice::updateViewOffsets()
   {
     vr::HmdMatrix34_t view;
-    osg::Matrixf viewMat;
+    osg::Matrixd viewMat;
 
     // Get right eye view
     view = _vrSystem->GetEyeToHeadTransform(vr::Eye_Right);
     convertMatrix34(viewMat, view);
-    osg::Vec3f rightVec = viewMat.getTrans();
+    osg::Vec3d rightVec = viewMat.getTrans();
 
     // Get left eye view
     view = _vrSystem->GetEyeToHeadTransform(vr::Eye_Left);
     convertMatrix34(viewMat, view);
-    osg::Vec3f leftVec = viewMat.getTrans();
+    osg::Vec3d leftVec = viewMat.getTrans();
 
     // If IPD has changed, then recompute offset matrices
     float ipd = (rightVec - leftVec).length();
@@ -442,7 +445,7 @@ namespace OpenFrames{
     // Scale offsets according to world unit scale
     rightVec *= -_worldUnitsPerMeter; // Flip direction since we want Head to Eye transform for OSG
     leftVec *= -_worldUnitsPerMeter;
-    osg::Vec3f centerVec = (rightVec + leftVec)*0.5;
+    osg::Vec3d centerVec = (rightVec + leftVec)*0.5;
 
     _rightViewOffset.makeTranslate(rightVec);
     _leftViewOffset.makeTranslate(leftVec);
@@ -458,7 +461,7 @@ namespace OpenFrames{
       poses[i].bPoseIsValid = false;
     vr::VRCompositor()->WaitGetPoses(poses, vr::k_unMaxTrackedDeviceCount, NULL, 0);
     
-    osg::Matrixf matDeviceToWorld; // Device to World transform
+    osg::Matrixd matDeviceToWorld; // Device to World transform
 
     // Update view data using HMD pose
     const vr::TrackedDevicePose_t& hmdPose = poses[vr::k_unTrackedDeviceIndex_Hmd];

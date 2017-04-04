@@ -103,29 +103,29 @@ namespace OpenFrames {
 
     /** Update and get the per-eye projection matrix */
     void updateProjectionMatrices();
-    osg::Matrixf& getRightEyeProjectionMatrix() { return _rightProj; }
-    osg::Matrixf& getLeftEyeProjectionMatrix() { return _leftProj; }
-    osg::Matrixf& getCenterProjectionMatrix() { return _centerProj; }
+    osg::Matrixd& getRightEyeProjectionMatrix() { return _rightProj; }
+    osg::Matrixd& getLeftEyeProjectionMatrix() { return _leftProj; }
+    osg::Matrixd& getCenterProjectionMatrix() { return _centerProj; }
 
     /** Update and get the per-eye view matrix */
     void updateViewOffsets();
-    osg::Matrixf& getRightEyeViewOffsetMatrix() { return _rightViewOffset; }
-    osg::Matrixf& getLeftEyeViewOffsetMatrix() { return _leftViewOffset; }
-    osg::Matrixf& getCenterViewOffsetMatrix() { return _centerViewOffset; }
+    osg::Matrixd& getRightEyeViewOffsetMatrix() { return _rightViewOffset; }
+    osg::Matrixd& getLeftEyeViewOffsetMatrix() { return _leftViewOffset; }
+    osg::Matrixd& getCenterViewOffsetMatrix() { return _centerViewOffset; }
 
     /** Update poses (positions/orientations) of all VR devices, and wait
      for the signal to start rendering. Note that this should be called
      just before the start of the rendering pass. */
     void waitGetPoses();
-    osg::Matrixf& getHMDPoseMatrix() { return _hmdPose; }
+    osg::Matrixd& getHMDPoseMatrix() { return _hmdPose; }
     
     /** Get/set the world units in meters */
     void setWorldUnitsPerMeter(float worldUnitsPerMeter) { _worldUnitsPerMeter = worldUnitsPerMeter; }
     float getWorldUnitsPerMeter() { return _worldUnitsPerMeter; }
     
     /** Get/set the user height in meters */
-    void setUserHeight(float userHeight) { _userHeight = userHeight; }
-    float getUserHeightInMeters() { return _userHeight; }
+    void setUserHeight(double userHeight) { _userHeight = userHeight; }
+    double getUserHeightInMeters() { return _userHeight; }
 
     /** Submits the latest rendered eye textures to OpenVR */
     void submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName);
@@ -139,8 +139,8 @@ namespace OpenFrames {
     /** Load a device's render model by its OpenVR ID */
     void setupRenderModelForTrackedDevice(uint32_t deviceID);
     
-    float _worldUnitsPerMeter; // Distance units per real-world meter
-    float _userHeight; // Height of user's HMD origin in meters
+    double _worldUnitsPerMeter; // Distance units per real-world meter
+    double _userHeight; // Height of user's HMD origin in meters
     int _width, _height; // Per-eye texture dimensions
     
     bool _isInitialized; // Whether OpenVR is initialized
@@ -178,14 +178,14 @@ namespace OpenFrames {
     osg::ref_ptr<osg::Camera> _deviceModels;
     
     // Per-eye asymmetric projection matrices
-    osg::Matrixf _rightProj, _leftProj, _centerProj;
+    osg::Matrixd _rightProj, _leftProj, _centerProj;
     
     // Per-eye view matrices, transform Head to Eye space
-    osg::Matrixf _rightViewOffset, _leftViewOffset, _centerViewOffset;
-    float _ipd; // Interpupillary distance
+    osg::Matrixd _rightViewOffset, _leftViewOffset, _centerViewOffset;
+    double _ipd; // Interpupillary distance
 
     // World to Head view transformation
-    osg::Matrixf _hmdPose;
+    osg::Matrixd _hmdPose;
 
     // Translational offset for each device pose (in VR room-space coordinates)
     osg::Vec3d _poseOffsetRaw;
