@@ -125,7 +125,7 @@ namespace OpenFrames {
     
     /** Get/set the user height in meters */
     void setUserHeight(double userHeight) { _userHeight = userHeight; }
-    double getUserHeightInMeters() { return _userHeight; }
+    double getUserHeight() { return _userHeight; }
 
     /** Submits the latest rendered eye textures to OpenVR */
     void submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName);

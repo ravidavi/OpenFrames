@@ -125,6 +125,9 @@ void SkySphere::_init()
     _starBinGeoms[i] = new osg::Geometry;
     _starBinGeoms[i]->setName("StarFieldDrawable"+std::to_string(i));
     _starBinGeoms[i]->setStateSet(ss);
+    _starBinGeoms[i]->setUseDisplayList(false);
+    _starBinGeoms[i]->setUseVertexBufferObjects(true);
+    _starBinGeoms[i]->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);
     _starBinGeoms[i]->setVertexArray(new osg::Vec3Array());
     osg::Vec4Array *colors = new osg::Vec4Array;
     colors->setBinding(osg::Array::BIND_PER_VERTEX);

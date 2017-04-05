@@ -713,6 +713,13 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRTrackball::updateCamera(osg::Camera& camera)
   {
+    // Exaggerate controller motion beyond a predetermined distance threshold so that
+    // the view can be moved faster with larger controller motions.
+    // Note that threshold distance depends on arm length, which depends on height.
+    // Height/Armspan = 1.0 and ShoulderWidth/Height = 0.3 (see Golden Ratio)
+    double armLength = (_ovrDevice->getUserHeight()*0.7) / 2.0; // [meters]
+    double fastMotionThreshold = 1.0 - armLength / 4.0;
+
     // Handle world transformations based on current motion mode
     switch (_motionData._mode)
     {
@@ -747,6 +754,7 @@ namespace OpenFrames{
 
       break;
     }
+
     case(TRANSLATE) :
     {
       // Set the device pose offset based on controller location
@@ -756,8 +764,17 @@ namespace OpenFrames{
       // Next get the current controller location
       osg::Vec3d currPos = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld.getTrans();
 
+      // Move pose offset in the opposite direction as controller motion.
+      osg::Vec3d deltaPos = origPos - currPos;
+      double deltaLen = deltaPos.length() + fastMotionThreshold;
+      if (deltaLen > 1.0)
+      {
+        deltaPos *= deltaLen*deltaLen;
+      }
+
       // Compute new pose offset based on controller motion
-      _ovrDevice->_poseOffsetRaw = _motionData._origPoseOffsetRaw + origPos - currPos;
+      _ovrDevice->_poseOffsetRaw = _motionData._origPoseOffsetRaw + deltaPos;
+
       break;
     }
 
@@ -775,8 +792,14 @@ namespace OpenFrames{
       // Get the current controller distance
       device1Trans = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld.getTrans();
       device2Trans = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._rawDeviceToWorld.getTrans();
+      osg::Vec3d currCenter = (device1Trans + device2Trans) * 0.5; // Center point between controllers
       double currDist = (device1Trans - device2Trans).length();
-      double distRatio = origDist / currDist;
+      double distRatio = origDist / currDist; // controllers apart -> 0, controllers together -> inf
+      double deltaLen = std::abs(currDist - origDist) + fastMotionThreshold;
+      if (deltaLen > 1.0)
+      {
+        distRatio = std::pow(distRatio, deltaLen);
+      }
       distRatio = std::pow(distRatio - 1.0, 3.0) + 1.0;
 
       // Compute new WorldUnits/Meter ratio based on scaled ratio of controller distances
@@ -784,7 +807,11 @@ namespace OpenFrames{
       _ovrDevice->setWorldUnitsPerMeter(newWorldUnitsPerMeter);
 
       // Compute new pose offset location
-      osg::Vec3d fullOffsetChange = -origCenter - _motionData._origPoseOffsetRaw;
+      // Expand universe from point between controllers when motion was started
+      // Shrink universe to current point between controllers
+      osg::Vec3d fullOffsetChange = -_motionData._origPoseOffsetRaw;
+      if (distRatio < 1.0) fullOffsetChange -= origCenter; // expanding
+      else fullOffsetChange -= currCenter; // shrinking
       _ovrDevice->_poseOffsetRaw = _motionData._origPoseOffsetRaw + fullOffsetChange*(1.0 - 1.0 / distRatio);
 
       break;
