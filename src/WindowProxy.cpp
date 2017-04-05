@@ -444,9 +444,6 @@ namespace OpenFrames
     _embeddedGraphics = new EmbeddedGraphics(x, y, width, height, this);
     _eventHandler = new WindowEventHandler(this);
     
-    /** Make sure all rendering is done in one thread */
-    _viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
-    
     /** Make sure that OpenGL checks are done when the window is created */
     _viewer->setRealizeOperation(new CheckPrerequisites(this));
     
@@ -776,6 +773,11 @@ namespace OpenFrames
   {
     // Create the window
     if(!setupWindow()) return;
+
+    // Set up processor affinity using OSG's affinity configuration
+    // NOTE: Does putting this thread on Proc0 steal CPU time from simulation?
+    _viewer->setUseConfigureAffinity(true);
+    _viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
     
     // Set the starting reference time
     _startTime = osg::Timer::instance()->tick();
