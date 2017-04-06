@@ -26,6 +26,15 @@ const unsigned int numTrackedDevices = 3;
 namespace OpenFrames{
 
   /*************************************************************/
+  OpenVREvent::VREvent::VREvent()
+  : _ovrEvent(NULL), _controllerState(NULL)
+  {}
+  
+  /*************************************************************/
+  OpenVREvent::VREvent::~VREvent()
+  {}
+  
+  /*************************************************************/
   OpenVRDevice::OpenVRDevice(float worldUnitsPerMeter, float userHeight)
   : _worldUnitsPerMeter(worldUnitsPerMeter),
   _userHeight(userHeight),
@@ -85,7 +94,7 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRDevice::shutdownVR()
   {
-    _deviceNameToData.clear();
+    _deviceNameToModel.clear();
     _deviceIDToModel.clear();
     _deviceModels->removeChildren(0, _deviceModels->getNumChildren());
     _isInitialized = false;
@@ -111,34 +120,32 @@ namespace OpenFrames{
     else deviceName = "BaseStation_Stub";
     
     // Find device data by name
-    DeviceDataMap::iterator i = _deviceNameToData.find(deviceName);
+    DeviceModelMap::iterator i = _deviceNameToModel.find(deviceName);
     
-    // If not found, then create device data
-    if(i == _deviceNameToData.end())
+    // If not found, then load device data
+    if(i == _deviceNameToModel.end())
     {
       osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Setting up render data for device " << deviceName << std::endl;
 
-      DeviceData newDevice; // Empty device data since this is a stub
-      _deviceNameToData[deviceName] = newDevice;
-    }
-    
-    // Set up device model if needed
-    if(_deviceIDToModel[deviceID]._data == NULL)
-    {
-      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Setting up render model for device " << deviceName << deviceID << std::endl;
-      
-      // Set data for current device model
-      _deviceIDToModel[deviceID]._data = &_deviceNameToData[deviceName];
-      
       float radius = 0.1f;
       float height = 0.2f;
       
       // Create device model's render model and add it to the render group
       osg::Geode *geode = new osg::Geode;
       geode->addDrawable(new osg::ShapeDrawable(new osg::Capsule(osg::Vec3(),radius, height)));
+      _deviceNameToModel[deviceName] = geode;
+    }
+    
+    // Set up device model if needed
+    if(_deviceIDToModel[deviceID]._modelTransform == NULL)
+    {
+      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Setting up render model for device " << deviceName << deviceID << std::endl;
+      
+      // Create device model's transform and add it to the group of all devices
       osg::MatrixTransform *xform = new osg::MatrixTransform;
-      xform->addChild(geode);
-      _deviceIDToModel[deviceID]._renderModel = xform;
+      xform->addChild(_deviceNameToModel[deviceName]);
+      _deviceIDToModel[deviceID]._modelTransform = xform;
+      _deviceIDToModel[deviceID]._class = NONE;
       _deviceModels->addChild(xform);
     }
   }
@@ -152,7 +159,10 @@ namespace OpenFrames{
     _leftProj.makePerspective(110.0, (float)_width/(float)_height, 1.0, 2.0);
 
     // Center projection is average of right and left
-    _centerProj = (_rightProj + _leftProj)*0.5;
+    // OSG doesn't have a matrix addition for Matrixd (facepalm)
+    osg::Matrixf rightProjf = _rightProj;
+    osg::Matrixf leftProjf = _leftProj;
+    _centerProj = (rightProjf + leftProjf)*0.5;
   }
 
   /*************************************************************/
@@ -229,8 +239,7 @@ namespace OpenFrames{
       matDeviceToWorld.preMultScale(osg::Vec3d(_worldUnitsPerMeter, _worldUnitsPerMeter, _worldUnitsPerMeter));
       
       // Set base station model's location from its pose
-      osg::MatrixTransform *xform = static_cast<osg::MatrixTransform*>(_deviceIDToModel[i]._renderModel.get());
-      xform->setMatrix(matDeviceToWorld);
+      _deviceIDToModel[i]._modelTransform->setMatrix(matDeviceToWorld);
     }
   }
   
@@ -238,6 +247,44 @@ namespace OpenFrames{
   void OpenVRDevice::submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName)
   {
     // Nothing to do here
+  }
+  
+  /*************************************************************/
+  bool OpenVRDevice::pollNextEvent(OpenVREvent *event)
+  {
+    // Nothing to do here
+    return false;
+  }
+  
+  /*************************************************************/
+  bool OpenVREventDevice::checkEvents()
+  {
+    // Nothing to do here
+    return false;
+  }
+  
+  /*************************************************************/
+  OpenVRTrackball::OpenVRTrackball(OpenVRDevice *ovrDevice)
+  : _ovrDevice(ovrDevice)
+  {
+    // Nothing to do here
+  }
+  
+  /*************************************************************/
+  bool OpenVRTrackball::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
+  {
+    return FollowingTrackball::handle(ea, us);
+  }
+  
+  /*************************************************************/
+  void OpenVRTrackball::updateCamera(osg::Camera& camera)
+  {
+    camera.setViewMatrix(getInverseMatrix());
+  }
+  
+  /*************************************************************/
+  void OpenVRTrackball::saveCurrentMotionData()
+  {
   }
   
 } // !namespace OpenFrames
