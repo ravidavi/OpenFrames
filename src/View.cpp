@@ -238,9 +238,8 @@ namespace OpenFrames
       double fovy, ratio;
       getPerspective(fovy, ratio); // Get projection field of view
       
-      // Trig time! Compute distance such that fov covers bounding sphere radius
-      // Include buffer for decorations (e.g. axes, labels)
-      dist = 2.0*bs._radius / std::tan((fovy/2.0)*(osg::PI/180.0));
+      // Trig time! Compute distance such that fov covers bounding sphere
+      dist = bs._radius / std::tan((fovy/2.0)*(osg::PI/180.0));
     }
     
     // Set the trackball's home position

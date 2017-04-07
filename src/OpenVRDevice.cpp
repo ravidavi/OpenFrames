@@ -506,7 +506,7 @@ namespace OpenFrames{
         matDeviceToWorld(3, 1) -= _userHeight; // Subtract user's height, OpenVR world is Y-up
         _deviceIDToModel[i]._rawDeviceToWorld = matDeviceToWorld;
 
-        // Apply apply translational offset and convert from meters to world units
+        // Apply translational offset and convert from meters to world units
         matDeviceToWorld(3, 0) = (matDeviceToWorld(3, 0) + _poseOffsetRaw[0])*_worldUnitsPerMeter;
         matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) + _poseOffsetRaw[1])*_worldUnitsPerMeter;
         matDeviceToWorld(3, 2) = (matDeviceToWorld(3, 2) + _poseOffsetRaw[2])*_worldUnitsPerMeter;
@@ -794,11 +794,17 @@ namespace OpenFrames{
       device2Trans = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._rawDeviceToWorld.getTrans();
       osg::Vec3d currCenter = (device1Trans + device2Trans) * 0.5; // Center point between controllers
       double currDist = (device1Trans - device2Trans).length();
-      double distRatio = origDist / currDist; // controllers apart -> 0, controllers together -> inf
-      double deltaLen = std::abs(currDist - origDist) + fastMotionThreshold;
-      if (deltaLen > 1.0)
+      double deltaLen = std::abs(currDist - origDist); // Change in controller distance
+
+      // Controller position has jitter, so ignore small changes
+      double distRatio;
+      if (deltaLen < 0.02) distRatio = 1.0;
+      else distRatio = origDist / currDist; // controllers apart -> 0, controllers together -> inf
+
+      // Exaggerate large controller motions
+      if (deltaLen > 1.0 - fastMotionThreshold)
       {
-        distRatio = std::pow(distRatio, deltaLen);
+        distRatio = std::pow(distRatio, deltaLen + fastMotionThreshold);
       }
       distRatio = std::pow(distRatio - 1.0, 3.0) + 1.0;
 
@@ -806,13 +812,14 @@ namespace OpenFrames{
       double newWorldUnitsPerMeter = _motionData._origWorldUnitsPerMeter * distRatio;
       _ovrDevice->setWorldUnitsPerMeter(newWorldUnitsPerMeter);
 
-      // Compute new pose offset location
+      // Compute new pose offset location that keeps the central point at the same world
+      // location both before and after the scale.
       // Expand universe from point between controllers when motion was started
       // Shrink universe to current point between controllers
-      osg::Vec3d fullOffsetChange = -_motionData._origPoseOffsetRaw;
-      if (distRatio < 1.0) fullOffsetChange -= origCenter; // expanding
-      else fullOffsetChange -= currCenter; // shrinking
-      _ovrDevice->_poseOffsetRaw = _motionData._origPoseOffsetRaw + fullOffsetChange*(1.0 - 1.0 / distRatio);
+      osg::Vec3d centerPoint;
+      if (distRatio < 1.0) centerPoint = origCenter; // Expand universe
+      else centerPoint = currCenter; // Shrink universe
+      _ovrDevice->_poseOffsetRaw = (centerPoint*(1.0 - distRatio) + _motionData._origPoseOffsetRaw) / distRatio;
 
       break;
     }
