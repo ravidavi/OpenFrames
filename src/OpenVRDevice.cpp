@@ -584,20 +584,6 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
-  OpenVRTrackball::OpenVRTrackball(OpenVRDevice *ovrDevice)
-    : _ovrDevice(ovrDevice)
-  {
-    // Allocate render data for each possible tracked device
-    _deviceIDToEvent.resize(vr::k_unMaxTrackedDeviceCount);
-
-    // The motion mode defines how controllers change the scene in response
-    // to user inputs. Start with no motion.
-    _motionData._mode = NONE;
-    _motionData._prevMode = ROTATE; // Initial button press will go to Rotate mode
-    _motionData._prevTime = 0.0;
-  }
-
-  /*************************************************************/
   bool OpenVRTrackball::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
   {
     // Check if incoming event is an OpenVR event
@@ -608,11 +594,11 @@ namespace OpenFrames{
       const vr::VREvent_t *ovrEvent = event->_vrEventData._ovrEvent;
       vr::TrackedDeviceIndex_t deviceID = ovrEvent->trackedDeviceIndex;
       const vr::VRControllerState_t *state = event->_vrEventData._controllerState;
-
-      // If event is from a controller, then save the event info
-      if ((deviceID < vr::k_unMaxTrackedDeviceCount) && (_ovrDevice->_deviceIDToModel[deviceID]._class == OpenVRDevice::CONTROLLER)) 
-        _deviceIDToEvent[deviceID] = event->_vrEventData;
-      else return false;
+      
+      // Only process event if it's from a controller
+      if ((deviceID >= vr::k_unMaxTrackedDeviceCount)
+          || (_ovrDevice->_deviceIDToModel[deviceID]._class != OpenVRDevice::CONTROLLER))
+        return false;
 
       // Convert controller event types to view changes in VR space
       switch (ovrEvent->eventType)
@@ -665,7 +651,7 @@ namespace OpenFrames{
 
           // Go from Scale -> Translate/Rotate when either controller's grip is unpressed
           else if ((_motionData._mode == SCALE) &&
-            (_motionData._device1ID == deviceID) || (_motionData._device2ID == deviceID))
+            ((_motionData._device1ID == deviceID) || (_motionData._device2ID == deviceID)))
           {
             // If the second grip button was just tapped, then switch translate/rotate modes
             // Otherwise it was actually pressed so keep the previous translate/rotate mode
@@ -710,141 +696,4 @@ namespace OpenFrames{
     }
   }
 
-  /*************************************************************/
-  void OpenVRTrackball::updateCamera(osg::Camera& camera)
-  {
-    // Exaggerate controller motion beyond a predetermined distance threshold so that
-    // the view can be moved faster with larger controller motions.
-    // Note that threshold distance depends on arm length, which depends on height.
-    // Height/Armspan = 1.0 and ShoulderWidth/Height = 0.3 (see Golden Ratio)
-    double armLength = (_ovrDevice->getUserHeight()*0.7) / 2.0; // [meters]
-    double fastMotionThreshold = 1.0 - armLength / 4.0;
-
-    // Handle world transformations based on current motion mode
-    switch (_motionData._mode)
-    {
-    case(ROTATE) :
-    {
-      // Set the trackball rotation and distance based on controller motion
-      // Start by getting the controller location when the button was pressed
-      osg::Vec3d origPos = _motionData._device1OrigPose.getTrans();
-
-      // Convert to position relative to trackball center
-      osg::Vec3d origPosWorld = origPos * _motionData._origTrackball;
-
-      // Next get the current controller location relative to trackball center
-      osg::Matrixd device1CurrPose = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._modelTransform->getMatrix();
-      osg::Vec3d currPos = device1CurrPose.getTrans();
-      osg::Vec3d currPosWorld = currPos * _motionData._origTrackball;
-
-      // Compute the rotation from current -> original controller positions
-      osg::Quat deltaRotation;
-      deltaRotation.makeRotate(currPosWorld, origPosWorld);
-      osg::Quat newRotation(_motionData._origRotation);
-      newRotation *= deltaRotation;
-      osgGA::TrackballManipulator::setRotation(newRotation);
-
-      // If we keep the original state constant, then it's likely that the user will try to do
-      // a 180-degree rotation which is singular (no Quat::makeRotate solution). Therefore we save
-      // the new pose state at each frame, which results in incremental rotations instead of one
-      // big rotation from the initial to final controller positions.
-      _motionData._device1OrigPose = device1CurrPose;
-      _motionData._origTrackball = osgGA::TrackballManipulator::getMatrix();
-      _motionData._origRotation = newRotation;
-
-      break;
-    }
-
-    case(TRANSLATE) :
-    {
-      // Set the device pose offset based on controller location
-      // Start by getting the controller location when the button was pressed
-      osg::Vec3d origPos = _motionData._device1OrigPoseRaw.getTrans();
-
-      // Next get the current controller location
-      osg::Vec3d currPos = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld.getTrans();
-
-      // Move pose offset in the opposite direction as controller motion.
-      osg::Vec3d deltaPos = origPos - currPos;
-      double deltaLen = deltaPos.length() + fastMotionThreshold;
-      if (deltaLen > 1.0)
-      {
-        deltaPos *= deltaLen*deltaLen;
-      }
-
-      // Compute new pose offset based on controller motion
-      _ovrDevice->_poseOffsetRaw = _motionData._origPoseOffsetRaw + deltaPos;
-
-      break;
-    }
-
-    case(SCALE) :
-    {
-      // Set the WorldUnits/Meter ratio based on how the controllers are moved together/apart
-      // Start by getting the controller distance when the action was started
-      osg::Vec3d device1Trans = _motionData._device1OrigPoseRaw.getTrans();
-      osg::Vec3d device2Trans = _motionData._device2OrigPoseRaw.getTrans();
-      double origDist = (device1Trans - device2Trans).length();
-
-      // Get the center point between controllers
-      osg::Vec3d origCenter = (device1Trans + device2Trans) * 0.5;
-
-      // Get the current controller distance
-      device1Trans = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld.getTrans();
-      device2Trans = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._rawDeviceToWorld.getTrans();
-      osg::Vec3d currCenter = (device1Trans + device2Trans) * 0.5; // Center point between controllers
-      double currDist = (device1Trans - device2Trans).length();
-      double deltaLen = std::abs(currDist - origDist); // Change in controller distance
-
-      // Controller position has jitter, so ignore small changes
-      double distRatio;
-      if (deltaLen < 0.02) distRatio = 1.0;
-      else distRatio = origDist / currDist; // controllers apart -> 0, controllers together -> inf
-
-      // Exaggerate large controller motions
-      if (deltaLen > 1.0 - fastMotionThreshold)
-      {
-        distRatio = std::pow(distRatio, deltaLen + fastMotionThreshold);
-      }
-      distRatio = std::pow(distRatio - 1.0, 3.0) + 1.0;
-
-      // Compute new WorldUnits/Meter ratio based on scaled ratio of controller distances
-      double newWorldUnitsPerMeter = _motionData._origWorldUnitsPerMeter * distRatio;
-      _ovrDevice->setWorldUnitsPerMeter(newWorldUnitsPerMeter);
-
-      // Compute new pose offset location that keeps the central point at the same world
-      // location both before and after the scale.
-      // Expand universe from point between controllers when motion was started
-      // Shrink universe to current point between controllers
-      osg::Vec3d centerPoint;
-      if (distRatio < 1.0) centerPoint = origCenter; // Expand universe
-      else centerPoint = currCenter; // Shrink universe
-      _ovrDevice->_poseOffsetRaw = (centerPoint*(1.0 - distRatio) + _motionData._origPoseOffsetRaw) / distRatio;
-
-      break;
-    }
-    }
-
-    camera.setViewMatrix(getInverseMatrix());
-  }
-
-  /*************************************************************/
-  void OpenVRTrackball::saveCurrentMotionData()
-  {
-    _motionData._device1OrigPoseRaw = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld;
-    _motionData._device1OrigPose = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._modelTransform->getMatrix();
-
-    if (_motionData._device2ID < vr::k_unMaxTrackedDeviceCount)
-    {
-      _motionData._device2OrigPoseRaw = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._rawDeviceToWorld;
-      _motionData._device2OrigPose = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._modelTransform->getMatrix();
-    }
-
-    _motionData._origWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
-    _motionData._origCenter = osgGA::TrackballManipulator::getCenter();
-    _motionData._origRotation = osgGA::TrackballManipulator::getRotation();
-    _motionData._origDistance = osgGA::TrackballManipulator::getDistance();
-    _motionData._origTrackball = osgGA::TrackballManipulator::getMatrix();
-    _motionData._origPoseOffsetRaw = _ovrDevice->_poseOffsetRaw;
-  }
 } // !namespace OpenFrames

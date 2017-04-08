@@ -278,10 +278,6 @@ namespace OpenFrames {
   private:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
 
-    /** Vector of each device's latest event data indexed by its OpenVR id */
-    typedef std::vector<OpenVREvent::VREvent> DeviceEventVector;
-    DeviceEventVector _deviceIDToEvent;
-
     enum MotionMode
     {
       NONE = 0,

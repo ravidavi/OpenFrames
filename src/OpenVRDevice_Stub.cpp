@@ -264,27 +264,10 @@ namespace OpenFrames{
   }
   
   /*************************************************************/
-  OpenVRTrackball::OpenVRTrackball(OpenVRDevice *ovrDevice)
-  : _ovrDevice(ovrDevice)
-  {
-    // Nothing to do here
-  }
-  
-  /*************************************************************/
   bool OpenVRTrackball::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
   {
+    // Just call parent trackball handler
     return FollowingTrackball::handle(ea, us);
-  }
-  
-  /*************************************************************/
-  void OpenVRTrackball::updateCamera(osg::Camera& camera)
-  {
-    camera.setViewMatrix(getInverseMatrix());
-  }
-  
-  /*************************************************************/
-  void OpenVRTrackball::saveCurrentMotionData()
-  {
   }
   
 } // !namespace OpenFrames
