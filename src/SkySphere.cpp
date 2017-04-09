@@ -92,13 +92,8 @@ void SkySphere::_init()
   // Make sure Sphere follows the eye
   getTransform()->setFollowEye(true);
 
-  // Disable lighting and depth testing
-  osg::StateSet *ss = _geode->getOrCreateStateSet();
-  ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-  ss->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
-
   // Create new StateSet to specify star-specific OpenGL properties
-  ss = new osg::StateSet();
+  osg::StateSet *ss = new osg::StateSet();
 
   // Create vertex and fragment shaders for stars
   osg::Shader *vertShader = new osg::Shader(osg::Shader::VERTEX, OFSkySphere_VertSource);
