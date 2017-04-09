@@ -77,7 +77,7 @@ namespace OpenFrames{
     // use the pre-multiply transform order (see OpenVRDevice ctor)
     osg::Matrixd matLocalToWorld;
     matLocalToWorld.invert(matWorldToLocal);
-    _ovrDevice->_deviceModels->setViewMatrix(matLocalToWorld);
+    _ovrDevice->getDeviceRenderModels()->setViewMatrix(matLocalToWorld);
     
     // Get Local to Head matrix
     osg::Matrixd hmdPose = _ovrDevice->getHMDPoseMatrix();
@@ -141,7 +141,8 @@ namespace OpenFrames{
         osg::Vec3d origPosWorld = origPos * _motionData._origTrackball;
         
         // Next get the current controller location relative to trackball center
-        osg::Matrixd device1CurrPose = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._modelTransform->getMatrix();
+        const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
+        osg::Matrixd device1CurrPose = device1Model->_modelTransform->getMatrix();
         osg::Vec3d currPos = device1CurrPose.getTrans();
         osg::Vec3d currPosWorld = currPos * _motionData._origTrackball;
         
@@ -170,7 +171,8 @@ namespace OpenFrames{
         osg::Vec3d origPos = _motionData._device1OrigPoseRaw.getTrans();
         
         // Next get the current controller location
-        osg::Vec3d currPos = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld.getTrans();
+        const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
+        osg::Vec3d currPos = device1Model->_rawDeviceToWorld.getTrans();
         
         // Move pose offset in the opposite direction as controller motion.
         osg::Vec3d deltaPos = origPos - currPos;
@@ -181,7 +183,7 @@ namespace OpenFrames{
         }
         
         // Compute new pose offset based on controller motion
-        _ovrDevice->_poseOffsetRaw = _motionData._origPoseOffsetRaw + deltaPos;
+        _ovrDevice->setPoseOffsetRaw(_motionData._origPoseOffsetRaw + deltaPos);
         
         break;
       }
@@ -198,8 +200,10 @@ namespace OpenFrames{
         osg::Vec3d origCenter = (device1Trans + device2Trans) * 0.5;
         
         // Get the current controller distance
-        device1Trans = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld.getTrans();
-        device2Trans = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._rawDeviceToWorld.getTrans();
+        const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
+        const OpenVRDevice::DeviceModel *device2Model = _ovrDevice->getDeviceModel(_motionData._device2ID);
+        device1Trans = device1Model->_rawDeviceToWorld.getTrans();
+        device2Trans = device2Model->_rawDeviceToWorld.getTrans();
         osg::Vec3d currCenter = (device1Trans + device2Trans) * 0.5; // Center point between controllers
         double currDist = (device1Trans - device2Trans).length();
         double deltaLen = std::abs(currDist - origDist); // Change in controller distance
@@ -227,7 +231,8 @@ namespace OpenFrames{
         osg::Vec3d centerPoint;
         if (distRatio < 1.0) centerPoint = origCenter; // Expand universe
         else centerPoint = currCenter; // Shrink universe
-        _ovrDevice->_poseOffsetRaw = (centerPoint*(1.0 - distRatio) + _motionData._origPoseOffsetRaw) / distRatio;
+        osg::Vec3d newPoseOffsetRaw = (centerPoint*(1.0 - distRatio) + _motionData._origPoseOffsetRaw) / distRatio;
+        _ovrDevice->setPoseOffsetRaw(newPoseOffsetRaw);
         
         break;
       }
@@ -242,13 +247,15 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRTrackball::saveCurrentMotionData()
   {
-    _motionData._device1OrigPoseRaw = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._rawDeviceToWorld;
-    _motionData._device1OrigPose = _ovrDevice->_deviceIDToModel[_motionData._device1ID]._modelTransform->getMatrix();
+    const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
+    _motionData._device1OrigPoseRaw = device1Model->_rawDeviceToWorld;
+    _motionData._device1OrigPose = device1Model->_modelTransform->getMatrix();
     
-    if (_motionData._device2ID < _ovrDevice->_deviceIDToModel.size())
+    if (_motionData._device2ID < _ovrDevice->getNumDeviceModels())
     {
-      _motionData._device2OrigPoseRaw = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._rawDeviceToWorld;
-      _motionData._device2OrigPose = _ovrDevice->_deviceIDToModel[_motionData._device2ID]._modelTransform->getMatrix();
+      const OpenVRDevice::DeviceModel *device2Model = _ovrDevice->getDeviceModel(_motionData._device2ID);
+      _motionData._device2OrigPoseRaw = device2Model->_rawDeviceToWorld;
+      _motionData._device2OrigPose = device2Model->_modelTransform->getMatrix();
     }
     
     _motionData._origWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
@@ -256,7 +263,7 @@ namespace OpenFrames{
     _motionData._origRotation = osgGA::TrackballManipulator::getRotation();
     _motionData._origDistance = osgGA::TrackballManipulator::getDistance();
     _motionData._origTrackball = osgGA::TrackballManipulator::getMatrix();
-    _motionData._origPoseOffsetRaw = _ovrDevice->_poseOffsetRaw;
+    _motionData._origPoseOffsetRaw = _ovrDevice->getPoseOffsetRaw();
   }
 
 } // !namespace OpenFrames

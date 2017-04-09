@@ -73,9 +73,6 @@ namespace OpenFrames {
    ******************************************/
   class OF_EXPORT OpenVRDevice : public osg::Referenced
   {
-    // The trackball needs access to the device render model camera
-    friend class OpenVRTrackball;
-    
   public:
     /** Create a new OpenVR device, specifying relationship between world units and
      real-world meters, and the user height in meters. */
@@ -100,6 +97,33 @@ namespace OpenFrames {
     /** Get render models for devices */
     void updateDeviceRenderModels();
     osg::Camera* getDeviceRenderModels() { return _deviceModels; }
+    
+    /** An OpenVR device's class */
+    enum DeviceClass
+    {
+      NONE = 0,
+      HMD = 1,
+      BASESTATION = 2,
+      CONTROLLER = 3
+    };
+    
+    /** Encapsulates an OpenVR device's model */
+    struct DeviceModel
+    {
+      DeviceModel() : _valid(false), _class(NONE) {}
+      osg::ref_ptr<osg::MatrixTransform> _modelTransform;
+      osg::Matrixd _rawDeviceToWorld;
+      bool _valid;
+      DeviceClass _class;
+    };
+    
+    /** Get device models */
+    unsigned int getNumDeviceModels() { return _deviceIDToModel.size(); }
+    const DeviceModel* getDeviceModel(unsigned int id)
+    {
+      if(id < _deviceIDToModel.size()) return &(_deviceIDToModel[id]);
+      else return NULL;
+    }
 
     /** Update and get the per-eye projection matrix */
     void updateProjectionMatrices();
@@ -119,22 +143,38 @@ namespace OpenFrames {
     void waitGetPoses();
     osg::Matrixd& getHMDPoseMatrix() { return _hmdPose; }
     
-    /** Get/set the world units per meter ratio */
-    void setWorldUnitsPerMeter(double worldUnitsPerMeter,
-                               double minWorldUnitsPerMeter = 0.0,
-                               double maxWorldUnitsPerMeter = DBL_MAX)
+    /** Get/set the world units per meter ratio and its limits */
+    void setWorldUnitsPerMeter(double worldUnitsPerMeter)
     {
-      _worldUnitsPerMeter = worldUnitsPerMeter;
+      if((worldUnitsPerMeter >= _minWorldUnitsPerMeter) &&
+         (worldUnitsPerMeter <= _maxWorldUnitsPerMeter))
+        _worldUnitsPerMeter = worldUnitsPerMeter;
+    }
+    double getWorldUnitsPerMeter() { return _worldUnitsPerMeter; }
+    void setWorldUnitsPerMeterLimits(double minWorldUnitsPerMeter,
+                                     double maxWorldUnitsPerMeter)
+    {
       if(minWorldUnitsPerMeter >= 0.0)
         _minWorldUnitsPerMeter = minWorldUnitsPerMeter;
       if(maxWorldUnitsPerMeter > _minWorldUnitsPerMeter)
         _maxWorldUnitsPerMeter = maxWorldUnitsPerMeter;
+      
+      if(_worldUnitsPerMeter < _minWorldUnitsPerMeter) _worldUnitsPerMeter = _minWorldUnitsPerMeter;
+      else if(_worldUnitsPerMeter > _maxWorldUnitsPerMeter) _worldUnitsPerMeter = _maxWorldUnitsPerMeter;
     }
-    double getWorldUnitsPerMeter() { return _worldUnitsPerMeter; }
+    void getWorldUnitsPerMeterLimits(double &minWorldUnitsPerMeter, double &maxWorldUnitsPerMeter)
+    {
+      minWorldUnitsPerMeter = _minWorldUnitsPerMeter;
+      maxWorldUnitsPerMeter = _maxWorldUnitsPerMeter;
+    }
     
     /** Get/set the user height in meters */
     void setUserHeight(double userHeight) { _userHeight = userHeight; }
     double getUserHeight() { return _userHeight; }
+    
+    /** Get/set the raw pose offset in meters */
+    void setPoseOffsetRaw(const osg::Vec3d& poseOffsetRaw) {_poseOffsetRaw = poseOffsetRaw;}
+    const osg::Vec3d& getPoseOffsetRaw() {return _poseOffsetRaw;}
 
     /** Submits the latest rendered eye textures to OpenVR */
     void submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName);
@@ -159,26 +199,8 @@ namespace OpenFrames {
     vr::IVRRenderModels* _vrRenderModels; // Controller models
 
     /** Map between a device's OpenVR name and its OSG render model */
-    typedef std::map<std::string, osg::ref_ptr<osg::Geode> > DeviceModelMap;
-    DeviceModelMap _deviceNameToModel;
-    
-    enum DeviceClass
-    {
-      NONE = 0,
-      HMD = 1,
-      BASESTATION = 2,
-      CONTROLLER = 3
-    };
-
-    /** Encapsulates an OpenVR device's model */
-    struct DeviceModel
-    {
-      DeviceModel() : _valid(false), _class(NONE) {}
-      osg::ref_ptr<osg::MatrixTransform> _modelTransform;
-      osg::Matrixd _rawDeviceToWorld;
-      bool _valid;
-      DeviceClass _class;
-    };
+    typedef std::map<std::string, osg::ref_ptr<osg::Geode> > DeviceGeodeMap;
+    DeviceGeodeMap _deviceNameToGeode;
 
     /** Vector of each device's rendering data indexed by its OpenVR id */
     typedef std::vector<DeviceModel> DeviceModelVector;

@@ -218,7 +218,7 @@ namespace OpenFrames{
     {
       _vrRenderModels = nullptr;
       _vrSystem = nullptr;
-      _deviceNameToModel.clear();
+      _deviceNameToGeode.clear();
       _deviceIDToModel.clear();
       _deviceModels->removeChildren(0, _deviceModels->getNumChildren());
       vr::VR_Shutdown();
@@ -248,10 +248,10 @@ namespace OpenFrames{
     std::string deviceName = GetTrackedDeviceString(_vrSystem, deviceID, vr::Prop_RenderModelName_String);
 
     // Find device model by name
-    DeviceModelMap::iterator i = _deviceNameToModel.find(deviceName);
+    DeviceGeodeMap::iterator i = _deviceNameToGeode.find(deviceName);
     
     // If not found, then load device data
-    if(i == _deviceNameToModel.end())
+    if(i == _deviceNameToGeode.end())
     {
       osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Setting up model for device " << deviceName << std::endl;
       
@@ -357,7 +357,7 @@ namespace OpenFrames{
       geode->addDrawable(deviceGeom);
 
       // Assign render data to map
-      _deviceNameToModel[deviceName] = geode;
+      _deviceNameToGeode[deviceName] = geode;
 
       // Free up OpenVR device model and texture memory
       vr::VRRenderModels()->FreeRenderModel(deviceModel);
@@ -371,7 +371,7 @@ namespace OpenFrames{
       
       // Create device model's transform and add it to the group of all devices
       osg::MatrixTransform *xform = new osg::MatrixTransform;
-      xform->addChild(_deviceNameToModel[deviceName]);
+      xform->addChild(_deviceNameToGeode[deviceName]);
       _deviceIDToModel[deviceID]._modelTransform = xform;
       _deviceModels->addChild(xform);
 
@@ -598,10 +598,9 @@ namespace OpenFrames{
       const vr::VRControllerState_t *state = event->_vrEventData._controllerState;
       
       // Only process event if it's from a controller
-      if ((deviceID >= vr::k_unMaxTrackedDeviceCount)
-          || (_ovrDevice->_deviceIDToModel[deviceID]._class != OpenVRDevice::CONTROLLER))
-        return false;
-
+      if (deviceID >= _ovrDevice->getNumDeviceModels()) return false;
+      if (_ovrDevice->getDeviceModel(deviceID)->_class != OpenVRDevice::CONTROLLER) return false;
+      
       // Convert controller event types to view changes in VR space
       switch (ovrEvent->eventType)
       {
@@ -616,7 +615,7 @@ namespace OpenFrames{
             // Translate/Rotate uses Device 1 to control the view
             _motionData._mode = _motionData._prevMode;
             _motionData._device1ID = deviceID;
-            _motionData._device2ID = vr::k_unMaxTrackedDeviceCount; // Ignore device 2
+            _motionData._device2ID = UINT_MAX; // Ignore device 2
             saveCurrentMotionData();
           }
 
@@ -647,6 +646,7 @@ namespace OpenFrames{
           // Go from Translate/Rotate -> No Motion when controller's grip is unpressed
           if (((_motionData._mode == TRANSLATE) || (_motionData._mode == ROTATE)) && (_motionData._device1ID == deviceID))
           {
+            // Save current mode for when button is pressed again
             _motionData._prevMode = _motionData._mode;
             _motionData._mode = NONE;
           }
@@ -678,7 +678,7 @@ namespace OpenFrames{
             // Translate/Rotate uses Device 1 to control the view, so indicate that the
             // controller with grip button still pressed should be used for view changes
             _motionData._device1ID = _motionData._device1ID + _motionData._device2ID - deviceID;
-            _motionData._device2ID = vr::k_unMaxTrackedDeviceCount; // Disable
+            _motionData._device2ID = UINT_MAX; // Ignore device 2
             saveCurrentMotionData();
           }
 

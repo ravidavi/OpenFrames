@@ -96,7 +96,7 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRDevice::shutdownVR()
   {
-    _deviceNameToModel.clear();
+    _deviceNameToGeode.clear();
     _deviceIDToModel.clear();
     _deviceModels->removeChildren(0, _deviceModels->getNumChildren());
     _isInitialized = false;
@@ -122,10 +122,10 @@ namespace OpenFrames{
     else deviceName = "BaseStation_Stub";
     
     // Find device data by name
-    DeviceModelMap::iterator i = _deviceNameToModel.find(deviceName);
+    DeviceGeodeMap::iterator i = _deviceNameToGeode.find(deviceName);
     
     // If not found, then load device data
-    if(i == _deviceNameToModel.end())
+    if(i == _deviceNameToGeode.end())
     {
       osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Setting up render data for device " << deviceName << std::endl;
 
@@ -135,7 +135,7 @@ namespace OpenFrames{
       // Create device model's render model and add it to the render group
       osg::Geode *geode = new osg::Geode;
       geode->addDrawable(new osg::ShapeDrawable(new osg::Capsule(osg::Vec3(),radius, height)));
-      _deviceNameToModel[deviceName] = geode;
+      _deviceNameToGeode[deviceName] = geode;
     }
     
     // Set up device model if needed
@@ -145,7 +145,7 @@ namespace OpenFrames{
       
       // Create device model's transform and add it to the group of all devices
       osg::MatrixTransform *xform = new osg::MatrixTransform;
-      xform->addChild(_deviceNameToModel[deviceName]);
+      xform->addChild(_deviceNameToGeode[deviceName]);
       _deviceIDToModel[deviceID]._modelTransform = xform;
       _deviceIDToModel[deviceID]._class = NONE;
       _deviceModels->addChild(xform);
