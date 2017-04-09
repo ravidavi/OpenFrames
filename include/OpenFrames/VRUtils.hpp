@@ -124,6 +124,7 @@ namespace OpenFrames {
     virtual void disableCameras(unsigned int start);
     virtual void reset();
     virtual void setClearColorBuffer(bool clear);
+    virtual double getMinZNear();
     
     typedef std::vector< osg::ref_ptr<VRCamera> > VRCameraList;
     VRCameraList _vrCameraList;

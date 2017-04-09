@@ -79,7 +79,7 @@ namespace OpenFrames {
   public:
     /** Create a new OpenVR device, specifying relationship between world units and
      real-world meters, and the user height in meters. */
-    OpenVRDevice(float worldUnitsPerMeter, float userHeight);
+    OpenVRDevice(double worldUnitsPerMeter, double userHeight);
 
     /**
      Initialize OpenVR and connect to the HMD
@@ -119,9 +119,18 @@ namespace OpenFrames {
     void waitGetPoses();
     osg::Matrixd& getHMDPoseMatrix() { return _hmdPose; }
     
-    /** Get/set the world units in meters */
-    void setWorldUnitsPerMeter(float worldUnitsPerMeter) { _worldUnitsPerMeter = worldUnitsPerMeter; }
-    float getWorldUnitsPerMeter() { return _worldUnitsPerMeter; }
+    /** Get/set the world units per meter ratio */
+    void setWorldUnitsPerMeter(double worldUnitsPerMeter,
+                               double minWorldUnitsPerMeter = 0.0,
+                               double maxWorldUnitsPerMeter = DBL_MAX)
+    {
+      _worldUnitsPerMeter = worldUnitsPerMeter;
+      if(minWorldUnitsPerMeter >= 0.0)
+        _minWorldUnitsPerMeter = minWorldUnitsPerMeter;
+      if(maxWorldUnitsPerMeter > _minWorldUnitsPerMeter)
+        _maxWorldUnitsPerMeter = maxWorldUnitsPerMeter;
+    }
+    double getWorldUnitsPerMeter() { return _worldUnitsPerMeter; }
     
     /** Get/set the user height in meters */
     void setUserHeight(double userHeight) { _userHeight = userHeight; }
@@ -140,6 +149,7 @@ namespace OpenFrames {
     void setupRenderModelForTrackedDevice(uint32_t deviceID);
     
     double _worldUnitsPerMeter; // Distance units per real-world meter
+    double _minWorldUnitsPerMeter, _maxWorldUnitsPerMeter;
     double _userHeight; // Height of user's HMD origin in meters
     int _width, _height; // Per-eye texture dimensions
     

@@ -35,8 +35,10 @@ namespace OpenFrames{
   {}
   
   /*************************************************************/
-  OpenVRDevice::OpenVRDevice(float worldUnitsPerMeter, float userHeight)
+  OpenVRDevice::OpenVRDevice(double worldUnitsPerMeter, double userHeight)
   : _worldUnitsPerMeter(worldUnitsPerMeter),
+  _minWorldUnitsPerMeter(0.0),
+  _maxWorldUnitsPerMeter(DBL_MAX),
   _userHeight(userHeight),
   _width(0),
   _height(0),
@@ -155,8 +157,8 @@ namespace OpenFrames{
   {
     // Create right/left/center projection matrices. Using unit depth minimizes
     // precision losses in the projection matrix
-    _rightProj.makePerspective(110.0, (float)_width/(float)_height, 1.0, 2.0);
-    _leftProj.makePerspective(110.0, (float)_width/(float)_height, 1.0, 2.0);
+    _rightProj.makePerspective(110.0, (double)_width/(double)_height, 1.0, 2.0);
+    _leftProj.makePerspective(110.0, (double)_width/(double)_height, 1.0, 2.0);
 
     // Center projection is average of right and left
     // OSG doesn't have a matrix addition for Matrixd (facepalm)
@@ -169,13 +171,13 @@ namespace OpenFrames{
   void OpenVRDevice::updateViewOffsets()
   {
     // Get right eye view
-    osg::Vec3f rightVec(0.03, 0, 0);
+    osg::Vec3d rightVec(0.03, 0, 0);
 
     // Get left eye view
-    osg::Vec3f leftVec(-0.03, 0, 0);
+    osg::Vec3d leftVec(-0.03, 0, 0);
 
     // If IPD has changed, then recompute offset matrices
-    float ipd = (rightVec - leftVec).length();
+    double ipd = (rightVec - leftVec).length();
     if (ipd != _ipd)
     {
       osg::notify(osg::ALWAYS) << "VR Interpupillary Distance: " << ipd * 1000.0f << "mm" << std::endl;
@@ -183,7 +185,7 @@ namespace OpenFrames{
       // Scale offsets according to world unit scale
       rightVec *= -_worldUnitsPerMeter; // Flip direction since we want Head to Eye transform for OSG
       leftVec *= -_worldUnitsPerMeter;
-      osg::Vec3f centerVec = (rightVec + leftVec)*0.5;
+      osg::Vec3d centerVec = (rightVec + leftVec)*0.5;
 
       _rightViewOffset.makeTranslate(rightVec);
       _leftViewOffset.makeTranslate(leftVec);

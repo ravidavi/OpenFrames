@@ -107,8 +107,10 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
-  OpenVRDevice::OpenVRDevice(float worldUnitsPerMeter, float userHeight)
+  OpenVRDevice::OpenVRDevice(double worldUnitsPerMeter, double userHeight)
   : _worldUnitsPerMeter(worldUnitsPerMeter),
+  _minWorldUnitsPerMeter(0.0),
+  _maxWorldUnitsPerMeter(DBL_MAX),
   _userHeight(userHeight),
   _width(0),
   _height(0),
@@ -435,10 +437,10 @@ namespace OpenFrames{
     osg::Vec3d leftVec = viewMat.getTrans();
 
     // If IPD has changed, then recompute offset matrices
-    float ipd = (rightVec - leftVec).length();
+    double ipd = (rightVec - leftVec).length();
     if (ipd != _ipd)
     {
-      osg::notify(osg::NOTICE) << "OpenVR Interpupillary Distance: " << ipd * 1000.0f << "mm" << std::endl;
+      osg::notify(osg::NOTICE) << "OpenVR Interpupillary Distance: " << ipd * 1000.0 << "mm" << std::endl;
       _ipd = ipd;
     }
 

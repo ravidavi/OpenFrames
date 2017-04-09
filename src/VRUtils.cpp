@@ -323,21 +323,25 @@ namespace OpenFrames{
     }
   }
   
+  /**********************************************/
   VRCameraManager::VRCameraManager(VRTextureBuffer *texBuffer, OpenVRDevice *ovrDevice)
   : _texBuffer(texBuffer), _ovrDevice(ovrDevice)
   {}
   
+  /**********************************************/
   VRCameraManager::~VRCameraManager()
   {
     reset();
   }
   
+  /**********************************************/
   std::string VRCameraManager::getCameraName(unsigned int camNum)
   {
     if(camNum < _vrCameraList.size()) return (vrCamNamePrefix + std::to_string(camNum));
     else return "VR Invalid Camera Number";
   }
   
+  /**********************************************/
   // Create a new VRCamera if needed, and add it as a slave
   void VRCameraManager::enableCamera(unsigned int camNum,
                                      osg::Camera* mainCam,
@@ -402,6 +406,7 @@ namespace OpenFrames{
     }
   }
   
+  /**********************************************/
   // Disable all cameras starting with the specified index
   void VRCameraManager::disableCameras(unsigned int start)
   {
@@ -411,6 +416,7 @@ namespace OpenFrames{
     }
   }
   
+  /**********************************************/
   // Detach all our cameras from the main scene, then erase the cameras
   void VRCameraManager::reset()
   {
@@ -437,6 +443,7 @@ namespace OpenFrames{
     _vrCameraList.clear();
   }
   
+  /**********************************************/
   void VRCameraManager::setClearColorBuffer(bool clear)
   {
     // Call parent method
@@ -447,7 +454,13 @@ namespace OpenFrames{
     {
       _vrCameraList[0]->setClearColorBuffer(clear);
     }
-    
+  }
+  
+  /**********************************************/
+  double VRCameraManager::getMinZNear()
+  {
+    // 10cm minimum zNear distance
+    return 0.1*_ovrDevice->getWorldUnitsPerMeter();
   }
   
 } // !namespace OpenFrames

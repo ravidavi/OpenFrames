@@ -294,6 +294,7 @@ namespace OpenFrames
     // Prepare for scene traversal
     _distAccumulator->setMatrices(dpMainSlaveCam->getViewMatrix(), dpMainSlaveCam->getProjectionMatrix());
     _distAccumulator->setNearFarRatio(dpMainSlaveCam->getNearFarRatio());
+    _distAccumulator->setMinZNear(_cameraManager->getMinZNear());
     _distAccumulator->reset();
     
     // Step 1: Traverse the scene, collecting near/far distances.

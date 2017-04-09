@@ -110,6 +110,9 @@ namespace OpenFrames
       // Have first camera clear the color buffer
       virtual void setClearColorBuffer(bool clear) { _clearColorBuffer = clear; }
       bool _clearColorBuffer;
+      
+      // Specify minimum allowable near plane distance
+      virtual double getMinZNear() { return 1.0e-5; }
     };
     
     /** Specify a new camera manager. NULL means reset to basic camera manager */
