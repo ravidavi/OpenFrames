@@ -468,6 +468,7 @@ namespace OpenFrames
           int vrWidth, vrHeight;
           _ovrDevice->getRecommendedTextureSize(vrWidth, vrHeight);
           _vrTextureBuffer = new VRTextureBuffer(vrWidth, vrHeight);
+          _ovrDevice->setWorldUnitsPerMeterLimits(0.001, 1.0e6);
         }
         else
         {

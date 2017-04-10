@@ -206,14 +206,10 @@ namespace OpenFrames{
         device2Trans = device2Model->_rawDeviceToWorld.getTrans();
         osg::Vec3d currCenter = (device1Trans + device2Trans) * 0.5; // Center point between controllers
         double currDist = (device1Trans - device2Trans).length();
-        double deltaLen = std::abs(currDist - origDist); // Change in controller distance
-        
-        // Controller position has jitter, so ignore small changes
-        double distRatio;
-        if (deltaLen < 0.02) distRatio = 1.0;
-        else distRatio = origDist / currDist; // controllers apart -> 0, controllers together -> inf
+        double distRatio = origDist / currDist; // controllers apart -> 0, controllers together -> inf
         
         // Exaggerate large controller motions
+        double deltaLen = std::abs(currDist - origDist); // Change in controller distance
         if (deltaLen > 1.0 - fastMotionThreshold)
         {
           distRatio = std::pow(distRatio, deltaLen + fastMotionThreshold);
@@ -223,6 +219,10 @@ namespace OpenFrames{
         // Compute new WorldUnits/Meter ratio based on scaled ratio of controller distances
         double newWorldUnitsPerMeter = _motionData._origWorldUnitsPerMeter * distRatio;
         _ovrDevice->setWorldUnitsPerMeter(newWorldUnitsPerMeter);
+
+        // Account for WorldUnits/Meter ratio hitting limits
+        newWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
+        distRatio = newWorldUnitsPerMeter / _motionData._origWorldUnitsPerMeter;
         
         // Compute new pose offset location that keeps the central point at the same world
         // location both before and after the scale.

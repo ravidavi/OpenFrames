@@ -26,6 +26,7 @@
 #include <osg/Texture>
 #include <osg/Vec3d>
 #include <osgGA/Device>
+#include <algorithm>
 
 /** 
 Classes declared in OpenVR header. We don't include the OpenVR header here because
@@ -144,23 +145,18 @@ namespace OpenFrames {
     osg::Matrixd& getHMDPoseMatrix() { return _hmdPose; }
     
     /** Get/set the world units per meter ratio and its limits */
-    void setWorldUnitsPerMeter(double worldUnitsPerMeter)
+    void setWorldUnitsPerMeter(const double& worldUnitsPerMeter)
     {
-      if((worldUnitsPerMeter >= _minWorldUnitsPerMeter) &&
-         (worldUnitsPerMeter <= _maxWorldUnitsPerMeter))
-        _worldUnitsPerMeter = worldUnitsPerMeter;
+      _worldUnitsPerMeter = std::max(_minWorldUnitsPerMeter, std::min(worldUnitsPerMeter, _maxWorldUnitsPerMeter));
     }
     double getWorldUnitsPerMeter() { return _worldUnitsPerMeter; }
-    void setWorldUnitsPerMeterLimits(double minWorldUnitsPerMeter,
-                                     double maxWorldUnitsPerMeter)
+    void setWorldUnitsPerMeterLimits(const double& minWorldUnitsPerMeter,
+                                     const double& maxWorldUnitsPerMeter)
     {
-      if(minWorldUnitsPerMeter >= 0.0)
-        _minWorldUnitsPerMeter = minWorldUnitsPerMeter;
-      if(maxWorldUnitsPerMeter > _minWorldUnitsPerMeter)
-        _maxWorldUnitsPerMeter = maxWorldUnitsPerMeter;
+      _minWorldUnitsPerMeter = std::max(0.0, minWorldUnitsPerMeter);
+      _maxWorldUnitsPerMeter = std::max(_minWorldUnitsPerMeter, maxWorldUnitsPerMeter);
       
-      if(_worldUnitsPerMeter < _minWorldUnitsPerMeter) _worldUnitsPerMeter = _minWorldUnitsPerMeter;
-      else if(_worldUnitsPerMeter > _maxWorldUnitsPerMeter) _worldUnitsPerMeter = _maxWorldUnitsPerMeter;
+      _worldUnitsPerMeter = std::max(_minWorldUnitsPerMeter, std::min(_worldUnitsPerMeter, _maxWorldUnitsPerMeter));
     }
     void getWorldUnitsPerMeterLimits(double &minWorldUnitsPerMeter, double &maxWorldUnitsPerMeter)
     {
