@@ -73,9 +73,6 @@ namespace OpenFrames
     /** Remove all internal slave cameras from current View */
     void reset() { _cameraManager->reset(); }
     
-    /** Specify whether the color buffer should be cleared before the first Camera draws its scene. */
-    void setClearColorBuffer(bool clear) { _cameraManager->setClearColorBuffer(clear); }
-    
     /** Set/get the maximum scene traversal depth, defaults to UINT_MAX */
     void setMaxTraversalDepth(unsigned int depth)
     { _distAccumulator->setMaxDepth(depth); }
@@ -89,7 +86,7 @@ namespace OpenFrames
     /** Manage cameras for the depth partition callback. */
     struct CameraManager : public virtual osg::Referenced
     {
-      CameraManager() : _clearColorBuffer(true) {}
+      CameraManager() {}
       virtual ~CameraManager() {}
       
       // Get the internal name of a camera
@@ -106,10 +103,6 @@ namespace OpenFrames
       // Clear all internal cameras and revert the CameraManger to an unused
       // and empty state
       virtual void reset() = 0;
-      
-      // Have first camera clear the color buffer
-      virtual void setClearColorBuffer(bool clear) { _clearColorBuffer = clear; }
-      bool _clearColorBuffer;
       
       // Specify minimum allowable near plane distance
       virtual double getMinZNear() { return 1.0e-5; }

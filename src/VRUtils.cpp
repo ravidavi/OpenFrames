@@ -242,20 +242,11 @@ namespace OpenFrames{
   }
   
   // Set whether the color buffer is cleared by this VRCamera
-  void VRCamera::setClearColorBuffer(bool clear)
+  void VRCamera::setClearMask(GLbitfield mask)
   {
-    if(clear)
-    {
-      _monoCamera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      _rightCamera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      _leftCamera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
-    else
-    {
-      _monoCamera->setClearMask(GL_DEPTH_BUFFER_BIT);
-      _rightCamera->setClearMask(GL_DEPTH_BUFFER_BIT);
-      _leftCamera->setClearMask(GL_DEPTH_BUFFER_BIT);
-    }
+    _monoCamera->setClearMask(mask);
+    _rightCamera->setClearMask(mask);
+    _leftCamera->setClearMask(mask);
   }
   
   void VRCamera::updateCameras(osg::Matrixd& rightProj,
@@ -264,7 +255,7 @@ namespace OpenFrames{
   {
     // If MSAA is enabled and we don't need to clear the color buffer, then
     // use the MSAA camera to chain the existing color texture
-    bool useMSAACam = _useMSAA && !getClearColorBuffer();
+    bool useMSAACam = _useMSAA && ((getClearMask() & GL_COLOR_BUFFER_BIT) == 0x0);
     
     if((_mode == MONO) || ((_mode == AUTO) && (zNear > 0.1)))
     {
@@ -372,12 +363,12 @@ namespace OpenFrames{
       
       // Add VR cameras as slaves, and tell them to use the master camera's scene
       vrcam->addSlaveCamerasToView(mainCam->getView(), true);
-      
-      // Specify whether first VRCamera should clear color buffer
-      if(camNum == 0 && _clearColorBuffer)
-        vrcam->setClearColorBuffer(true);
-      else
-        vrcam->setClearColorBuffer(false);
+
+      // First VRCamera gets clear mask from main camera
+      if (camNum == 0)
+        vrcam->setClearMask(mainCam->getClearMask());
+      else // Remaining cameras only clear depth buffer
+        vrcam->setClearMask(GL_DEPTH_BUFFER_BIT);
       
       // Store new VRCamera in internal camera list
       _vrCameraList[camNum] = vrcam;
@@ -441,19 +432,6 @@ namespace OpenFrames{
     }
     
     _vrCameraList.clear();
-  }
-  
-  /**********************************************/
-  void VRCameraManager::setClearColorBuffer(bool clear)
-  {
-    // Call parent method
-    CameraManager::setClearColorBuffer(clear);
-    
-    // Set first camera's clear color buffer setting if needed
-    if(!_vrCameraList.empty())
-    {
-      _vrCameraList[0]->setClearColorBuffer(clear);
-    }
   }
   
   /**********************************************/

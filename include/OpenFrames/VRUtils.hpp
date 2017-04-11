@@ -71,8 +71,8 @@ namespace OpenFrames {
     bool getUseMSAA() { return _useMSAA; }
     
     /** Set the OpenGL clear mask for cameras */
-    void setClearColorBuffer(bool clear);
-    bool getClearColorBuffer() { return ((_rightCamera->getClearMask() & GL_COLOR_BUFFER_BIT) != 0x0); }
+    void setClearMask(GLbitfield mask);
+    GLbitfield getClearMask() { return _rightCamera->getClearMask(); }
     
     /** Get number of cameras in use, depending on StereoMode */
     unsigned int getNumCameras();
@@ -123,7 +123,6 @@ namespace OpenFrames {
                               const double &zNear, const double &zFar);
     virtual void disableCameras(unsigned int start);
     virtual void reset();
-    virtual void setClearColorBuffer(bool clear);
     virtual double getMinZNear();
     
     typedef std::vector< osg::ref_ptr<VRCamera> > VRCameraList;

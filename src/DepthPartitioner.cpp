@@ -60,8 +60,7 @@ namespace OpenFrames
     // Make sure another DepthPartitioner isn't already partitioning the new View
     if(view != NULL)
     {
-      // Loop through all slaves, and check whether one of them already has our
-      // DepthPartitionCallback
+      // Loop through all slaves, and check whether one of them already has a DepthPartitionCallback
       unsigned int numSlaves = view->getNumSlaves();
       for(unsigned int i = 0; i < numSlaves; ++i)
       {
@@ -69,7 +68,7 @@ namespace OpenFrames
         DepthPartitionCallback *dpcb = dynamic_cast<DepthPartitionCallback*>(view->getSlave(i)._updateSlaveCallback.get());
         if(dpcb != NULL)
         {
-          std::cerr<< "OpenFrames::DepthPartitioner ERROR: View already has an attached  DepthPartitioner." << std::endl;
+          std::cerr<< "OpenFrames::DepthPartitioner ERROR: View already has an attached DepthPartitioner." << std::endl;
           return false;
         }
       }
@@ -97,7 +96,7 @@ namespace OpenFrames
     
     _view = view; // Set new View
     
-    // Add depth partitioning objects to new View
+    // Enable depth partitioning for new View
     if(_view != NULL)
     {
       // Add main slave camera, don't use master scene data
@@ -156,10 +155,10 @@ namespace OpenFrames
         newcam->setProjectionResizePolicy(osg::Camera::FIXED);
         newcam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
         
-        // Specify whether first camera should clear color buffer
-        if(camNum == 0 && _clearColorBuffer)
-          newcam->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        else
+        // First camera gets clear mask from main camera
+        if (camNum == 0)
+          newcam->setClearMask(mainCam->getClearMask());
+        else // Remaining cameras only clear depth buffer
           newcam->setClearMask(GL_DEPTH_BUFFER_BIT);
         
         // Add Camera as slave, and tell it to use the master Camera's scene
@@ -204,21 +203,6 @@ namespace OpenFrames
       }
       
       _cameraList.clear(); // Erase all cameras
-    }
-    
-    virtual void setClearColorBuffer(bool clear)
-    {
-      // Call parent method
-      CameraManager::setClearColorBuffer(clear);
-      
-      // Set first camera's clear color buffer setting if needed
-      if(_cameraList.size() > 0)
-      {
-        if(_clearColorBuffer)
-          _cameraList[0]->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        else
-          _cameraList[0]->setClearMask(GL_DEPTH_BUFFER_BIT);
-      }
     }
     
     // Cameras that should be used to draw the scene. These cameras

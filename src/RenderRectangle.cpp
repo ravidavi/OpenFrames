@@ -177,7 +177,7 @@ namespace OpenFrames
         _backCameraVR->addSlaveCamerasToView(_sceneView, false);
         
         // Clear the color buffer since this camera draws before everything else
-        _backCameraVR->setClearColorBuffer(true);
+        _backCameraVR->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         
         // Set the per-eye projection matrices
         osg::Matrixd rightProj = _ovrDevice->getRightEyeProjectionMatrix();
@@ -260,12 +260,6 @@ namespace OpenFrames
       }
       else
         _backCamera->addChild(_skySphere->getGroup());
-    }
-    
-    // Set up the depth partitioner
-    {
-      // Don't clear color buffer so that background is preserved
-      _depthPartitioner->getCallback()->setClearColorBuffer(false);
     }
 
     // Set up device models
