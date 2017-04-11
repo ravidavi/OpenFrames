@@ -201,14 +201,13 @@ namespace OpenFrames{
 
     // Simulate HMD pose in meters
     matDeviceToWorld.makeIdentity(); // Look at scene head-on from the OpenVR origin
-    matDeviceToWorld(3, 1) = 1.6764; // 5'6" user height in meters
+    matDeviceToWorld(3, 1) = 1.6764 - _userHeight; // 5'6" simulated user height in meters
+    _deviceIDToModel[0]._rawDeviceToWorld = matDeviceToWorld;
 
-    // The OpenVR HMD units are in meters, so we need to convert its position
-    // to world units. Here we also subtract the user's height from Y component.
-    // Note that the OpenVR world frame is Y-up
-    matDeviceToWorld(3, 0) *= _worldUnitsPerMeter;
-    matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) - _userHeight)*_worldUnitsPerMeter;
-    matDeviceToWorld(3, 2) *= _worldUnitsPerMeter;
+    // Apply apply translational offset and convert from meters to world units
+    matDeviceToWorld(3, 0) = (matDeviceToWorld(3, 0) + _poseOffsetRaw[0])*_worldUnitsPerMeter;
+    matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) + _poseOffsetRaw[1])*_worldUnitsPerMeter;
+    matDeviceToWorld(3, 2) = (matDeviceToWorld(3, 2) + _poseOffsetRaw[2])*_worldUnitsPerMeter;
 
     // Invert since we want World to HMD transform
     _hmdPose.invert(matDeviceToWorld);
@@ -229,12 +228,14 @@ namespace OpenFrames{
         matDeviceToWorld.makeRotate(osg::Quat(10.0, osg::Vec3d(0, 1, 0)));
         matDeviceToWorld.postMultTranslate(osg::Vec3d(2, 3, -2));
       }
+      
+      matDeviceToWorld(3, 1) -= _userHeight; // Subtract user's height, OpenVR world is Y-up
+      _deviceIDToModel[i]._rawDeviceToWorld = matDeviceToWorld;
 
-      // Apply world unit translation, and subtract user's height from Y component
-      // Note that the OpenVR world frame is Y-up
-      matDeviceToWorld(3, 0) *= _worldUnitsPerMeter;
-      matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) - _userHeight)*_worldUnitsPerMeter;
-      matDeviceToWorld(3, 2) *= _worldUnitsPerMeter;
+      // Apply translational offset and convert from meters to world units
+      matDeviceToWorld(3, 0) = (matDeviceToWorld(3, 0) + _poseOffsetRaw[0])*_worldUnitsPerMeter;
+      matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) + _poseOffsetRaw[1])*_worldUnitsPerMeter;
+      matDeviceToWorld(3, 2) = (matDeviceToWorld(3, 2) + _poseOffsetRaw[2])*_worldUnitsPerMeter;
 
       // Since the device model is assumed in meters, we need to scale it to world units
       // The normals will need to be rescaled, which is done by the containing Camera
