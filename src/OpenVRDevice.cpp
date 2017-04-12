@@ -401,18 +401,18 @@ namespace OpenFrames{
     // Get right eye projection. Using unit depth minimizes
     // precision losses in the projection matrix
     proj = _vrSystem->GetProjectionMatrix(vr::Eye_Right, 1.0, 2.0);
-    convertMatrix44(_rightProj, proj);
+    convertMatrix44(_rightEyeProj, proj);
 
     // Get left eye projection. Using unit depth minimizes
     // precision losses in the projection matrix
     proj = _vrSystem->GetProjectionMatrix(vr::Eye_Left, 1.0, 2.0);
-    convertMatrix44(_leftProj, proj);
+    convertMatrix44(_leftEyeProj, proj);
 
     // Center projection is average of right and left
     // OSG doesn't have a matrix addition for Matrixd (facepalm)
-    osg::Matrixf rightProjf = _rightProj;
-    osg::Matrixf leftProjf = _leftProj;
-    _centerProj = (rightProjf + leftProjf)*0.5;
+    osg::Matrixf rightEyeProjf = _rightEyeProj;
+    osg::Matrixf leftEyeProjf = _leftEyeProj;
+    _centerProj = (rightEyeProjf + leftEyeProjf)*0.5;
   }
 
   /*************************************************************/
@@ -421,32 +421,18 @@ namespace OpenFrames{
     vr::HmdMatrix34_t view;
     osg::Matrixd viewMat;
 
-    // Get right eye view
+    // Get right eye view offset vector (Eye to Head transform)
     view = _vrSystem->GetEyeToHeadTransform(vr::Eye_Right);
     convertMatrix34(viewMat, view);
-    osg::Vec3d rightVec = viewMat.getTrans();
+    osg::Vec3d rightEyeRaw = viewMat.getTrans();
 
-    // Get left eye view
+    // Get left eye view offset vector (Eye to Head transform)
     view = _vrSystem->GetEyeToHeadTransform(vr::Eye_Left);
     convertMatrix34(viewMat, view);
-    osg::Vec3d leftVec = viewMat.getTrans();
-
-    // If IPD has changed, then recompute offset matrices
-    double ipd = (rightVec - leftVec).length();
-    if (ipd != _ipd)
-    {
-      osg::notify(osg::NOTICE) << "OpenVR Interpupillary Distance: " << ipd * 1000.0 << "mm" << std::endl;
-      _ipd = ipd;
-    }
-
-    // Scale offsets according to world unit scale
-    rightVec *= -_worldUnitsPerMeter; // Flip direction since we want Head to Eye transform for OSG
-    leftVec *= -_worldUnitsPerMeter;
-    osg::Vec3d centerVec = (rightVec + leftVec)*0.5;
-
-    _rightViewOffset.makeTranslate(rightVec);
-    _leftViewOffset.makeTranslate(leftVec);
-    _centerViewOffset.makeTranslate(centerVec);
+    osg::Vec3d leftEyeRaw = viewMat.getTrans();
+    
+    // Compute view offsets from raw offset vectors
+    computeViewOffsets(rightEyeRaw, leftEyeRaw);
   }
 
   /*************************************************************/

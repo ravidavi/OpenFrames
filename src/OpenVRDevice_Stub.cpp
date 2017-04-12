@@ -152,41 +152,25 @@ namespace OpenFrames{
   {
     // Create right/left/center projection matrices. Using unit depth minimizes
     // precision losses in the projection matrix
-    _rightProj.makePerspective(110.0, (double)_width/(double)_height, 1.0, 2.0);
-    _leftProj.makePerspective(110.0, (double)_width/(double)_height, 1.0, 2.0);
+    _rightEyeProj.makePerspective(110.0, (double)_width/(double)_height, 1.0, 2.0);
+    _leftEyeProj.makePerspective(110.0, (double)_width/(double)_height, 1.0, 2.0);
 
     // Center projection is average of right and left
     // OSG doesn't have a matrix addition for Matrixd (facepalm)
-    osg::Matrixf rightProjf = _rightProj;
-    osg::Matrixf leftProjf = _leftProj;
-    _centerProj = (rightProjf + leftProjf)*0.5;
+    osg::Matrixf rightEyeProjf = _rightEyeProj;
+    osg::Matrixf leftEyeProjf = _leftEyeProj;
+    _centerProj = (rightEyeProjf + leftEyeProjf)*0.5;
   }
 
   /*************************************************************/
   void OpenVRDevice::updateViewOffsets()
   {
-    // Get right eye view
-    osg::Vec3d rightVec(0.03, 0, 0);
-
-    // Get left eye view
-    osg::Vec3d leftVec(-0.03, 0, 0);
-
-    // If IPD has changed, then recompute offset matrices
-    double ipd = (rightVec - leftVec).length();
-    if (ipd != _ipd)
-    {
-      osg::notify(osg::ALWAYS) << "VR Interpupillary Distance: " << ipd * 1000.0f << "mm" << std::endl;
-
-      // Scale offsets according to world unit scale
-      rightVec *= -_worldUnitsPerMeter; // Flip direction since we want Head to Eye transform for OSG
-      leftVec *= -_worldUnitsPerMeter;
-      osg::Vec3d centerVec = (rightVec + leftVec)*0.5;
-
-      _rightViewOffset.makeTranslate(rightVec);
-      _leftViewOffset.makeTranslate(leftVec);
-      _centerViewOffset.makeTranslate(centerVec);
-      _ipd = ipd;
-    }
+    // Simulate raw left/right eye vectors relative to HMD origin
+    osg::Vec3d rightEyeRaw(0.03, 0.01, -0.01);
+    osg::Vec3d leftEyeRaw(-0.03, 0.01, -0.01);
+    
+    // Compute view offsets from raw offset vectors
+    computeViewOffsets(rightEyeRaw, leftEyeRaw);
   }
 
   /*************************************************************/

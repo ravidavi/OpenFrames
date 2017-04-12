@@ -17,9 +17,37 @@
 #include <OpenFrames/OpenVRDevice.hpp>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/VRUtils.hpp>
-#include <osg/Matrixd>
 
 namespace OpenFrames{
+  
+  /*************************************************************/
+  void OpenVRDevice::computeViewOffsets(const osg::Vec3d& rightEyeRaw, const osg::Vec3d& leftEyeRaw)
+  {
+    // Get right eye view offset vector (Eye to Head transform)
+    _rightEyeViewOffsetRaw = rightEyeRaw;
+    
+    // Get left eye view offset vector (Eye to Head transform)
+    _leftEyeViewOffsetRaw = leftEyeRaw;
+    
+    // Compute HMD center view offset vector (Eye to Head transform)
+    _centerViewOffsetRaw = (_rightEyeViewOffsetRaw + _leftEyeViewOffsetRaw)*0.5;
+    _rightEyeViewOffsetRaw -= _centerViewOffsetRaw;
+    _leftEyeViewOffsetRaw -= _centerViewOffsetRaw;
+    
+    // Print new IPD value if needed
+    double ipd = (_rightEyeViewOffsetRaw - _leftEyeViewOffsetRaw).length();
+    if (ipd != _ipd)
+    {
+      osg::notify(osg::ALWAYS) << "VR Interpupillary Distance: " << ipd * 1000.0f << "mm" << std::endl;
+      _ipd = ipd;
+    }
+    
+    // Scale offsets according to WorldUnit/Meter scale
+    // Note that the vector direction is flipped since we want the Head to Eye transform for OSG
+    _rightEyeViewOffset = _rightEyeViewOffsetRaw*(-_worldUnitsPerMeter);
+    _leftEyeViewOffset = _leftEyeViewOffsetRaw*(-_worldUnitsPerMeter);
+    _centerViewOffset = _centerViewOffsetRaw*(-_worldUnitsPerMeter);
+  }
   
   /*************************************************************/
   bool OpenVRPoseCallback::run(osg::Object* object, osg::Object* data)
@@ -39,26 +67,22 @@ namespace OpenFrames{
   void OpenVRSlaveCallback::updateSlave(osg::View& view, osg::View::Slave& slave)
   {
     // Get the HMD->Eye offset matrix
-    osg::Matrixd viewOffset;
+    osg::Vec3d viewOffset;
     if(_cameraType == RIGHT_CAMERA)
     {
-      viewOffset = _ovrDevice->getRightEyeViewOffsetMatrix();
+      viewOffset = _ovrDevice->getRightEyeViewOffset();
     }
     else if(_cameraType == LEFT_CAMERA)
     {
-      viewOffset = _ovrDevice->getLeftEyeViewOffsetMatrix();
+      viewOffset = _ovrDevice->getLeftEyeViewOffset();
     }
-    else
-    {
-      viewOffset = _ovrDevice->getCenterViewOffsetMatrix();
-    }
+    // Nothing to do for MONO_CAMERA since the view matrix includes the Center offset vector
     
-    // Get the World->HMD view matrix
-    osg::Camera *masterCamera = view.getCamera();
-    osg::Matrixd viewMatrix = masterCamera->getViewMatrix();
+    // Get the World->HMD (Center) view matrix
+    osg::Matrixd viewMatrix = view.getCamera()->getViewMatrix();
     
     // Compute and set the World->Eye view matrix
-    viewMatrix.postMult(viewOffset);
+    viewMatrix.postMultTranslate(viewOffset);
     slave._camera->setViewMatrix(viewMatrix);
     
     // Call parent update slave implementation
@@ -68,7 +92,7 @@ namespace OpenFrames{
   /*************************************************************/
   osg::Matrixd OpenVRTrackball::getInverseMatrix() const
   {
-    // Get World to Local view matrix
+    // Get World->Local view matrix
     osg::Matrixd matWorldToLocal = FollowingTrackball::getInverseMatrix();
     
     // OpenVR device models exist in local space, not in world space, so premult their
@@ -78,11 +102,13 @@ namespace OpenFrames{
     matLocalToWorld.invert(matWorldToLocal);
     _ovrDevice->getDeviceRenderModels()->setMatrix(matLocalToWorld);
     
-    // Get Local to Head matrix
-    osg::Matrixd hmdPose = _ovrDevice->getHMDPoseMatrix();
+    // Compute World->HMD matrix
+    matWorldToLocal.postMult(_ovrDevice->getHMDPoseMatrix());
     
-    // Compute World to Head matrix, which will be returned
-    matWorldToLocal.postMult(hmdPose);
+    // Append HMDCenter view offset vector (midpoint of right/left eyes)
+    matWorldToLocal.postMultTranslate(_ovrDevice->getCenterViewOffset());
+    
+    // Return final World->HMDCenter matrix
     return matWorldToLocal;
   }
 

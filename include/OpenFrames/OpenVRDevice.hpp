@@ -128,15 +128,15 @@ namespace OpenFrames {
 
     /** Update and get the per-eye projection matrix */
     void updateProjectionMatrices();
-    osg::Matrixd& getRightEyeProjectionMatrix() { return _rightProj; }
-    osg::Matrixd& getLeftEyeProjectionMatrix() { return _leftProj; }
+    osg::Matrixd& getRightEyeProjectionMatrix() { return _rightEyeProj; }
+    osg::Matrixd& getLeftEyeProjectionMatrix() { return _leftEyeProj; }
     osg::Matrixd& getCenterProjectionMatrix() { return _centerProj; }
 
     /** Update and get the per-eye view matrix */
     void updateViewOffsets();
-    osg::Matrixd& getRightEyeViewOffsetMatrix() { return _rightViewOffset; }
-    osg::Matrixd& getLeftEyeViewOffsetMatrix() { return _leftViewOffset; }
-    osg::Matrixd& getCenterViewOffsetMatrix() { return _centerViewOffset; }
+    osg::Vec3d& getRightEyeViewOffset() { return _rightEyeViewOffset; }
+    osg::Vec3d& getLeftEyeViewOffset() { return _leftEyeViewOffset; }
+    osg::Vec3d& getCenterViewOffset() { return _centerViewOffset; }
 
     /** Update poses (positions/orientations) of all VR devices, and wait
      for the signal to start rendering. Note that this should be called
@@ -206,10 +206,13 @@ namespace OpenFrames {
     osg::ref_ptr<osg::MatrixTransform> _deviceModels;
     
     // Per-eye asymmetric projection matrices
-    osg::Matrixd _rightProj, _leftProj, _centerProj;
+    osg::Matrixd _rightEyeProj, _leftEyeProj, _centerProj;
     
-    // Per-eye view matrices, transform Head to Eye space
-    osg::Matrixd _rightViewOffset, _leftViewOffset, _centerViewOffset;
+    // Per-eye view offsets, transform from HMD to Eye space
+    osg::Vec3d _rightEyeViewOffset, _leftEyeViewOffset, _centerViewOffset;
+    osg::Vec3d _rightEyeViewOffsetRaw, _leftEyeViewOffsetRaw, _centerViewOffsetRaw;
+    void computeViewOffsets(const osg::Vec3d& rightEyeRaw, const osg::Vec3d& leftEyeRaw);
+    
     double _ipd; // Interpupillary distance
 
     // World to Head view transformation
