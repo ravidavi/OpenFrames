@@ -19,7 +19,63 @@
 #include <OpenFrames/VRUtils.hpp>
 
 namespace OpenFrames{
+
+  /*************************************************************/
+  // Callback that overrides the current VR camera's World->Eye modelview
+  // matrix with the appropriate Room->Eye modelview matrix. This is
+  // needed since OpenVR devices exist in room space, not in world space.
+  class OpenVRDeviceTransformCallback : public osg::Callback
+  {
+  public:
+    OpenVRDeviceTransformCallback() {}
+
+    virtual bool run(osg::Object* object, osg::Object* data)
+    {
+      osgUtil::CullVisitor *cv = dynamic_cast<osgUtil::CullVisitor*>(data);
+      if (cv)
+      {
+        osg::Camera *vrCam = cv->getCurrentCamera();
+        osg::View *view = vrCam->getView();
+        osg::View::Slave *slave = view->findSlaveForCamera(vrCam);
+      }
+
+      // Continue traversing if needed
+      return traverse(object, data);
+    }
+  };
   
+  /*************************************************************/
+  OpenVRDevice::OpenVRDevice(double worldUnitsPerMeter, double userHeight)
+    : _worldUnitsPerMeter(worldUnitsPerMeter),
+    _minWorldUnitsPerMeter(0.0),
+    _maxWorldUnitsPerMeter(DBL_MAX),
+    _userHeight(userHeight),
+    _width(0),
+    _height(0),
+    _isInitialized(false),
+    _vrSystem(nullptr),
+    _vrRenderModels(nullptr),
+    _ipd(-1.0)
+  {
+    // Set up a transform for the device render models
+    // These models exist in local space (the room), so their view matrix should only
+    // include the HMD transform. The OpenVRPoseCallback will set this matrix at every frame.
+    _deviceModels = new osg::MatrixTransform();
+    //_deviceModels->setCullCallback(new OpenVRDeviceTransformCallback);
+    //_deviceModels->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+
+    // We will scale device models according to the provided WorldUnit/Meter ratio, so
+    // make sure that model normals are rescaled by OpenGL
+    //_deviceModels->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+    _deviceModels->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+  }
+
+  /*************************************************************/
+  OpenVRDevice::~OpenVRDevice()
+  {
+    shutdownVR();
+  }
+
   /*************************************************************/
   void OpenVRDevice::computeViewOffsets(const osg::Vec3d& rightEyeRaw, const osg::Vec3d& leftEyeRaw)
   {
@@ -58,6 +114,11 @@ namespace OpenFrames{
     
     // Get updated poses for all devices
     _ovrDevice->waitGetPoses();
+
+    // Set World->HMD (Center) matrix as VR device transform
+    //osg::Matrixd matWorldToLocal = _ovrDevice->getHMDPoseMatrix();
+    //matWorldToLocal.postMultTranslate(_ovrDevice->getCenterViewOffset());
+    //_ovrDevice->getDeviceRenderModels()->setMatrix(matWorldToLocal);
     
     // Continue traversing if needed
     return traverse(object, data);

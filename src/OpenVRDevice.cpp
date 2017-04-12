@@ -105,42 +105,6 @@ namespace OpenFrames{
     *_ovrEvent = *(other._ovrEvent);
     *_controllerState = *(other._controllerState);
   }
-
-  /*************************************************************/
-  OpenVRDevice::OpenVRDevice(double worldUnitsPerMeter, double userHeight)
-  : _worldUnitsPerMeter(worldUnitsPerMeter),
-  _minWorldUnitsPerMeter(0.0),
-  _maxWorldUnitsPerMeter(DBL_MAX),
-  _userHeight(userHeight),
-  _width(0),
-  _height(0),
-  _isInitialized(false),
-  _vrSystem(nullptr),
-  _vrRenderModels(nullptr),
-  _ipd(-1.0)
-  {
-    // Allocate render data for each possible tracked device
-    // The render data struct is a light wrapper, so there is no size concern here
-    _deviceIDToModel.resize(vr::k_unMaxTrackedDeviceCount);
-    
-    // Set up a camera for the device render models
-    // These models exist in local space (the room), so their view matrix should have
-    // the World->Local transform removed. This is done by premultiplying by the inverse
-    // of the World->Local transform. OpenVRTrackball automatically sets this inverse
-    // as the view matrix for the device model transform.
-    _deviceModels = new osg::MatrixTransform();
-
-    // We will scale device models according to the provided WorldUnit/Meter ratio, so
-    // make sure that model normals are rescaled by OpenGL
-    //_deviceModels->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
-    _deviceModels->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-  }
-  
-  /*************************************************************/
-  OpenVRDevice::~OpenVRDevice()
-  {
-    shutdownVR();
-  }
   
   /*************************************************************/
   bool OpenVRDevice::initVR()
@@ -200,6 +164,10 @@ namespace OpenFrames{
     // The view offset matrices will be computed per-frame since IPD can change
     updateProjectionMatrices();
     
+    // Allocate render data for each possible tracked device
+    // The render data struct is a light wrapper, so there is no size concern here
+    _deviceIDToModel.resize(vr::k_unMaxTrackedDeviceCount);
+
     // Get render models for controllers and other devices
     updateDeviceRenderModels();
     
