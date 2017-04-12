@@ -194,7 +194,14 @@ namespace OpenFrames
   
   void DistanceAccumulator::apply(osg::Transform &transform)
   {
-    if(shouldContinueTraversal(transform))
+    // ABSOLUTE_RF transform is the equivalent of resetting the
+    // modelview matrix, so only check whether traversal is required
+    // if transform is not absolute.
+    bool continueTraversal = true;
+    if (transform.getReferenceFrame() != osg::Transform::ABSOLUTE_RF)
+      continueTraversal = shouldContinueTraversal(transform);
+
+    if(continueTraversal)
     {
       // Compute transform for current node
       osg::Matrix currMatrix = _viewMatrices.back();

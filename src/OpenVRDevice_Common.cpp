@@ -27,21 +27,59 @@ namespace OpenFrames{
   class OpenVRDeviceTransformCallback : public osg::Callback
   {
   public:
-    OpenVRDeviceTransformCallback() {}
+    OpenVRDeviceTransformCallback(OpenVRDevice *ovrDevice)
+    : _ovrDevice(ovrDevice)
+    {}
 
     virtual bool run(osg::Object* object, osg::Object* data)
     {
+      osg::MatrixTransform *deviceTransform = dynamic_cast<osg::MatrixTransform*>(object);
       osgUtil::CullVisitor *cv = dynamic_cast<osgUtil::CullVisitor*>(data);
-      if (cv)
+      if (deviceTransform && cv)
       {
+        // Make sure the current camera is a VR camera
         osg::Camera *vrCam = cv->getCurrentCamera();
         osg::View *view = vrCam->getView();
         osg::View::Slave *slave = view->findSlaveForCamera(vrCam);
+
+        if (slave)
+        {
+          // VR cameras have a custom slave callback
+          OpenVRSlaveCallback *vrSlaveCallback = dynamic_cast<OpenVRSlaveCallback*>(slave->_updateSlaveCallback.get());
+          if (vrSlaveCallback)
+          {
+            // Get the HMD Center->Eye offset matrix
+            osg::Vec3d viewOffset;
+            if (vrSlaveCallback->_cameraType == OpenVRSlaveCallback::RIGHT_CAMERA)
+            {
+              viewOffset = _ovrDevice->getRightEyeViewOffset();
+            }
+            else if (vrSlaveCallback->_cameraType == OpenVRSlaveCallback::LEFT_CAMERA)
+            {
+              viewOffset = _ovrDevice->getLeftEyeViewOffset();
+            }
+            // Nothing to do for MONO_CAMERA since the view matrix includes the Center offset vector
+
+            // Get the Room -> HMD (Center) view matrix, which will be stored as the
+            // current modelview matrix
+            osg::ref_ptr<osg::RefMatrixd> currViewMatrix = cv->getModelViewMatrix();
+
+            // Append the HMD Center->Eye view offset
+            currViewMatrix->postMultTranslate(viewOffset);
+
+            // Replace the CullVisitor's current modelview matrix
+            cv->popModelViewMatrix();
+            cv->pushModelViewMatrix(currViewMatrix.get(), deviceTransform->getReferenceFrame());
+          }
+        }
       }
 
       // Continue traversing if needed
       return traverse(object, data);
     }
+
+  protected:
+    osg::observer_ptr<OpenVRDevice> _ovrDevice;
   };
   
   /*************************************************************/
@@ -61,8 +99,9 @@ namespace OpenFrames{
     // These models exist in local space (the room), so their view matrix should only
     // include the HMD transform. The OpenVRPoseCallback will set this matrix at every frame.
     _deviceModels = new osg::MatrixTransform();
-    //_deviceModels->setCullCallback(new OpenVRDeviceTransformCallback);
-    //_deviceModels->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+    _deviceModels->setCullCallback(new OpenVRDeviceTransformCallback(this));
+    _deviceModels->setReferenceFrame(osg::Transform::ABSOLUTE_RF); // Override view matrix
+    _deviceModels->setName("OpenVR Device Models");
 
     // We will scale device models according to the provided WorldUnit/Meter ratio, so
     // make sure that model normals are rescaled by OpenGL
@@ -116,9 +155,9 @@ namespace OpenFrames{
     _ovrDevice->waitGetPoses();
 
     // Set World->HMD (Center) matrix as VR device transform
-    //osg::Matrixd matWorldToLocal = _ovrDevice->getHMDPoseMatrix();
-    //matWorldToLocal.postMultTranslate(_ovrDevice->getCenterViewOffset());
-    //_ovrDevice->getDeviceRenderModels()->setMatrix(matWorldToLocal);
+    osg::Matrixd matWorldToLocal = _ovrDevice->getHMDPoseMatrix();
+    matWorldToLocal.postMultTranslate(_ovrDevice->getCenterViewOffset());
+    _ovrDevice->getDeviceRenderModels()->setMatrix(matWorldToLocal);
     
     // Continue traversing if needed
     return traverse(object, data);
@@ -155,13 +194,6 @@ namespace OpenFrames{
   {
     // Get World->Local view matrix
     osg::Matrixd matWorldToLocal = FollowingTrackball::getInverseMatrix();
-    
-    // OpenVR device models exist in local space, not in world space, so premult their
-    // transform by the inverse of the World->Local matrix. We do this by setting
-    // the device model transform's matrix as the inverse.
-    osg::Matrixd matLocalToWorld;
-    matLocalToWorld.invert(matWorldToLocal);
-    _ovrDevice->getDeviceRenderModels()->setMatrix(matLocalToWorld);
     
     // Compute World->HMD matrix
     matWorldToLocal.postMult(_ovrDevice->getHMDPoseMatrix());
