@@ -73,11 +73,10 @@ namespace OpenFrames{
     
     // OpenVR device models exist in local space, not in world space, so premult their
     // transform by the inverse of the World->Local matrix. We do this by setting
-    // the render model Camera's view matrix as the inverse, and telling it to
-    // use the pre-multiply transform order (see OpenVRDevice ctor)
+    // the device model transform's matrix as the inverse.
     osg::Matrixd matLocalToWorld;
     matLocalToWorld.invert(matWorldToLocal);
-    _ovrDevice->getDeviceRenderModels()->setViewMatrix(matLocalToWorld);
+    _ovrDevice->getDeviceRenderModels()->setMatrix(matLocalToWorld);
     
     // Get Local to Head matrix
     osg::Matrixd hmdPose = _ovrDevice->getHMDPoseMatrix();

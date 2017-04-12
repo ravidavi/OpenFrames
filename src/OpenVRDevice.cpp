@@ -127,13 +127,8 @@ namespace OpenFrames{
     // These models exist in local space (the room), so their view matrix should have
     // the World->Local transform removed. This is done by premultiplying by the inverse
     // of the World->Local transform. OpenVRTrackball automatically sets this inverse
-    // as the view matrix for the render model Camera, so we just need to specify the
-    // pre-multiply transform order here.
-    _deviceModels = new osg::Camera();
-    _deviceModels->setTransformOrder(osg::Camera::PRE_MULTIPLY);
-    
-    // Make sure to render device models in the same context/viewport as parent camera
-    _deviceModels->setRenderOrder(osg::Camera::NESTED_RENDER);
+    // as the view matrix for the device model transform.
+    _deviceModels = new osg::MatrixTransform();
 
     // We will scale device models according to the provided WorldUnit/Meter ratio, so
     // make sure that model normals are rescaled by OpenGL

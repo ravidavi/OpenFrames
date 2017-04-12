@@ -97,7 +97,7 @@ namespace OpenFrames {
     
     /** Get render models for devices */
     void updateDeviceRenderModels();
-    osg::Camera* getDeviceRenderModels() { return _deviceModels; }
+    osg::MatrixTransform* getDeviceRenderModels() { return _deviceModels; }
     
     /** An OpenVR device's class */
     enum DeviceClass
@@ -203,7 +203,7 @@ namespace OpenFrames {
     DeviceModelVector _deviceIDToModel;
     
     // Group that contains all device models
-    osg::ref_ptr<osg::Camera> _deviceModels;
+    osg::ref_ptr<osg::MatrixTransform> _deviceModels;
     
     // Per-eye asymmetric projection matrices
     osg::Matrixd _rightProj, _leftProj, _centerProj;
