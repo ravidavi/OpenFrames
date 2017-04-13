@@ -222,6 +222,8 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRTrackball::updateCamera(osg::Camera& camera)
   {
+    camera.setViewMatrix(getInverseMatrix());
+
     // Exaggerate controller motion beyond a predetermined distance threshold so that
     // the view can be moved faster with larger controller motions.
     // Note that threshold distance depends on arm length, which depends on height.
@@ -339,9 +341,7 @@ namespace OpenFrames{
         
       default:
         break;
-    }
-    
-    camera.setViewMatrix(getInverseMatrix());
+    }    
   }
   
   /*************************************************************/
