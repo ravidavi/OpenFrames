@@ -51,16 +51,24 @@ namespace OpenFrames
   // Get the Viewpoint to World transformation matrix
   osg::Matrixd FollowingTrackball::getMatrix() const
   {
-    std::cout<< "Trackball::getMatrix()" << std::endl;
-    return osg::Matrix::inverse(getInverseMatrix());
+    return osg::Matrix::inverse(getInverseMatrix());    
   }
   
   /*******************************************************/
-  // Get the World to Viewpoint transformation matrix
+  // Get the World to Trackball transformation matrix
   osg::Matrixd FollowingTrackball::getInverseMatrix() const
   {
-    osg::Matrixd matrix;
-    
+    osg::Matrixd matWorldToLocal;
+    computeWorldToViewMatrix(matWorldToLocal);
+    matWorldToLocal.postMult(TrackballManipulator::getInverseMatrix());
+    return matWorldToLocal;
+  }
+  
+  /*******************************************************/
+  // Compute the World to Viewpoint transformation matrix that
+  // incorporates custom view types
+  void FollowingTrackball::computeWorldToViewMatrix(osg::Matrixd& matrix) const
+  {
     // First compute World to Local transform
     if(_frameType == View::ABSOLUTE)
     {
@@ -127,11 +135,6 @@ namespace OpenFrames
         }
       }
     }
-    
-    // At this point matrix represents the World to Local transform,
-    // so add the trackball to get World to Viewpoint transform
-    matrix.postMult(TrackballManipulator::getInverseMatrix());
-    return matrix;
   }
   
   /*******************************************************/

@@ -167,10 +167,6 @@ namespace OpenFrames {
     /** Get/set the user height in meters */
     void setUserHeight(double userHeight) { _userHeight = userHeight; }
     double getUserHeight() { return _userHeight; }
-    
-    /** Get/set the raw pose offset in meters */
-    void setPoseOffsetRaw(const osg::Vec3d& poseOffsetRaw) {_poseOffsetRaw = poseOffsetRaw;}
-    const osg::Vec3d& getPoseOffsetRaw() {return _poseOffsetRaw;}
 
     /** Submits the latest rendered eye textures to OpenVR */
     void submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName);
@@ -217,9 +213,6 @@ namespace OpenFrames {
 
     // World to Head view transformation
     osg::Matrixd _hmdPose;
-
-    // Translational offset for each device pose (in VR room-space coordinates)
-    osg::Vec3d _poseOffsetRaw;
   };
   
   /******************************************
@@ -312,6 +305,11 @@ namespace OpenFrames {
     // Translational offset from trackball space to room origin
     osg::Vec3d _roomOffset;
     
+    // Get the Room->World transform for the trackball itself, not including any
+    // custom view transformations by FollowingTrackball. This allows transformations
+    // between room space and the space viewed by the osgGA::Trackball.
+    void getTrackballRoomToWorldMatrix(osg::Matrixd& matrix);
+    
     /** Type of user motion currently being handled */
     enum MotionMode
     {
@@ -334,11 +332,9 @@ namespace OpenFrames {
       osg::Matrixd _device2OrigPose;
       osg::Matrixd _device2OrigPoseRaw;
       double _origWorldUnitsPerMeter;
-      osg::Vec3d _origCenter;
       osg::Quat _origRotation;
-      double _origDistance;
       osg::Matrixd _origTrackball;
-      osg::Vec3d _origPoseOffsetRaw;
+      osg::Vec3d _origRoomOffset;
     } _motionData;
     void saveCurrentMotionData();
   };

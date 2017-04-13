@@ -231,6 +231,9 @@ namespace OpenFrames
   protected:
     virtual ~FollowingTrackball();
     
+    // Compute matrix that incorporates custom view transformations
+    void computeWorldToViewMatrix(osg::Matrixd &matrix) const;
+    
     // The ReferenceFrame being followed.
     osg::observer_ptr<TransformAccumulator> _xform, _xform_lookat;
     View::ViewFrameType _frameType;

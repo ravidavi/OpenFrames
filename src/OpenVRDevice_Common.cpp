@@ -190,13 +190,24 @@ namespace OpenFrames{
   }
   
   /*************************************************************/
+  OpenVRTrackball::OpenVRTrackball(OpenVRDevice *ovrDevice)
+  : _ovrDevice(ovrDevice)
+  {
+    // The motion mode defines how controllers change the scene in response
+    // to user inputs. Start with no motion.
+    _motionData._mode = NONE;
+    _motionData._prevMode = ROTATE; // Initial button press will go to Rotate mode
+    _motionData._prevTime = 0.0;
+  }
+  
+  /*************************************************************/
   osg::Matrixd OpenVRTrackball::getInverseMatrix() const
   {
     // Get World->Local (trackball space) view matrix
     osg::Matrixd matWorldToLocal = FollowingTrackball::getInverseMatrix();
     
     // Translate from trackball to room origin
-    matWorldToLocal.postMultTranslate(_roomOffset);
+    matWorldToLocal.postMultTranslate(-_roomOffset);
     
     // Include Room->HMD transform
     matWorldToLocal.postMult(_ovrDevice->getHMDPoseMatrix());
@@ -206,37 +217,6 @@ namespace OpenFrames{
     
     // Return final World->HMDCenter matrix
     return matWorldToLocal;
-  }
-
-  /*************************************************************/
-  OpenVRSwapBuffers::OpenVRSwapBuffers(OpenVRDevice *ovrDevice, VRTextureBuffer *texBuffer)
-  : _ovrDevice(ovrDevice), _texBuffer(texBuffer)
-  { }
-
-  /*************************************************************/
-  void OpenVRSwapBuffers::swapBuffersImplementation(osg::GraphicsContext *gc)
-  {
-    // Get OpenGL texture names
-    unsigned int contextID = gc->getState()->getContextID();
-    GLuint rightEyeTexName = _texBuffer->_rightColorTex->getTextureObject(contextID)->id();
-    GLuint leftEyeTexName = _texBuffer->_leftColorTex->getTextureObject(contextID)->id();
-    
-    // Submit eye textures to OpenVR
-    _ovrDevice->submitFrame(rightEyeTexName, leftEyeTexName);
-    
-    // Run default swap buffers
-    gc->swapBuffersImplementation();
-  }
-  
-  /*************************************************************/
-  OpenVRTrackball::OpenVRTrackball(OpenVRDevice *ovrDevice)
-  : _ovrDevice(ovrDevice)
-  {
-    // The motion mode defines how controllers change the scene in response
-    // to user inputs. Start with no motion.
-    _motionData._mode = NONE;
-    _motionData._prevMode = ROTATE; // Initial button press will go to Rotate mode
-    _motionData._prevTime = 0.0;
   }
   
   /*************************************************************/
@@ -279,7 +259,7 @@ namespace OpenFrames{
         // the new pose state at each frame, which results in incremental rotations instead of one
         // big rotation from the initial to final controller positions.
         _motionData._device1OrigPose = device1CurrPose;
-        _motionData._origTrackball = osgGA::TrackballManipulator::getMatrix();
+        getTrackballRoomToWorldMatrix(_motionData._origTrackball);
         _motionData._origRotation = newRotation;
         
         break;
@@ -304,7 +284,7 @@ namespace OpenFrames{
         }
         
         // Compute new pose offset based on controller motion
-        _ovrDevice->setPoseOffsetRaw(_motionData._origPoseOffsetRaw + deltaPos);
+        _roomOffset = _motionData._origRoomOffset + deltaPos*_motionData._origWorldUnitsPerMeter;
         
         break;
       }
@@ -352,8 +332,7 @@ namespace OpenFrames{
         osg::Vec3d centerPoint;
         if (distRatio < 1.0) centerPoint = origCenter; // Expand universe
         else centerPoint = currCenter; // Shrink universe
-        osg::Vec3d newPoseOffsetRaw = (centerPoint*(1.0 - distRatio) + _motionData._origPoseOffsetRaw) / distRatio;
-        _ovrDevice->setPoseOffsetRaw(newPoseOffsetRaw);
+        _roomOffset = _motionData._origRoomOffset + centerPoint*(_motionData._origWorldUnitsPerMeter*(1.0 - distRatio));
         
         break;
       }
@@ -363,6 +342,16 @@ namespace OpenFrames{
     }
     
     camera.setViewMatrix(getInverseMatrix());
+  }
+  
+  /*************************************************************/
+  void OpenVRTrackball::getTrackballRoomToWorldMatrix(osg::Matrixd& matrix)
+  {
+    // Translate from room origin to trackball origin
+    matrix.makeTranslate(_roomOffset);
+    
+    // Transform from trackball space to view space
+    matrix.postMult(osgGA::TrackballManipulator::getMatrix());
   }
   
   /*************************************************************/
@@ -380,11 +369,29 @@ namespace OpenFrames{
     }
     
     _motionData._origWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
-    _motionData._origCenter = osgGA::TrackballManipulator::getCenter();
     _motionData._origRotation = osgGA::TrackballManipulator::getRotation();
-    _motionData._origDistance = osgGA::TrackballManipulator::getDistance();
-    _motionData._origTrackball = osgGA::TrackballManipulator::getMatrix();
-    _motionData._origPoseOffsetRaw = _ovrDevice->getPoseOffsetRaw();
+    getTrackballRoomToWorldMatrix(_motionData._origTrackball);
+    _motionData._origRoomOffset = _roomOffset;
+  }
+  
+  /*************************************************************/
+  OpenVRSwapBuffers::OpenVRSwapBuffers(OpenVRDevice *ovrDevice, VRTextureBuffer *texBuffer)
+  : _ovrDevice(ovrDevice), _texBuffer(texBuffer)
+  { }
+  
+  /*************************************************************/
+  void OpenVRSwapBuffers::swapBuffersImplementation(osg::GraphicsContext *gc)
+  {
+    // Get OpenGL texture names
+    unsigned int contextID = gc->getState()->getContextID();
+    GLuint rightEyeTexName = _texBuffer->_rightColorTex->getTextureObject(contextID)->id();
+    GLuint leftEyeTexName = _texBuffer->_leftColorTex->getTextureObject(contextID)->id();
+    
+    // Submit eye textures to OpenVR
+    _ovrDevice->submitFrame(rightEyeTexName, leftEyeTexName);
+    
+    // Run default swap buffers
+    gc->swapBuffersImplementation();
   }
 
 } // !namespace OpenFrames
