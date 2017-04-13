@@ -154,7 +154,7 @@ namespace OpenFrames{
     // Get updated poses for all devices
     _ovrDevice->waitGetPoses();
 
-    // Set World->HMD (Center) matrix as VR device transform
+    // Set Room->HMDCenter matrix as VR device transform
     osg::Matrixd matWorldToLocal = _ovrDevice->getHMDPoseMatrix();
     matWorldToLocal.postMultTranslate(_ovrDevice->getCenterViewOffset());
     _ovrDevice->getDeviceRenderModels()->setMatrix(matWorldToLocal);
@@ -192,10 +192,13 @@ namespace OpenFrames{
   /*************************************************************/
   osg::Matrixd OpenVRTrackball::getInverseMatrix() const
   {
-    // Get World->Local view matrix
+    // Get World->Local (trackball space) view matrix
     osg::Matrixd matWorldToLocal = FollowingTrackball::getInverseMatrix();
     
-    // Compute World->HMD matrix
+    // Translate from trackball to room origin
+    matWorldToLocal.postMultTranslate(_roomOffset);
+    
+    // Include Room->HMD transform
     matWorldToLocal.postMult(_ovrDevice->getHMDPoseMatrix());
     
     // Append HMDCenter view offset vector (midpoint of right/left eyes)

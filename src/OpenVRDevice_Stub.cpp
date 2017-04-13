@@ -154,9 +154,9 @@ namespace OpenFrames{
     _deviceIDToModel[0]._rawDeviceToWorld = matDeviceToWorld;
 
     // Apply apply translational offset and convert from meters to world units
-    matDeviceToWorld(3, 0) = (matDeviceToWorld(3, 0) + _poseOffsetRaw[0])*_worldUnitsPerMeter;
-    matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) + _poseOffsetRaw[1])*_worldUnitsPerMeter;
-    matDeviceToWorld(3, 2) = (matDeviceToWorld(3, 2) + _poseOffsetRaw[2])*_worldUnitsPerMeter;
+    matDeviceToWorld(3, 0) = matDeviceToWorld(3, 0)*_worldUnitsPerMeter;
+    matDeviceToWorld(3, 1) = matDeviceToWorld(3, 1)*_worldUnitsPerMeter;
+    matDeviceToWorld(3, 2) = matDeviceToWorld(3, 2)*_worldUnitsPerMeter;
 
     // Invert since we want World to HMD transform
     _hmdPose.invert(matDeviceToWorld);
@@ -184,9 +184,9 @@ namespace OpenFrames{
       _deviceIDToModel[i]._rawDeviceToWorld = matDeviceToWorld;
 
       // Apply translational offset and convert from meters to world units
-      matDeviceToWorld(3, 0) = (matDeviceToWorld(3, 0) + _poseOffsetRaw[0])*_worldUnitsPerMeter;
-      matDeviceToWorld(3, 1) = (matDeviceToWorld(3, 1) + _poseOffsetRaw[1])*_worldUnitsPerMeter;
-      matDeviceToWorld(3, 2) = (matDeviceToWorld(3, 2) + _poseOffsetRaw[2])*_worldUnitsPerMeter;
+      matDeviceToWorld(3, 0) = matDeviceToWorld(3, 0)*_worldUnitsPerMeter;
+      matDeviceToWorld(3, 1) = matDeviceToWorld(3, 1)*_worldUnitsPerMeter;
+      matDeviceToWorld(3, 2) = matDeviceToWorld(3, 2)*_worldUnitsPerMeter;
 
       // Since the device model is assumed in meters, we need to scale it to world units
       // The normals will need to be rescaled, which is done by the containing Camera

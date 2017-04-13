@@ -297,7 +297,7 @@ namespace OpenFrames {
     
     virtual const char* className() const { return "OpenVRTrackball"; }
 
-    // Get World to Head matrix
+    // Get World to HMD (Center) matrix
     virtual osg::Matrixd getInverseMatrix() const;
 
     // Handle event
@@ -308,7 +308,11 @@ namespace OpenFrames {
 
   private:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
-
+    
+    // Translational offset from trackball space to room origin
+    osg::Vec3d _roomOffset;
+    
+    /** Type of user motion currently being handled */
     enum MotionMode
     {
       NONE = 0,
