@@ -111,9 +111,13 @@ namespace OpenFrames {
     /** Encapsulates an OpenVR device's model */
     struct DeviceModel
     {
-      DeviceModel() : _valid(false), _class(NONE) {}
-      osg::ref_ptr<osg::MatrixTransform> _modelTransform;
-      osg::Matrixd _rawDeviceToWorld;
+      DeviceModel() : _valid(false), _class(NONE)
+      {
+        _modelTransform = new osg::MatrixTransform;
+        _modelTransform->setNodeMask(0x0);
+      }
+      osg::ref_ptr<osg::MatrixTransform> _modelTransform; // In world units
+      osg::Matrixd _rawDeviceToWorld; // In OpenVR units [meters]
       bool _valid;
       DeviceClass _class;
     };
@@ -125,24 +129,28 @@ namespace OpenFrames {
       if(id < _deviceIDToModel.size()) return &(_deviceIDToModel[id]);
       else return NULL;
     }
+    
+    /** Get the HMD pose matrix, in world units */
+    const osg::Matrixd& getHMDPoseMatrix()
+    { return _deviceIDToModel[0]._modelTransform->getMatrix(); }
 
-    /** Update and get the per-eye projection matrix */
+    /** Update the per-eye projection matrix */
     void updateProjectionMatrices();
     osg::Matrixd& getRightEyeProjectionMatrix() { return _rightEyeProj; }
     osg::Matrixd& getLeftEyeProjectionMatrix() { return _leftEyeProj; }
     osg::Matrixd& getCenterProjectionMatrix() { return _centerProj; }
 
-    /** Update and get the per-eye view matrix */
+    /** Update the per-eye raw view offset vector, in OpenVR units [meters] */
     void updateViewOffsets();
+    
+    /** Get the per-eye world offset vector, in world units (see worldUnitsPerMeter) */
     osg::Vec3d& getRightEyeViewOffset() { return _rightEyeViewOffset; }
     osg::Vec3d& getLeftEyeViewOffset() { return _leftEyeViewOffset; }
     osg::Vec3d& getCenterViewOffset() { return _centerViewOffset; }
 
-    /** Update poses (positions/orientations) of all VR devices, and wait
-     for the signal to start rendering. Note that this should be called
-     just before the start of the rendering pass. */
+    /** Update raw poses (in OpenVR units [meters]) of all VR devices, and wait
+     for the signal to start the next frame. */
     void waitGetPoses();
-    osg::Matrixd& getHMDPoseMatrix() { return _hmdPose; }
     
     /** Get/set the world units per meter ratio and its limits */
     void setWorldUnitsPerMeter(const double& worldUnitsPerMeter)
@@ -197,6 +205,7 @@ namespace OpenFrames {
     /** Vector of each device's rendering data indexed by its OpenVR id */
     typedef std::vector<DeviceModel> DeviceModelVector;
     DeviceModelVector _deviceIDToModel;
+    void computeDeviceTransforms();
     
     // Group that contains all device models
     osg::ref_ptr<osg::MatrixTransform> _deviceModels;
@@ -209,10 +218,7 @@ namespace OpenFrames {
     osg::Vec3d _rightEyeViewOffsetRaw, _leftEyeViewOffsetRaw, _centerViewOffsetRaw;
     void computeViewOffsets(const osg::Vec3d& rightEyeRaw, const osg::Vec3d& leftEyeRaw);
     
-    double _ipd; // Interpupillary distance
-
-    // World to Head view transformation
-    osg::Matrixd _hmdPose;
+    double _ipd; // Current interpupillary distance
   };
   
   /******************************************
