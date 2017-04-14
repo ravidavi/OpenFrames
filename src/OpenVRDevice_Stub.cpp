@@ -71,7 +71,7 @@ namespace OpenFrames{
   void OpenVRDevice::updateDeviceRenderModels()
   {
     // Loop through all possible tracked devices except the HMD (already loaded)
-    for(unsigned int deviceID = 1; deviceID < numTrackedDevices; ++deviceID)
+    for(unsigned int deviceID = 0; deviceID < numTrackedDevices; ++deviceID)
     {
       // Set up device render model
       setupRenderModelForTrackedDevice(deviceID);
@@ -104,16 +104,17 @@ namespace OpenFrames{
     }
     
     // Set up device model if needed
-    if(_deviceIDToModel[deviceID]._modelTransform == NULL)
+    if(_deviceIDToModel[deviceID]._modelTransform->getNumChildren() == 0)
     {
-      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Setting up render model for device " << deviceName << deviceID << std::endl;
+      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDeviceStub: Setting up transform for device " << deviceName << deviceID << std::endl;
       
-      // Create device model's transform and add it to the group of all devices
-      osg::MatrixTransform *xform = new osg::MatrixTransform;
-      xform->addChild(_deviceNameToGeode[deviceName]);
-      _deviceIDToModel[deviceID]._modelTransform = xform;
-      _deviceIDToModel[deviceID]._class = NONE;
-      _deviceModels->addChild(xform);
+      // Add device model's transform to the group of all rendered devices
+      _deviceIDToModel[deviceID]._modelTransform->addChild(_deviceNameToGeode[deviceName]);
+      _deviceModels->addChild(_deviceIDToModel[deviceID]._modelTransform);
+      
+      // Set device class
+      if(deviceID == 0) _deviceIDToModel[deviceID]._class = HMD;
+      else _deviceIDToModel[deviceID]._class = BASESTATION;
     }
   }
   
@@ -147,54 +148,42 @@ namespace OpenFrames{
   void OpenVRDevice::waitGetPoses()
   {
     osg::Matrixf matDeviceToWorld; // Device to World transform
-
-    // Simulate HMD pose in meters
-    matDeviceToWorld.makeIdentity(); // Look at scene head-on from the OpenVR origin
-    matDeviceToWorld(3, 1) = 1.6764 - _userHeight; // 5'6" simulated user height in meters
-    _deviceIDToModel[0]._rawDeviceToWorld = matDeviceToWorld;
-
-    // Apply apply translational offset and convert from meters to world units
-    matDeviceToWorld(3, 0) = matDeviceToWorld(3, 0)*_worldUnitsPerMeter;
-    matDeviceToWorld(3, 1) = matDeviceToWorld(3, 1)*_worldUnitsPerMeter;
-    matDeviceToWorld(3, 2) = matDeviceToWorld(3, 2)*_worldUnitsPerMeter;
-
-    // Invert since we want World to HMD transform
-    _hmdPose.invert(matDeviceToWorld);
     
-    // Simulate pose for base stations
-    for(unsigned int i = 1; i < numTrackedDevices; ++i)
+    // Simulate poses for all VR devices
+    for(unsigned int i = 0; i < numTrackedDevices; ++i)
     {
       _deviceIDToModel[i]._valid = true; // Always valid
       
-      // Set simulated base station pose in meters
-      if(i == 1)
+      // Set simulated HMD or base station pose in meters
+      if(i == 0)
+      {
+        matDeviceToWorld.makeIdentity();
+        matDeviceToWorld(3, 1) = 1.6764; // 5'6" simulated user height in meters
+      }
+      else if(i == 1)
       {
         matDeviceToWorld.makeRotate(osg::Quat(10.0, osg::Vec3d(1, 0, 0)));
-        //matDeviceToWorld.postMultTranslate(osg::Vec3d(-3, 3, -3));
-        matDeviceToWorld.postMultTranslate(osg::Vec3d(0, 2, -1));
+        matDeviceToWorld.postMultTranslate(osg::Vec3d(-3, 3, -3));
       }
       else if(i == 2)
       {
         matDeviceToWorld.makeRotate(osg::Quat(10.0, osg::Vec3d(0, 1, 0)));
-        //matDeviceToWorld.postMultTranslate(osg::Vec3d(2, 3, -2));
-        matDeviceToWorld.postMultTranslate(osg::Vec3d(0.1, 2, -0.3));
+        matDeviceToWorld.postMultTranslate(osg::Vec3d(2, 3, -2));
       }
       
       matDeviceToWorld(3, 1) -= _userHeight; // Subtract user's height, OpenVR world is Y-up
       _deviceIDToModel[i]._rawDeviceToWorld = matDeviceToWorld;
-
-      // Apply translational offset and convert from meters to world units
-      matDeviceToWorld(3, 0) = matDeviceToWorld(3, 0)*_worldUnitsPerMeter;
-      matDeviceToWorld(3, 1) = matDeviceToWorld(3, 1)*_worldUnitsPerMeter;
-      matDeviceToWorld(3, 2) = matDeviceToWorld(3, 2)*_worldUnitsPerMeter;
-
-      // Since the device model is assumed in meters, we need to scale it to world units
-      // The normals will need to be rescaled, which is done by the containing Camera
-      matDeviceToWorld.preMultScale(osg::Vec3d(_worldUnitsPerMeter, _worldUnitsPerMeter, _worldUnitsPerMeter));
       
-      // Set base station model's location from its pose
-      _deviceIDToModel[i]._modelTransform->setMatrix(matDeviceToWorld);
+      // Enable device model's transform so that it will be rendered
+      // Only enable base stations, since we don't want to render anything else
+      if(_deviceIDToModel[i]._class == BASESTATION)
+        _deviceIDToModel[i]._modelTransform->setNodeMask(0xffffffff);
+      else
+        _deviceIDToModel[i]._modelTransform->setNodeMask(0x0);
     }
+    
+    // Compute device transforms from raw poses
+    computeDeviceTransforms();
   }
   
   /*************************************************************/

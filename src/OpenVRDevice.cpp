@@ -191,13 +191,13 @@ namespace OpenFrames{
   
   /*************************************************************/
   void OpenVRDevice::updateDeviceRenderModels()
-  {    
-    // Loop through all possible tracked devices except the HMD (already loaded)
-    for(vr::TrackedDeviceIndex_t deviceID = vr::k_unTrackedDeviceIndex_Hmd + 1; 
-      deviceID < vr::k_unMaxTrackedDeviceCount; ++deviceID)
+  {
+    // Loop through all remaining tracked devices
+    for(unsigned int deviceID = 0; deviceID < _deviceIDToModel.size(); ++deviceID)
     {
       // Make sure device is connected
-      if( !_vrSystem->IsTrackedDeviceConnected(deviceID) ) continue;
+      vr::TrackedDeviceIndex_t ovrID = deviceID + vr::k_unTrackedDeviceIndex_Hmd;
+      if( !_vrSystem->IsTrackedDeviceConnected(ovrID) ) continue;
       
       // Get device name and set up its render model
       setupRenderModelForTrackedDevice(deviceID);
@@ -216,7 +216,7 @@ namespace OpenFrames{
     // If not found, then load device data
     if(i == _deviceNameToGeode.end())
     {
-      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Setting up model for device " << deviceName << std::endl;
+      osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Setting up render data for device " << deviceName << std::endl;
       
       vr::EVRRenderModelError error; // Error code
       
@@ -328,20 +328,15 @@ namespace OpenFrames{
     }
     
     // Set up device model if needed
-    if(_deviceIDToModel[deviceID]._modelTransform == NULL)
+    if(_deviceIDToModel[deviceID]._modelTransform->getNumChildren() == 0)
     {
       osg::notify(osg::NOTICE) << "OpenFrames::OpenVRDevice: Setting up transform for device " << deviceName << deviceID << std::endl;
       
-      // Create device model's transform and add it to the group of all devices
-      osg::MatrixTransform *xform = new osg::MatrixTransform;
-      xform->addChild(_deviceNameToGeode[deviceName]);
-      _deviceIDToModel[deviceID]._modelTransform = xform;
-      _deviceModels->addChild(xform);
+      // Add device model's transform to the group of all rendered devices
+      _deviceIDToModel[deviceID]._modelTransform->addChild(_deviceNameToGeode[deviceName]);
+      _deviceModels->addChild(_deviceIDToModel[deviceID]._modelTransform);
 
-      // Disable all devices, controllers will be enabled when getting their pose
-      xform->setNodeMask(0x0);
-
-      // Get device class
+      // Set device class
       vr::ETrackedDeviceClass devClass = _vrSystem->GetTrackedDeviceClass(deviceID);
       switch (devClass)
       {
@@ -414,63 +409,25 @@ namespace OpenFrames{
     
     osg::Matrixd matDeviceToWorld; // Device to World transform
 
-    // Update view data using HMD pose
-    const vr::TrackedDevicePose_t& hmdPose = poses[vr::k_unTrackedDeviceIndex_Hmd];
-    if (hmdPose.bPoseIsValid)
+    // Get poses for all devices (e.g. HMD, controllers, base stations, etc.)
+    for (unsigned int i = 0; i < _deviceIDToModel.size(); ++i)
     {
-      // Extract the HMD's Head to World matrix
-      convertMatrix34(matDeviceToWorld, hmdPose.mDeviceToAbsoluteTracking);
-      matDeviceToWorld(3, 1) -= _userHeight; // Subtract user's height, OpenVR world is Y-up
-      _deviceIDToModel[0]._rawDeviceToWorld = matDeviceToWorld;
-      
-      // Apply apply translational offset and convert from meters to world units
-      matDeviceToWorld(3, 0) = matDeviceToWorld(3, 0)*_worldUnitsPerMeter;
-      matDeviceToWorld(3, 1) = matDeviceToWorld(3, 1)*_worldUnitsPerMeter;
-      matDeviceToWorld(3, 2) = matDeviceToWorld(3, 2)*_worldUnitsPerMeter;
-
-      // Invert since we want World to HMD transform
-      _hmdPose.invert(matDeviceToWorld);
-    }
-
-    // Get poses for remaining devices (e.g. controllers, base stations, etc.)
-    for (int i = vr::k_unTrackedDeviceIndex_Hmd + 1; i < vr::k_unMaxTrackedDeviceCount; ++i)
-    {
-      // Only process device if it has been set up
-      if(_deviceIDToModel[i]._modelTransform.valid())
-      {
-        _deviceIDToModel[i]._valid = poses[i].bPoseIsValid;
-      }
-      else
-      {
-        _deviceIDToModel[i]._valid = false;
-        continue;
-      }
-
-      // Only extract data for controllers
-      if (_deviceIDToModel[i]._class != CONTROLLER) continue;
-
       // Only extract data if pose is valid
+      _deviceIDToModel[i]._valid = poses[i].bPoseIsValid;
       if (_deviceIDToModel[i]._valid)
       {
         // Extract the device's raw Local to World matrix, given in room coordinates
-        convertMatrix34(matDeviceToWorld, poses[i].mDeviceToAbsoluteTracking);
+        vr::TrackedDeviceIndex_t ovrID = i + vr::k_unTrackedDeviceIndex_Hmd;
+        convertMatrix34(matDeviceToWorld, poses[ovrID].mDeviceToAbsoluteTracking);
         matDeviceToWorld(3, 1) -= _userHeight; // Subtract user's height, OpenVR world is Y-up
         _deviceIDToModel[i]._rawDeviceToWorld = matDeviceToWorld;
-
-        // Apply translational offset and convert from meters to world units
-        matDeviceToWorld(3, 0) = matDeviceToWorld(3, 0)*_worldUnitsPerMeter;
-        matDeviceToWorld(3, 1) = matDeviceToWorld(3, 1)*_worldUnitsPerMeter;
-        matDeviceToWorld(3, 2) = matDeviceToWorld(3, 2)*_worldUnitsPerMeter;
-
-        // Since the device model is assumed in meters, we need to scale it to world units
-        // The normals will need to be rescaled, which is done by the containing Camera
-        matDeviceToWorld.preMultScale(osg::Vec3d(_worldUnitsPerMeter, _worldUnitsPerMeter, _worldUnitsPerMeter));
-
-        // Set device model's transform from its adjusted pose in world units
-        _deviceIDToModel[i]._modelTransform->setMatrix(matDeviceToWorld);
         
-        // Enable device model's transform
-        _deviceIDToModel[i]._modelTransform->setNodeMask(0xffffffff);
+        // Enable device model's transform so that it will be rendered
+        // Only enable controllers, since we don't want to render anything else
+        if(_deviceIDToModel[i]._class == CONTROLLER)
+          _deviceIDToModel[i]._modelTransform->setNodeMask(0xffffffff);
+        else
+          _deviceIDToModel[i]._modelTransform->setNodeMask(0x0);
       }
 
       // Otherwise disable its model transform
@@ -479,6 +436,9 @@ namespace OpenFrames{
         _deviceIDToModel[i]._modelTransform->setNodeMask(0x0);
       }
     }
+    
+    // Compute device transforms from raw poses
+    computeDeviceTransforms();
   }
   
   /*************************************************************/

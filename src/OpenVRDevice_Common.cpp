@@ -116,6 +116,40 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
+  void OpenVRDevice::computeDeviceTransforms()
+  {
+    osg::Matrixd matDeviceToWorld; // Device to World transform
+    osg::Matrix matWorldToDevice; // For HMD
+    
+    // Compute transforms for all devices
+    for (int i = 0; i < _deviceIDToModel.size(); ++i)
+    {
+      if(!_deviceIDToModel[i]._valid) continue;
+      
+      // Convert from meters to world units
+      matDeviceToWorld = _deviceIDToModel[i]._rawDeviceToWorld;
+      matDeviceToWorld(3, 0) = matDeviceToWorld(3, 0)*_worldUnitsPerMeter;
+      matDeviceToWorld(3, 1) = matDeviceToWorld(3, 1)*_worldUnitsPerMeter;
+      matDeviceToWorld(3, 2) = matDeviceToWorld(3, 2)*_worldUnitsPerMeter;
+      
+      if(_deviceIDToModel[i]._class == HMD)
+      {
+        // Invert since HMD represents World->Local view matrix
+        matWorldToDevice.invert(matDeviceToWorld);
+        _deviceIDToModel[i]._modelTransform->setMatrix(matWorldToDevice);
+      }
+      else
+      {
+        // Non-HMD devices need their models scaled to world units
+        matDeviceToWorld.preMultScale(osg::Vec3d(_worldUnitsPerMeter, _worldUnitsPerMeter, _worldUnitsPerMeter));
+        
+        // Set device model's transform from its adjusted pose in world units
+        _deviceIDToModel[i]._modelTransform->setMatrix(matDeviceToWorld);
+      }
+    }
+  }
+  
+  /*************************************************************/
   void OpenVRDevice::computeViewOffsets(const osg::Vec3d& rightEyeRaw, const osg::Vec3d& leftEyeRaw)
   {
     // Get right eye view offset vector (Eye to Head transform)
