@@ -90,14 +90,8 @@ namespace OpenFrames
       // Create a camera manager to handle VR cameras
       VRCameraManager *vrCamManager = new VRCameraManager(_vrTextureBuffer.get(), _ovrDevice.get());
       
-      // Create callbacks to update VR poses and master camera view matrix
-      OpenVRPoseCallback *poseCallback = new OpenVRPoseCallback(_ovrDevice.get());
-      
       // Customize depth partitioner with VR callback
       _depthPartitioner->getCallback()->setCameraManager(vrCamManager);
-      
-      // Customize master camera with VR callback
-      _sceneView->getCamera()->setUpdateCallback(poseCallback);
     }
 
     // Point depth partitioner to osg::View that should be analyzed

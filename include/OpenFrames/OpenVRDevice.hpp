@@ -151,6 +151,7 @@ namespace OpenFrames {
     /** Update raw poses (in OpenVR units [meters]) of all VR devices, and wait
      for the signal to start the next frame. */
     void waitGetPoses();
+    void computeDeviceTransforms(); // Compute Local<->World device transforms
     
     /** Get/set the world units per meter ratio and its limits */
     void setWorldUnitsPerMeter(const double& worldUnitsPerMeter)
@@ -205,7 +206,6 @@ namespace OpenFrames {
     /** Vector of each device's rendering data indexed by its OpenVR id */
     typedef std::vector<DeviceModel> DeviceModelVector;
     DeviceModelVector _deviceIDToModel;
-    void computeDeviceTransforms();
     
     // Group that contains all device models
     osg::ref_ptr<osg::MatrixTransform> _deviceModels;
@@ -216,7 +216,6 @@ namespace OpenFrames {
     // Per-eye view offsets, transform from HMD to Eye space
     osg::Vec3d _rightEyeViewOffset, _leftEyeViewOffset, _centerViewOffset;
     osg::Vec3d _rightEyeViewOffsetRaw, _leftEyeViewOffsetRaw, _centerViewOffsetRaw;
-    void computeViewOffsets(const osg::Vec3d& rightEyeRaw, const osg::Vec3d& leftEyeRaw);
     
     double _ipd; // Current interpupillary distance
   };
@@ -237,24 +236,6 @@ namespace OpenFrames {
     // Check for events and store them in event queue
     virtual bool checkEvents();
 
-  private:
-    osg::observer_ptr<OpenVRDevice> _ovrDevice;
-  };
-
-  /******************************************
-   * OpenFrames API, class OpenVRPoseCallback
-   * Updates HMD and pose data from OpenVR. This should be attached as an
-   * update callback to the view's master camera
-   ******************************************/
-  class OpenVRPoseCallback : public osg::Callback
-  {
-  public:
-    OpenVRPoseCallback(OpenVRDevice *ovrDevice)
-    : _ovrDevice(ovrDevice)
-    { }
-    
-    virtual bool run(osg::Object* object, osg::Object* data);
-    
   private:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
   };
@@ -302,10 +283,7 @@ namespace OpenFrames {
     // Handle event
     virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us);
 
-    // Update internal view matrix and update the specified camera
-    virtual void updateCamera(osg::Camera& camera);
-
-  private:
+  protected:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
     
     // Translational offset from trackball space to room origin
@@ -315,6 +293,8 @@ namespace OpenFrames {
     // custom view transformations by FollowingTrackball. This allows transformations
     // between room space and the space viewed by the osgGA::Trackball.
     void getTrackballRoomToWorldMatrix(osg::Matrixd& matrix);
+
+    void processMotion();
     
     /** Type of user motion currently being handled */
     enum MotionMode
@@ -333,9 +313,7 @@ namespace OpenFrames {
       double _prevTime;
       unsigned int _device1ID;
       unsigned int _device2ID;
-      osg::Matrixd _device1OrigPose;
       osg::Matrixd _device1OrigPoseRaw;
-      osg::Matrixd _device2OrigPose;
       osg::Matrixd _device2OrigPoseRaw;
       double _origWorldUnitsPerMeter;
       osg::Quat _origRotation;

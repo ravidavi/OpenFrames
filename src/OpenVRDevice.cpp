@@ -387,15 +387,25 @@ namespace OpenFrames{
     // Get right eye view offset vector (Eye to Head transform)
     view = _vrSystem->GetEyeToHeadTransform(vr::Eye_Right);
     convertMatrix34(viewMat, view);
-    osg::Vec3d rightEyeRaw = viewMat.getTrans();
+    _rightEyeViewOffsetRaw = viewMat.getTrans();
 
     // Get left eye view offset vector (Eye to Head transform)
     view = _vrSystem->GetEyeToHeadTransform(vr::Eye_Left);
     convertMatrix34(viewMat, view);
-    osg::Vec3d leftEyeRaw = viewMat.getTrans();
+    _leftEyeViewOffsetRaw = viewMat.getTrans();
     
-    // Compute view offsets from raw offset vectors
-    computeViewOffsets(rightEyeRaw, leftEyeRaw);
+    // Compute HMD center view offset vector (Eye to Head transform)
+    _centerViewOffsetRaw = (_rightEyeViewOffsetRaw + _leftEyeViewOffsetRaw)*0.5;
+    _rightEyeViewOffsetRaw -= _centerViewOffsetRaw;
+    _leftEyeViewOffsetRaw -= _centerViewOffsetRaw;
+
+    // Print new IPD value if needed
+    double ipd = (_rightEyeViewOffsetRaw - _leftEyeViewOffsetRaw).length();
+    if (ipd != _ipd)
+    {
+      osg::notify(osg::ALWAYS) << "VR Interpupillary Distance: " << ipd * 1000.0f << "mm" << std::endl;
+      _ipd = ipd;
+    }
   }
 
   /*************************************************************/
@@ -437,8 +447,8 @@ namespace OpenFrames{
       }
     }
     
-    // Compute device transforms from raw poses
-    computeDeviceTransforms();
+    // Update the HMD->Eye view offset vectors
+    updateViewOffsets();
   }
   
   /*************************************************************/
@@ -538,12 +548,6 @@ namespace OpenFrames{
             _motionData._device2ID = deviceID;
             saveCurrentMotionData();
           }
-
-          osg::notify(osg::NOTICE) << "Switching to ";
-          if (_motionData._mode == NONE) osg::notify(osg::NOTICE) << "NONE" << std::endl;
-          else if (_motionData._mode == TRANSLATE) osg::notify(osg::NOTICE) << "TRANSLATE" << std::endl;
-          else if (_motionData._mode == ROTATE) osg::notify(osg::NOTICE) << "ROTATE" << std::endl;
-          else if (_motionData._mode == SCALE) osg::notify(osg::NOTICE) << "SCALE" << std::endl;
         }
         break;
 
@@ -590,19 +594,24 @@ namespace OpenFrames{
             _motionData._device2ID = UINT_MAX; // Ignore device 2
             saveCurrentMotionData();
           }
-
-          osg::notify(osg::NOTICE) << "Switching to ";
-          if (_motionData._mode == NONE) osg::notify(osg::NOTICE) << "NONE" << std::endl;
-          else if (_motionData._mode == TRANSLATE) osg::notify(osg::NOTICE) << "TRANSLATE" << std::endl;
-          else if (_motionData._mode == ROTATE) osg::notify(osg::NOTICE) << "ROTATE" << std::endl;
-          else if (_motionData._mode == SCALE) osg::notify(osg::NOTICE) << "SCALE" << std::endl;
         }
         break;
       }
+
+      osg::notify(osg::NOTICE) << "Switching to ";
+      if (_motionData._mode == NONE) osg::notify(osg::NOTICE) << "NONE" << std::endl;
+      else if (_motionData._mode == TRANSLATE) osg::notify(osg::NOTICE) << "TRANSLATE" << std::endl;
+      else if (_motionData._mode == ROTATE) osg::notify(osg::NOTICE) << "ROTATE" << std::endl;
+      else if (_motionData._mode == SCALE) osg::notify(osg::NOTICE) << "SCALE" << std::endl;
+
       return false;
     }
     else // Otherwise process it as a regular trackball event
     {
+      // Compute new motion-based view at each frame
+      if (ea.getEventType() == osgGA::GUIEventAdapter::FRAME)
+        processMotion();
+
       return FollowingTrackball::handle(ea, us);
     }
   }
