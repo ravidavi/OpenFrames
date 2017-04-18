@@ -137,11 +137,21 @@ namespace OpenFrames{
   void OpenVRDevice::updateViewOffsets()
   {
     // Simulate raw left/right eye vectors relative to HMD origin
-    osg::Vec3d rightEyeRaw(0.03, 0.01, -0.01);
-    osg::Vec3d leftEyeRaw(-0.03, 0.01, -0.01);
+    _rightEyeViewOffsetRaw.set(0.03, 0.01, -0.01);
+    _leftEyeViewOffsetRaw.set(-0.03, 0.01, -0.01);
     
-    // Compute view offsets from raw offset vectors
-    computeViewOffsets(rightEyeRaw, leftEyeRaw);
+    // Compute HMD center view offset vector (Eye to Head transform)
+    _centerViewOffsetRaw = (_rightEyeViewOffsetRaw + _leftEyeViewOffsetRaw)*0.5;
+    _rightEyeViewOffsetRaw -= _centerViewOffsetRaw;
+    _leftEyeViewOffsetRaw -= _centerViewOffsetRaw;
+    
+    // Print new IPD value if needed
+    double ipd = (_rightEyeViewOffsetRaw - _leftEyeViewOffsetRaw).length();
+    if (ipd != _ipd)
+    {
+      osg::notify(osg::ALWAYS) << "VR Interpupillary Distance: " << ipd * 1000.0f << "mm" << std::endl;
+      _ipd = ipd;
+    }
   }
 
   /*************************************************************/
@@ -182,8 +192,8 @@ namespace OpenFrames{
         _deviceIDToModel[i]._modelTransform->setNodeMask(0x0);
     }
     
-    // Compute device transforms from raw poses
-    computeDeviceTransforms();
+    // Update the HMD->Eye view offset vectors
+    updateViewOffsets();
   }
   
   /*************************************************************/
@@ -209,6 +219,10 @@ namespace OpenFrames{
   /*************************************************************/
   bool OpenVRTrackball::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us)
   {
+    // Compute new motion-based view at each frame
+    if (ea.getEventType() == osgGA::GUIEventAdapter::FRAME)
+      processMotion();
+    
     // Just call parent trackball handler
     return FollowingTrackball::handle(ea, us);
   }
