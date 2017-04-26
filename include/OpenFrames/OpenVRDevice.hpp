@@ -96,7 +96,6 @@ namespace OpenFrames {
     inline bool isInitialized() { return _isInitialized; }
     
     /** Get render models for devices */
-    void updateDeviceRenderModels();
     osg::MatrixTransform* getDeviceRenderModels() { return _deviceModels; }
     
     /** An OpenVR device's class */
@@ -139,9 +138,6 @@ namespace OpenFrames {
     osg::Matrixd& getRightEyeProjectionMatrix() { return _rightEyeProj; }
     osg::Matrixd& getLeftEyeProjectionMatrix() { return _leftEyeProj; }
     osg::Matrixd& getCenterProjectionMatrix() { return _centerProj; }
-
-    /** Update the per-eye raw view offset vector, in OpenVR units [meters] */
-    void updateViewOffsets();
     
     /** Get the per-eye world offset vector, in world units (see worldUnitsPerMeter) */
     osg::Vec3d& getRightEyeViewOffset() { return _rightEyeViewOffset; }
@@ -186,6 +182,12 @@ namespace OpenFrames {
   protected:
     virtual ~OpenVRDevice();
     
+    /** Update the per-eye raw view offset vector, in OpenVR units [meters] */
+    void updateViewOffsets();
+    
+    /** Create the render models for each OpenVR device and misc UI elements */
+    void createDeviceRenderModels();
+
     /** Load a device's render model by its OpenVR ID */
     void setupRenderModelForTrackedDevice(uint32_t deviceID);
     

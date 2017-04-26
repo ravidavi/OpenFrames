@@ -169,7 +169,7 @@ namespace OpenFrames{
     _deviceIDToModel.resize(vr::k_unMaxTrackedDeviceCount);
 
     // Get render models for controllers and other devices
-    updateDeviceRenderModels();
+    createDeviceRenderModels();
     
     return (_isInitialized = true);
   }
@@ -190,9 +190,9 @@ namespace OpenFrames{
   }
   
   /*************************************************************/
-  void OpenVRDevice::updateDeviceRenderModels()
+  void OpenVRDevice::createDeviceRenderModels()
   {
-    // Loop through all remaining tracked devices
+    // Loop through all tracked devices
     for(unsigned int deviceID = 0; deviceID < _deviceIDToModel.size(); ++deviceID)
     {
       // Make sure device is connected
