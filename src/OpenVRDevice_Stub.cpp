@@ -53,7 +53,7 @@ namespace OpenFrames{
     _deviceIDToModel.resize(numTrackedDevices);
 
     // Get render models for controllers and other devices
-    updateDeviceRenderModels();
+    createDeviceRenderModels();
     
     return (_isInitialized = true);
   }
@@ -68,7 +68,7 @@ namespace OpenFrames{
   }
   
   /*************************************************************/
-  void OpenVRDevice::updateDeviceRenderModels()
+  void OpenVRDevice::createDeviceRenderModels()
   {
     // Loop through all possible tracked devices except the HMD (already loaded)
     for(unsigned int deviceID = 0; deviceID < numTrackedDevices; ++deviceID)
