@@ -17,6 +17,7 @@
 #include <OpenFrames/OpenVRDevice.hpp>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/VRUtils.hpp>
+#include <osgDB/ReadFile>
 
 namespace OpenFrames{
 
@@ -107,6 +108,29 @@ namespace OpenFrames{
     // make sure that model normals are rescaled by OpenGL
     //_deviceModels->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
     _deviceModels->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+
+    // Create the sphere that represents the controller midpoint
+    float radius = 0.01; // Radius in meters
+    osg::Geode *geode = new osg::Geode;
+    osg::ShapeDrawable *sd = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(), radius));
+    sd->setColor(osg::Vec4(1.0, 1.0, 1.0, 0.2));
+    geode->addDrawable(sd);
+    _controllerMidpoint = new osg::MatrixTransform;
+    _controllerMidpoint->addChild(geode);
+    _deviceModels->addChild(_controllerMidpoint);
+
+    // Set midpoint sphere texture
+    osg::Image *image = osgDB::readImageFile("../Images/marble.jpg");
+    if (image)
+    {
+      osg::Texture2D *texture = new osg::Texture2D(image);
+      texture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
+      texture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
+      osg::StateSet *ss = geode->getOrCreateStateSet();
+      ss->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
+      ss->setMode(GL_BLEND, osg::StateAttribute::ON);
+      ss->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+    }
   }
 
   /*************************************************************/
@@ -119,7 +143,10 @@ namespace OpenFrames{
   void OpenVRDevice::computeDeviceTransforms()
   {
     osg::Matrixd matDeviceToWorld; // Device to World transform
-    osg::Matrix matWorldToDevice; // For HMD
+    osg::Matrixd matWorldToDevice; // For HMD
+    osg::Matrixd matMidpoint; // For controller midpoint
+    unsigned int numActiveControllers = 0;
+    osg::Quat q1, q2;
     
     // Compute transforms for all devices
     for (int i = 0; i < _deviceIDToModel.size(); ++i)
@@ -140,6 +167,18 @@ namespace OpenFrames{
       }
       else
       {
+        // Save controller orientation and accumulate midpoint position
+        if (_deviceIDToModel[i]._class == CONTROLLER)
+        {
+          ++numActiveControllers;
+          if (numActiveControllers == 1) q1 = matDeviceToWorld.getRotate();
+          else q2 = matDeviceToWorld.getRotate();
+
+          matMidpoint(3, 0) += matDeviceToWorld(3, 0);
+          matMidpoint(3, 1) += matDeviceToWorld(3, 1);
+          matMidpoint(3, 2) += matDeviceToWorld(3, 2);
+        }
+          
         // Non-HMD devices need their models scaled to world units
         matDeviceToWorld.preMultScale(osg::Vec3d(_worldUnitsPerMeter, _worldUnitsPerMeter, _worldUnitsPerMeter));
         
@@ -147,6 +186,27 @@ namespace OpenFrames{
         _deviceIDToModel[i]._modelTransform->setMatrix(matDeviceToWorld);
       }
     }
+
+    // Compute controller midpoint transform
+    if (numActiveControllers >= 2)
+    {
+      matMidpoint(3, 0) /= (double)numActiveControllers; // Average controller position
+      matMidpoint(3, 1) /= (double)numActiveControllers;
+      matMidpoint(3, 2) /= (double)numActiveControllers;
+      matMidpoint(0, 0) = _worldUnitsPerMeter; // Scale midpoint model (same as above matrix.preMultScale)
+      matMidpoint(1, 1) = _worldUnitsPerMeter;
+      matMidpoint(2, 2) = _worldUnitsPerMeter;
+      _controllerMidpoint->setMatrix(matMidpoint);
+      _controllerMidpoint->setNodeMask(0xffffffff);
+
+      // Fade midpoint sphere as controller orientations get further apart
+      double dist = q1[0] * q2[0] + q1[1] * q2[1] + q1[2] * q2[2] + q1[3] * q2[3]; // inner product
+      dist = dist*dist; // Range [0, 1] since each quaterion is unit length
+      osg::Geode *geode = static_cast<osg::Geode*>(_controllerMidpoint->getChild(0));
+      osg::ShapeDrawable *sd = static_cast<osg::ShapeDrawable*>(geode->getDrawable(0));
+      sd->setColor(osg::Vec4(1.0, 1.0, 1.0, 0.5*dist*dist));
+    }
+    else _controllerMidpoint->setNodeMask(0x0);
 
     // Scale view offsets according to WorldUnit/Meter scale
     // Note that the vector direction is flipped since we want the Head to Eye transform for OSG

@@ -265,6 +265,10 @@ namespace OpenFrames{
       }
       //osg::notify(osg::NOTICE) << "position size = " << positions->size()*sizeof(vr::HmdVector3_t) << std::endl;
 
+      // Set plain white as the color so that textures aren't artifically colored
+      osg::Vec4Array *colors = new osg::Vec4Array;
+      colors->push_back(osg::Vec4(1.0, 1.0, 1.0, 1.0));
+
       // Copy vertex normals into an OSG array
       osg::Vec3Array *normals = new osg::Vec3Array(numVertices);
       for (uint32_t i = 0; i < numVertices; ++i)
@@ -287,6 +291,7 @@ namespace OpenFrames{
       deviceGeom->setUseVertexBufferObjects(true);
       deviceGeom->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);
       deviceGeom->setVertexArray(positions);
+      deviceGeom->setColorArray(colors, osg::Array::BIND_OVERALL);
       deviceGeom->setNormalArray(normals, osg::Array::BIND_PER_VERTEX);
       deviceGeom->setTexCoordArray(0, texCoords, osg::Array::BIND_PER_VERTEX);
       uint32_t numIndices = 3 * deviceModel->unTriangleCount;

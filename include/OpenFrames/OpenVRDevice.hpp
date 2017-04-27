@@ -211,6 +211,9 @@ namespace OpenFrames {
     
     // Group that contains all device models
     osg::ref_ptr<osg::MatrixTransform> _deviceModels;
+
+    // Transform that contains midpoint between controllers
+    osg::ref_ptr<osg::MatrixTransform> _controllerMidpoint;
     
     // Per-eye asymmetric projection matrices
     osg::Matrixd _rightEyeProj, _leftEyeProj, _centerProj;
