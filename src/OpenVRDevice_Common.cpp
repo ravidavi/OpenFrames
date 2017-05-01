@@ -146,7 +146,7 @@ namespace OpenFrames{
     osg::Matrixd matWorldToDevice; // For HMD
     osg::Matrixd matMidpoint; // For controller midpoint
     unsigned int numActiveControllers = 0;
-    osg::Quat q1, q2;
+    osg::Vec3d v1, v2;
     
     // Compute transforms for all devices
     for (int i = 0; i < _deviceIDToModel.size(); ++i)
@@ -171,8 +171,18 @@ namespace OpenFrames{
         if (_deviceIDToModel[i]._class == CONTROLLER)
         {
           ++numActiveControllers;
-          if (numActiveControllers == 1) q1 = matDeviceToWorld.getRotate();
-          else q2 = matDeviceToWorld.getRotate();
+          if (numActiveControllers == 1)
+          {
+            v1.set(_deviceIDToModel[i]._rawDeviceToWorld(2, 0),
+              _deviceIDToModel[i]._rawDeviceToWorld(2, 1),
+              _deviceIDToModel[i]._rawDeviceToWorld(2, 2));
+          }
+          else
+          {
+            v2.set(_deviceIDToModel[i]._rawDeviceToWorld(2, 0),
+              _deviceIDToModel[i]._rawDeviceToWorld(2, 1),
+              _deviceIDToModel[i]._rawDeviceToWorld(2, 2));
+          }
 
           matMidpoint(3, 0) += matDeviceToWorld(3, 0);
           matMidpoint(3, 1) += matDeviceToWorld(3, 1);
@@ -199,12 +209,13 @@ namespace OpenFrames{
       _controllerMidpoint->setMatrix(matMidpoint);
       _controllerMidpoint->setNodeMask(0xffffffff);
 
-      // Fade midpoint sphere as controller orientations get further apart
-      double dist = q1[0] * q2[0] + q1[1] * q2[1] + q1[2] * q2[2] + q1[3] * q2[3]; // inner product
-      dist = dist*dist; // Range [0, 1] since each quaterion is unit length
+      // Fade midpoint sphere as controller z-axes (axial direction) get further apart
+      double dist = 3.0*(v1*v2) - 2.0; // Range [-5, 1] since each vector is unit length
+      if (dist <= 0.0) dist = 0.0; // Clamp to range [0, 1]
+      else dist = 0.5*dist; // Scale to range [0, 0.5]
       osg::Geode *geode = static_cast<osg::Geode*>(_controllerMidpoint->getChild(0));
       osg::ShapeDrawable *sd = static_cast<osg::ShapeDrawable*>(geode->getDrawable(0));
-      sd->setColor(osg::Vec4(1.0, 1.0, 1.0, 0.5*dist*dist));
+      sd->setColor(osg::Vec4(1.0, 1.0, 1.0, dist));
     }
     else _controllerMidpoint->setNodeMask(0x0);
 
