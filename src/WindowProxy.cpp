@@ -349,21 +349,39 @@ public:
 		return;
 	  }
 
-          // Report OpenGL version info
+          // Get OpenGL version info
           char *glVersionString = (char*)glGetString(GL_VERSION);
-          char *glRendererString = (char*)glGetString(GL_RENDERER);
-          if(glVersionString && glRendererString)
+          if(glVersionString == 0)
           {
-            std::cout<< "OpenFrames renderer: " << glRendererString << ", version: " << glVersionString;
-            if(gc->getTraits()->samples > 0)
-              std::cout<< " with " << gc->getTraits()->samples << "x MSAA";
-            std::cout<< std::endl;
-          }
-          else
-          {
-            std::cerr<< "OpenFrames::WindowProxy ERROR: Could not load a valid OpenGL implementation." << std::endl;
+            std::cerr<< "OpenFrames::WindowProxy ERROR in glGetString(GL_VERSION): ";
+            GLenum err = glGetError();
+            if(err == GL_INVALID_ENUM) std::cerr<< " GL_INVALID_ENUM, please ensure that a valid OpenGL context is current before starting the WindowProxy animation.";
+            else if(err == GL_INVALID_OPERATION) std::cerr<< " GL_INVALID_OPERATION, please ensure that application is not already using OpenGL elsewhere.";
+            else std::cerr<< "Other error number " << err;
+
+            std::cerr<< std::endl;
             return;
           }
+
+          // Get OpenGL renderer info
+          char *glRendererString = (char*)glGetString(GL_RENDERER);
+          if(glRendererString == 0)
+          {
+            std::cerr<< "OpenFrames::WindowProxy ERROR in glGetString(GL_RENDERER): ";
+            GLenum err = glGetError();
+            if(err == GL_INVALID_ENUM) std::cerr<< " GL_INVALID_ENUM, please ensure that a valid OpenGL context is current before starting the WindowProxy animation.";
+            else if(err == GL_INVALID_OPERATION) std::cerr<< " GL_INVALID_OPERATION, please ensure that application is not already using OpenGL elsewhere.";
+            else std::cerr<< "Other error number " << err;
+
+            std::cerr<< std::endl;
+            return;
+          }
+
+          // Report OpenGL version/renderer info
+          std::cout<< "OpenFrames renderer: " << glRendererString << ", version: " << glVersionString;
+          if(gc->getTraits()->samples > 0)
+            std::cout<< " with " << gc->getTraits()->samples << "x MSAA";
+          std::cout<< std::endl;
 
 	  // Check if PointSprites are supported
 	  osg::ref_ptr<osg::PointSprite> ps = new osg::PointSprite;
