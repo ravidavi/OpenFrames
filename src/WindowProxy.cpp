@@ -379,9 +379,17 @@ namespace OpenFrames
         return;
       }
       
-      // Report OpenGL version info
+      // Get OpenGL version info
       char *glVersionString = (char*)glGetString(GL_VERSION);
+      if(glVersionString == 0)
+        std::cerr<< "OpenFrames::WindowProxy ERROR in glGetString(GL_VERSION): " << std::endl;
+
+      // Get OpenGL renderer info
       char *glRendererString = (char*)glGetString(GL_RENDERER);
+      if(glRendererString == 0)
+        std::cerr<< "OpenFrames::WindowProxy ERROR in glGetString(GL_RENDERER): " << std::endl;
+      
+      // Report OpenGL version and renderer info
       if(glVersionString && glRendererString)
       {
         std::cout<< "OpenFrames renderer: " << glRendererString << ", version: " << glVersionString;
@@ -391,7 +399,10 @@ namespace OpenFrames
       }
       else
       {
-        std::cerr<< "OpenFrames::WindowProxy ERROR: Could not load a valid OpenGL implementation." << std::endl;
+        GLenum err = glGetError();
+        if(err == GL_INVALID_ENUM) std::cerr<< " GL_INVALID_ENUM, please ensure that a valid OpenGL context is current before starting the WindowProxy animation." << std::endl;
+        else if(err == GL_INVALID_OPERATION) std::cerr<< " GL_INVALID_OPERATION, please ensure that application is not already using OpenGL elsewhere." << std::endl;
+        else std::cerr<< "OpenGL error code " << err << std::endl;
         return;
       }
       
