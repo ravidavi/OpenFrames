@@ -19,7 +19,7 @@ IF(OF_BUILD_TESTS) # If user asked for test programs
     ADD_EXECUTABLE(${curr_test} ${curr_test}.cpp)
 
     # Tell linker to link against dependencies
-    TARGET_LINK_LIBRARIES(${curr_test} ${PROJECT_NAME} ${OPENSCENEGRAPH_LIBRARIES} ${wxWidgets_LIBRARIES})
+    TARGET_LINK_LIBRARIES(${curr_test} OpenFrames ${OPENSCENEGRAPH_LIBRARIES} ${wxWidgets_LIBRARIES})
 
     # Specify debug library suffix
     SET_TARGET_PROPERTIES(${curr_test} PROPERTIES DEBUG_POSTFIX "d")
@@ -39,13 +39,4 @@ IF(OF_BUILD_TESTS) # If user asked for test programs
     )
   ENDFOREACH(curr_test)
 
-  INSTALL(
-    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../Images
-    DESTINATION ${CMAKE_INSTALL_PREFIX}
-  )
-
-  INSTALL(
-    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../Models
-    DESTINATION ${CMAKE_INSTALL_PREFIX}
-  )
 ENDIF(OF_BUILD_TESTS)

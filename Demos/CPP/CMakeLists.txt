@@ -1,0 +1,5 @@
+ADD_SUBDIRECTORY("ofcinterface")
+ADD_SUBDIRECTORY("ofjitter")
+ADD_SUBDIRECTORY("ofrealtimeupdate")
+ADD_SUBDIRECTORY("ofsplitwindow")
+ADD_SUBDIRECTORY("ofwxwidgets")
