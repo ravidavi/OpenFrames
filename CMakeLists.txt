@@ -8,9 +8,9 @@ SET(CMAKE_MODULE_PATH "{CMAKE_MODULE_PATH}" ${CMAKE_CURRENT_SOURCE_DIR}/CMakeMod
 #SET(CMAKE_VERBOSE_MAKEFILE on)
 
 # User options
-OPTION( OF_BUILD_TESTS "Build Test Programs" ON )
+OPTION( OF_BUILD_DEMOS "Build Demo Programs" ON )
 OPTION( OF_FORTRAN_MODULE "Compile Fortran Module" OFF )
-OPTION( OF_USE_OSGEARTH "Enable osgEarth" OFF )
+#OPTION( OF_USE_OSGEARTH "Enable osgEarth" OFF )
 
 # Options for VR support
 SET( VR_OpenVR "OpenVR" )
@@ -112,6 +112,6 @@ ENDIF()
 ADD_SUBDIRECTORY(src)
 
 # Go to the test directory and look for CMake instructions there
-ADD_SUBDIRECTORY("Demos/CPP Test")
-ADD_SUBDIRECTORY("Demos/wxWidgets Test")
-ADD_SUBDIRECTORY("Demos/Winteracter Test")
+IF(OF_BUILD_DEMOS)
+  ADD_SUBDIRECTORY("Demos")
+ENDIF(OF_BUILD_DEMOS)
