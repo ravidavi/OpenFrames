@@ -36,6 +36,20 @@ SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_CXX_EXTENSIONS OFF)
 
+# Enable RPATH on Mac/Linux so that shared libraries can be found
+# relative to each other.
+if(UNIX)
+  if(APPLE)
+    SET(CMAKE_MACOSX_RPATH TRUE) # Enable Mac RPATH
+  else()
+    # Linux searches the RPATH before the system LD_LIBRARY_PATH, so enable
+    # the use of RUNPATH which is searched after LD_LIBRARY_PATH. This makes
+    # the Linux search order similar to Mac/Windows.
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--enable-new-dtags")
+    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+  endif()
+endif()
+
 # Set debug preprocessor define
 SET_PROPERTY(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:OF_DEBUG>)
 
