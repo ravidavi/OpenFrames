@@ -10,8 +10,8 @@ ADD_EXECUTABLE(${curr_demo} ${curr_demo}.cpp)
 # Tell linker to link against OpenFrames library
 TARGET_LINK_LIBRARIES(${curr_demo} OpenFrames ${OPENSCENEGRAPH_LIBRARIES})
 
-# Specify debug library suffix
-SET_TARGET_PROPERTIES(${curr_demo} PROPERTIES DEBUG_POSTFIX "d")
+# Executable postfix needs to be explicitly specified
+SET_TARGET_PROPERTIES(${curr_demo} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
 
 # Install demo in CMAKE_INSTALL_PREFIX/bin directory
 INSTALL(

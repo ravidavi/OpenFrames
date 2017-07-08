@@ -26,6 +26,9 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release CACHE STRING "Build Configuration (Release, Debug, RelWithDebInfo, or MinSizeRel" FORCE)
 endif()
 
+# Set debug postfix
+SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "Postfix for debug libraries and executables")
+
 # Enable multiprocessor builds on Visual Studio
 if(MSVC)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
@@ -35,6 +38,20 @@ endif()
 SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_CXX_EXTENSIONS OFF)
+
+# Enable RPATH on Mac/Linux so that shared libraries can be found
+# relative to each other.
+if(UNIX)
+  if(APPLE)
+    SET(CMAKE_MACOSX_RPATH TRUE) # Enable Mac RPATH
+  else()
+    # Linux searches the RPATH before the system LD_LIBRARY_PATH, so enable
+    # the use of RUNPATH which is searched after LD_LIBRARY_PATH. This makes
+    # the Linux search order similar to Mac/Windows.
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--enable-new-dtags")
+    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+  endif()
+endif()
 
 # Set debug preprocessor define
 SET_PROPERTY(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:OF_DEBUG>)
@@ -66,7 +83,7 @@ ENDIF()
 
 # Find OpenGL
 # On Mac, check if OSG is X11-based. This is required because CMake's
-# FindOpenGL and does not look for X11/GL itself
+# FindOpenGL does not look for X11/GL itself
 IF(APPLE)
   EXECUTE_PROCESS(
     COMMAND otool -L "${OSGVIEWER_LIBRARY}"
