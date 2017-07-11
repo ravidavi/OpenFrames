@@ -577,7 +577,7 @@ namespace OpenFrames{
             // Otherwise it was actually pressed so keep the previous translate/rotate mode
             // Alternatively, if the WorldUnits/Meter scale was actually changed, then keep
             // the previous translate/rotate mode even if the grip button was just tapped.
-            const double tapDuration = 0.5;
+            const double tapDuration = 0.25;
             const double maxScaleChange = 0.01;
             double pressDuration = event->getTime() - _motionData._prevTime;
             double scaleChange = std::abs(_motionData._origWorldUnitsPerMeter / _ovrDevice->getWorldUnitsPerMeter() - 1.0);
