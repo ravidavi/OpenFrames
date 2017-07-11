@@ -1,6 +1,7 @@
 ADD_SUBDIRECTORY("ofcinterface")
 ADD_SUBDIRECTORY("ofjitter")
+ADD_SUBDIRECTORY("ofpointclouds")
+ADD_SUBDIRECTORY("ofqt")
 ADD_SUBDIRECTORY("ofrealtimeupdate")
 ADD_SUBDIRECTORY("ofsplitwindow")
 ADD_SUBDIRECTORY("ofwxwidgets")
-ADD_SUBDIRECTORY("ofqt")
