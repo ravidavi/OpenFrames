@@ -5,9 +5,12 @@ SET(LIB_NAME OpenFrames)
 
 # Define the headers used to compile
 SET(OF_HEADER_PATH ${OpenFrames_SOURCE_DIR}/include)
+FILE(GLOB OF_HEADER_FILES "${OF_HEADER_PATH}/OpenFrames/*.hpp")
 
 # Define all the source files needed to compile
 ADD_LIBRARY(${LIB_NAME} SHARED
+    ${OF_HEADER_FILES}
+    ${OF_HEADER_PATH}/OpenFrames/Export.h
     CoordinateAxes.cpp
     CurveArtist.cpp
     DepthPartitionNode.cpp
@@ -45,6 +48,7 @@ TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC ${OF_HEADER_PATH} ${OPENSCENEGRAPH
 # Create C interface library
 SET(CINTERFACE_NAME ${LIB_NAME}_Interface_C)
 ADD_LIBRARY(${CINTERFACE_NAME} SHARED
+  ${OF_HEADER_PATH}/OpenFrames/OF_Interface.h
   OF_Interface.cpp
   )
 SET(ALL_TARGETS ${ALL_TARGETS} ${CINTERFACE_NAME})
@@ -81,6 +85,7 @@ IF(OF_FORTRAN_MODULE)
   ENDIF()
 
   ADD_LIBRARY(${FORTINTERFACE_NAME} SHARED
+    ${OF_HEADER_PATH}/OpenFrames/OF_Interface.h
     OF_Interface.cpp
     OpenFrames.f90
     ) 
