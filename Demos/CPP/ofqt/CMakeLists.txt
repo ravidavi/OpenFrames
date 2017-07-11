@@ -14,8 +14,11 @@ IF(NOT Qt5_FOUND)
   RETURN()
 ENDIF()
 
+# Specify headers for Qt example
+FILE(GLOB OFQT_HEADERS *.h)
+
 # Specify files for Qt example
-ADD_EXECUTABLE(${curr_demo} glwidget.cpp logo.cpp main.cpp mainwindow.cpp window.cpp)
+ADD_EXECUTABLE(${curr_demo} ${OFQT_HEADERS} glwidget.cpp logo.cpp main.cpp mainwindow.cpp window.cpp)
 
 # Tell linker to use OpenFrames, OpenSceneGraph, and Qt5Widgets
 TARGET_LINK_LIBRARIES(${curr_demo} OpenFrames Qt5::Widgets ${OPENSCENEGRAPH_LIBRARIES})
