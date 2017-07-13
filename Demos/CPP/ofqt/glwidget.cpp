@@ -129,8 +129,10 @@ void GLWidget::cleanup()
 {
     makeCurrent();
     m_logoVbo.destroy();
-    delete m_program;
-    m_program = 0;
+    if (m_program != 0) {
+        delete m_program;
+        m_program = 0;
+    }
     doneCurrent();
 }
 
