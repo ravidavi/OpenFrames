@@ -93,9 +93,6 @@ int main()
 
 	// Create the interface that will draw a scene onto a window.
 	osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(30, 30, 1080/2, 1200/2, 1, 1, false, true);
-  myWindow->setWorldUnitsPerMeter(0.001*km);
-  myWindow->setWorldUnitsPerMeterLimits(km, DBL_MAX);
-  //myWindow->setWorldUnitsPerMeterLimits(1.0, DBL_MAX);
 	theWindow = myWindow.get();
 
 	// Create the object that will handle keyboard input 
@@ -108,7 +105,9 @@ int main()
 	// Model(name, color(r,g,b,a))
   //earth = new Sphere("Earth", 0, 1, 0, 0.9);
 	earth = new Model("Earth", 0, 1, 0, 0.9);
-	Model *hubble = new Model("Spacecraft", 1, 0, 0, 0.9);
+  earth->showAxes(ReferenceFrame::NO_AXES);
+  earth->showAxesLabels(ReferenceFrame::NO_AXES);
+  earth->showNameLabel(false);
 
         // Set Earth parameters
   //Sphere *earthSphere = dynamic_cast<Sphere*>(earth);
@@ -116,101 +115,145 @@ int main()
   //earthSphere->setTextureMap("../Images/EarthTexture.bmp");
   Model *earthModel = dynamic_cast<Model*>(earth);
   //earthModel->setModel("../osgearth/earthmap.earth");
-  earthModel->setModel("../osgearth/juniperdemo.earth");
-  myWindow->setWorldUnitsPerMeter(12000000.0);
+  //earthModel->setModel("../osgearth/juniperdemo.earth");
   //earthModel->setModel("D:/tiled_pointsets/ZED_Data/tile_0_0_0_0.laz.lastile");
-  //earthModel->setModel("D:/tiled_pointsets/IndianTunnel_TroyAmes_full/tile_0_0_0_0.laz.lastile");
 
-  Model *tunnelModel = new Model("Indian Tunnel", 1, 0, 0, 0.9);
-  tunnelModel->setModel("D:/tiled_pointsets/IndianTunnel_TroyAmes_full/tile_0_0_0_0.laz.lastile");
-  osg::Vec3d center = tunnelModel->getModel()->getBound()._center;
-  double dist = center.normalize();
-  center *= dist - 2.3;
-  tunnelModel->setPosition(center.x(), center.y(), center.z());
-  tunnelModel->showAxes(ReferenceFrame::NO_AXES);
-  tunnelModel->showAxesLabels(ReferenceFrame::NO_AXES);
-  tunnelModel->moveZAxis(osg::Vec3d(0.0, 0.0, 10.0), 1.0);
+  // Create an artist to draw data center marker
+  MarkerArtist *centermarker = new MarkerArtist;
+	centermarker->setMarkerShader("../Shaders/Marker_CirclePulse.frag");
+	centermarker->setMarkerSize(15);
 
+  // Create Models for each Indian Tunnel tileset
+  osg::Vec3d center;
+  double dist;
+  const unsigned int numTunnelModels = 46;
+  std::string tunnelID[numTunnelModels] = 
+  { "001", "002", "003", "004", "005",
+    "006", "007", "008", "009", "010",
+    "011", "012", "013", "014", "015",
+    "016", "017", "018", "019", "020",
+    "021", "022", "023", "024", "025",
+    "026", "027", "028", "029", "030",
+           "032", "033", "034", "035", // No "031" tileset
+    "036", "037", "038", "039", "040",
+    "041", "042", "043", "044", "045",
+    "046", "full"
+  };
+  std::string tunnelBasePath = "D:/tiled_pointsets/IndianTunnel_TroyAmes_";
+  std::string tunnelTileName = "/tile_0_0_0_0.laz.lastile"; // lastile extension requires osgJuniper plugin
+  Model* tunnelModel[numTunnelModels];
+  DrawableTrajectory* drawcenter;
+  osg::BoundingSphere indianTunnelBound; // Cumulative bounding sphere for all tunnel tilesets
+  for (unsigned int i = 0; i < numTunnelModels-1; ++i)
+  {
+    tunnelModel[i] = new Model("Indian Tunnel " + tunnelID[i], 1, 0, 0, 0.9);
+    tunnelModel[i]->setModel(tunnelBasePath + tunnelID[i] + tunnelTileName);
+    if (!tunnelModel[i]->getModel()) continue; // Model not loaded
+    osg::BoundingSphere bound = tunnelModel[i]->getModel()->getBound();
+    indianTunnelBound.expandBy(bound);
+    center = bound._center;
+    dist = center.normalize();
+    center *= dist - 2.3; // To visually align with ground
+    tunnelModel[i]->setPosition(center.x(), center.y(), center.z());
+    tunnelModel[i]->showAxes(ReferenceFrame::NO_AXES);
+    tunnelModel[i]->showAxesLabels(ReferenceFrame::NO_AXES);
+    tunnelModel[i]->moveZAxis(osg::Vec3d(), 1.0);
+
+    // Create a DrawableTrajectory to hold this tileset's center marker
+    // Note that we can't share one DrawableTrajectory since it uses an
+    // OpenGL uniform variable, which would be set to the last tileset's
+    // position. So we must use one DrawableTrajectory per tileset.
+    drawcenter = new DrawableTrajectory("center marker");
+    drawcenter->showAxes(ReferenceFrame::NO_AXES);
+    drawcenter->showAxesLabels(ReferenceFrame::NO_AXES);
+    drawcenter->showNameLabel(false);
+    drawcenter->addArtist(centermarker);
+    tunnelModel[i]->addChild(drawcenter);
+    earth->addChild(tunnelModel[i]);
+  }
+
+  // Create ReferenceFrame for IndianTunnel topographic coordinates
+  osg::Vec3d up, north, east, earth_z(0, 0, 1);
+  osg::Matrixd frameMat;
+  osg::Quat frameQuat;
+  up = indianTunnelBound._center; // Up vector is tunnel's center vector
+  if (up.normalize() <= 1.0e-4) up.set(0, 0, 1);
+  east = earth_z ^ up; // East is Earth-Z crossed with up vector
+  if (east.length() <= 1.0e-4) east.set(0, 1, 0);
+  else east.normalize();
+  north = up ^ east; // North is up cross east
+  north.normalize();
+  frameMat.set( // Create rotation matrix
+    east.x(), east.y(), east.z(), 0,    // X = east
+    north.x(), north.y(), north.z(), 0, // Y = north
+    up.x(), up.y(), up.z(), 0,          // Z = up
+    0, 0, 0, 1);
+  frameQuat = frameMat.getRotate();
+  ReferenceFrame *indianTunnelFrame = new ReferenceFrame("Indian Tunnel Frame", 1, 0, 0, 0.9);
+  indianTunnelFrame->showNameLabel(false);
+  indianTunnelFrame->showAxes(ReferenceFrame::X_AXIS | ReferenceFrame::Y_AXIS); // Don't show Z (up) vector
+  indianTunnelFrame->setXLabel("East");  // X points east
+  indianTunnelFrame->setYLabel("North"); // Y points north
+  double radius = indianTunnelBound._radius;
+  indianTunnelFrame->moveXAxis(osg::Vec3d(radius / 2, 0, radius / 2), radius / 2.0);
+  indianTunnelFrame->moveYAxis(osg::Vec3d(0, radius / 2, radius / 2), radius / 2.0);
+  indianTunnelFrame->setAttitude(frameQuat._v[0], frameQuat._v[1], frameQuat._v[2], frameQuat._v[3]);
+  indianTunnelFrame->setPosition(indianTunnelBound._center.x(), indianTunnelBound._center.y(), indianTunnelBound._center.z());
+  earth->addChild(indianTunnelFrame);
+
+  // Create Model for Barnegat tileset
   Model *barnegatModel = new Model("Barnegat NJ", 1, 0, 0, 0.9);
   barnegatModel->setModel("D:/tiled_pointsets/barnegat/tile_0_0_0_0.laz.lastile");
   center = barnegatModel->getModel()->getBound()._center;
   dist = center.normalize();
-  center *= dist - 32.0;
+  center *= dist - 32.0; // To visually align with ground
   barnegatModel->setPosition(center.x(), center.y(), center.z());
   barnegatModel->showAxes(ReferenceFrame::NO_AXES);
   barnegatModel->showAxesLabels(ReferenceFrame::NO_AXES);
-  barnegatModel->moveZAxis(osg::Vec3d(0.0, 0.0, 10.0), 1.0);
-
-	// Set the spacecraft parameters
-        // Scale model down to 1cm
-	hubble->setModel("../Models/Hubble.3ds");
-        double modelScale = 0.0001*km/hubble->getModel()->getBound()._radius;
-        hubble->setModelScale(modelScale, modelScale, modelScale);
-
-	// Create the trajectory using
-	// Trajectory(DOF, number of optionals)
-	Trajectory *traj = new Trajectory(3, 0);
-
-	// Create a drawable trajectory for the spacecraft window using
-	// DrawableTrajectory(name, color(r,g,b,a))
-	DrawableTrajectory *drawtraj = new DrawableTrajectory("traj", 1, 0, 0, 0.9);
-	drawtraj->showAxes(ReferenceFrame::NO_AXES);
-	drawtraj->showAxesLabels(ReferenceFrame::NO_AXES);
-	drawtraj->showNameLabel(false);
-
-        // Create an artist to draw start/intermediate/end markers
-        MarkerArtist *ma = new MarkerArtist(traj);
-        ma->setMarkers(MarkerArtist::START + MarkerArtist::INTERMEDIATE + MarkerArtist::END);
-        ma->setAutoAttenuate(true);
-        ma->setMarkerColor(MarkerArtist::START, 0, 1, 0); // Green
-        ma->setMarkerColor(MarkerArtist::END,   1, 0, 0); // Red
-        ma->setMarkerColor(MarkerArtist::INTERMEDIATE, 1, 1, 0); // Yellow
-        ma->setMarkerShader("../Shaders/Marker_Rose.frag");
-        ma->setMarkerSize(10); // In pixels
-        drawtraj->addArtist(ma);
-
-	// Create a CurveArtist for the trajectory.  By default the CurveArtist
-	// will use x/y/z positions from the trajectory for plotting.
-	CurveArtist *ca = new CurveArtist(traj);
-	ca->setWidth(2.0); // Line width for the trajectory
-	ca->setColor(0, 1, 0);
-	drawtraj->addArtist(ca);
-
-	// Tell model to follow trajectory (by default in LOOP mode)
-	TrajectoryFollower *tf = new TrajectoryFollower(traj);
-	tf->setTimeScale(tscale);
-        tf->setFollowType(TrajectoryFollower::POSITION + TrajectoryFollower::ATTITUDE, TrajectoryFollower::LIMIT);
-	hubble->getTransform()->setUpdateCallback(tf);
-
-	// Create a drawable trajectory for the spacecraft center marker
-	// DrawableTrajectory(name)
-	DrawableTrajectory *drawcenter = new DrawableTrajectory("center marker");
-	drawcenter->showAxes(ReferenceFrame::NO_AXES);
-	drawcenter->showAxesLabels(ReferenceFrame::NO_AXES);
-	drawcenter->showNameLabel(false);
-
-        // Create an artist to draw spacecraft center marker
-        MarkerArtist *centermarker = new MarkerArtist;
-	centermarker->setMarkerShader("../Shaders/Marker_CirclePulse.frag");
-	centermarker->setMarkerSize(15);
-
-	// Add the markerartist to the drawable trajectory
-	drawcenter->addArtist(centermarker);
-
-	// Set up reference frame heirarchies.
-	//earth->addChild(drawtraj);
-	//earth->addChild(hubble);
-  earth->addChild(tunnelModel);
-  earth->addChild(barnegatModel);
-  tunnelModel->addChild(drawcenter);
+  barnegatModel->moveZAxis(osg::Vec3d(), 1.0);
+  drawcenter = new DrawableTrajectory("center marker");
+  drawcenter->showAxes(ReferenceFrame::NO_AXES);
+  drawcenter->showAxesLabels(ReferenceFrame::NO_AXES);
+  drawcenter->showNameLabel(false);
+  drawcenter->addArtist(centermarker);
   barnegatModel->addChild(drawcenter);
-  //drawcenter->setPosition(center.x(), center.y(), center.z());
-        hubble->addChild(drawcenter);
+  earth->addChild(barnegatModel);
 
+  // Create ReferenceFrame for Barnegat topographic coordinates
+  osg::BoundingSphere barnegatBound = barnegatModel->getModel()->getBound();
+  up = barnegatBound._center;
+  if (up.normalize() <= 1.0e-4) up.set(0, 0, 1);
+  east = earth_z ^ up;
+  if (east.length() <= 1.0e-4) east.set(0, 1, 0);
+  else east.normalize();
+  north = up ^ east;
+  north.normalize();
+  frameMat.set(
+    east.x(), east.y(), east.z(), 0,
+    north.x(), north.y(), north.z(), 0,
+    up.x(), up.y(), up.z(), 0,
+    0, 0, 0, 1);
+  frameQuat = frameMat.getRotate();
+  ReferenceFrame *barnegatFrame = new ReferenceFrame("Barnegat Frame", 1, 0, 0, 0.9);
+  barnegatFrame->showNameLabel(false);
+  barnegatFrame->showAxes(ReferenceFrame::X_AXIS | ReferenceFrame::Y_AXIS);
+  barnegatFrame->setXLabel("East");
+  barnegatFrame->setYLabel("North");
+  radius = barnegatBound._radius;
+  barnegatFrame->moveXAxis(osg::Vec3d(radius / 2, 0, radius / 2), radius / 2.0);
+  barnegatFrame->moveYAxis(osg::Vec3d(0, radius / 2, radius / 2), radius / 2.0);
+  barnegatFrame->setAttitude(frameQuat._v[0], frameQuat._v[1], frameQuat._v[2], frameQuat._v[3]);
+  barnegatFrame->setPosition(barnegatBound._center.x(), barnegatBound._center.y(), barnegatBound._center.z());
+  earth->addChild(barnegatFrame);
+
+  // Set starting VR scale
+  //myWindow->setWorldUnitsPerMeter(12000000.0);
+  myWindow->setWorldUnitsPerMeter(100);
+  myWindow->setWorldUnitsPerMeterLimits(1.0, DBL_MAX);
 
 	// Create views
-	View *view = new View(earth, earth);
-	View *view2 = new View(earth, hubble);
+	View *view = new View(earth, indianTunnelFrame);
+  View *view2 = new View(earth, barnegatFrame);
 
 	// Create a manager to handle the spatial scene
 	FrameManager* fm = new FrameManager;
@@ -218,29 +261,10 @@ int main()
 
 	// Set up the scene
 	theWindow->setScene(fm, 0, 0);
-        theWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0);
-	//theWindow->getGridPosition(0, 0)->setSkySphereTexture("../Images/StarMap.tif");
-	theWindow->getGridPosition(0, 0)->setSkySphereStarData("../Stars/Stars_HYGv3.txt", -2.0, 6.0, 40000, 1.0, 4.0, 0.1);
+  theWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0);
+	theWindow->getGridPosition(0, 0)->setSkySphereStarData("../Stars/Stars_HYGv3.txt", -2.0, 8.0, 40000, 1.0, 4.0, 0.1);
 	theWindow->getGridPosition(0, 0)->addView(view);
 	theWindow->getGridPosition(0, 0)->addView(view2);
-
-	// Add the actual positions and attitudes for the trajectory.
-	osg::Quat att; // Quaternion for attitude transformations
-	double t, pos[3];
-	pos[2] = 0.0;
-        const double rmag = 1.0e9*km;
-        const int numPoints = 360;
-        for(int i = 0; i <= numPoints; ++i)
-	{
-          t = ((double)i)*2.0*osg::PI/((double)numPoints);
-          pos[0] = rmag*std::cos(t);
-          pos[1] = rmag*std::sin(t);
-	  att.makeRotate(t, 0, 0, 1);
-
-	  traj->addTime(10*t);
-	  traj->addPosition(pos);
-	  traj->addAttitude(att[0], att[1], att[2], att[3]);
-	}
 
 	// Specify the key press callback
 	theWindow->setKeyPressCallback(KeyPressCallback);
