@@ -76,7 +76,8 @@ public:
     QMutex *grabMutex() { return &m_grabMutex; }
     QWaitCondition *grabCond() { return &m_grabCond; }
     void prepareExit() { m_exiting = true; m_grabCond.wakeAll(); }
-    //~Renderer();
+    void cleanup();
+    ~Renderer();
 
 signals:
     void contextWanted();
@@ -87,10 +88,9 @@ public slots:
     void setYRotation(int angle) { m_yRot = angle; }
     void setZRotation(int angle) { m_zRot = angle; }
     void resizeGL(int width, int height);
-    void cleanup();
 
 private:
-    void initializeGL(QOpenGLContext *ctx);
+    void initializeGL();
     void paintGL();
     void setupVertexAttribs();
 

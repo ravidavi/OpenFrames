@@ -48,29 +48,60 @@
 **
 ****************************************************************************/
 
+#include "glwidget.h"
 #include "mainwindow.h"
-#include "window.h"
-#include <QMenuBar>
-#include <QMenu>
-#include <QMessageBox>
+#include <QSlider>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QKeyEvent>
 
 MainWindow::MainWindow()
 {
-    QMenuBar *menuBar = new QMenuBar;
-    QMenu *menuWindow = menuBar->addMenu(tr("&Window"));
-    QAction *addNew = new QAction(menuWindow);
-    addNew->setText(tr("Add new"));
-    menuWindow->addAction(addNew);
-    connect(addNew, &QAction::triggered, this, &MainWindow::onAddNew);
-    setMenuBar(menuBar);
+    glWidget = new GLWidget;
 
-    onAddNew();
+    xSlider = createSlider();
+    ySlider = createSlider();
+    zSlider = createSlider();
+
+    connect(xSlider, &QSlider::valueChanged, glWidget, &GLWidget::setXRotation);
+    connect(glWidget, &GLWidget::xRotationChanged, xSlider, &QSlider::setValue);
+    connect(ySlider, &QSlider::valueChanged, glWidget, &GLWidget::setYRotation);
+    connect(glWidget, &GLWidget::yRotationChanged, ySlider, &QSlider::setValue);
+    connect(zSlider, &QSlider::valueChanged, glWidget, &GLWidget::setZRotation);
+    connect(glWidget, &GLWidget::zRotationChanged, zSlider, &QSlider::setValue);
+
+    QHBoxLayout *container = new QHBoxLayout;
+    container->addWidget(glWidget);
+    container->addWidget(xSlider);
+    container->addWidget(ySlider);
+    container->addWidget(zSlider);
+
+    QWidget *w = new QWidget;
+    w->setLayout(container);
+    setCentralWidget(w);
+
+    xSlider->setValue(15 * 16);
+    ySlider->setValue(345 * 16);
+    zSlider->setValue(0 * 16);
+
+    setWindowTitle(tr("Hello GL"));
 }
 
-void MainWindow::onAddNew()
+QSlider *MainWindow::createSlider()
 {
-    if (!centralWidget())
-        setCentralWidget(new Window(this));
+    QSlider *slider = new QSlider(Qt::Vertical);
+    slider->setRange(0, 360 * 16);
+    slider->setSingleStep(16);
+    slider->setPageStep(15 * 16);
+    slider->setTickInterval(15 * 16);
+    slider->setTickPosition(QSlider::TicksRight);
+    return slider;
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *e)
+{
+    if (e->key() == Qt::Key_Escape)
+        close();
     else
-        QMessageBox::information(0, tr("Cannot add new window"), tr("Already occupied. Undock first."));
+        QWidget::keyPressEvent(e);
 }

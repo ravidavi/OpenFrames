@@ -81,12 +81,10 @@ Renderer::Renderer(GLWidget *w)
     }
 }
 
-// TODO cleanup should be called here, but the calling thread and the GL context's thread are not always in sync.
-// It is impossible to use the syncing mechanism in render() as the objects are being destroyed.
-/*Renderer::~Renderer()
+Renderer::~Renderer()
 {
     cleanup();
-}*/
+}
 
 // WARNING: cleanup must be called from the thread that owns the GL context
 void Renderer::cleanup()
@@ -97,6 +95,13 @@ void Renderer::cleanup()
             // QOpenGLWidget not yet initialized
             return;
         }
+
+        // Grab the context.
+        m_grabMutex.lock();
+        emit contextWanted();
+        m_grabCond.wait(&m_grabMutex);
+        QMutexLocker lock(&m_renderMutex);
+        m_grabMutex.unlock();
 
         Q_ASSERT(ctx->thread() == QThread::currentThread());
 
@@ -111,6 +116,12 @@ void Renderer::cleanup()
             delete m_program;
             m_program = 0;
         }
+        m_glwidget->doneCurrent();
+        // Make no context current on this thread and move the QOpenGLWidget's
+        // context back to the gui thread.
+        m_glwidget->doneCurrent();
+        ctx->moveToThread(qGuiApp->thread());
+
         m_inited = false;
     }
 }
@@ -170,7 +181,7 @@ static const char *fragmentShaderSource =
 "   gl_FragColor = vec4(col, 1.0);\n"
 "}\n";
 
-void Renderer::initializeGL(QOpenGLContext *ctx)
+void Renderer::initializeGL()
 {
     // In this example the widget's corresponding top-level window can change
     // several times during the widget's lifetime. Whenever this happens, the
@@ -179,7 +190,6 @@ void Renderer::initializeGL(QOpenGLContext *ctx)
     // aboutToBeDestroyed() signal, instead of the destructor. The emission of
     // the signal will be followed by an invocation of initializeGL() where we
     // can recreate all resources.
-    //connect(ctx, &QOpenGLContext::aboutToBeDestroyed, this, &Renderer::cleanup);
 
     initializeOpenGLFunctions();
     glClearColor(0, 0, 0, m_transparent ? 0 : 1);
@@ -293,7 +303,7 @@ void Renderer::render()
         m_inited = true;
         QMutexLocker initLock(rendererInitMutex());
         initializeOpenGLFunctions();
-        initializeGL(ctx);
+        initializeGL();
     }
 
 	if (m_setSize) {

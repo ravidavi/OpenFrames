@@ -53,6 +53,13 @@
 
 #include <QMainWindow>
 
+QT_BEGIN_NAMESPACE
+class QSlider;
+class QPushButton;
+QT_END_NAMESPACE
+
+class GLWidget;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -60,8 +67,18 @@ class MainWindow : public QMainWindow
 public:
     MainWindow();
 
-private slots:
-    void onAddNew();
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+
+private:
+    QSlider *createSlider();
+
+    GLWidget *glWidget;
+    QSlider *xSlider;
+    QSlider *ySlider;
+    QSlider *zSlider;
+    QPushButton *dockBtn;
+    MainWindow *mainWindow;
 };
 
 #endif
