@@ -48,57 +48,79 @@
 **
 ****************************************************************************/
 
-#ifndef GLWIDGET_H
-#define GLWIDGET_H
+#ifndef RENDERER_H
+#define RENDERER_H
 
-#include <QOpenGLWidget>
-#include <QThread>
-#include "renderer.h"
+#include <QOpenGLFunctions>
+#include <QOpenGLVertexArrayObject>
+#include <QOpenGLBuffer>
+#include <QMatrix4x4>
+#include <QMutex>
+#include <QWaitCondition>
+#include <QElapsedTimer>
+#include "logo.h"
+
+// forward declaration to avoid circular dependencies
+class GLWidget;
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
-class GLWidget : public QOpenGLWidget
+class Renderer : public QObject, protected QOpenGLFunctions
 {
     Q_OBJECT
 
 public:
-    GLWidget(QWidget *parent = 0);
-    ~GLWidget();
-
-    QSize minimumSizeHint() const override;
-    QSize sizeHint() const override;
-
-public slots:
-    void setXRotation(int angle);
-    void setYRotation(int angle);
-    void setZRotation(int angle);
-    void grabContext();
+    Renderer(GLWidget *w);
+    void lockRenderer() { m_renderMutex.lock(); }
+    void unlockRenderer() { m_renderMutex.unlock(); }
+    QMutex *grabMutex() { return &m_grabMutex; }
+    QWaitCondition *grabCond() { return &m_grabCond; }
+    void prepareExit() { m_exiting = true; m_grabCond.wakeAll(); }
+    //~Renderer();
 
 signals:
-    void xRotationChanged(int angle);
-    void yRotationChanged(int angle);
-    void zRotationChanged(int angle);
-    void renderRequested();
+    void contextWanted();
 
-private slots:
-    void onAboutToCompose();
-    void onFrameSwapped();
-    void onAboutToResize();
-    void onResized();
-
-protected:
-    void paintEvent(QPaintEvent *) override { }
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
-    void resizeGL(int width, int height) override;
+public slots:
+    void render();
+    void setXRotation(int angle) { m_xRot = angle; }
+    void setYRotation(int angle) { m_yRot = angle; }
+    void setZRotation(int angle) { m_zRot = angle; }
+    void resizeGL(int width, int height);
+    void cleanup();
 
 private:
-    QThread *m_thread;
-    Renderer *m_renderer;
+    void initializeGL(QOpenGLContext *ctx);
+    void paintGL();
+    void setupVertexAttribs();
+
+    bool m_core;
     int m_xRot;
     int m_yRot;
     int m_zRot;
-    QPoint m_lastPos;
+    Logo m_logo;
+    QOpenGLVertexArrayObject m_vao;
+    QOpenGLBuffer m_logoVbo;
+    QOpenGLShaderProgram *m_program;
+    int m_projMatrixLoc;
+    int m_mvMatrixLoc;
+    int m_normalMatrixLoc;
+    int m_lightPosLoc;
+    QMatrix4x4 m_proj;
+    QMatrix4x4 m_camera;
+    QMatrix4x4 m_world;
+    bool m_transparent;
+
+    bool m_inited;
+    GLWidget *m_glwidget;
+    QMutex m_renderMutex;
+    QMutex m_grabMutex;
+    QWaitCondition m_grabCond;
+    bool m_exiting;
+
+	bool m_setSize;
+	int m_width;
+	int m_height;
 };
 
 #endif
