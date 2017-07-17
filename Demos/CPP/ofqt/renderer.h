@@ -52,18 +52,15 @@
 #define RENDERER_H
 
 #include <QOpenGLFunctions>
-#include <QOpenGLVertexArrayObject>
 #include <QOpenGLBuffer>
 #include <QMatrix4x4>
 #include <QMutex>
 #include <QWaitCondition>
-#include <QElapsedTimer>
+#include <QOpenGLShaderProgram>
 #include "logo.h"
 
 // forward declaration to avoid circular dependencies
-class GLWidget;
-
-QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
+QT_FORWARD_DECLARE_CLASS(GLWidget)
 
 class Renderer : public QObject, protected QOpenGLFunctions
 {
@@ -76,8 +73,6 @@ public:
     QMutex *grabMutex() { return &m_grabMutex; }
     QWaitCondition *grabCond() { return &m_grabCond; }
     void prepareExit() { m_exiting = true; m_grabCond.wakeAll(); }
-    void cleanup();
-    ~Renderer();
 
 signals:
     void contextWanted();
@@ -99,9 +94,8 @@ private:
     int m_yRot;
     int m_zRot;
     Logo m_logo;
-    QOpenGLVertexArrayObject m_vao;
     QOpenGLBuffer m_logoVbo;
-    QOpenGLShaderProgram *m_program;
+    QOpenGLShaderProgram m_program;
     int m_projMatrixLoc;
     int m_mvMatrixLoc;
     int m_normalMatrixLoc;

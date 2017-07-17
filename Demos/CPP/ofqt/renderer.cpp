@@ -81,51 +81,6 @@ Renderer::Renderer(GLWidget *w)
     }
 }
 
-Renderer::~Renderer()
-{
-    cleanup();
-}
-
-// WARNING: cleanup must be called from the thread that owns the GL context
-void Renderer::cleanup()
-{
-    if (m_inited) {
-        QOpenGLContext *ctx = m_glwidget->context();
-        if (!ctx) {
-            // QOpenGLWidget not yet initialized
-            return;
-        }
-
-        // Grab the context.
-        m_grabMutex.lock();
-        emit contextWanted();
-        m_grabCond.wait(&m_grabMutex);
-        QMutexLocker lock(&m_renderMutex);
-        m_grabMutex.unlock();
-
-        Q_ASSERT(ctx->thread() == QThread::currentThread());
-
-        // Make the context (and an offscreen surface) current for this thread. The
-        // QOpenGLWidget's fbo is bound in the context.
-        m_glwidget->makeCurrent();
-
-        if (m_logoVbo.isCreated()) {
-            m_logoVbo.destroy();
-        }
-        if (m_program != 0) {
-            delete m_program;
-            m_program = 0;
-        }
-        m_glwidget->doneCurrent();
-        // Make no context current on this thread and move the QOpenGLWidget's
-        // context back to the gui thread.
-        m_glwidget->doneCurrent();
-        ctx->moveToThread(qGuiApp->thread());
-
-        m_inited = false;
-    }
-}
-
 static const char *vertexShaderSourceCore =
 "#version 150\n"
 "in vec4 vertex;\n"
@@ -194,25 +149,21 @@ void Renderer::initializeGL()
     initializeOpenGLFunctions();
     glClearColor(0, 0, 0, m_transparent ? 0 : 1);
 
-    m_program = new QOpenGLShaderProgram;
-    m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, m_core ? vertexShaderSourceCore : vertexShaderSource);
-    m_program->addShaderFromSourceCode(QOpenGLShader::Fragment, m_core ? fragmentShaderSourceCore : fragmentShaderSource);
-    m_program->bindAttributeLocation("vertex", 0);
-    m_program->bindAttributeLocation("normal", 1);
-    m_program->link();
+    QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex, this);
+    vshader->compileSourceCode(m_core ? vertexShaderSourceCore : vertexShaderSource);
+    QOpenGLShader *fshader = new QOpenGLShader(QOpenGLShader::Fragment, this);
+    fshader->compileSourceCode(m_core ? fragmentShaderSourceCore : fragmentShaderSource);
+    m_program.addShader(vshader);
+    m_program.addShader(fshader);
+    m_program.bindAttributeLocation("vertex", 0);
+    m_program.bindAttributeLocation("normal", 1);
+    m_program.link();
 
-    m_program->bind();
-    m_projMatrixLoc = m_program->uniformLocation("projMatrix");
-    m_mvMatrixLoc = m_program->uniformLocation("mvMatrix");
-    m_normalMatrixLoc = m_program->uniformLocation("normalMatrix");
-    m_lightPosLoc = m_program->uniformLocation("lightPos");
-
-    // Create a vertex array object. In OpenGL ES 2.0 and OpenGL 2.x
-    // implementations this is optional and support may not be present
-    // at all. Nonetheless the below code works in all cases and makes
-    // sure there is a VAO when one is needed.
-    m_vao.create();
-    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
+    m_program.bind();
+    m_projMatrixLoc = m_program.uniformLocation("projMatrix");
+    m_mvMatrixLoc = m_program.uniformLocation("mvMatrix");
+    m_normalMatrixLoc = m_program.uniformLocation("normalMatrix");
+    m_lightPosLoc = m_program.uniformLocation("lightPos");
 
     // Setup our vertex buffer object.
     m_logoVbo.create();
@@ -227,9 +178,9 @@ void Renderer::initializeGL()
     m_camera.translate(0, 0, -1);
 
     // Light position is fixed.
-    m_program->setUniformValue(m_lightPosLoc, QVector3D(0, 0, 70));
+    m_program.setUniformValue(m_lightPosLoc, QVector3D(0, 0, 70));
 
-    m_program->release();
+    m_program.release();
 }
 
 void Renderer::setupVertexAttribs()
@@ -254,16 +205,15 @@ void Renderer::paintGL()
     m_world.rotate(m_yRot / 16.0f, 0, 1, 0);
     m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
 
-    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
-    m_program->bind();
-    m_program->setUniformValue(m_projMatrixLoc, m_proj);
-    m_program->setUniformValue(m_mvMatrixLoc, m_camera * m_world);
+    m_program.bind();
+    m_program.setUniformValue(m_projMatrixLoc, m_proj);
+    m_program.setUniformValue(m_mvMatrixLoc, m_camera * m_world);
     QMatrix3x3 normalMatrix = m_world.normalMatrix();
-    m_program->setUniformValue(m_normalMatrixLoc, normalMatrix);
+    m_program.setUniformValue(m_normalMatrixLoc, normalMatrix);
 
     glDrawArrays(GL_TRIANGLES, 0, m_logo.vertexCount());
 
-    m_program->release();
+    m_program.release();
 }
 
 // Some OpenGL implementations have serious issues with compiling and linking
