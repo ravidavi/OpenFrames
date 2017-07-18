@@ -48,38 +48,93 @@
 **
 ****************************************************************************/
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#include "glwindow.h"
+#include <QMouseEvent>
+#include <math.h>
 
-#include <QMainWindow>
-
-QT_BEGIN_NAMESPACE
-class QSlider;
-class QPushButton;
-class QWidget;
-QT_END_NAMESPACE
-
-class GLWindow;
-
-class MainWindow : public QMainWindow
+GLWindow::GLWindow(QWindow *parent)
+    : QWindow(parent),
+      m_xRot(0),
+      m_yRot(0),
+      m_zRot(0)
 {
-    Q_OBJECT
+    setSurfaceType(QWindow::OpenGLSurface);
+    //setFlags(Qt::Window | Qt::WindowSystemMenuHint | Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
+    create();
 
-public:
-    MainWindow();
+    m_renderer = new RenderThread(*this);
+    m_renderer->start();
+}
 
-protected:
-    void keyPressEvent(QKeyEvent *event) override;
+GLWindow::~GLWindow()
+{
+    m_renderer->stop();
+    m_renderer->wait();
+    delete m_renderer;
+}
 
-private:
-    QSlider *createSlider();
+static void qNormalizeAngle(int &angle)
+{
+    while (angle < 0) {
+        angle += 360 * 16;
+    }
+    while (angle > 360 * 16)
+    {
+        angle -= 360 * 16;
+    }
+}
 
-    QWidget *glWidget;
-    GLWindow *glWindow;
-    QSlider *xSlider;
-    QSlider *ySlider;
-    QSlider *zSlider;
-    QPushButton *dockBtn;
-};
+void GLWindow::setXRotation(int angle)
+{
+    qNormalizeAngle(angle);
+    if (angle != m_xRot) {
+        m_xRot = angle;
+        emit xRotationChanged(angle);
+        m_renderer->setXRotation(angle);
+    }
+}
 
-#endif
+void GLWindow::setYRotation(int angle)
+{
+    qNormalizeAngle(angle);
+    if (angle != m_yRot) {
+        m_yRot = angle;
+        emit yRotationChanged(angle);
+        m_renderer->setYRotation(angle);
+    }
+}
+
+void GLWindow::setZRotation(int angle)
+{
+    qNormalizeAngle(angle);
+    if (angle != m_zRot) {
+        m_zRot = angle;
+        emit zRotationChanged(angle);
+        m_renderer->setZRotation(angle);
+    }
+}
+
+void GLWindow::mousePressEvent(QMouseEvent *event)
+{
+    m_lastPos = event->pos();
+}
+
+void GLWindow::mouseMoveEvent(QMouseEvent *event)
+{
+    int dx = event->x() - m_lastPos.x();
+    int dy = event->y() - m_lastPos.y();
+
+    if (event->buttons() & Qt::LeftButton) {
+        setXRotation(m_xRot + 8 * dy);
+        setYRotation(m_yRot + 8 * dx);
+    } else if (event->buttons() & Qt::RightButton) {
+        setXRotation(m_xRot + 8 * dy);
+        setZRotation(m_zRot + 8 * dx);
+    }
+    m_lastPos = event->pos();
+}
+
+void GLWindow::resizeEvent(QResizeEvent *event) {
+    QWindow::resizeEvent(event);
+    m_renderer->resizeGL();
+}

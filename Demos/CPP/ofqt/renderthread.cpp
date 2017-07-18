@@ -48,25 +48,25 @@
 **
 ****************************************************************************/
 
-#include "renderer.h"
-#include "glwidget.h"
-#include <QMouseEvent>
+#include "renderthread.h"
+#include <QWindow>
+#include <QMutex>
 #include <QOpenGLShaderProgram>
+#include <QOpenGLContext>
 #include <QCoreApplication>
-#include <QGuiApplication>
 #include <math.h>
+#include <iostream>
 
-Renderer::Renderer(GLWidget *w)
-    : m_program(0),
+RenderThread::RenderThread(QWindow &w)
+    : QThread(),
+      m_program(0x0),
       m_xRot(0),
       m_yRot(0),
       m_zRot(0),
-      m_inited(false),
-      m_glwidget(w),
-      m_exiting(false),
-	  m_setSize(false),
-	  m_width(0),
-	  m_height(0)
+      m_window(w),
+      m_context(0x0),
+	  m_setSize(true),
+      m_doRendering(true)
 {
     m_core = QCoreApplication::arguments().contains(QStringLiteral("--coreprofile"));
     // --transparent causes the clear color to be transparent. Therefore, on systems that
@@ -75,9 +75,9 @@ Renderer::Renderer(GLWidget *w)
 
     // TODO Renderer must be instantiated from the Qt GUI thread! Move this back out to the GLWidget (MCR 7/13/2017)
     if (m_transparent) {
-        QSurfaceFormat fmt = m_glwidget->format();
-        fmt.setAlphaBufferSize(8);
-        m_glwidget->setFormat(fmt);
+        QSurfaceFormat format = m_window.format();
+        format.setAlphaBufferSize(8);
+        m_window.setFormat(format);
     }
 }
 
@@ -136,7 +136,9 @@ static const char *fragmentShaderSource =
 "   gl_FragColor = vec4(col, 1.0);\n"
 "}\n";
 
-void Renderer::initializeGL()
+Q_GLOBAL_STATIC(QMutex, initMutex)
+
+void RenderThread::initializeGL()
 {
     // In this example the widget's corresponding top-level window can change
     // several times during the widget's lifetime. Whenever this happens, the
@@ -146,24 +148,27 @@ void Renderer::initializeGL()
     // the signal will be followed by an invocation of initializeGL() where we
     // can recreate all resources.
 
+    QMutexLocker lock(initMutex());
+
     initializeOpenGLFunctions();
     glClearColor(0, 0, 0, m_transparent ? 0 : 1);
 
-    QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex, this);
+    QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex);
     vshader->compileSourceCode(m_core ? vertexShaderSourceCore : vertexShaderSource);
-    QOpenGLShader *fshader = new QOpenGLShader(QOpenGLShader::Fragment, this);
+    QOpenGLShader *fshader = new QOpenGLShader(QOpenGLShader::Fragment);
     fshader->compileSourceCode(m_core ? fragmentShaderSourceCore : fragmentShaderSource);
-    m_program.addShader(vshader);
-    m_program.addShader(fshader);
-    m_program.bindAttributeLocation("vertex", 0);
-    m_program.bindAttributeLocation("normal", 1);
-    m_program.link();
+    m_program = new QOpenGLShaderProgram();
+    m_program->addShader(vshader);
+    m_program->addShader(fshader);
+    m_program->bindAttributeLocation("vertex", 0);
+    m_program->bindAttributeLocation("normal", 1);
+    m_program->link();
 
-    m_program.bind();
-    m_projMatrixLoc = m_program.uniformLocation("projMatrix");
-    m_mvMatrixLoc = m_program.uniformLocation("mvMatrix");
-    m_normalMatrixLoc = m_program.uniformLocation("normalMatrix");
-    m_lightPosLoc = m_program.uniformLocation("lightPos");
+    m_program->bind();
+    m_projMatrixLoc = m_program->uniformLocation("projMatrix");
+    m_mvMatrixLoc = m_program->uniformLocation("mvMatrix");
+    m_normalMatrixLoc = m_program->uniformLocation("normalMatrix");
+    m_lightPosLoc = m_program->uniformLocation("lightPos");
 
     // Setup our vertex buffer object.
     m_logoVbo.create();
@@ -178,12 +183,12 @@ void Renderer::initializeGL()
     m_camera.translate(0, 0, -1);
 
     // Light position is fixed.
-    m_program.setUniformValue(m_lightPosLoc, QVector3D(0, 0, 70));
+    m_program->setUniformValue(m_lightPosLoc, QVector3D(0, 0, 70));
 
-    m_program.release();
+    m_program->release();
 }
 
-void Renderer::setupVertexAttribs()
+void RenderThread::setupVertexAttribs()
 {
     m_logoVbo.bind();
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
@@ -194,7 +199,7 @@ void Renderer::setupVertexAttribs()
     m_logoVbo.release();
 }
 
-void Renderer::paintGL()
+void RenderThread::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
@@ -205,78 +210,63 @@ void Renderer::paintGL()
     m_world.rotate(m_yRot / 16.0f, 0, 1, 0);
     m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
 
-    m_program.bind();
-    m_program.setUniformValue(m_projMatrixLoc, m_proj);
-    m_program.setUniformValue(m_mvMatrixLoc, m_camera * m_world);
+    m_program->bind();
+    m_program->setUniformValue(m_projMatrixLoc, m_proj);
+    m_program->setUniformValue(m_mvMatrixLoc, m_camera * m_world);
     QMatrix3x3 normalMatrix = m_world.normalMatrix();
-    m_program.setUniformValue(m_normalMatrixLoc, normalMatrix);
+    m_program->setUniformValue(m_normalMatrixLoc, normalMatrix);
 
     glDrawArrays(GL_TRIANGLES, 0, m_logo.vertexCount());
 
-    m_program.release();
+    m_program->release();
 }
 
-// Some OpenGL implementations have serious issues with compiling and linking
-// shaders on multiple threads concurrently. Avoid this.
-Q_GLOBAL_STATIC(QMutex, rendererInitMutex)
-
-void Renderer::render()
+void RenderThread::stop()
 {
-    if (m_exiting) {
-        return;
-    }
+    m_doRendering = false;
+}
 
-    QOpenGLContext *ctx = m_glwidget->context();
-    if (!ctx) {
-        // QOpenGLWidget not yet initialized
-        return;
-    }
-
-    // Grab the context.
-    m_grabMutex.lock();
-    emit contextWanted();
-    m_grabCond.wait(&m_grabMutex);
-    QMutexLocker lock(&m_renderMutex);
-    m_grabMutex.unlock();
-
-    if (m_exiting) {
-        return;
-    }
-
-    Q_ASSERT(ctx->thread() == QThread::currentThread());
-
+void RenderThread::run()
+{
     // Make the context (and an offscreen surface) current for this thread. The
     // QOpenGLWidget's fbo is bound in the context.
-    m_glwidget->makeCurrent();
-
-    if (!m_inited) {
-        m_inited = true;
-        QMutexLocker initLock(rendererInitMutex());
-        initializeOpenGLFunctions();
-        initializeGL();
+    QSurface *surface = &m_window;
+    
+    if (m_context == 0x0) {
+        m_context = new QOpenGLContext();
+        m_context->create();
     }
 
-	if (m_setSize) {
-		m_proj.setToIdentity();
-		m_proj.perspective(45.0f, GLfloat(m_width) / m_height, 0.01f, 100.0f);
-		glViewport(0, 0, m_width, m_height);
-		m_setSize = false;
-	}
-    paintGL();
+    if (m_context != 0x0) {
+        if (!m_context->makeCurrent(surface)) {
+            qCritical() << "Failed to make context current!";
+        }
+        else {
+            initializeGL();
+            m_context->doneCurrent();
 
-    // Make no context current on this thread and move the QOpenGLWidget's
-    // context back to the gui thread.
-    m_glwidget->doneCurrent();
-    ctx->moveToThread(qGuiApp->thread());
+            while (m_doRendering) {
+                if (m_setSize) {
+                    m_proj.setToIdentity();
+                    m_proj.perspective(45.0f, GLfloat(m_window.width()) / m_window.height(), 0.01f, 100.0f);
+                    glViewport(0, 0, m_window.width(), m_window.height());
+                    m_setSize = false;
+                }
+                m_context->makeCurrent(surface);
+                paintGL();
+                m_context->swapBuffers(surface);
+                msleep(40);
+            }
+        }
 
-    // Schedule composition. Note that this will use QueuedConnection, meaning
-    // that update() will be invoked on the gui thread.
-    QMetaObject::invokeMethod(m_glwidget, "update");
+        if (m_context != 0x0) {
+            delete m_context;
+            m_context = 0x0;
+        }
+    }
 }
 
-void Renderer::resizeGL(int w, int h)
+void RenderThread::resizeGL()
 {
-    m_width = w;
-	m_height = h;
     m_setSize = true;
 }

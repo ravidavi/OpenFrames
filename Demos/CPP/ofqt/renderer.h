@@ -73,6 +73,7 @@ public:
     QMutex *grabMutex() { return &m_grabMutex; }
     QWaitCondition *grabCond() { return &m_grabCond; }
     void prepareExit() { m_exiting = true; m_grabCond.wakeAll(); }
+    void resizeGL(int width, int height);
 
 signals:
     void contextWanted();
@@ -82,7 +83,6 @@ public slots:
     void setXRotation(int angle) { m_xRot = angle; }
     void setYRotation(int angle) { m_yRot = angle; }
     void setZRotation(int angle) { m_zRot = angle; }
-    void resizeGL(int width, int height);
 
 private:
     void initializeGL();

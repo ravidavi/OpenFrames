@@ -48,38 +48,61 @@
 **
 ****************************************************************************/
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef RENDERTHREAD_H
+#define RENDERTHREAD_H
 
-#include <QMainWindow>
+#include <QThread>
+#include <QOpenGLFunctions>
+#include <QOpenGLBuffer>
+#include <QMatrix4x4>
+#include "logo.h"
 
-QT_BEGIN_NAMESPACE
-class QSlider;
-class QPushButton;
-class QWidget;
-QT_END_NAMESPACE
+// forward declaration to avoid circular dependencies
+QT_FORWARD_DECLARE_CLASS(QWindow)
+QT_FORWARD_DECLARE_CLASS(QOpenGLContext)
+QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
-class GLWindow;
-
-class MainWindow : public QMainWindow
+class RenderThread : public QThread, protected QOpenGLFunctions
 {
     Q_OBJECT
 
 public:
-    MainWindow();
+    RenderThread(QWindow &window);
+    void resizeGL();
+    void stop();
+    void run() override;
 
-protected:
-    void keyPressEvent(QKeyEvent *event) override;
+public slots:
+    void setXRotation(int angle) { m_xRot = angle; }
+    void setYRotation(int angle) { m_yRot = angle; }
+    void setZRotation(int angle) { m_zRot = angle; }
 
 private:
-    QSlider *createSlider();
+    void initializeGL();
+    void paintGL();
+    void setupVertexAttribs();
 
-    QWidget *glWidget;
-    GLWindow *glWindow;
-    QSlider *xSlider;
-    QSlider *ySlider;
-    QSlider *zSlider;
-    QPushButton *dockBtn;
+    bool m_core;
+    int m_xRot;
+    int m_yRot;
+    int m_zRot;
+    Logo m_logo;
+    QOpenGLBuffer m_logoVbo;
+    QOpenGLShaderProgram *m_program;
+    int m_projMatrixLoc;
+    int m_mvMatrixLoc;
+    int m_normalMatrixLoc;
+    int m_lightPosLoc;
+    QMatrix4x4 m_proj;
+    QMatrix4x4 m_camera;
+    QMatrix4x4 m_world;
+    bool m_transparent;
+
+    QWindow &m_window;
+    QOpenGLContext *m_context;
+    bool m_doRendering;
+
+	bool m_setSize;
 };
 
 #endif

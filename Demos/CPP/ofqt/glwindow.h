@@ -48,38 +48,46 @@
 **
 ****************************************************************************/
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef GLWINDOW_H
+#define GLWINDOW_H
 
-#include <QMainWindow>
+#include <QWindow>
+#include "renderthread.h"
 
-QT_BEGIN_NAMESPACE
-class QSlider;
-class QPushButton;
-class QWidget;
-QT_END_NAMESPACE
+QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
-class GLWindow;
-
-class MainWindow : public QMainWindow
+class GLWindow : public QWindow
 {
     Q_OBJECT
 
 public:
-    MainWindow();
+    GLWindow(QWindow *parent = 0);
+    ~GLWindow();
+
+    //QSize minimumSizeHint() const override;
+    //QSize sizeHint() const override;
+
+public slots:
+    void setXRotation(int angle);
+    void setYRotation(int angle);
+    void setZRotation(int angle);
+
+signals:
+    void xRotationChanged(int angle);
+    void yRotationChanged(int angle);
+    void zRotationChanged(int angle);
 
 protected:
-    void keyPressEvent(QKeyEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private:
-    QSlider *createSlider();
-
-    QWidget *glWidget;
-    GLWindow *glWindow;
-    QSlider *xSlider;
-    QSlider *ySlider;
-    QSlider *zSlider;
-    QPushButton *dockBtn;
+    RenderThread *m_renderer;
+    int m_xRot;
+    int m_yRot;
+    int m_zRot;
+    QPoint m_lastPos;
 };
 
 #endif
