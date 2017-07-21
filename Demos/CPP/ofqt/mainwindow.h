@@ -60,6 +60,7 @@ class QWidget;
 QT_END_NAMESPACE
 
 class GLWindow;
+class GLWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -74,8 +75,10 @@ protected:
 private:
     QSlider *createSlider();
 
-    QWidget *glWidget;
+    bool qWindowFlag;
+    QWidget *glContainer;
     GLWindow *glWindow;
+    GLWidget *glWidget;
     QSlider *xSlider;
     QSlider *ySlider;
     QSlider *zSlider;
