@@ -51,7 +51,7 @@ class FollowingTrackball : public osgGA::TrackballManipulator
 	  osg::Matrixd matrix;
 
           // First compute World to Local transform
-          if(_frameType == View::ABSOLUTE)
+          if(_frameType == View::ABSOLUTE_FRAME)
           {
             // Translate origin to the viewed frame's origin.
             // Since there is no rotation, just negate the translation
@@ -173,7 +173,7 @@ void View::_init()
 	  // Set up the ReferenceFrame transform accumulator
 	_xform = new TransformAccumulator;
         _xform_lookat = new TransformAccumulator;
-        _frameType = RELATIVE;
+        _frameType = RELATIVE_FRAME;
         _rotationType = AZEL;
 
 	  // Setup the trackball view manipulator

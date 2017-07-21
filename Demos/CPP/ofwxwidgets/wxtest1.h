@@ -22,7 +22,7 @@
 #endif
 #include <wx/glcanvas.h>
 
-#include <OpenFrames/WindowProxy>
+#include <OpenFrames/WindowProxy.hpp>
 
 class MyGLCanvas : public wxGLCanvas
 {
