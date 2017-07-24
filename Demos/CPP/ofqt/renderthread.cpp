@@ -54,171 +54,265 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLContext>
 #include <QCoreApplication>
-#include <math.h>
+
 #include <iostream>
+#define _USE_MATH_DEFINES
+#include <math.h>
+
+#include <OpenFrames/CurveArtist.hpp>
+#include <OpenFrames/DrawableTrajectory.hpp>
+#include <OpenFrames/FrameManager.hpp>
+#include <OpenFrames/MarkerArtist.hpp>
+#include <OpenFrames/RadialPlane.hpp>
+#include <OpenFrames/SegmentArtist.hpp>
+
+// Pool of all RenderThreads for winID reconciliation in callbacks
+QVector<RenderThread *> RenderThread::POOL;
 
 RenderThread::RenderThread(QWindow &w)
-    : QThread(),
-      m_program(0x0),
-      m_xRot(0),
-      m_yRot(0),
-      m_zRot(0),
+    : QThread(&w),
       m_window(w),
       m_context(0x0),
-	  m_setSize(true),
-      m_doRendering(true)
+      m_doRendering(true),
+      m_firstCallToMakeCurrent(true),
+      m_winproxy(0x0),
+      m_spacestation(0x0),
+      m_axes(0x0),
+      m_timeManVisitor(0x0),
+      m_tscale(1.0),
+      m_toffset(0.0),
+      m_paused(false),
+      m_stereo(false)
 {
-    m_core = QCoreApplication::arguments().contains(QStringLiteral("--coreprofile"));
-    // --transparent causes the clear color to be transparent. Therefore, on systems that
-    // support it, the widget will become transparent apart from the logo.
-    m_transparent = QCoreApplication::arguments().contains(QStringLiteral("--transparent"));
+    // Add this instance to the pool of all instances
+    RenderThread::PoolAddInstance(this);
 
-    // TODO Renderer must be instantiated from the Qt GUI thread! Move this back out to the GLWidget (MCR 7/13/2017)
-    if (m_transparent) {
-        QSurfaceFormat format = m_window.format();
-        format.setAlphaBufferSize(8);
-        m_window.setFormat(format);
+    // Create embedded WindowProxy that handles all OpenFrames drawing
+    m_winproxy = new OpenFrames::WindowProxy(0, 0, 450, 300, 2, 1, true);
+    m_winproxy->setID(0);
+    m_winproxy->setMakeCurrentFunction(RenderThread::PoolMakeCurrent);
+    m_winproxy->setUpdateContextFunction(RenderThread::PoolMakeCurrent);
+    m_winproxy->setSwapBuffersFunction(RenderThread::PoolSwapBuffers);
+    m_winproxy->setDesiredFramerate(20);
+    
+    // Create the object that will handle keyboard input 
+    // This includes pausing, resetting, modifying time, etc...
+    m_timeManVisitor = new OpenFrames::TimeManagementVisitor;
+
+    // Create the models that will populate the scene using
+    // Model(name, color(r,g,b,a))
+    m_spacestation = new OpenFrames::Model("Space Station", 0, 1, 0, 0.9);
+    OpenFrames::Model *hubble = new OpenFrames::Model("Hubble", 1, 0, 0, 0.9);
+
+    // Set the 3D models
+    m_spacestation->setModel("../Models/SpaceStation.3ds");
+    hubble->setModel("../Models/Hubble.3ds");
+
+    // Create the trajectory using
+    // Trajectory(DOF, number of optionals)
+    OpenFrames::Trajectory *traj = new OpenFrames::Trajectory(3, 1);
+
+    // Create a drawable trajectory for the spacecraft window using
+    // DrawableTrajectory(name, color(r,g,b,a))
+    OpenFrames::DrawableTrajectory *drawtraj = new OpenFrames::DrawableTrajectory("traj", 1, 0, 0, 0.9);
+    drawtraj->showAxes(OpenFrames::ReferenceFrame::NO_AXES);
+    drawtraj->showAxesLabels(OpenFrames::ReferenceFrame::NO_AXES);
+    drawtraj->showNameLabel(false);
+
+    // Create a CurveArtist for the trajectory.  By default the CurveArtist
+    // will use x/y/z positions from the trajectory for plotting.
+    OpenFrames::CurveArtist *ca = new OpenFrames::CurveArtist(traj);
+    ca->setWidth(2.0); // Line width for the trajectory
+    ca->setColor(1, 0, 0);
+    drawtraj->addArtist(ca);
+
+    OpenFrames::Trajectory::DataSource data; // Data source for artists
+    data._src = OpenFrames::Trajectory::POSOPT;
+
+    // Create an artist for velocity vectors
+    OpenFrames::SegmentArtist *sa = new OpenFrames::SegmentArtist(traj);
+    sa->setColor(0.5, 0, 0);
+    data._element = 0;
+    sa->setStartXData(data);
+    data._element = 1;
+    sa->setStartYData(data);
+    data._element = 2;
+    sa->setStartZData(data);
+    data._element = 0;
+    data._opt = 1;
+    sa->setEndXData(data);
+    data._element = 1;
+    sa->setEndYData(data);
+    data._element = 2;
+    sa->setEndZData(data);
+    drawtraj->addArtist(sa);
+
+    // Create a drawable trajectory for the time history window
+    OpenFrames::DrawableTrajectory *timehist = new OpenFrames::DrawableTrajectory("TimeHist", 1, 0, 0, 0.9);
+    timehist->showAxes(OpenFrames::ReferenceFrame::NO_AXES);
+    timehist->showAxesLabels(OpenFrames::ReferenceFrame::NO_AXES);
+    timehist->showNameLabel(false);
+
+    // Create an artist to draw position vs time
+    ca = new OpenFrames::CurveArtist(traj);
+    ca->setColor(1, 0, 0);
+    data._src = OpenFrames::Trajectory::POSOPT;
+    data._opt = 0;
+    data._element = 0; // Use X position for X coordinate
+    data._scale = 0.01; // Scale down since positions are large
+    ca->setXData(data);
+    data._element = 2; // Use Z position for Y coordinate
+    ca->setYData(data);
+    data._src = OpenFrames::Trajectory::TIME; // Use time for Z coordinate
+    data._scale = 1.0; // Don't scale time
+    ca->setZData(data);
+    timehist->addArtist(ca);
+
+    // Create an artist to draw start/intermediate/end markers
+    OpenFrames::MarkerArtist *ma = new OpenFrames::MarkerArtist(traj);
+    ma->setMarkers(OpenFrames::MarkerArtist::START + OpenFrames::MarkerArtist::INTERMEDIATE + OpenFrames::MarkerArtist::END);
+    ma->setAutoAttenuate(true);
+    ma->setMarkerColor(OpenFrames::MarkerArtist::START, 0, 1, 0);
+    ma->setMarkerColor(OpenFrames::MarkerArtist::END, 1, 0, 0);
+    ma->setMarkerColor(OpenFrames::MarkerArtist::INTERMEDIATE, 1, 1, 0);
+    ma->setMarkerImage("../Images/fuzzyparticle.tiff");
+    ma->setMarkerSize(10);
+    data._src = OpenFrames::Trajectory::POSOPT;
+    data._element = 0; // Use X position for X coordinate
+    data._scale = 0.01; // Scale down since positions are large
+    ma->setXData(data);
+    data._element = 2; // Use Z position for Y coordinate
+    ma->setYData(data);
+    data._src = OpenFrames::Trajectory::TIME; // Use time for Z coordinate
+    data._scale = 1.0; // Don't scale time
+    ma->setZData(data);
+    timehist->addArtist(ma);
+
+    // Draw markers at equally spaced distances
+    ma->setIntermediateType(OpenFrames::MarkerArtist::DISTANCE);
+    ma->setIntermediateSpacing(10.0); // Every 10 distance units
+    ma->setIntermediateDirection(OpenFrames::MarkerArtist::END); // From end of trajectory
+
+    // Create a set of Coordinate Axes for time history plot
+    m_axes = new OpenFrames::CoordinateAxes("axes", 0.0, 0.8, 0.8, 1);
+    m_axes->setAxisLength(2.0*M_PI);
+    m_axes->setTickSpacing(M_PI, 0.25*M_PI);
+    m_axes->setTickSize(8, 5);
+    m_axes->setTickImage("../Images/circle.tiff");
+    m_axes->setXLabel("X");
+    m_axes->setYLabel("Z");
+    m_axes->setZLabel("t");
+
+    // Create a ReferenceFrame to show model's position in time history plot
+    OpenFrames::ReferenceFrame *trace = new OpenFrames::ReferenceFrame("trace", 1, 1, 1, 1);
+
+    // Create a drawable trajectory to hold the trace center marker
+    OpenFrames::DrawableTrajectory *drawcenter = new OpenFrames::DrawableTrajectory("center marker", 1, 0, 0, 1);
+    drawcenter->showAxes(OpenFrames::ReferenceFrame::NO_AXES);
+    drawcenter->showAxesLabels(OpenFrames::ReferenceFrame::NO_AXES);
+    drawcenter->showNameLabel(false);
+
+    // Create a MarkerArtist to draw the center marker
+    OpenFrames::MarkerArtist *centermarker = new OpenFrames::MarkerArtist();
+    centermarker->setMarkerImage("../Images/target.tiff");
+    centermarker->setMarkerSize(10);
+
+    // Add the markerartist to the drawable trajectory
+    drawcenter->addArtist(centermarker);
+
+    // Create a RadialPlane to show trace frame's orientation
+    OpenFrames::RadialPlane *rp = new OpenFrames::RadialPlane("radial", 1, 1, 1, 1);
+    rp->showAxes(OpenFrames::ReferenceFrame::NO_AXES);
+    rp->showAxesLabels(OpenFrames::ReferenceFrame::NO_AXES);
+    rp->showNameLabel(false);
+    rp->setParameters(10.0, 2.5, 60.0*M_PI / 180.0);
+
+    // Set up reference frame heirarchies.
+    m_spacestation->addChild(drawtraj);
+    m_spacestation->addChild(hubble);
+    m_axes->addChild(timehist);
+    m_axes->addChild(trace);
+    trace->addChild(drawcenter);
+    m_axes->addChild(rp);
+
+    // Tell model to follow trajectory (by default in LOOP mode)
+    OpenFrames::TrajectoryFollower *tf = new OpenFrames::TrajectoryFollower(traj);
+    tf->setTimeScale(m_tscale);
+    hubble->getTransform()->setUpdateCallback(tf);
+
+    // Tell trace frame to follow time history
+    tf = new OpenFrames::TrajectoryFollower(traj);
+    tf->setTimeScale(m_tscale);
+    data._src = OpenFrames::Trajectory::POSOPT;
+    data._opt = 0;
+    data._element = 0; // Use X position for X coordinate
+    data._scale = 0.01; // Scale down since positions are large
+    tf->setXData(data);
+    data._element = 2; // Use Z position for Y coordinate
+    tf->setYData(data);
+    data._src = OpenFrames::Trajectory::TIME; // Use time for Z coordinate
+    data._scale = 1.0;
+    tf->setZData(data);
+    trace->getTransform()->setUpdateCallback(tf);
+
+    // Tell radial frame to follow time history's orientation
+    tf = new OpenFrames::TrajectoryFollower(traj);
+    tf->setFollowType(OpenFrames::TrajectoryFollower::ATTITUDE, OpenFrames::TrajectoryFollower::LOOP);
+    tf->setTimeScale(m_tscale);
+    rp->getTransform()->setUpdateCallback(tf);
+    rp->setPosition(0.0, 0.0, 0.0);
+
+    // Create views
+    OpenFrames::View *view = new OpenFrames::View(m_spacestation, m_spacestation);
+    OpenFrames::View *view2 = new OpenFrames::View(m_spacestation, hubble);
+    OpenFrames::View *view3 = new OpenFrames::View(m_axes, m_axes);
+    OpenFrames::View *view4 = new OpenFrames::View(m_axes, trace);
+
+    // Create a manager to handle the spatial scene
+    OpenFrames::FrameManager* fm = new OpenFrames::FrameManager;
+    fm->setFrame(m_spacestation);
+
+    // Create a manager to handle the time history scene
+    OpenFrames::FrameManager* fm2 = new OpenFrames::FrameManager;
+    fm2->setFrame(m_axes);
+
+    // Set up the scene
+    m_winproxy->setScene(fm, 0, 0);
+    m_winproxy->setScene(fm2, 1, 0);
+    m_winproxy->getGridPosition(0, 0)->setSkySphereTexture("../Images/StarMap.tif");
+    m_winproxy->getGridPosition(0, 0)->addView(view);
+    m_winproxy->getGridPosition(0, 0)->addView(view2);
+    m_winproxy->getGridPosition(1, 0)->addView(view3);
+    m_winproxy->getGridPosition(1, 0)->addView(view4);
+
+    // Add the actual positions and attitudes for the trajectory.
+    osg::Quat att; // Quaternion for attitude transformations
+    double pos[3], vel[3];
+    pos[1] = vel[1] = 0.0;
+    for (double t = 0.0; t <= 2.0*M_PI; t += M_PI / 90.0)
+    {
+        pos[0] = 500.0*sin(t);
+        pos[2] = 500.0*cos(t);
+        vel[0] = pos[0] + 0.5*pos[2];
+        vel[2] = pos[2] - 0.5*pos[0];
+        att.makeRotate(t, 0, 1, 0);
+
+        traj->addTime(t);
+        traj->addPosition(pos);
+        traj->setOptional(0, vel);
+        traj->addAttitude(att[0], att[1], att[2], att[3]);
     }
+
+    // Specify the key press callback
+    m_winproxy->setKeyPressCallback(RenderThread::PoolKeyPressCallback);
 }
 
-static const char *vertexShaderSourceCore =
-"#version 150\n"
-"in vec4 vertex;\n"
-"in vec3 normal;\n"
-"out vec3 vert;\n"
-"out vec3 vertNormal;\n"
-"uniform mat4 projMatrix;\n"
-"uniform mat4 mvMatrix;\n"
-"uniform mat3 normalMatrix;\n"
-"void main() {\n"
-"   vert = vertex.xyz;\n"
-"   vertNormal = normalMatrix * normal;\n"
-"   gl_Position = projMatrix * mvMatrix * vertex;\n"
-"}\n";
-
-static const char *fragmentShaderSourceCore =
-"#version 150\n"
-"in highp vec3 vert;\n"
-"in highp vec3 vertNormal;\n"
-"out highp vec4 fragColor;\n"
-"uniform highp vec3 lightPos;\n"
-"void main() {\n"
-"   highp vec3 L = normalize(lightPos - vert);\n"
-"   highp float NL = max(dot(normalize(vertNormal), L), 0.0);\n"
-"   highp vec3 color = vec3(0.39, 1.0, 0.0);\n"
-"   highp vec3 col = clamp(color * 0.2 + color * 0.8 * NL, 0.0, 1.0);\n"
-"   fragColor = vec4(col, 1.0);\n"
-"}\n";
-
-static const char *vertexShaderSource =
-"attribute vec4 vertex;\n"
-"attribute vec3 normal;\n"
-"varying vec3 vert;\n"
-"varying vec3 vertNormal;\n"
-"uniform mat4 projMatrix;\n"
-"uniform mat4 mvMatrix;\n"
-"uniform mat3 normalMatrix;\n"
-"void main() {\n"
-"   vert = vertex.xyz;\n"
-"   vertNormal = normalMatrix * normal;\n"
-"   gl_Position = projMatrix * mvMatrix * vertex;\n"
-"}\n";
-
-static const char *fragmentShaderSource =
-"varying highp vec3 vert;\n"
-"varying highp vec3 vertNormal;\n"
-"uniform highp vec3 lightPos;\n"
-"void main() {\n"
-"   highp vec3 L = normalize(lightPos - vert);\n"
-"   highp float NL = max(dot(normalize(vertNormal), L), 0.0);\n"
-"   highp vec3 color = vec3(0.39, 1.0, 0.0);\n"
-"   highp vec3 col = clamp(color * 0.2 + color * 0.8 * NL, 0.0, 1.0);\n"
-"   gl_FragColor = vec4(col, 1.0);\n"
-"}\n";
-
-Q_GLOBAL_STATIC(QMutex, initMutex)
-
-void RenderThread::initializeGL()
+RenderThread::~RenderThread()
 {
-    // In this example the widget's corresponding top-level window can change
-    // several times during the widget's lifetime. Whenever this happens, the
-    // QOpenGLWidget's associated context is destroyed and a new one is created.
-    // Therefore we have to be prepared to clean up the resources on the
-    // aboutToBeDestroyed() signal, instead of the destructor. The emission of
-    // the signal will be followed by an invocation of initializeGL() where we
-    // can recreate all resources.
-
-    QMutexLocker lock(initMutex());
-
-    initializeOpenGLFunctions();
-    glClearColor(0, 0, 0, m_transparent ? 0 : 1);
-
-    QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex);
-    vshader->compileSourceCode(m_core ? vertexShaderSourceCore : vertexShaderSource);
-    QOpenGLShader *fshader = new QOpenGLShader(QOpenGLShader::Fragment);
-    fshader->compileSourceCode(m_core ? fragmentShaderSourceCore : fragmentShaderSource);
-    m_program = new QOpenGLShaderProgram();
-    m_program->addShader(vshader);
-    m_program->addShader(fshader);
-    m_program->bindAttributeLocation("vertex", 0);
-    m_program->bindAttributeLocation("normal", 1);
-    m_program->link();
-
-    m_program->bind();
-    m_projMatrixLoc = m_program->uniformLocation("projMatrix");
-    m_mvMatrixLoc = m_program->uniformLocation("mvMatrix");
-    m_normalMatrixLoc = m_program->uniformLocation("normalMatrix");
-    m_lightPosLoc = m_program->uniformLocation("lightPos");
-
-    // Setup our vertex buffer object.
-    m_logoVbo.create();
-    m_logoVbo.bind();
-    m_logoVbo.allocate(m_logo.constData(), m_logo.count() * sizeof(GLfloat));
-
-    // Store the vertex attribute bindings for the program.
-    setupVertexAttribs();
-
-    // Our camera never changes in this example.
-    m_camera.setToIdentity();
-    m_camera.translate(0, 0, -1);
-
-    // Light position is fixed.
-    m_program->setUniformValue(m_lightPosLoc, QVector3D(0, 0, 70));
-
-    m_program->release();
-}
-
-void RenderThread::setupVertexAttribs()
-{
-    m_logoVbo.bind();
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-    f->glEnableVertexAttribArray(0);
-    f->glEnableVertexAttribArray(1);
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), 0);
-    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
-    m_logoVbo.release();
-}
-
-void RenderThread::paintGL()
-{
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-
-    m_world.setToIdentity();
-    m_world.rotate(180.0f - (m_xRot / 16.0f), 1, 0, 0);
-    m_world.rotate(m_yRot / 16.0f, 0, 1, 0);
-    m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
-
-    m_program->bind();
-    m_program->setUniformValue(m_projMatrixLoc, m_proj);
-    m_program->setUniformValue(m_mvMatrixLoc, m_camera * m_world);
-    QMatrix3x3 normalMatrix = m_world.normalMatrix();
-    m_program->setUniformValue(m_normalMatrixLoc, normalMatrix);
-
-    glDrawArrays(GL_TRIANGLES, 0, m_logo.vertexCount());
-
-    m_program->release();
+    // Wait for the window proxy to shutdown before deleting the context
+    m_winproxy->shutdown();
+    m_winproxy->join();
+    delete m_context;
 }
 
 void RenderThread::stop()
@@ -228,45 +322,165 @@ void RenderThread::stop()
 
 void RenderThread::run()
 {
-    // Make the context (and an offscreen surface) current for this thread. The
-    // QOpenGLWidget's fbo is bound in the context.
-    QSurface *surface = &m_window;
-    
+    m_winproxy->startThread();
+    while (!isAnimating() && m_doRendering) {
+        OpenThreads::Thread::YieldCurrentThread();
+    }
+}
+
+bool RenderThread::isAnimating() {
+    return m_winproxy->isAnimating();
+}
+
+void RenderThread::keyPressCallback(int key)
+{
+    // Pause/unpause animation
+    if (key == Qt::Key_P)
+    {
+        m_paused = !m_paused;
+        m_timeManVisitor->setPauseState(true, m_paused);
+        m_spacestation->getTransform()->accept(*m_timeManVisitor);
+        m_axes->getTransform()->accept(*m_timeManVisitor);
+        m_timeManVisitor->setPauseState(false, m_paused);
+    }
+
+    // Reset time to epoch. All ReferenceFrames that are following
+    // a Trajectory will return to their starting positions.
+    else if (key == Qt::Key_R)
+    {
+        m_timeManVisitor->setReset(true);
+        m_spacestation->getTransform()->accept(*m_timeManVisitor);
+        m_axes->getTransform()->accept(*m_timeManVisitor);
+        m_timeManVisitor->setReset(false);
+    }
+
+    // Speed up time
+    else if ((key == Qt::Key_Plus) || (key == Qt::Key_Equal))
+    {
+        m_tscale += 0.1;
+        m_timeManVisitor->setTimeScale(true, m_tscale);
+        m_spacestation->getTransform()->accept(*m_timeManVisitor);
+        m_axes->getTransform()->accept(*m_timeManVisitor);
+        m_timeManVisitor->setTimeScale(false, m_tscale);
+    }
+
+    // Slow down time
+    else if ((key == Qt::Key_Minus) || (key == Qt::Key_Underscore))
+    {
+        m_tscale -= 0.1;
+        m_timeManVisitor->setTimeScale(true, m_tscale);
+        m_spacestation->getTransform()->accept(*m_timeManVisitor);
+        m_axes->getTransform()->accept(*m_timeManVisitor);
+        m_timeManVisitor->setTimeScale(false, m_tscale);
+    }
+
+    // Shift time forward
+    else if (key == Qt::Key_Right)
+    {
+        m_toffset += 0.1;
+        m_timeManVisitor->setOffsetTime(true, m_toffset);
+        m_spacestation->getTransform()->accept(*m_timeManVisitor);
+        m_axes->getTransform()->accept(*m_timeManVisitor);
+        m_timeManVisitor->setOffsetTime(false, m_toffset);
+    }
+
+    // Shift time backward
+    else if (key == Qt::Key_Left)
+    {
+        m_toffset -= 0.1;
+        m_timeManVisitor->setOffsetTime(true, m_toffset);
+        m_spacestation->getTransform()->accept(*m_timeManVisitor);
+        m_axes->getTransform()->accept(*m_timeManVisitor);
+        m_timeManVisitor->setOffsetTime(false, m_toffset);
+    }
+}
+
+bool RenderThread::makeCurrent()
+{
+    bool success;
+
+    // create the context on the winproxy thread
     if (m_context == 0x0) {
         m_context = new QOpenGLContext();
         m_context->create();
     }
 
-    if (m_context != 0x0) {
-        if (!m_context->makeCurrent(surface)) {
-            qCritical() << "Failed to make context current!";
-        }
-        else {
-            initializeGL();
-            m_context->doneCurrent();
+    success = m_context->makeCurrent(&m_window);
 
-            while (m_doRendering) {
-                if (m_setSize) {
-                    m_proj.setToIdentity();
-                    m_proj.perspective(45.0f, GLfloat(m_window.width()) / m_window.height(), 0.01f, 100.0f);
-                    glViewport(0, 0, m_window.width(), m_window.height());
-                    m_setSize = false;
+    // initialize QOpenGLFunctions on first call
+    if (success && m_firstCallToMakeCurrent) {
+        initializeOpenGLFunctions();
+        m_firstCallToMakeCurrent = false;
+    }
+
+    // check OpenGL errors
+    if (!m_firstCallToMakeCurrent) {
+        GLenum err;
+        while ((err = glGetError()) != GL_NO_ERROR)
+        {
+            std::cout << "OpenGL error: " << err << std::endl;
+        }
+    }
+
+    return success;
+}
+
+void RenderThread::swapBuffers()
+{
+    // call swapbuffers
+    m_context->swapBuffers(&m_window);
+}
+
+RenderThread *RenderThread::PoolFindInstanceWithWinID(unsigned int *winID)
+{
+    RenderThread *renderThread = 0x0;
+
+    if (winID != 0x0) {
+        // locate the thread that contains winID in the pool
+        for (QVector<RenderThread *>::iterator it = POOL.begin(); it != POOL.end(); it++) {
+            if ((*it)->winproxy() != 0x0) {
+                 if ((*it)->winproxy()->getID() == *winID) {
+                    renderThread = (*it);
+                    break;
                 }
-                m_context->makeCurrent(surface);
-                paintGL();
-                m_context->swapBuffers(surface);
-                msleep(40);
             }
         }
+    }
 
-        if (m_context != 0x0) {
-            delete m_context;
-            m_context = 0x0;
+    return renderThread;
+}
+
+void RenderThread::PoolKeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
+{
+    RenderThread *renderThread = PoolFindInstanceWithWinID(winID);
+
+    // Pass key press to the appropriate thread
+    if (renderThread != 0x0) {
+        if (key != 0x0) {
+            renderThread->keyPressCallback(*key);
         }
     }
 }
 
-void RenderThread::resizeGL()
+void RenderThread::PoolMakeCurrent(unsigned int *winID, bool *success)
 {
-    m_setSize = true;
+    RenderThread *renderThread = PoolFindInstanceWithWinID(winID);
+
+    // Pass make current to the appropriate thread
+    if (renderThread != 0x0) {
+        *success = renderThread->makeCurrent();
+    }
+    else {
+        *success = false;
+    }
+}
+
+void RenderThread::PoolSwapBuffers(unsigned int *winID)
+{
+    RenderThread *renderThread = PoolFindInstanceWithWinID(winID);
+
+    // Pass swapbuffers to the appropriate thread
+    if (renderThread != 0x0) {
+        renderThread->swapBuffers();
+    }
 }

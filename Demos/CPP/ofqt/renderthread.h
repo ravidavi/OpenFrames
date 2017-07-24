@@ -55,7 +55,12 @@
 #include <QOpenGLFunctions>
 #include <QOpenGLBuffer>
 #include <QMatrix4x4>
+#include <QVector>
 #include "logo.h"
+
+#include <OpenFrames/WindowProxy.hpp>
+#include <OpenFrames/CoordinateAxes.hpp>
+#include <OpenFrames/Model.hpp>
 
 // forward declaration to avoid circular dependencies
 QT_FORWARD_DECLARE_CLASS(QWindow)
@@ -68,41 +73,40 @@ class RenderThread : public QThread, protected QOpenGLFunctions
 
 public:
     RenderThread(QWindow &window);
-    void resizeGL();
+    ~RenderThread();
+
     void stop();
     void run() override;
+    bool isAnimating();
 
-public slots:
-    void setXRotation(int angle) { m_xRot = angle; }
-    void setYRotation(int angle) { m_yRot = angle; }
-    void setZRotation(int angle) { m_zRot = angle; }
+    OpenFrames::WindowProxy* winproxy() { return m_winproxy; }
+    bool makeCurrent();
+    void swapBuffers();
+    void keyPressCallback(int key);
+
+    static QVector<RenderThread *> POOL;
+    static void PoolAddInstance(RenderThread *thread) { POOL.append(thread); }
+    static void PoolRemoveInstance(RenderThread *thread) { POOL.removeAll(thread);  }
+    static RenderThread *PoolFindInstanceWithWinID(unsigned int *winID);
+    static void PoolKeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key);
+    static void PoolMakeCurrent(unsigned int *winID, bool *success);
+    static void PoolSwapBuffers(unsigned int *winID);
 
 private:
-    void initializeGL();
-    void paintGL();
-    void setupVertexAttribs();
-
-    bool m_core;
-    int m_xRot;
-    int m_yRot;
-    int m_zRot;
-    Logo m_logo;
-    QOpenGLBuffer m_logoVbo;
-    QOpenGLShaderProgram *m_program;
-    int m_projMatrixLoc;
-    int m_mvMatrixLoc;
-    int m_normalMatrixLoc;
-    int m_lightPosLoc;
-    QMatrix4x4 m_proj;
-    QMatrix4x4 m_camera;
-    QMatrix4x4 m_world;
-    bool m_transparent;
-
     QWindow &m_window;
     QOpenGLContext *m_context;
     bool m_doRendering;
+    bool m_firstCallToMakeCurrent;
 
-	bool m_setSize;
+    OpenFrames::WindowProxy* m_winproxy;
+    OpenFrames::Model *m_spacestation;
+    OpenFrames::CoordinateAxes *m_axes;
+    OpenFrames::TimeManagementVisitor *m_timeManVisitor;
+
+    double m_tscale; // Animation speedup relative to real time
+    double m_toffset; // Animation time offset
+    bool m_paused;
+    bool m_stereo;
 };
 
 #endif

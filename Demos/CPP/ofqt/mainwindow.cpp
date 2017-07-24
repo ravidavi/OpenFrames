@@ -48,8 +48,7 @@
 **
 ****************************************************************************/
 
-#include "glwindow.h"
-#include "glwidget.h"
+#include "ofwindow.h"
 #include "mainwindow.h"
 #include <QSlider>
 #include <QVBoxLayout>
@@ -59,54 +58,28 @@
 
 MainWindow::MainWindow()
 {
-    qWindowFlag = false; 
-    if (QCoreApplication::arguments().contains(QStringLiteral("--qwindow"))) {
-        qWindowFlag = true;
-    }
-    if (QCoreApplication::arguments().contains(QStringLiteral("--qwidget"))) {
-        qWindowFlag = false;
-    }
-
+    // NOTE: Sliders are not connected to anything
     xSlider = createSlider();
     ySlider = createSlider();
     zSlider = createSlider();
 
-    if (qWindowFlag) {
-        glWindow = new GLWindow;
-        glContainer = QWidget::createWindowContainer(glWindow);
-        connect(xSlider, &QSlider::valueChanged, glWindow, &GLWindow::setXRotation);
-        connect(glWindow, &GLWindow::xRotationChanged, xSlider, &QSlider::setValue);
-        connect(ySlider, &QSlider::valueChanged, glWindow, &GLWindow::setYRotation);
-        connect(glWindow, &GLWindow::yRotationChanged, ySlider, &QSlider::setValue);
-        connect(zSlider, &QSlider::valueChanged, glWindow, &GLWindow::setZRotation);
-        connect(glWindow, &GLWindow::zRotationChanged, zSlider, &QSlider::setValue);
-    }
-    else {
-        glWidget = new GLWidget;
-        glContainer = glWidget;
-        connect(xSlider, &QSlider::valueChanged, glWidget, &GLWidget::setXRotation);
-        connect(glWidget, &GLWidget::xRotationChanged, xSlider, &QSlider::setValue);
-        connect(ySlider, &QSlider::valueChanged, glWidget, &GLWidget::setYRotation);
-        connect(glWidget, &GLWidget::yRotationChanged, ySlider, &QSlider::setValue);
-        connect(zSlider, &QSlider::valueChanged, glWidget, &GLWidget::setZRotation);
-        connect(glWidget, &GLWidget::zRotationChanged, zSlider, &QSlider::setValue);
-    }
+    // Create the OFWindow and a widget to contain it
+    qOFWindow = new OFWindow;
+    containerWidget = QWidget::createWindowContainer(qOFWindow);
 
+    // Add widgets to a horizontal layout
     QHBoxLayout *container = new QHBoxLayout;
-    container->addWidget(glContainer);
+    container->addWidget(containerWidget);
     container->addWidget(xSlider);
     container->addWidget(ySlider);
     container->addWidget(zSlider);
 
+    // Add layout to a central widget
     QWidget *w = new QWidget;
     w->setLayout(container);
     setCentralWidget(w);
 
-    xSlider->setValue(15 * 16);
-    ySlider->setValue(345 * 16);
-    zSlider->setValue(0 * 16);
-
-    setWindowTitle(tr("Hello GL"));
+    setWindowTitle(tr("Hello OpenFrames Qt"));
 }
 
 QSlider *MainWindow::createSlider()

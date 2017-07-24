@@ -48,57 +48,35 @@
 **
 ****************************************************************************/
 
-#ifndef GLWIDGET_H
-#define GLWIDGET_H
+#ifndef GLWINDOW_H
+#define GLWINDOW_H
 
-#include <QOpenGLWidget>
-#include <QThread>
-#include "renderer.h"
+#include <QWindow>
+#include "renderthread.h"
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
-class GLWidget : public QOpenGLWidget
+class OFWindow : public QWindow
 {
-    Q_OBJECT
-
 public:
-    GLWidget(QWidget *parent = 0);
-    ~GLWidget();
+    OFWindow(QWindow *parent = 0);
+    ~OFWindow();
 
-    QSize minimumSizeHint() const override;
-    QSize sizeHint() const override;
+    void exposeEvent(QExposeEvent *event) override;
 
-public slots:
-    void setXRotation(int angle);
-    void setYRotation(int angle);
-    void setZRotation(int angle);
-    void grabContext();
-
-signals:
-    void xRotationChanged(int angle);
-    void yRotationChanged(int angle);
-    void zRotationChanged(int angle);
-    void renderRequested();
-
-private slots:
-    void onAboutToCompose();
-    void onFrameSwapped();
-    void onAboutToResize();
-    void onResized();
+    static const bool VERBOSE_CONSOLE;
 
 protected:
-    void paintEvent(QPaintEvent *) override { }
     void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
-    void resizeGL(int width, int height) override;
+    void keyPressEvent(QKeyEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private:
-    QThread *m_thread;
-    Renderer *m_renderer;
-    int m_xRot;
-    int m_yRot;
-    int m_zRot;
-    QPoint m_lastPos;
+    unsigned int mapQtButtonToOFButton(Qt::MouseButtons qButton);
+
+    RenderThread m_renderer;
 };
 
 #endif

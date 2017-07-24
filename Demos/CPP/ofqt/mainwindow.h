@@ -59,8 +59,7 @@ class QPushButton;
 class QWidget;
 QT_END_NAMESPACE
 
-class GLWindow;
-class GLWidget;
+class OFWindow;
 
 class MainWindow : public QMainWindow
 {
@@ -75,14 +74,11 @@ protected:
 private:
     QSlider *createSlider();
 
-    bool qWindowFlag;
-    QWidget *glContainer;
-    GLWindow *glWindow;
-    GLWidget *glWidget;
+    QWidget *containerWidget;
+    OFWindow *qOFWindow;
     QSlider *xSlider;
     QSlider *ySlider;
     QSlider *zSlider;
-    QPushButton *dockBtn;
 };
 
 #endif

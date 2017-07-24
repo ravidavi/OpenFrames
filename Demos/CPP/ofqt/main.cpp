@@ -60,19 +60,9 @@ int main(int argc, char *argv[])
 
     QSurfaceFormat fmt;
     fmt.setDepthBufferSize(24);
-    if (QCoreApplication::arguments().contains(QStringLiteral("--multisample")))
-        fmt.setSamples(4);
-    if (QCoreApplication::arguments().contains(QStringLiteral("--coreprofile"))) {
-        fmt.setVersion(3, 2);
-        fmt.setProfile(QSurfaceFormat::CoreProfile);
-    }
     QSurfaceFormat::setDefaultFormat(fmt);
 
     MainWindow mainWindow;
-    if (QCoreApplication::arguments().contains(QStringLiteral("--transparent"))) {
-        mainWindow.setAttribute(Qt::WA_TranslucentBackground);
-        mainWindow.setAttribute(Qt::WA_NoSystemBackground, false);
-    }
     mainWindow.resize(mainWindow.sizeHint());
     int desktopArea = QApplication::desktop()->width() *
                      QApplication::desktop()->height();
