@@ -3550,28 +3550,6 @@ void OF_FCN(ofview_setperspective)(double *fov, double *ratio)
 }
 
 /**
-* \brief Set the aspect ratio multiplier
-* 
-* Set the constant multiplier that all aspect ratios are multiplied by
-* before a perspective view is created. This can be used to stretch/squeeze
-* the image by a constant amount.
-* 
-* This applies to the current active View.
-*
-* \param mult Aspect ratio multiplier
-**/
-void OF_FCN(ofview_setaspectmultiplier)(double *mult)
-{
-	if (_objs->_currView) {
-	  _objs->_currView->setAspectMultiplier(*mult);
-	  _objs->_intVal = 0;
-    }
-    else {
-      _objs->_intVal = -2;
-    }
-}
-
-/**
 * \brief Tell current view to follow the specified ReferenceFrame
 *
 * The 'root' input should be set to the root of the ReferenceFrame heirarchy, and the

@@ -604,11 +604,6 @@ OF_EXPORT void OF_FCN(ofview_setorthographic)(double *left, double *right,
 // with the given vertical field of view (in degrees) and x/y aspect ratio.
 OF_EXPORT void OF_FCN(ofview_setperspective)(double *fov, double *ratio);
 
-// Set the constant multiplier that all aspect ratios are multiplied by
-// before a perspective view is created. This can be used to stretch/squeeze
-// the image by a constant amount.
-OF_EXPORT void OF_FCN(ofview_setaspectmultiplier)(double *mult);
-
 // Tell current view to follow the specified ReferenceFrame. The 'root'
 // input should be set to the root of the ReferenceFrame heirarchy, and the
 // 'frame' input should be set to whatever frame you want to view. Note that

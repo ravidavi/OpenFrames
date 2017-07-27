@@ -201,7 +201,6 @@ namespace OpenFrames
     
     // Set up the projection matrix
     _projType = PERSPECTIVE;
-    _aspectMultiplier = 1.0;
     setPerspective(30.0, 640.0/480.0);
   }
   
@@ -239,10 +238,11 @@ namespace OpenFrames
     if (_projType == PERSPECTIVE)
     {
       double fovy, ratio;
-      getPerspective(fovy, ratio); // Get projection field of view
+      getPerspective(fovy, ratio); // Get projection vertical field of view and width/height aspect ratio
+      double fovx = fovy*ratio; // Compute projection horizontal field of view
       
-      // Trig time! Compute distance such that fov covers bounding sphere
-      dist = bs._radius / std::tan((fovy/2.0)*(osg::PI/180.0));
+      // Trig time! Compute camera distance such that fov is tangent to bounding sphere
+      dist = bs._radius / std::sin((std::min(fovy, fovx)/2.0)*(osg::PI/180.0));
     }
     
     // Set the trackball's home position

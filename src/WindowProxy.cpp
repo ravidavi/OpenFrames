@@ -266,6 +266,9 @@ namespace OpenFrames
           bool success = eg->updateContextImplementation();
           if(!success) std::cerr<< "WindowEventHandler::handle WARNING: OpenGL context was not properly updated during RESIZE event. Rendering artifacts may occur." << std::endl;
         }
+
+        // Make sure OpenFrames::View knows about resize and updates its projection matrix
+        _window->setupGrid(ea.getWindowWidth(), ea.getWindowHeight());
         
         break;
       }

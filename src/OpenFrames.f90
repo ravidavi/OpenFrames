@@ -864,11 +864,6 @@
 	REAL(8), INTENT(IN) :: fov, ratio
 	END SUBROUTINE
 
-	SUBROUTINE ofview_setaspectmultiplier(mult)
-	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_setaspectmultiplier
-	REAL(8), INTENT(IN) :: mult
-	END SUBROUTINE
-
 	SUBROUTINE ofview_setviewframe(root, frame)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_setviewframe
 	CHARACTER(*), INTENT(IN) :: root, frame

@@ -92,7 +92,7 @@ namespace OpenFrames
     inline void setPerspective(const double fovy, const double ratio)
     {
       _projType = PERSPECTIVE;
-      _projection.makePerspective(fovy, _aspectMultiplier*ratio, 1, 10000);
+      _projection.makePerspective(fovy, ratio, 1, 10000);
     }
     
     /** Get the parameters for a symmetric perspective view.  Only valid
@@ -105,16 +105,6 @@ namespace OpenFrames
         _projection.getPerspective(fovy, ratio, zNear, zFar);
       }
     }
-    
-    /** Set/get the constant multiplier that the given aspect ratio (for
-	    PERSPECTIVE projections) is multiplied by. This is 1 by default, but
-	    can be changed to stretch/squeeze the projection. */
-    inline void setAspectMultiplier(double mult)
-    {
-      _aspectMultiplier = mult;
-    }
-    
-    inline double getAspectMultiplier() const { return _aspectMultiplier; }
     
     /** Set an orthographic projection with the given bounds. */
     inline void setOrthographic(const double left, const double right,
@@ -193,7 +183,6 @@ namespace OpenFrames
     
     /** The projection type for this view. */
     ProjectionType _projType;
-    double _aspectMultiplier; // For PERSPECTIVE projections
     
     /** The projection matrix. */
     osg::Matrixd _projection;
