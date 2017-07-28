@@ -50,7 +50,6 @@
 
 #include "ofwindow.h"
 #include <QMouseEvent>
-#include <math.h>
 
 const bool OFWindow::VERBOSE_CONSOLE = false;
 
@@ -155,10 +154,10 @@ void OFWindow::keyPressEvent(QKeyEvent *event)
 }
 
 void OFWindow::resizeEvent(QResizeEvent *event) {
-    QWindow::resizeEvent(event);
     if (m_renderer.winproxy() != 0x0) {
         if (m_renderer.winproxy()->isAnimating()) {
             m_renderer.winproxy()->resizeWindow(0, 0, event->size().width(), event->size().height());
         }
     }
+    QWindow::resizeEvent(event);
 }

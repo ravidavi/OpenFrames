@@ -48,59 +48,21 @@
 **
 ****************************************************************************/
 
+#ifndef OFWIDGET_H
+#define OFWIDGET_H
+
+#include <QWidget>
 #include "ofwindow.h"
-#include "ofwidget.h"
-#include "mainwindow.h"
-#include <QSlider>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QKeyEvent>
-#include <QApplication>
 
-MainWindow::MainWindow()
+class OFWidget : public QWidget
 {
-    // NOTE: Sliders are not connected to anything
-    xSlider = createSlider();
-    ySlider = createSlider();
-    zSlider = createSlider();
+public:
+    OFWidget(QWidget *parent = 0x0);
+    ~OFWidget();
 
-    // Create the OFWindow and a widget to contain it
-    qOFWindow = new OFWindow();
-    containerWidget = QWidget::createWindowContainer(qOFWindow);
-    containerWidget->setLayout(new QGridLayout());
-    OFWidget *fml = new OFWidget(containerWidget);
-    containerWidget->layout()->addWidget(fml);
+    virtual QSize sizeHint() const;
 
-    // Add widgets to a horizontal layout
-    QHBoxLayout *container = new QHBoxLayout();
-    container->addWidget(containerWidget);
-    /*container->addWidget(xSlider);
-    container->addWidget(ySlider);
-    container->addWidget(zSlider);*/
+private:
+};
 
-    // Add layout to a central widget
-    QWidget *w = new QWidget();
-    w->setLayout(container);
-    setCentralWidget(w);
-
-    setWindowTitle(tr("Hello OpenFrames Qt"));
-}
-
-QSlider *MainWindow::createSlider()
-{
-    QSlider *slider = new QSlider(Qt::Vertical);
-    slider->setRange(0, 360 * 16);
-    slider->setSingleStep(16);
-    slider->setPageStep(15 * 16);
-    slider->setTickInterval(15 * 16);
-    slider->setTickPosition(QSlider::TicksRight);
-    return slider;
-}
-
-void MainWindow::keyPressEvent(QKeyEvent *e)
-{
-    if (e->key() == Qt::Key_Escape)
-        close();
-    else
-        QWidget::keyPressEvent(e);
-}
+#endif

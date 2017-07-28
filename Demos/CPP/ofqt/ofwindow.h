@@ -48,18 +48,16 @@
 **
 ****************************************************************************/
 
-#ifndef GLWINDOW_H
-#define GLWINDOW_H
+#ifndef OFWINDOW_H
+#define OFWINDOW_H
 
 #include <QWindow>
 #include "renderthread.h"
 
-QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
-
 class OFWindow : public QWindow
 {
 public:
-    OFWindow(QWindow *parent = 0);
+    OFWindow(QWindow *parent = 0x0);
     ~OFWindow();
 
     void exposeEvent(QExposeEvent *event) override;
