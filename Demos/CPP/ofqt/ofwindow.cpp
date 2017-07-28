@@ -113,18 +113,20 @@ void OFWindow::mousePressEvent(QMouseEvent *event)
 {
     unsigned int button = mapQtButtonToOFButton(event->button());
 
-    if (button != 0) {
-        if (VERBOSE_CONSOLE) {
-            if (event->button() == 1) {
-                qDebug() << "mouseDown left at (" << event->x() << ", " << event->y() << ")";
+    if (m_alreadyExposed) {
+        if (button != 0) {
+            if (VERBOSE_CONSOLE) {
+                if (event->button() == 1) {
+                    qDebug() << "mouseDown left at (" << event->x() << ", " << event->y() << ")";
+                }
+                else if (event->button() == 3) {
+                    qDebug() << "mouseDown right at (" << event->x() << ", " << event->y() << ")";
+                }
             }
-            else if (event->button() == 3) {
-                qDebug() << "mouseDown right at (" << event->x() << ", " << event->y() << ")";
-            }
-        }
 
-        if (m_renderer.winproxy() != 0x0) {
-            m_renderer.winproxy()->buttonPress(event->x(), event->y(), button);
+            if (m_renderer.winproxy() != 0x0) {
+                m_renderer.winproxy()->buttonPress(event->x(), event->y(), button);
+            }
         }
     }
 }
@@ -133,41 +135,48 @@ void OFWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     unsigned int button = mapQtButtonToOFButton(event->button());
 
-    if (button != 0) {
-        if (VERBOSE_CONSOLE) {
-            if (event->button() == 1) {
-                qDebug() << "mouseUp left at (" << event->x() << ", " << event->y() << ")";
+    if (m_alreadyExposed) {
+        if (button != 0) {
+            if (VERBOSE_CONSOLE) {
+                if (event->button() == 1) {
+                    qDebug() << "mouseUp left at (" << event->x() << ", " << event->y() << ")";
+                }
+                else if (event->button() == 3) {
+                    qDebug() << "mouseUp right at (" << event->x() << ", " << event->y() << ")";
+                }
             }
-            else if (event->button() == 3) {
-                qDebug() << "mouseUp right at (" << event->x() << ", " << event->y() << ")";
-            }
-        }
 
-        if (m_renderer.winproxy() != 0x0) {
-            m_renderer.winproxy()->buttonRelease(event->x(), event->y(), button);
+            if (m_renderer.winproxy() != 0x0) {
+                m_renderer.winproxy()->buttonRelease(event->x(), event->y(), button);
+            }
         }
     }
 }
 
 void OFWindow::mouseMoveEvent(QMouseEvent *event)
 {
-    if (VERBOSE_CONSOLE) {
-        qDebug() << "mouseMoved to (" << event->x() << ", " << event->y() << ")";
-    }
-    if (m_renderer.winproxy() != 0x0) {
-        m_renderer.winproxy()->mouseMotion(event->x(), event->y());
+    if (m_alreadyExposed) {
+        if (VERBOSE_CONSOLE) {
+            qDebug() << "mouseMoved to (" << event->x() << ", " << event->y() << ")";
+        }
+        if (m_renderer.winproxy() != 0x0) {
+            m_renderer.winproxy()->mouseMotion(event->x(), event->y());
+        }
     }
 }
 
 void OFWindow::keyPressEvent(QKeyEvent *event)
 {
     int key;
-    if (VERBOSE_CONSOLE) {
-        qDebug() << "keyPressed " << event->key() << " (" << (char)event->key() << ")";
-    }
-    if (m_renderer.winproxy() != 0x0) {
-        key = mapQtKeyEventToOsgKey(event);
-        m_renderer.winproxy()->keyPress(key);
+    
+    if (m_alreadyExposed) {
+        if (VERBOSE_CONSOLE) {
+            qDebug() << "keyPressed " << event->key() << " (" << (char)event->key() << ")";
+        }
+        if (m_renderer.winproxy() != 0x0) {
+            key = mapQtKeyEventToOsgKey(event);
+            m_renderer.winproxy()->keyPress(key);
+        }
     }
 }
 
