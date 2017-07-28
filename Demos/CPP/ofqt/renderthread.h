@@ -83,13 +83,11 @@ public:
     virtual OpenFrames::WindowProxy *winproxy() { return m_winproxy; }
     virtual bool makeCurrent();
     virtual void swapBuffers();
-    virtual void doneCurrent();
     virtual void keyPressCallback(int key);
 
 private:
     QWindow &m_window;
     QOpenGLContext *m_context;
-    bool m_doRendering;
     bool m_firstCallToMakeCurrent;
 
     OpenFrames::WindowProxy *m_winproxy;

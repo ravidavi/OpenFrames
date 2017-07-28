@@ -70,7 +70,6 @@ RenderThread::RenderThread(QWindow &w)
     : QThread(&w),
       m_window(w),
       m_context(0x0),
-      m_doRendering(true),
       m_firstCallToMakeCurrent(true),
       m_winproxy(0x0),
       m_spacestation(0x0),
@@ -308,21 +307,36 @@ RenderThread::~RenderThread()
 {
     // Wait for the window proxy to shutdown before deleting the context
     m_winproxy->shutdown();
-    m_winproxy->join();
-    delete m_context;
+    if (m_context != 0x0) {
+        delete m_context;
+        m_context = 0x0;
+    }
 }
 
 void RenderThread::stop()
 {
-    m_doRendering = false;
+    m_winproxy->shutdown();
 }
 
 void RenderThread::run()
 {
-    m_winproxy->startThread();
-    while (!isAnimating() && m_doRendering) {
-        OpenThreads::Thread::YieldCurrentThread();
+    bool success = false;
+
+    if (m_context == 0x0) {
+        m_context = new QOpenGLContext();
+        m_context->create();
+        success = m_context->makeCurrent(&m_window);
+        if (success) {
+            initializeOpenGLFunctions();
+            m_context->doneCurrent();
+        }
     }
+    // else Continue using the old context
+
+    if (success) {
+        m_winproxy->run();
+    }
+    // else Had an error, stop running
 }
 
 bool RenderThread::isAnimating() {
@@ -331,59 +345,48 @@ bool RenderThread::isAnimating() {
 
 void RenderThread::keyPressCallback(int key)
 {
-    // Pause/unpause animation
-    if (key == Qt::Key_P)
-    {
+    if (key == Qt::Key_P) {
+        // Pause/unpause animation
         m_paused = !m_paused;
         m_timeManVisitor->setPauseState(true, m_paused);
         m_spacestation->getTransform()->accept(*m_timeManVisitor);
         m_axes->getTransform()->accept(*m_timeManVisitor);
         m_timeManVisitor->setPauseState(false, m_paused);
     }
-
-    // Reset time to epoch. All ReferenceFrames that are following
-    // a Trajectory will return to their starting positions.
-    else if (key == Qt::Key_R)
-    {
+    else if (key == Qt::Key_R) {
+        // Reset time to epoch. All ReferenceFrames that are following
+        // a Trajectory will return to their starting positions.
         m_timeManVisitor->setReset(true);
         m_spacestation->getTransform()->accept(*m_timeManVisitor);
         m_axes->getTransform()->accept(*m_timeManVisitor);
         m_timeManVisitor->setReset(false);
     }
-
-    // Speed up time
-    else if ((key == Qt::Key_Plus) || (key == Qt::Key_Equal))
-    {
+    else if ((key == Qt::Key_Plus) || (key == Qt::Key_Equal)) {
+        // Speed up time
         m_tscale += 0.1;
         m_timeManVisitor->setTimeScale(true, m_tscale);
         m_spacestation->getTransform()->accept(*m_timeManVisitor);
         m_axes->getTransform()->accept(*m_timeManVisitor);
         m_timeManVisitor->setTimeScale(false, m_tscale);
     }
-
-    // Slow down time
-    else if ((key == Qt::Key_Minus) || (key == Qt::Key_Underscore))
-    {
+    else if ((key == Qt::Key_Minus) || (key == Qt::Key_Underscore)) {
+        // Slow down time
         m_tscale -= 0.1;
         m_timeManVisitor->setTimeScale(true, m_tscale);
         m_spacestation->getTransform()->accept(*m_timeManVisitor);
         m_axes->getTransform()->accept(*m_timeManVisitor);
         m_timeManVisitor->setTimeScale(false, m_tscale);
     }
-
-    // Shift time forward
-    else if (key == Qt::Key_Right)
-    {
+    else if (key == Qt::Key_Right) {
+        // Shift time forward
         m_toffset += 0.1;
         m_timeManVisitor->setOffsetTime(true, m_toffset);
         m_spacestation->getTransform()->accept(*m_timeManVisitor);
         m_axes->getTransform()->accept(*m_timeManVisitor);
         m_timeManVisitor->setOffsetTime(false, m_toffset);
     }
-
-    // Shift time backward
-    else if (key == Qt::Key_Left)
-    {
+    else if (key == Qt::Key_Left) {
+        // Shift time backward
         m_toffset -= 0.1;
         m_timeManVisitor->setOffsetTime(true, m_toffset);
         m_spacestation->getTransform()->accept(*m_timeManVisitor);
@@ -396,25 +399,12 @@ bool RenderThread::makeCurrent()
 {
     bool success;
 
-    // create the context on the winproxy thread
-    if (m_context == 0x0) {
-        m_context = new QOpenGLContext();
-        m_context->create();
-    }
+    if (m_context != 0x0) {
+        success = m_context->makeCurrent(&m_window);
 
-    success = m_context->makeCurrent(&m_window);
-
-    // initialize QOpenGLFunctions on first call
-    if (success && m_firstCallToMakeCurrent) {
-        initializeOpenGLFunctions();
-        m_firstCallToMakeCurrent = false;
-    }
-
-    // check OpenGL errors
-    if (!m_firstCallToMakeCurrent) {
+        // check OpenGL errors
         GLenum err;
-        while ((err = glGetError()) != GL_NO_ERROR)
-        {
+        while ((err = glGetError()) != GL_NO_ERROR) {
             std::cout << "OpenGL error: " << err << std::endl;
         }
     }
@@ -426,9 +416,4 @@ void RenderThread::swapBuffers()
 {
     // call swapbuffers
     m_context->swapBuffers(&m_window);
-}
-
-void RenderThread::doneCurrent()
-{
-    m_context->doneCurrent();
 }

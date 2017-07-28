@@ -63,7 +63,6 @@ public:
     virtual OpenFrames::WindowProxy *winproxy() = 0;
     virtual bool makeCurrent() = 0;
     virtual void swapBuffers() = 0;
-    virtual void doneCurrent() = 0;
     virtual void keyPressCallback(int key) = 0;
 };
 
