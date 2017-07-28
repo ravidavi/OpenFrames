@@ -339,13 +339,9 @@ void RenderThread::run()
     // else Had an error, stop running
 }
 
-bool RenderThread::isAnimating() {
-    return m_winproxy->isAnimating();
-}
-
 void RenderThread::keyPressCallback(int key)
 {
-    if (key == Qt::Key_P) {
+    if (key == 'p') {
         // Pause/unpause animation
         m_paused = !m_paused;
         m_timeManVisitor->setPauseState(true, m_paused);
@@ -353,7 +349,7 @@ void RenderThread::keyPressCallback(int key)
         m_axes->getTransform()->accept(*m_timeManVisitor);
         m_timeManVisitor->setPauseState(false, m_paused);
     }
-    else if (key == Qt::Key_R) {
+    else if (key == 'r') {
         // Reset time to epoch. All ReferenceFrames that are following
         // a Trajectory will return to their starting positions.
         m_timeManVisitor->setReset(true);

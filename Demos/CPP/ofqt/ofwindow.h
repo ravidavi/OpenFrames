@@ -73,8 +73,10 @@ protected:
 
 private:
     unsigned int mapQtButtonToOFButton(Qt::MouseButtons qButton);
+    int OFWindow::mapQtKeyEventToOsgKey(QKeyEvent *event);
 
     RenderThread m_renderer;
+    bool m_alreadyExposed;
 };
 
 #endif

@@ -78,7 +78,6 @@ public:
 
     void stop();
     void run() override;
-    bool isAnimating();
 
     virtual OpenFrames::WindowProxy *winproxy() { return m_winproxy; }
     virtual bool makeCurrent();

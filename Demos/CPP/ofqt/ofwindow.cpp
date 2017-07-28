@@ -55,7 +55,8 @@ const bool OFWindow::VERBOSE_CONSOLE = false;
 
 OFWindow::OFWindow(QWindow *parent)
     : QWindow(parent),
-      m_renderer(*this)
+      m_renderer(*this),
+      m_alreadyExposed(false)
 {
     // Surface type shall be OpenGL
     setSurfaceType(QWindow::OpenGLSurface);
@@ -72,9 +73,10 @@ OFWindow::~OFWindow()
 
 void OFWindow::exposeEvent(QExposeEvent *)
 {
-    // Do not start rendering until the window is exposed
-    if (!m_renderer.isAnimating()) {
+    // The renderer shall not be started until the window is exposed for the first time
+    if (!m_alreadyExposed) {
         m_renderer.start();
+        m_alreadyExposed = true;
     }
     // else Do not attempt to start the renderer twice!
 }
@@ -91,6 +93,20 @@ unsigned int OFWindow::mapQtButtonToOFButton(Qt::MouseButtons qButton)
     }
 
     return button;
+}
+
+int OFWindow::mapQtKeyEventToOsgKey(QKeyEvent *event) {
+    int key;
+
+    // Convert uppercase to lowercase as necessary
+    if (event->key() >= Qt::Key_A && event->key() <= Qt::Key_Z) {
+        key = static_cast<int>(event->text().at(0).toLatin1());
+    }
+    else {
+        key = event->key();
+    }
+
+    return key;
 }
 
 void OFWindow::mousePressEvent(QMouseEvent *event)
@@ -145,11 +161,13 @@ void OFWindow::mouseMoveEvent(QMouseEvent *event)
 
 void OFWindow::keyPressEvent(QKeyEvent *event)
 {
+    int key;
     if (VERBOSE_CONSOLE) {
         qDebug() << "keyPressed " << event->key() << " (" << (char)event->key() << ")";
     }
     if (m_renderer.winproxy() != 0x0) {
-        m_renderer.winproxy()->keyPress(event->key());
+        key = mapQtKeyEventToOsgKey(event);
+        m_renderer.winproxy()->keyPress(key);
     }
 }
 
