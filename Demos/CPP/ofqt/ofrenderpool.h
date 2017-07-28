@@ -48,59 +48,41 @@
 **
 ****************************************************************************/
 
-#ifndef RENDERTHREAD_H
-#define RENDERTHREAD_H
-
-#include <QThread>
-#include <QOpenGLFunctions>
-#include <QOpenGLBuffer>
-#include <QMatrix4x4>
-#include <QVector>
-#include "logo.h"
-#include "ofrenderpool.h"
+#ifndef OFRENDERPOOL_H
+#define OFRENDERPOOL_H
 
 #include <OpenFrames/WindowProxy.hpp>
-#include <OpenFrames/CoordinateAxes.hpp>
-#include <OpenFrames/Model.hpp>
+#include <QVector>
 
-// forward declaration to avoid circular dependencies
-QT_FORWARD_DECLARE_CLASS(QWindow)
-QT_FORWARD_DECLARE_CLASS(QOpenGLContext)
-QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
-
-class RenderThread : public QThread, public OFRendererIF, protected QOpenGLFunctions
+class OFRendererIF
 {
-    Q_OBJECT
-
 public:
-    RenderThread(QWindow &window);
-    ~RenderThread();
+    OFRendererIF() {}
+    ~OFRendererIF() {}
 
-    void stop();
-    void run() override;
-    bool isAnimating();
+    virtual OpenFrames::WindowProxy *winproxy() = 0;
+    virtual bool makeCurrent() = 0;
+    virtual void swapBuffers() = 0;
+    virtual void doneCurrent() = 0;
+    virtual void keyPressCallback(int key) = 0;
+};
 
-    virtual OpenFrames::WindowProxy *winproxy() { return m_winproxy; }
-    virtual bool makeCurrent();
-    virtual void swapBuffers();
-    virtual void doneCurrent();
-    virtual void keyPressCallback(int key);
+class OFRenderPool
+{
+public:
+    static void PoolAddInstance(OFRendererIF *renderer) { POOL.append(renderer); }
+    static void PoolRemoveInstance(OFRendererIF *renderer) { POOL.removeAll(renderer);  }
+    static OFRendererIF *PoolFindInstanceWithWinID(unsigned int *winID);
+    static void PoolKeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key);
+    static void PoolMakeCurrent(unsigned int *winID, bool *success);
+    static void PoolSwapBuffers(unsigned int *winID);
 
 private:
-    QWindow &m_window;
-    QOpenGLContext *m_context;
-    bool m_doRendering;
-    bool m_firstCallToMakeCurrent;
+    // Private declaration reserves constructor and destructor because this class is static only
+    OFRenderPool() {};
+    ~OFRenderPool() {};
 
-    OpenFrames::WindowProxy *m_winproxy;
-    OpenFrames::Model *m_spacestation;
-    OpenFrames::CoordinateAxes *m_axes;
-    OpenFrames::TimeManagementVisitor *m_timeManVisitor;
-
-    double m_tscale; // Animation speedup relative to real time
-    double m_toffset; // Animation time offset
-    bool m_paused;
-    bool m_stereo;
+    static QVector<OFRendererIF *> POOL;
 };
 
 #endif

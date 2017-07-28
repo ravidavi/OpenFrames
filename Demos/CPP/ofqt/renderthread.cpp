@@ -66,9 +66,6 @@
 #include <OpenFrames/RadialPlane.hpp>
 #include <OpenFrames/SegmentArtist.hpp>
 
-// Pool of all RenderThreads for winID reconciliation in callbacks
-QVector<RenderThread *> RenderThread::POOL;
-
 RenderThread::RenderThread(QWindow &w)
     : QThread(&w),
       m_window(w),
@@ -85,14 +82,14 @@ RenderThread::RenderThread(QWindow &w)
       m_stereo(false)
 {
     // Add this instance to the pool of all instances
-    RenderThread::PoolAddInstance(this);
+    OFRenderPool::PoolAddInstance(this);
 
     // Create embedded WindowProxy that handles all OpenFrames drawing
     m_winproxy = new OpenFrames::WindowProxy(0, 0, 450, 300, 2, 1, true);
     m_winproxy->setID(0);
-    m_winproxy->setMakeCurrentFunction(RenderThread::PoolMakeCurrent);
-    m_winproxy->setUpdateContextFunction(RenderThread::PoolMakeCurrent);
-    m_winproxy->setSwapBuffersFunction(RenderThread::PoolSwapBuffers);
+    m_winproxy->setMakeCurrentFunction(OFRenderPool::PoolMakeCurrent);
+    m_winproxy->setUpdateContextFunction(OFRenderPool::PoolMakeCurrent);
+    m_winproxy->setSwapBuffersFunction(OFRenderPool::PoolSwapBuffers);
     m_winproxy->setDesiredFramerate(20);
     
     // Create the object that will handle keyboard input 
@@ -304,7 +301,7 @@ RenderThread::RenderThread(QWindow &w)
     }
 
     // Specify the key press callback
-    m_winproxy->setKeyPressCallback(RenderThread::PoolKeyPressCallback);
+    m_winproxy->setKeyPressCallback(OFRenderPool::PoolKeyPressCallback);
 }
 
 RenderThread::~RenderThread()
@@ -431,56 +428,7 @@ void RenderThread::swapBuffers()
     m_context->swapBuffers(&m_window);
 }
 
-RenderThread *RenderThread::PoolFindInstanceWithWinID(unsigned int *winID)
+void RenderThread::doneCurrent()
 {
-    RenderThread *renderThread = 0x0;
-
-    if (winID != 0x0) {
-        // locate the thread that contains winID in the pool
-        for (QVector<RenderThread *>::iterator it = POOL.begin(); it != POOL.end(); it++) {
-            if ((*it)->winproxy() != 0x0) {
-                 if ((*it)->winproxy()->getID() == *winID) {
-                    renderThread = (*it);
-                    break;
-                }
-            }
-        }
-    }
-
-    return renderThread;
-}
-
-void RenderThread::PoolKeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
-{
-    RenderThread *renderThread = PoolFindInstanceWithWinID(winID);
-
-    // Pass key press to the appropriate thread
-    if (renderThread != 0x0) {
-        if (key != 0x0) {
-            renderThread->keyPressCallback(*key);
-        }
-    }
-}
-
-void RenderThread::PoolMakeCurrent(unsigned int *winID, bool *success)
-{
-    RenderThread *renderThread = PoolFindInstanceWithWinID(winID);
-
-    // Pass make current to the appropriate thread
-    if (renderThread != 0x0) {
-        *success = renderThread->makeCurrent();
-    }
-    else {
-        *success = false;
-    }
-}
-
-void RenderThread::PoolSwapBuffers(unsigned int *winID)
-{
-    RenderThread *renderThread = PoolFindInstanceWithWinID(winID);
-
-    // Pass swapbuffers to the appropriate thread
-    if (renderThread != 0x0) {
-        renderThread->swapBuffers();
-    }
+    m_context->doneCurrent();
 }

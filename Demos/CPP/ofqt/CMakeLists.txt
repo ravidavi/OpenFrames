@@ -18,7 +18,7 @@ ENDIF()
 FILE(GLOB OFQT_HEADERS *.h)
 
 # Specify files for Qt example
-ADD_EXECUTABLE(${curr_demo} ${OFQT_HEADERS} main.cpp mainwindow.cpp renderthread.cpp ofwindow.cpp)
+ADD_EXECUTABLE(${curr_demo} ${OFQT_HEADERS} main.cpp mainwindow.cpp ofwindow.cpp ofrenderpool.cpp renderthread.cpp)
 
 # Tell linker to use OpenFrames, OpenSceneGraph, and Qt5Widgets
 TARGET_LINK_LIBRARIES(${curr_demo} OpenFrames Qt5::Widgets ${OPENSCENEGRAPH_LIBRARIES})

@@ -48,59 +48,61 @@
 **
 ****************************************************************************/
 
-#ifndef RENDERTHREAD_H
-#define RENDERTHREAD_H
-
-#include <QThread>
-#include <QOpenGLFunctions>
-#include <QOpenGLBuffer>
-#include <QMatrix4x4>
-#include <QVector>
-#include "logo.h"
 #include "ofrenderpool.h"
 
-#include <OpenFrames/WindowProxy.hpp>
-#include <OpenFrames/CoordinateAxes.hpp>
-#include <OpenFrames/Model.hpp>
+// Pool of all Renderers for winID reconciliation in callbacks
+QVector<OFRendererIF *> OFRenderPool::POOL;
 
-// forward declaration to avoid circular dependencies
-QT_FORWARD_DECLARE_CLASS(QWindow)
-QT_FORWARD_DECLARE_CLASS(QOpenGLContext)
-QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
-
-class RenderThread : public QThread, public OFRendererIF, protected QOpenGLFunctions
+OFRendererIF *OFRenderPool::PoolFindInstanceWithWinID(unsigned int *winID)
 {
-    Q_OBJECT
+    OFRendererIF *renderer = 0x0;
 
-public:
-    RenderThread(QWindow &window);
-    ~RenderThread();
+    if (winID != 0x0) {
+        // locate the thread that contains winID in the pool
+        for (QVector<OFRendererIF *>::iterator it = POOL.begin(); it != POOL.end(); it++) {
+            if ((*it)->winproxy() != 0x0) {
+                 if ((*it)->winproxy()->getID() == *winID) {
+                     renderer = (*it);
+                    break;
+                }
+            }
+        }
+    }
 
-    void stop();
-    void run() override;
-    bool isAnimating();
+    return renderer;
+}
 
-    virtual OpenFrames::WindowProxy *winproxy() { return m_winproxy; }
-    virtual bool makeCurrent();
-    virtual void swapBuffers();
-    virtual void doneCurrent();
-    virtual void keyPressCallback(int key);
+void OFRenderPool::PoolKeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
+{
+    OFRendererIF *renderer = PoolFindInstanceWithWinID(winID);
 
-private:
-    QWindow &m_window;
-    QOpenGLContext *m_context;
-    bool m_doRendering;
-    bool m_firstCallToMakeCurrent;
+    // Pass key press to the appropriate thread
+    if (renderer != 0x0) {
+        if (key != 0x0) {
+            renderer->keyPressCallback(*key);
+        }
+    }
+}
 
-    OpenFrames::WindowProxy *m_winproxy;
-    OpenFrames::Model *m_spacestation;
-    OpenFrames::CoordinateAxes *m_axes;
-    OpenFrames::TimeManagementVisitor *m_timeManVisitor;
+void OFRenderPool::PoolMakeCurrent(unsigned int *winID, bool *success)
+{
+    OFRendererIF *renderer = PoolFindInstanceWithWinID(winID);
 
-    double m_tscale; // Animation speedup relative to real time
-    double m_toffset; // Animation time offset
-    bool m_paused;
-    bool m_stereo;
-};
+    // Pass make current to the appropriate thread
+    if (renderer != 0x0) {
+        *success = renderer->makeCurrent();
+    }
+    else {
+        *success = false;
+    }
+}
 
-#endif
+void OFRenderPool::PoolSwapBuffers(unsigned int *winID)
+{
+    OFRendererIF *renderer = PoolFindInstanceWithWinID(winID);
+
+    // Pass swapbuffers to the appropriate thread
+    if (renderer != 0x0) {
+        renderer->swapBuffers();
+    }
+}
