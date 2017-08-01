@@ -111,7 +111,7 @@ void OFWindow::mousePressEvent(QMouseEvent *event)
 {
     unsigned int button = mapQtButtonToOFButton(event->button());
 
-    if (m_alreadyExposed) {
+    if (m_renderer.winproxy()->isAnimating()) {
         if (button != 0) {
             if (VERBOSE_CONSOLE) {
                 if (event->button() == 1) {
@@ -133,7 +133,7 @@ void OFWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     unsigned int button = mapQtButtonToOFButton(event->button());
 
-    if (m_alreadyExposed) {
+    if (m_renderer.winproxy()->isAnimating()) {
         if (button != 0) {
             if (VERBOSE_CONSOLE) {
                 if (event->button() == 1) {
@@ -153,7 +153,7 @@ void OFWindow::mouseReleaseEvent(QMouseEvent *event)
 
 void OFWindow::mouseMoveEvent(QMouseEvent *event)
 {
-    if (m_alreadyExposed) {
+    if (m_renderer.winproxy()->isAnimating()) {
         if (VERBOSE_CONSOLE) {
             qDebug() << "mouseMoved to (" << event->x() << ", " << event->y() << ")";
         }
@@ -167,7 +167,7 @@ void OFWindow::keyPressEvent(QKeyEvent *event)
 {
     int key;
     
-    if (m_alreadyExposed) {
+    if (m_renderer.winproxy()->isAnimating()) {
         if (VERBOSE_CONSOLE) {
             qDebug() << "keyPressed " << event->key() << " (" << (char)event->key() << ")";
         }
