@@ -66,9 +66,9 @@
 #include <OpenFrames/RadialPlane.hpp>
 #include <OpenFrames/SegmentArtist.hpp>
 
-RenderThread::RenderThread(QWindow &w)
-    : QThread(&w),
-      m_window(w),
+RenderThread::RenderThread(QObject *parent)
+    : QThread(parent),
+      m_window(0x0),
       m_context(0x0),
       m_firstCallToMakeCurrent(true),
       m_winproxy(0x0),
@@ -306,17 +306,26 @@ RenderThread::RenderThread(QWindow &w)
 RenderThread::~RenderThread()
 {
     // Wait for the window proxy to shutdown before deleting the context
-    stop();
-    wait();
     if (m_context != 0x0) {
         delete m_context;
         m_context = 0x0;
     }
+    // else No m_context to delete
 }
 
-void RenderThread::stop()
+void RenderThread::begin(QWindow *w)
+{
+    if (w != 0x0) {
+        setTargetQWindow(w);
+        start();
+    }
+    // else Do not start
+}
+
+void RenderThread::end()
 {
     m_winproxy->shutdown();
+    wait();
 }
 
 void RenderThread::run()
@@ -324,12 +333,14 @@ void RenderThread::run()
     bool success = false;
 
     if (m_context == 0x0) {
-        m_context = new QOpenGLContext();
-        m_context->create();
-        success = m_context->makeCurrent(&m_window);
-        if (success) {
-            initializeOpenGLFunctions();
-            m_context->doneCurrent();
+        if (m_window != 0x0) {
+            m_context = new QOpenGLContext();
+            m_context->create();
+            success = m_context->makeCurrent(m_window);
+            if (success) {
+                initializeOpenGLFunctions();
+                m_context->doneCurrent();
+            }
         }
     }
     // else Continue using the old context
@@ -337,7 +348,7 @@ void RenderThread::run()
     if (success) {
         m_winproxy->run();
     }
-    // else Had an error, stop running
+    // else Had an error, do not start running
 }
 
 void RenderThread::keyPressCallback(int key)
@@ -390,14 +401,15 @@ void RenderThread::keyPressCallback(int key)
         m_axes->getTransform()->accept(*m_timeManVisitor);
         m_timeManVisitor->setOffsetTime(false, m_toffset);
     }
+    // else Ignore other keys
 }
 
 bool RenderThread::makeCurrent()
 {
     bool success;
 
-    if (m_context != 0x0) {
-        success = m_context->makeCurrent(&m_window);
+    if (m_context != 0x0 && m_window != 0x0) {
+        success = m_context->makeCurrent(m_window);
 
         // check OpenGL errors
         GLenum err;
@@ -405,12 +417,16 @@ bool RenderThread::makeCurrent()
             std::cout << "OpenGL error: " << err << std::endl;
         }
     }
+    // else Cannot make current unless initialized properly
 
     return success;
 }
 
 void RenderThread::swapBuffers()
 {
-    // call swapbuffers
-    m_context->swapBuffers(&m_window);
+    if (m_context != 0x0 && m_window != 0x0) {
+        // call swapbuffers
+        m_context->swapBuffers(m_window);
+    }
+    // else Cannot swap buffers unless initialized properly
 }

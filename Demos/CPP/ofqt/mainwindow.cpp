@@ -58,13 +58,14 @@
 
 MainWindow::MainWindow()
 {
+    m_renderer = new RenderThread();
     m_topComboBox = createTopViewComboBox();
     m_bottomComboBox = createBottomViewComboBox();
     connect(m_topComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::handleTopViewChanged);
     connect(m_bottomComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::handleBottomViewChanged);
 
     // Create the OFWindow and a widget to contain it
-    m_qOFWindow = new OFWindow();
+    m_qOFWindow = new OFWindow(*m_renderer);
     m_containerWidget = QWidget::createWindowContainer(m_qOFWindow);
     m_containerWidget->setLayout(new QGridLayout());
     OFWidget *fml = new OFWidget(m_containerWidget);
@@ -82,6 +83,27 @@ MainWindow::MainWindow()
     setCentralWidget(w);
 
     setWindowTitle(tr("Hello OpenFrames Qt"));
+}
+
+MainWindow::~MainWindow()
+{
+    if (m_containerWidget != 0x0) {
+        delete m_containerWidget;
+        m_containerWidget = 0x0;
+        m_qOFWindow = 0x0; // deleted by m_containerWidget
+    }
+    if (m_topComboBox != 0x0) {
+        delete m_topComboBox;
+        m_topComboBox = 0x0;
+    }
+    if (m_bottomComboBox != 0x0) {
+        delete m_bottomComboBox;
+        m_bottomComboBox = 0x0;
+    }
+    if (m_renderer != 0x0) {
+        delete m_renderer;
+        m_renderer = 0x0;
+    }
 }
 
 QComboBox *MainWindow::createTopViewComboBox()

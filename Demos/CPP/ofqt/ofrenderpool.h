@@ -54,6 +54,9 @@
 #include <OpenFrames/WindowProxy.hpp>
 #include <QVector>
 
+// forward declaration to avoid circular dependencies
+QT_FORWARD_DECLARE_CLASS(QWindow)
+
 class OFRendererIF
 {
 public:
@@ -64,6 +67,9 @@ public:
     virtual bool makeCurrent() = 0;
     virtual void swapBuffers() = 0;
     virtual void keyPressCallback(int key) = 0;
+
+    virtual void begin(QWindow *w) = 0;
+    virtual void end() = 0;
 };
 
 class OFRenderPool

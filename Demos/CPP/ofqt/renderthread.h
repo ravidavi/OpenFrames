@@ -70,22 +70,25 @@ QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
 class RenderThread : public QThread, public OFRendererIF, protected QOpenGLFunctions
 {
-    Q_OBJECT
-
 public:
-    RenderThread(QWindow &window);
+    RenderThread(QObject *parent = 0x0);
     ~RenderThread();
 
-    void stop();
+    // Reimplement QThread functions
     void run() override;
 
+    void setTargetQWindow(QWindow *w) { m_window = w; }
+
+    // Implement OFRenderIF functions
+    virtual void begin(QWindow *w);
+    virtual void end();
     virtual OpenFrames::WindowProxy *winproxy() { return m_winproxy; }
     virtual bool makeCurrent();
     virtual void swapBuffers();
     virtual void keyPressCallback(int key);
 
 private:
-    QWindow &m_window;
+    QWindow *m_window;
     QOpenGLContext *m_context;
     bool m_firstCallToMakeCurrent;
 

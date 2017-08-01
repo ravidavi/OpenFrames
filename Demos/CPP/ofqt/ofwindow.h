@@ -54,10 +54,12 @@
 #include <QWindow>
 #include "renderthread.h"
 
+class OFRendererIF;
+
 class OFWindow : public QWindow
 {
 public:
-    OFWindow(QWindow *parent = 0x0);
+    OFWindow(OFRendererIF &renderer, QWindow *parent = 0x0);
     ~OFWindow();
 
     void exposeEvent(QExposeEvent *event) override;
@@ -73,9 +75,9 @@ protected:
 
 private:
     unsigned int mapQtButtonToOFButton(Qt::MouseButtons qButton);
-    int OFWindow::mapQtKeyEventToOsgKey(QKeyEvent *event);
+    int mapQtKeyEventToOsgKey(QKeyEvent *event);
 
-    RenderThread m_renderer;
+    OFRendererIF &m_renderer;
     bool m_alreadyExposed;
 };
 

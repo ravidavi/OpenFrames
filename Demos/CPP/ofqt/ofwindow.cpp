@@ -48,14 +48,15 @@
 **
 ****************************************************************************/
 
+#include "ofrenderpool.h"
 #include "ofwindow.h"
 #include <QMouseEvent>
 
 const bool OFWindow::VERBOSE_CONSOLE = false;
 
-OFWindow::OFWindow(QWindow *parent)
+OFWindow::OFWindow(OFRendererIF &renderer, QWindow *parent)
     : QWindow(parent),
-      m_renderer(*this),
+      m_renderer(renderer),
       m_alreadyExposed(false)
 {
     // Surface type shall be OpenGL
@@ -65,15 +66,14 @@ OFWindow::OFWindow(QWindow *parent)
 OFWindow::~OFWindow()
 {
     // Wait for the RenderThread to stop
-    m_renderer.stop();
-    m_renderer.wait();
+    m_renderer.end();
 }
 
 void OFWindow::exposeEvent(QExposeEvent *)
 {
     // The renderer shall not be started until the window is exposed for the first time
     if (!m_alreadyExposed) {
-        m_renderer.start();
+        m_renderer.begin(this);
         m_alreadyExposed = true;
     }
     // else Do not attempt to start the renderer twice!
