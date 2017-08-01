@@ -306,7 +306,8 @@ RenderThread::RenderThread(QWindow &w)
 RenderThread::~RenderThread()
 {
     // Wait for the window proxy to shutdown before deleting the context
-    m_winproxy->shutdown();
+    stop();
+    wait();
     if (m_context != 0x0) {
         delete m_context;
         m_context = 0x0;
