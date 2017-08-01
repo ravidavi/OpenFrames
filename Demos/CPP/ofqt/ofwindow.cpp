@@ -60,8 +60,6 @@ OFWindow::OFWindow(QWindow *parent)
 {
     // Surface type shall be OpenGL
     setSurfaceType(QWindow::OpenGLSurface);
-    // Create window here
-    create();
 }
 
 OFWindow::~OFWindow()
