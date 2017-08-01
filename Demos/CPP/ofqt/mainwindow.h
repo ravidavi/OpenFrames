@@ -53,11 +53,9 @@
 
 #include <QMainWindow>
 
-QT_BEGIN_NAMESPACE
-class QSlider;
-class QPushButton;
-class QWidget;
-QT_END_NAMESPACE
+QT_FORWARD_DECLARE_CLASS(QComboBox)
+QT_FORWARD_DECLARE_CLASS(QPushButton)
+QT_FORWARD_DECLARE_CLASS(QWidget)
 
 class OFWindow;
 
@@ -68,17 +66,21 @@ class MainWindow : public QMainWindow
 public:
     MainWindow();
 
+public slots:
+    void handleTopViewChanged(int index);
+    void handleBottomViewChanged(int index);
+
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
-    QSlider *createSlider();
+    QComboBox *createTopViewComboBox();
+    QComboBox *createBottomViewComboBox();
 
-    QWidget *containerWidget;
-    OFWindow *qOFWindow;
-    QSlider *xSlider;
-    QSlider *ySlider;
-    QSlider *zSlider;
+    QWidget *m_containerWidget;
+    OFWindow *m_qOFWindow;
+    QComboBox *m_topComboBox;
+    QComboBox *m_bottomComboBox;
 };
 
 #endif

@@ -51,32 +51,30 @@
 #include "ofwindow.h"
 #include "ofwidget.h"
 #include "mainwindow.h"
-#include <QSlider>
+#include <QComboBox>
 #include <QVBoxLayout>
-#include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QApplication>
 
 MainWindow::MainWindow()
 {
-    // NOTE: Sliders are not connected to anything
-    xSlider = createSlider();
-    ySlider = createSlider();
-    zSlider = createSlider();
+    m_topComboBox = createTopViewComboBox();
+    m_bottomComboBox = createBottomViewComboBox();
+    connect(m_topComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::handleTopViewChanged);
+    connect(m_bottomComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::handleBottomViewChanged);
 
     // Create the OFWindow and a widget to contain it
-    qOFWindow = new OFWindow();
-    containerWidget = QWidget::createWindowContainer(qOFWindow);
-    containerWidget->setLayout(new QGridLayout());
-    OFWidget *fml = new OFWidget(containerWidget);
-    containerWidget->layout()->addWidget(fml);
+    m_qOFWindow = new OFWindow();
+    m_containerWidget = QWidget::createWindowContainer(m_qOFWindow);
+    m_containerWidget->setLayout(new QGridLayout());
+    OFWidget *fml = new OFWidget(m_containerWidget);
+    m_containerWidget->layout()->addWidget(fml);
 
     // Add widgets to a horizontal layout
-    QHBoxLayout *container = new QHBoxLayout();
-    container->addWidget(containerWidget);
-    /*container->addWidget(xSlider);
-    container->addWidget(ySlider);
-    container->addWidget(zSlider);*/
+    QVBoxLayout *container = new QVBoxLayout();
+    container->addWidget(m_topComboBox);
+    container->addWidget(m_containerWidget);
+    container->addWidget(m_bottomComboBox);
 
     // Add layout to a central widget
     QWidget *w = new QWidget();
@@ -86,21 +84,36 @@ MainWindow::MainWindow()
     setWindowTitle(tr("Hello OpenFrames Qt"));
 }
 
-QSlider *MainWindow::createSlider()
+QComboBox *MainWindow::createTopViewComboBox()
 {
-    QSlider *slider = new QSlider(Qt::Vertical);
-    slider->setRange(0, 360 * 16);
-    slider->setSingleStep(16);
-    slider->setPageStep(15 * 16);
-    slider->setTickInterval(15 * 16);
-    slider->setTickPosition(QSlider::TicksRight);
-    return slider;
+    QComboBox *box = new QComboBox();
+    box->addItem("Spacestation View");
+    box->addItem("Hubble View");
+    return box;
+}
+
+QComboBox *MainWindow::createBottomViewComboBox()
+{
+    QComboBox *box = new QComboBox();
+    box->addItem("Axes View");
+    box->addItem("Trace View");
+    return box;
+}
+
+void MainWindow::handleTopViewChanged(int index) {
+    qDebug() << "Selected index = " << index;
+}
+
+void MainWindow::handleBottomViewChanged(int index) {
+    qDebug() << "Selected index = " << index;
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *e)
 {
-    if (e->key() == Qt::Key_Escape)
+    if (e->key() == Qt::Key_Escape) {
         close();
-    else
+    }
+    else {
         QWidget::keyPressEvent(e);
+    }
 }
