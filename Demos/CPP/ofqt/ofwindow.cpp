@@ -97,8 +97,13 @@ int OFWindow::mapQtKeyEventToOsgKey(QKeyEvent *event) {
     int key;
 
     // Convert uppercase to lowercase as necessary
-    if (event->key() >= Qt::Key_A && event->key() <= Qt::Key_Z) {
-        key = static_cast<int>(event->text().at(0).toLatin1());
+    if (Qt::Key_A && event->key() <= Qt::Key_Z) {
+        if (event->modifiers() & Qt::ShiftModifier) {
+            key = event->key();
+        }
+        else {
+            key = event->key() + 0x20;
+        }
     }
     else {
         key = event->key();
@@ -168,11 +173,11 @@ void OFWindow::keyPressEvent(QKeyEvent *event)
     int key;
     
     if (m_renderer.winproxy()->isAnimating()) {
+        key = mapQtKeyEventToOsgKey(event);
         if (VERBOSE_CONSOLE) {
-            qDebug() << "keyPressed " << event->key() << " (" << (char)event->key() << ")";
+            qDebug() << "keyPressed " << key << " (" << (char)key << ")";
         }
         if (m_renderer.winproxy() != 0x0) {
-            key = mapQtKeyEventToOsgKey(event);
             m_renderer.winproxy()->keyPress(key);
         }
     }
