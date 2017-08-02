@@ -56,7 +56,6 @@
 #include <QOpenGLBuffer>
 #include <QMatrix4x4>
 #include <QVector>
-#include "logo.h"
 #include "ofrenderpool.h"
 
 #include <OpenFrames/WindowProxy.hpp>
@@ -72,7 +71,7 @@ class RenderThread : public QThread, public OFRendererIF, protected QOpenGLFunct
 {
 public:
     RenderThread(QObject *parent = 0x0);
-    ~RenderThread();
+    virtual ~RenderThread();
 
     // Reimplement QThread functions
     void run() override;

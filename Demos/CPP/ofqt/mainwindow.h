@@ -51,7 +51,6 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "renderthread.h"
 #include <QMainWindow>
 
 QT_FORWARD_DECLARE_CLASS(QComboBox)
@@ -59,6 +58,7 @@ QT_FORWARD_DECLARE_CLASS(QPushButton)
 QT_FORWARD_DECLARE_CLASS(QWidget)
 
 class OFWindow;
+class OFRendererIF;
 
 class MainWindow : public QMainWindow
 {
@@ -66,7 +66,7 @@ class MainWindow : public QMainWindow
 
 public:
     MainWindow();
-    ~MainWindow();
+    virtual ~MainWindow();
 
 public slots:
     void handleTopViewChanged(int index);
@@ -79,7 +79,7 @@ private:
     QComboBox *createTopViewComboBox();
     QComboBox *createBottomViewComboBox();
 
-    RenderThread *m_renderer;
+    OFRendererIF *m_renderer;
     QWidget *m_containerWidget;
     OFWindow *m_qOFWindow;
     QComboBox *m_topComboBox;

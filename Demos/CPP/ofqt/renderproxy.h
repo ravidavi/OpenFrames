@@ -48,28 +48,55 @@
 **
 ****************************************************************************/
 
-#ifndef LOGO_H
-#define LOGO_H
+#ifndef RENDERWINDOW_H
+#define RENDERWINDOW_H
 
-#include <qopengl.h>
+#include <QOpenGLFunctions>
+#include <QOpenGLBuffer>
+#include <QMatrix4x4>
 #include <QVector>
-#include <QVector3D>
+#include "ofwindow.h"
+#include "ofrenderpool.h"
 
-class Logo
+#include <OpenFrames/WindowProxy.hpp>
+#include <OpenFrames/CoordinateAxes.hpp>
+#include <OpenFrames/Model.hpp>
+
+// forward declaration to avoid circular dependencies
+QT_FORWARD_DECLARE_CLASS(QWindow)
+QT_FORWARD_DECLARE_CLASS(QOpenGLContext)
+QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
+
+class RenderProxy : public OFRendererIF, protected QOpenGLFunctions
 {
 public:
-    Logo();
-    const GLfloat *constData() const { return m_data.constData(); }
-    int count() const { return m_count; }
-    int vertexCount() const { return m_count / 6; }
+    RenderProxy(QObject *parent = 0x0);
+    virtual ~RenderProxy();
+
+    void setTargetQWindow(QWindow *w) { m_window = w; }
+
+    // Implement OFRenderIF functions
+    virtual void begin(QWindow *w);
+    virtual void end();
+    virtual OpenFrames::WindowProxy *winproxy() { return m_winproxy; }
+    virtual bool makeCurrent();
+    virtual void swapBuffers();
+    virtual void keyPressCallback(int key);
 
 private:
-    void quad(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2, GLfloat x3, GLfloat y3, GLfloat x4, GLfloat y4);
-    void extrude(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2);
-    void add(const QVector3D &v, const QVector3D &n);
+    QWindow *m_window;
+    QOpenGLContext *m_context;
+    bool m_firstCallToMakeCurrent;
 
-    QVector<GLfloat> m_data;
-    int m_count;
+    OpenFrames::WindowProxy *m_winproxy;
+    OpenFrames::Model *m_spacestation;
+    OpenFrames::CoordinateAxes *m_axes;
+    OpenFrames::TimeManagementVisitor *m_timeManVisitor;
+
+    double m_tscale; // Animation speedup relative to real time
+    double m_toffset; // Animation time offset
+    bool m_paused;
+    bool m_stereo;
 };
 
-#endif // LOGO_H
+#endif

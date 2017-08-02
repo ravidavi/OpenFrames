@@ -58,7 +58,7 @@ class OFWidget : public QWidget
 {
 public:
     OFWidget(QWidget *parent = 0x0);
-    ~OFWidget();
+    virtual ~OFWidget();
 
     virtual QSize sizeHint() const;
 

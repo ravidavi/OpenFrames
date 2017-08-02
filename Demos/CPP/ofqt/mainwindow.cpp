@@ -50,6 +50,8 @@
 
 #include "ofwindow.h"
 #include "ofwidget.h"
+#include "renderthread.h"
+#include "renderproxy.h"
 #include "mainwindow.h"
 #include <QComboBox>
 #include <QVBoxLayout>
@@ -57,16 +59,32 @@
 #include <QApplication>
 
 MainWindow::MainWindow()
+    : m_renderer(0x0),
+      m_containerWidget(0x0),
+      m_qOFWindow(0x0),
+      m_topComboBox(0x0),
+      m_bottomComboBox(0x0)
 {
-    m_renderer = new RenderThread();
+    // Create the OFWindow and a renderer for it
+    if (QApplication::arguments().contains(QStringLiteral("--qthread"))) {
+        // OpenFrames runs on a QThread
+        m_renderer = new RenderThread();
+        m_qOFWindow = new OFWindow(*m_renderer);
+        m_containerWidget = QWidget::createWindowContainer(m_qOFWindow);
+    }
+    else {
+        // OpenFrames runs its own thread
+        m_renderer = new RenderProxy();
+        m_qOFWindow = new OFWindow(*m_renderer);
+        m_containerWidget = QWidget::createWindowContainer(m_qOFWindow);
+    }
+
     m_topComboBox = createTopViewComboBox();
     m_bottomComboBox = createBottomViewComboBox();
     connect(m_topComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::handleTopViewChanged);
     connect(m_bottomComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::handleBottomViewChanged);
 
-    // Create the OFWindow and a widget to contain it
-    m_qOFWindow = new OFWindow(*m_renderer);
-    m_containerWidget = QWidget::createWindowContainer(m_qOFWindow);
+    // Create another widget to hold the container widget and provide size hints
     m_containerWidget->setLayout(new QGridLayout());
     OFWidget *fml = new OFWidget(m_containerWidget);
     m_containerWidget->layout()->addWidget(fml);

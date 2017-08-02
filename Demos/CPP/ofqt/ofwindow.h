@@ -60,7 +60,7 @@ class OFWindow : public QWindow
 {
 public:
     OFWindow(OFRendererIF &renderer, QWindow *parent = 0x0);
-    ~OFWindow();
+    virtual ~OFWindow();
 
     void exposeEvent(QExposeEvent *event) override;
 

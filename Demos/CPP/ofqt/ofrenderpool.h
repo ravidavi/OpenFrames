@@ -61,7 +61,7 @@ class OFRendererIF
 {
 public:
     OFRendererIF() {}
-    ~OFRendererIF() {}
+    virtual ~OFRendererIF() {}
 
     virtual OpenFrames::WindowProxy *winproxy() = 0;
     virtual bool makeCurrent() = 0;
