@@ -304,6 +304,8 @@ RenderProxy::RenderProxy(QObject *parent)
 
 RenderProxy::~RenderProxy()
 {
+    OFRenderPool::PoolRemoveInstance(this);
+
     // Wait for the window proxy to shutdown before deleting the context
     if (m_context != 0x0) {
         delete m_context;
