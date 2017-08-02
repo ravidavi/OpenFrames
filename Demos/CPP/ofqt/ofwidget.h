@@ -52,17 +52,25 @@
 #define OFWIDGET_H
 
 #include <QWidget>
-#include "ofwindow.h"
+
+class OFRendererIF;
+class OFWindow;
 
 class OFWidget : public QWidget
 {
 public:
-    OFWidget(QWidget *parent = 0x0);
+    OFWidget(OFRendererIF &renderer, QWidget *parent = 0x0);
     virtual ~OFWidget();
 
-    virtual QSize sizeHint() const;
+    QSize sizeHint() const override;
+
+    void setSizeHint(int width, int height);
 
 private:
+    QSize m_sizeHint;
+    OFRendererIF &m_renderer;
+    OFWindow *m_window;
+    QWidget *m_container;
 };
 
 #endif

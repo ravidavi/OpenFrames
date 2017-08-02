@@ -140,13 +140,15 @@ void OFWindow::mousePressEvent(QMouseEvent *event)
 {
     unsigned int button = mapQtButtonToOFButton(event->button());
 
-    if (m_renderer.winproxy()->isAnimating()) {
-        if (button != 0) {
-            if (VERBOSE_CONSOLE) {
-                qDebug() << "mouseDown " << button << " at (" << event->x() << ", " << event->y() << ")";
-            }
-            if (m_renderer.winproxy() != 0x0) {
-                m_renderer.winproxy()->buttonPress(event->x(), event->y(), button);
+    if (m_renderer.winproxy() != 0x0) {
+        if (m_renderer.winproxy()->isAnimating()) {
+            if (button != 0) {
+                if (VERBOSE_CONSOLE) {
+                    qDebug() << "mouseDown " << button << " at (" << event->x() << ", " << event->y() << ")";
+                }
+                if (m_renderer.winproxy() != 0x0) {
+                    m_renderer.winproxy()->buttonPress(event->x(), event->y(), button);
+                }
             }
         }
     }
@@ -156,13 +158,15 @@ void OFWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     unsigned int button = mapQtButtonToOFButton(event->button());
 
-    if (m_renderer.winproxy()->isAnimating()) {
-        if (button != 0) {
-            if (VERBOSE_CONSOLE) {
-                qDebug() << "mouseUp " << button << " at (" << event->x() << ", " << event->y() << ")";
-            }
-            if (m_renderer.winproxy() != 0x0) {
-                m_renderer.winproxy()->buttonRelease(event->x(), event->y(), button);
+    if (m_renderer.winproxy() != 0x0) {
+        if (m_renderer.winproxy()->isAnimating()) {
+            if (button != 0) {
+                if (VERBOSE_CONSOLE) {
+                    qDebug() << "mouseUp " << button << " at (" << event->x() << ", " << event->y() << ")";
+                }
+                if (m_renderer.winproxy() != 0x0) {
+                    m_renderer.winproxy()->buttonRelease(event->x(), event->y(), button);
+                }
             }
         }
     }
@@ -174,12 +178,14 @@ void OFWindow::wheelEvent(QWheelEvent *event) {
 
 void OFWindow::mouseMoveEvent(QMouseEvent *event)
 {
-    if (m_renderer.winproxy()->isAnimating()) {
-        if (VERBOSE_CONSOLE) {
-            qDebug() << "mouseMoved to (" << event->x() << ", " << event->y() << ")";
-        }
-        if (m_renderer.winproxy() != 0x0) {
-            m_renderer.winproxy()->mouseMotion(event->x(), event->y());
+    if (m_renderer.winproxy() != 0x0) {
+        if (m_renderer.winproxy()->isAnimating()) {
+            if (VERBOSE_CONSOLE) {
+                qDebug() << "mouseMoved to (" << event->x() << ", " << event->y() << ")";
+            }
+            if (m_renderer.winproxy() != 0x0) {
+                m_renderer.winproxy()->mouseMotion(event->x(), event->y());
+            }
         }
     }
 }
@@ -188,13 +194,15 @@ void OFWindow::keyPressEvent(QKeyEvent *event)
 {
     int key;
     
-    if (m_renderer.winproxy()->isAnimating()) {
-        key = mapQtKeyEventToOsgKey(event);
-        if (VERBOSE_CONSOLE) {
-            qDebug() << "keyPressed " << key << " (" << (char)key << ")";
-        }
-        if (m_renderer.winproxy() != 0x0) {
-            m_renderer.winproxy()->keyPress(key);
+    if (m_renderer.winproxy() != 0x0) {
+        if (m_renderer.winproxy()->isAnimating()) {
+            key = mapQtKeyEventToOsgKey(event);
+            if (VERBOSE_CONSOLE) {
+                qDebug() << "keyPressed " << key << " (" << (char)key << ")";
+            }
+            if (m_renderer.winproxy() != 0x0) {
+                m_renderer.winproxy()->keyPress(key);
+            }
         }
     }
 }
@@ -211,10 +219,12 @@ void OFWindow::resizeEvent(QResizeEvent *event) {
 void OFWindow::timerEvent(QTimerEvent *event) {
     if (event->timerId() == m_timerID) {
         // Check if winproxy has started animating, and resize the window when it has started
-        if (m_renderer.winproxy()->isAnimating()) {
-            m_renderer.winproxy()->resizeWindow(0, 0, size().width(), size().height());
-            killTimer(m_timerID);
-            m_timerID = 0;
+        if (m_renderer.winproxy() != 0x0) {
+            if (m_renderer.winproxy()->isAnimating()) {
+                m_renderer.winproxy()->resizeWindow(0, 0, size().width(), size().height());
+                killTimer(m_timerID);
+                m_timerID = 0;
+            }
         }
     }
 }

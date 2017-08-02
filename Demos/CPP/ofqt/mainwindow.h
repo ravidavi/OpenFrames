@@ -54,11 +54,9 @@
 #include <QMainWindow>
 
 QT_FORWARD_DECLARE_CLASS(QComboBox)
-QT_FORWARD_DECLARE_CLASS(QPushButton)
-QT_FORWARD_DECLARE_CLASS(QWidget)
 
-class OFWindow;
 class OFRendererIF;
+class OFWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -80,8 +78,7 @@ private:
     QComboBox *createBottomViewComboBox();
 
     OFRendererIF *m_renderer;
-    QWidget *m_containerWidget;
-    OFWindow *m_qOFWindow;
+    OFWidget *m_containerWidget;
     QComboBox *m_topComboBox;
     QComboBox *m_bottomComboBox;
 };

@@ -48,17 +48,46 @@
 **
 ****************************************************************************/
 
+#include "ofwindow.h"
+#include "ofrenderpool.h"
 #include "ofwidget.h"
+#include <QGridLayout>
 
-OFWidget::OFWidget(QWidget *parent)
-    : QWidget(parent)
+OFWidget::OFWidget(OFRendererIF &renderer, QWidget *parent)
+    : QWidget(parent),
+      m_sizeHint(400, 350),
+      m_renderer(renderer),
+      m_window(0x0),
+      m_container(0x0)
 {
+    // Create a window for OpenFrames to render to
+    m_window = new OFWindow(m_renderer);
+    // Create a QWidget window container for the QWindow above
+    m_container = QWidget::createWindowContainer(m_window, this);
+    // Place the container widget inside of this widget
+    setLayout(new QGridLayout());
+    layout()->addWidget(m_container);
 }
 
 OFWidget::~OFWidget()
 {
+    if (m_container != 0x0) {
+        delete m_container;
+        // m_window gets deleted by m_container
+    }
+    else {
+        // delete m_window because m_container delete was not called
+        if (m_window != 0x0) {
+            delete m_window;
+        }
+    }
 }
 
 QSize OFWidget::sizeHint() const {
-    return QSize(450, 300);
+    return m_sizeHint;
+}
+
+void OFWidget::setSizeHint(int width, int height) {
+    m_sizeHint.setWidth(width);
+    m_sizeHint.setHeight(height);
 }

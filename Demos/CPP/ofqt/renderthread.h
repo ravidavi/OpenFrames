@@ -79,12 +79,12 @@ public:
     void setTargetQWindow(QWindow *w) { m_window = w; }
 
     // Implement OFRenderIF functions
-    virtual void begin(QWindow *w);
-    virtual void end();
-    virtual OpenFrames::WindowProxy *winproxy() { return m_winproxy; }
-    virtual bool makeCurrent();
-    virtual void swapBuffers();
-    virtual void keyPressCallback(int key);
+    void begin(QWindow *w) override;
+    void end() override;
+    OpenFrames::WindowProxy *winproxy() override { return m_winproxy; }
+    bool makeCurrent() override;
+    void swapBuffers() override;
+    void keyPressCallback(int key) override;
 
 private:
     QWindow *m_window;
