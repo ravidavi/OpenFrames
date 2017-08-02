@@ -57,7 +57,8 @@ const bool OFWindow::VERBOSE_CONSOLE = false;
 OFWindow::OFWindow(OFRendererIF &renderer, QWindow *parent)
     : QWindow(parent),
       m_renderer(renderer),
-      m_alreadyExposed(false)
+      m_alreadyExposed(false),
+      m_timerID(0)
 {
     // Surface type shall be OpenGL
     setSurfaceType(QWindow::OpenGLSurface);
@@ -75,6 +76,9 @@ void OFWindow::exposeEvent(QExposeEvent *)
     if (!m_alreadyExposed) {
         m_renderer.begin(this);
         m_alreadyExposed = true;
+
+        // Start checking for animation to resize the window
+        m_timerID = startTimer(50);
     }
     // else Do not attempt to start the renderer twice!
 }
@@ -82,8 +86,6 @@ void OFWindow::exposeEvent(QExposeEvent *)
 unsigned int OFWindow::mapQtButtonToOFButton(Qt::MouseButtons qButton)
 {
     unsigned int button;
-    qDebug() << "Size: " << size().width() << "x" << size().height();
-    m_renderer.winproxy()->resizeWindow(0, 0, size().width(), size().height());
 
     switch (qButton) {
       case Qt::LeftButton: {
@@ -204,4 +206,15 @@ void OFWindow::resizeEvent(QResizeEvent *event) {
         }
     }
     QWindow::resizeEvent(event);
+}
+
+void OFWindow::timerEvent(QTimerEvent *event) {
+    if (event->timerId() == m_timerID) {
+        // Check if winproxy has started animating, and resize the window when it has started
+        if (m_renderer.winproxy()->isAnimating()) {
+            m_renderer.winproxy()->resizeWindow(0, 0, size().width(), size().height());
+            killTimer(m_timerID);
+            m_timerID = 0;
+        }
+    }
 }

@@ -73,6 +73,7 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
+    void timerEvent(QTimerEvent *event) override;
 
 private:
     unsigned int mapQtButtonToOFButton(Qt::MouseButtons qButton);
@@ -80,6 +81,7 @@ private:
 
     OFRendererIF &m_renderer;
     bool m_alreadyExposed;
+    int m_timerID;
 };
 
 #endif
