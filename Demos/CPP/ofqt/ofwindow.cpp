@@ -81,13 +81,35 @@ void OFWindow::exposeEvent(QExposeEvent *)
 
 unsigned int OFWindow::mapQtButtonToOFButton(Qt::MouseButtons qButton)
 {
-    unsigned int button = 0;
+    unsigned int button;
+    qDebug() << "Size: " << size().width() << "x" << size().height();
+    m_renderer.winproxy()->resizeWindow(0, 0, size().width(), size().height());
 
-    if (qButton == Qt::LeftButton) {
-        button = 1;
-    }
-    else if (qButton == Qt::RightButton) {
-        button = 3;
+    switch (qButton) {
+      case Qt::LeftButton: {
+          button = 1;
+          break;
+      }
+      case Qt::RightButton: {
+          button = 3;
+          break;
+      }
+      case Qt::MiddleButton: {
+          button = 2;
+          break;
+      }
+      case Qt::BackButton: {
+          button = 6;
+          break;
+      }
+      case Qt::ForwardButton: {
+          button = 7;
+          break;
+      }
+      default: {
+          button = 0;
+          break;
+      }
     }
 
     return button;
@@ -119,14 +141,8 @@ void OFWindow::mousePressEvent(QMouseEvent *event)
     if (m_renderer.winproxy()->isAnimating()) {
         if (button != 0) {
             if (VERBOSE_CONSOLE) {
-                if (event->button() == 1) {
-                    qDebug() << "mouseDown left at (" << event->x() << ", " << event->y() << ")";
-                }
-                else if (event->button() == 3) {
-                    qDebug() << "mouseDown right at (" << event->x() << ", " << event->y() << ")";
-                }
+                qDebug() << "mouseDown " << button << " at (" << event->x() << ", " << event->y() << ")";
             }
-
             if (m_renderer.winproxy() != 0x0) {
                 m_renderer.winproxy()->buttonPress(event->x(), event->y(), button);
             }
@@ -141,19 +157,17 @@ void OFWindow::mouseReleaseEvent(QMouseEvent *event)
     if (m_renderer.winproxy()->isAnimating()) {
         if (button != 0) {
             if (VERBOSE_CONSOLE) {
-                if (event->button() == 1) {
-                    qDebug() << "mouseUp left at (" << event->x() << ", " << event->y() << ")";
-                }
-                else if (event->button() == 3) {
-                    qDebug() << "mouseUp right at (" << event->x() << ", " << event->y() << ")";
-                }
+                qDebug() << "mouseUp " << button << " at (" << event->x() << ", " << event->y() << ")";
             }
-
             if (m_renderer.winproxy() != 0x0) {
                 m_renderer.winproxy()->buttonRelease(event->x(), event->y(), button);
             }
         }
     }
+}
+
+void OFWindow::wheelEvent(QWheelEvent *event) {
+    QWindow::wheelEvent(event);
 }
 
 void OFWindow::mouseMoveEvent(QMouseEvent *event)
