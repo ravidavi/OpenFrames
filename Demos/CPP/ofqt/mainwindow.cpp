@@ -92,7 +92,7 @@ MainWindow::MainWindow()
     w->setLayout(container);
     setCentralWidget(w);
 
-    setWindowTitle(tr("Hello OpenFrames Qt"));
+    setWindowTitle(tr("Hello OpenFrames from Qt"));
 }
 
 MainWindow::~MainWindow()
@@ -132,11 +132,19 @@ QComboBox *MainWindow::createBottomViewComboBox()
 }
 
 void MainWindow::handleTopViewChanged(int index) {
-    qDebug() << "Selected index = " << index;
+    if (m_renderer != 0x0) {
+        if (m_renderer->winproxy() != 0x0) {
+            m_renderer->winproxy()->getGridPosition(0, 0)->selectView(index);
+        }
+    }
 }
 
 void MainWindow::handleBottomViewChanged(int index) {
-    qDebug() << "Selected index = " << index;
+    if (m_renderer != 0x0) {
+        if (m_renderer->winproxy() != 0x0) {
+            m_renderer->winproxy()->getGridPosition(1, 0)->selectView(index);
+        }
+    }
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *e)
