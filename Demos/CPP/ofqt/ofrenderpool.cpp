@@ -19,6 +19,16 @@
 // Pool of all Renderers for winID reconciliation in callbacks
 QVector<OFRendererIF *> OFRenderPool::POOL;
 
+OFRendererIF::OFRendererIF()
+{
+    OFRenderPool::addInstance(this);
+}
+
+OFRendererIF::~OFRendererIF()
+{
+    OFRenderPool::removeInstance(this);
+}
+
 OFRendererIF *OFRenderPool::findInstanceWithWinID(unsigned int *winID)
 {
     OFRendererIF *renderer = 0x0;

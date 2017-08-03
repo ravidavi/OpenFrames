@@ -34,9 +34,9 @@ class OFRendererIF
 {
 public:
     /** Constructor, adds this instance to the pool of renderers */
-    OFRendererIF() {}
+    OFRendererIF();
     /** Destructor, removes this instance from the pool of renderers */
-    virtual ~OFRendererIF() {}
+    virtual ~OFRendererIF();
 
     /** Returns a pointer to the instance of WindowProxy used by this instance */
     virtual OpenFrames::WindowProxy *winproxy() = 0;

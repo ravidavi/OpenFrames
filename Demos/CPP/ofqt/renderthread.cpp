@@ -45,9 +45,6 @@ RenderThread::RenderThread(QObject *parent)
       m_paused(false),
       m_stereo(false)
 {
-    // Add this instance to the pool of all instances
-    OFRenderPool::addInstance(this);
-
     // Create embedded WindowProxy that handles all OpenFrames drawing
     m_winproxy = new OpenFrames::WindowProxy(0, 0, 450, 300, 2, 1, true);
     m_winproxy->setID(0);
@@ -270,8 +267,6 @@ RenderThread::RenderThread(QObject *parent)
 
 RenderThread::~RenderThread()
 {
-    OFRenderPool::removeInstance(this);
-
     // Wait for the window proxy to shutdown before deleting the context
     if (m_context != 0x0) {
         delete m_context;
