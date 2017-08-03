@@ -224,10 +224,10 @@ RenderThread::RenderThread(QObject *parent)
     rp->setPosition(0.0, 0.0, 0.0);
 
     // Create views
-    OpenFrames::View *view = new OpenFrames::View(m_spacestation, m_spacestation);
-    OpenFrames::View *view2 = new OpenFrames::View(m_spacestation, hubble);
-    OpenFrames::View *view3 = new OpenFrames::View(m_axes, m_axes);
-    OpenFrames::View *view4 = new OpenFrames::View(m_axes, trace);
+    m_views[0][0] = new OpenFrames::View(m_spacestation, m_spacestation);
+    m_views[0][1] = new OpenFrames::View(m_spacestation, hubble);
+    m_views[1][0] = new OpenFrames::View(m_axes, m_axes);
+    m_views[1][1] = new OpenFrames::View(m_axes, trace);
 
     // Create a manager to handle the spatial scene
     OpenFrames::FrameManager* fm = new OpenFrames::FrameManager;
@@ -241,10 +241,10 @@ RenderThread::RenderThread(QObject *parent)
     m_winproxy->setScene(fm, 0, 0);
     m_winproxy->setScene(fm2, 1, 0);
     m_winproxy->getGridPosition(0, 0)->setSkySphereTexture("../Images/StarMap.tif");
-    m_winproxy->getGridPosition(0, 0)->addView(view);
-    m_winproxy->getGridPosition(0, 0)->addView(view2);
-    m_winproxy->getGridPosition(1, 0)->addView(view3);
-    m_winproxy->getGridPosition(1, 0)->addView(view4);
+    m_winproxy->getGridPosition(0, 0)->addView(m_views[0][0]);
+    m_winproxy->getGridPosition(0, 0)->addView(m_views[0][1]);
+    m_winproxy->getGridPosition(1, 0)->addView(m_views[1][0]);
+    m_winproxy->getGridPosition(1, 0)->addView(m_views[1][1]);
 
     // Add the actual positions and attitudes for the trajectory.
     osg::Quat att; // Quaternion for attitude transformations
@@ -368,7 +368,28 @@ void RenderThread::keyPressCallback(int key)
         m_axes->getTransform()->accept(*m_timeManVisitor);
         m_timeManVisitor->setOffsetTime(false, m_toffset);
     }
-    // else Ignore other keys
+    else {
+        // Ignore other keys, but view may have changed
+        int upperIndex = 0;
+        int lowerIndex = 0;
+        if (m_winproxy != 0x0) {
+            OpenFrames::View *currentView = m_winproxy->getGridPosition(0, 0)->getCurrentView();
+            for (int ii = 0; ii < 2; ii++) {
+                if (currentView == m_views[0][ii]) {
+                    upperIndex = ii;
+                    break;
+                }
+            }
+            currentView = m_winproxy->getGridPosition(1, 0)->getCurrentView();
+            for (int ii = 0; ii < 2; ii++) {
+                if (currentView == m_views[1][ii]) {
+                    lowerIndex = ii;
+                    break;
+                }
+            }
+            userSelectedView(upperIndex, lowerIndex);
+        }
+    }
 }
 
 bool RenderThread::makeCurrent()

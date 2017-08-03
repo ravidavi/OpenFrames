@@ -33,10 +33,12 @@ MainWindow::MainWindow()
     if (QApplication::arguments().contains(QStringLiteral("--qthread"))) {
         // OpenFrames runs on a QThread
         m_renderer = new RenderThread();
+        connect(static_cast<RenderThread *>(m_renderer), &RenderThread::userSelectedView, this, &MainWindow::handleChangedView);
     }
     else {
         // OpenFrames runs its own thread
         m_renderer = new RenderProxy();
+        connect(static_cast<RenderProxy *>(m_renderer), &RenderProxy::userSelectedView, this, &MainWindow::handleChangedView);
     }
 
     // Create and connect QComboboxes
@@ -121,5 +123,14 @@ void MainWindow::keyPressEvent(QKeyEvent *e)
     }
     else {
         QWidget::keyPressEvent(e);
+    }
+}
+
+void MainWindow::handleChangedView(int upperIndex, int lowerIndex) {
+    if (m_topComboBox != 0) {
+        m_topComboBox->setCurrentIndex(upperIndex);
+    }
+    if (m_bottomComboBox != 0) {
+        m_bottomComboBox->setCurrentIndex(lowerIndex);
     }
 }

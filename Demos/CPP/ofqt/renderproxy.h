@@ -40,8 +40,11 @@ QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
  * it renders. Provides a callbacks for WindowProxy for
  * controlling the OpenGL Surface provided by m_window.
 **********************************************************/
-class RenderProxy : public OFRendererIF, protected QOpenGLFunctions
+class RenderProxy : public QObject, public OFRendererIF, protected QOpenGLFunctions
 {
+    /** Enable Qt signals and slots for this object */
+    Q_OBJECT
+    
 public:
     /** Constructor */
     RenderProxy(QObject *parent = 0x0);
@@ -55,6 +58,10 @@ public:
     bool makeCurrent() override;
     void swapBuffers() override;
     void keyPressCallback(int key) override;
+
+signals:
+    /** Use a signal to implement a message whenever the view may have changed */
+    void userSelectedView(int upperIndex, int lowerIndex);
 
 private:
     /** The surface that m_winproxy will render to */
@@ -74,6 +81,7 @@ private:
     double m_toffset; // Animation time offset
     bool m_paused;
     bool m_stereo;
+    OpenFrames::View *m_views[2][2];
 };
 
 #endif

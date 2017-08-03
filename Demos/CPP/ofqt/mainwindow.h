@@ -46,6 +46,8 @@ public slots:
     void handleTopViewChanged(int index);
     /** Slot for currentIndexChanged signal from lower QCombobox */
     void handleBottomViewChanged(int index);
+    /** Slot for userSelectedView signal from RenderThread or RenderProxy */
+    void handleChangedView(int upperIndex, int lowerIndex);
 
 protected:
     /** Overrides the default key press handler, pass unrecognized keys */
