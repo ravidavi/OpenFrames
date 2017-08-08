@@ -104,13 +104,14 @@ namespace OpenFrames
     void applyCurrentViewProjection();
     
     /** Enable VR mode. Currently it cannot be disabled after being enabled. */
-    void enableVR();
+    //void enableVR();
     
   protected:
     virtual ~RenderRectangle();
     void _init();
     
     void selectCurrentView(); // Just make sure current view is selected
+    void updateViewProjection(View *view); // Update projection matrix
     
     ViewList _views; // All of the added Views
     osg::ref_ptr<View> _defaultView; // Used if no Views have been added

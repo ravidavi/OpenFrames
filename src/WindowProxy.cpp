@@ -495,6 +495,7 @@ namespace OpenFrames
     
     // Create the RenderRectangles immediately so that they can be modified as needed
     setGridSize(nrow, ncol);
+    setupGrid(width, height);
     
     // Set framerate (in fps) based on whether VR is enabled
     if(_useVR) setDesiredFramerate(0.0); // Don't limit framerate
@@ -647,6 +648,7 @@ namespace OpenFrames
   /** Create a window resized event */
   void WindowProxy::resizeWindow(int x, int y, unsigned int width, unsigned int height)
   {
+    // Can this be changed to _window->setWindowRectangle()?
     _window->resized(x, y, width, height);
     _window->getEventQueue()->windowResize(x, y, width, height);
   }

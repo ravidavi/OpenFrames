@@ -412,13 +412,13 @@ namespace OpenFrames
         if(!vrTrackball)
         {
           vrTrackball = new OpenVRTrackball(_ovrDevice.get());
-          float fovy, ratio, zNear, zFar;
-          _ovrDevice->getCenterProjectionMatrix().getPerspective(fovy, ratio, zNear, zFar);
           view->setTrackball(vrTrackball);
-          view->setPerspective(fovy, ratio);
-          view->resetTrackball();
         }
       }
+
+      // Update the View's projection matrix
+      updateViewProjection(view);
+      view->resetTrackball();
       
       // Add view to the view list
       _views.push_back(view);
@@ -548,7 +548,41 @@ namespace OpenFrames
     if(_currView >= _views.size()) return _defaultView.get();
     else return _views[_currView].get();
   }
-  
+
+  void RenderRectangle::updateViewProjection(View *view)
+  {
+    if(view == NULL) return;
+
+    double fovy, ratio;
+
+    if(view->getProjectionType() == View::PERSPECTIVE)
+    {
+      // Get field of view
+      view->getPerspective(fovy, ratio);
+
+      // Compute new FOV & aspect ratio based on render target
+      if(_useVR)
+      {
+        // VR specifies its own FOV and aspect ratio
+        double zNear, zFar;
+        _ovrDevice->getCenterProjectionMatrix().getPerspective(fovy, ratio, zNear, zFar);
+      }
+      else
+      {
+        // Otherwise only override the aspect ratio
+        osg::Viewport *vp = OpenFrames::getMainViewport(_sceneView);
+        if(vp) ratio = (double)vp->width() / (double)vp->height();
+      }
+
+      // Set new aspect ratio
+      view->setPerspective(fovy, ratio); 
+    }
+    else
+    {
+      osg::notify(osg::WARN) << "OpenFrames::RenderRectangle: Orthographic projection not supported" << std::endl;
+    }
+  }
+
   void RenderRectangle::applyCurrentViewProjection()
   {
     if (_useVR) return; // VR applies its own projection
@@ -556,23 +590,7 @@ namespace OpenFrames
     View *view = getCurrentView();
     
     /** Adjust the perspective projection with the current viewport size */
-    if(view->getProjectionType() == View::PERSPECTIVE)
-    {
-      // Get current field of view
-      double fov, ratio;
-      view->getPerspective(fov, ratio);
-      
-      // Get main camera viewport or depth partitioner's viewport
-      osg::Viewport *vp = OpenFrames::getMainViewport(_sceneView);
-      if(vp) ratio = (double)vp->width() / (double)vp->height();
-      
-      // Set new aspect ratio
-      view->setPerspective(fov, ratio); // Set new aspect ratio
-    }
-    else
-    {
-      std::cerr<< "OpenFrames::RenderRectangle: Ortho projection not supported" << std::endl;
-    }
+    updateViewProjection(view);
     
     // Apply the projection matrix
     _sceneView->getCamera()->setProjectionMatrix(view->getProjectionMatrix());
