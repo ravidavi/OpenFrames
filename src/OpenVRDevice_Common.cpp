@@ -121,15 +121,74 @@ namespace OpenFrames{
 
     // Set midpoint sphere texture
     osg::Image *image = osgDB::readImageFile("../Images/marble.jpg");
+    osg::StateSet* ss;
     if (image)
     {
       osg::Texture2D *texture = new osg::Texture2D(image);
       texture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
       texture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
-      osg::StateSet *ss = geode->getOrCreateStateSet();
+      ss = geode->getOrCreateStateSet();
       ss->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
       ss->setMode(GL_BLEND, osg::StateAttribute::ON);
       ss->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+    }
+
+    // Create a flat grid to represent the ground
+    {
+      // Create the ground plane
+      osg::Vec3Array* vertices = new osg::Vec3Array(4);
+      int groundSize = 4;
+      (*vertices)[0].set(-groundSize, 0, -groundSize);
+      (*vertices)[1].set(groundSize, 0, -groundSize);
+      (*vertices)[2].set(groundSize, 0, groundSize);
+      (*vertices)[3].set(-groundSize, 0, groundSize);
+      osg::Vec4Array* color = new osg::Vec4Array;
+      color->push_back(osg::Vec4(0.5, 0.5, 0.5, 0.1));
+      osg::Geometry* planeGeom = new osg::Geometry();
+      planeGeom->setUseDisplayList(false);
+      planeGeom->setUseVertexBufferObjects(true);
+      planeGeom->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);
+      planeGeom->setVertexArray(vertices);
+      planeGeom->setColorArray(color, osg::Array::BIND_OVERALL);
+      planeGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 0, 4));
+
+      // Create the ground grid
+      vertices = new osg::Vec3Array;
+      int numGridPoints = 0;
+      double y_offset = 0.001;
+      for (int i = -groundSize; i <= groundSize; ++i)
+      {
+        // Add vertical line
+        vertices->push_back(osg::Vec3d(i, y_offset, -groundSize));
+        vertices->push_back(osg::Vec3d(i, y_offset, groundSize));
+
+        // Add horizontal line
+        vertices->push_back(osg::Vec3d(-groundSize, y_offset, i));
+        vertices->push_back(osg::Vec3d(groundSize, y_offset, i));
+
+        numGridPoints += 4;
+      }
+      color = new osg::Vec4Array;
+      color->push_back(osg::Vec4(0.8, 0.8, 0.8, 0.5));
+      osg::Geometry* gridGeom = new osg::Geometry();
+      gridGeom->setUseDisplayList(false);
+      gridGeom->setUseVertexBufferObjects(true);
+      gridGeom->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);
+      gridGeom->setVertexArray(vertices);
+      gridGeom->setColorArray(color, osg::Array::BIND_OVERALL);
+      gridGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, numGridPoints));
+
+      // Create geode to hold plane and grid geometries
+      geode = new osg::Geode;
+      geode->addDrawable(planeGeom);
+      geode->addDrawable(gridGeom);
+      ss = geode->getOrCreateStateSet();
+      ss->setMode(GL_BLEND, osg::StateAttribute::ON);
+      ss->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+
+      _roomGround = new osg::MatrixTransform;
+      _roomGround->addChild(geode);
+      _deviceModels->addChild(_roomGround);
     }
   }
 
@@ -219,6 +278,14 @@ namespace OpenFrames{
     }
     else _controllerMidpoint->setNodeMask(0x0);
 
+    // Set scale for ground plane, and place it on the ground
+    matDeviceToWorld.makeIdentity();
+    matDeviceToWorld(0, 0) = _worldUnitsPerMeter;
+    matDeviceToWorld(1, 1) = _worldUnitsPerMeter;
+    matDeviceToWorld(2, 2) = _worldUnitsPerMeter;
+    matDeviceToWorld(3, 1) = -getUserHeight()*_worldUnitsPerMeter;
+    _roomGround->setMatrix(matDeviceToWorld);
+
     // Scale view offsets according to WorldUnit/Meter scale
     // Note that the vector direction is flipped since we want the Head to Eye transform for OSG
     _rightEyeViewOffset = _rightEyeViewOffsetRaw*(-_worldUnitsPerMeter);
@@ -229,6 +296,69 @@ namespace OpenFrames{
     matWorldToDevice = getHMDPoseMatrix();
     matWorldToDevice.postMultTranslate(_centerViewOffset);
     _deviceModels->setMatrix(matWorldToDevice);
+  }
+
+  /*************************************************************/
+  void OpenVRDevice::createAndAddLaserToController(uint32_t deviceID)
+  {
+    if (deviceID >= _deviceIDToModel.size())
+    {
+      osg::notify(osg::WARN) << "OpenVRDevice WARNING: Controller deviceID out of range, can't add laser." << std::endl;
+      return;
+    }
+
+    if (_deviceIDToModel[deviceID]._class != CONTROLLER)
+    {
+      osg::notify(osg::WARN) << "OpenVRDevice WARNING: Laser can only be added to a CONTROLLER device." << std::endl;
+      return;
+    }
+
+    // Create the shared laser that will be used for VR controller picking
+    if (_controllerLaser == NULL)
+    {
+      osg::Vec3Array* vertices = new osg::Vec3Array(2);
+      (*vertices)[0].set(0, 0, 0);
+      (*vertices)[1].set(0, 0, -2); // Laser along -Z axis
+      osg::Vec4Array* colors = new osg::Vec4Array;
+      colors->push_back(osg::Vec4(1, 1, 1, 1));
+      osg::Geometry* linesGeom = new osg::Geometry();
+      linesGeom->setUseDisplayList(false);
+      linesGeom->setUseVertexBufferObjects(true);
+      linesGeom->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);
+      linesGeom->setVertexArray(vertices);
+      linesGeom->setColorArray(colors, osg::Array::BIND_OVERALL);
+      linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, 2));
+      _controllerLaser = new osg::Geode;
+      _controllerLaser->addDrawable(linesGeom);
+    }
+
+    // Create a transform to hold the laser so that it can be enabled/disabled per-controller
+    osg::MatrixTransform *controllerLaserTransform = new osg::MatrixTransform;
+    controllerLaserTransform->setName(_controllerLaserName);
+    controllerLaserTransform->addChild(_controllerLaser);
+    controllerLaserTransform->setNodeMask(0x0); // Disable by default
+
+    // Add laser transform to controller transform
+    _deviceIDToModel[deviceID]._modelTransform->addChild(controllerLaserTransform);
+  }
+
+  /*************************************************************/
+  osg::MatrixTransform* OpenVRDevice::getControllerLaser(uint32_t deviceID)
+  {
+    if (deviceID >= _deviceIDToModel.size()) return NULL;
+    if (_deviceIDToModel[deviceID]._class != CONTROLLER) return NULL;
+
+    // Search for controller laser transform
+    osg::MatrixTransform* controllerXform = _deviceIDToModel[deviceID]._modelTransform;
+    for (unsigned int i = 0; i < controllerXform->getNumChildren(); ++i)
+    {
+      osg::MatrixTransform* childXform = dynamic_cast<osg::MatrixTransform*>(controllerXform->getChild(i));
+      if (childXform && (childXform->getName() == _controllerLaserName)) return childXform;
+    }
+
+    // No laser transform found, which should never happen so warn user
+    osg::notify(osg::WARN) << "OpenVRDevice WARNING: No laser attached to controller! This should never happen!" << std::endl;
+    return NULL;
   }
 
   /*************************************************************/
@@ -264,7 +394,7 @@ namespace OpenFrames{
     // The motion mode defines how controllers change the scene in response
     // to user inputs. Start with no motion.
     _motionData._mode = NONE;
-    _motionData._prevMode = ROTATE; // Initial button press will go to Rotate mode
+    _motionData._prevMode = TRANSLATE; // Initial button press will go to this mode
     _motionData._prevTime = 0.0;
   }
   
@@ -402,6 +532,11 @@ namespace OpenFrames{
       else centerPoint = currCenter; // Shrink universe
       _roomOffset = _motionData._origRoomOffset + centerPoint*(_motionData._origWorldUnitsPerMeter*(1.0 - distRatio));
 
+      break;
+    }
+
+    case(PICK) :
+    {
       break;
     }
 

@@ -173,11 +173,17 @@ namespace OpenFrames {
     void setUserHeight(double userHeight) { _userHeight = userHeight; }
     double getUserHeight() { return _userHeight; }
 
+    /** Get the controller laser */
+    osg::MatrixTransform* getControllerLaser(uint32_t deviceID);
+
     /** Submits the latest rendered eye textures to OpenVR */
     void submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName);
 
     /** Get the next OpenVR event */
     bool pollNextEvent(OpenVREvent *event);
+
+    /** Get the state of the specified OpenVR controller */
+    void getControllerState(uint32_t deviceID, vr::VRControllerState_t *state);
     
   protected:
     virtual ~OpenVRDevice();
@@ -190,6 +196,9 @@ namespace OpenFrames {
 
     /** Load a device's render model by its OpenVR ID */
     void setupRenderModelForTrackedDevice(uint32_t deviceID);
+
+    /** Add laser to controller */
+    void createAndAddLaserToController(uint32_t deviceID);
     
     double _worldUnitsPerMeter; // Distance units per real-world meter
     double _minWorldUnitsPerMeter, _maxWorldUnitsPerMeter;
@@ -214,7 +223,14 @@ namespace OpenFrames {
 
     // Transform that contains midpoint between controllers
     osg::ref_ptr<osg::MatrixTransform> _controllerMidpoint;
-    
+
+    // Transform that contains local ground plane
+    osg::ref_ptr<osg::MatrixTransform> _roomGround;
+
+    // Geode that contains picking laser for each controller
+    osg::ref_ptr<osg::Geode> _controllerLaser;
+    const std::string _controllerLaserName = "ControllerLaser";
+
     // Per-eye asymmetric projection matrices
     osg::Matrixd _rightEyeProj, _leftEyeProj, _centerProj;
     
@@ -307,7 +323,8 @@ namespace OpenFrames {
       NONE = 0,
       TRANSLATE,
       ROTATE,
-      SCALE
+      SCALE,
+      PICK
     };
 
     /** Data used when computing world transformations during user events */
@@ -316,8 +333,8 @@ namespace OpenFrames {
       MotionMode _mode;
       MotionMode _prevMode;
       double _prevTime;
-      unsigned int _device1ID;
-      unsigned int _device2ID;
+      uint32_t _device1ID;
+      uint32_t _device2ID;
       osg::Matrixd _device1OrigPoseRaw;
       osg::Matrixd _device2OrigPoseRaw;
       double _origWorldUnitsPerMeter;

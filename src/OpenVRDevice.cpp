@@ -68,12 +68,13 @@ namespace OpenFrames{
   /*************************************************************/
   /** Get the specified OpenVR device property string */
   /*************************************************************/
-  std::string GetTrackedDeviceString(vr::IVRSystem* vrSystem, vr::TrackedDeviceIndex_t device, vr::TrackedDeviceProperty prop)
+  std::string GetTrackedDeviceString(vr::IVRSystem* vrSystem, vr::TrackedDeviceIndex_t deviceID, vr::TrackedDeviceProperty prop)
   { 
     // Allocate and populate the property string
     char buffer[vr::k_unMaxPropertyStringSize];
     vr::ETrackedPropertyError propError = vr::TrackedProp_Success;
-    vrSystem->GetStringTrackedDeviceProperty(device, prop, buffer, vr::k_unMaxPropertyStringSize, &propError);
+    vr::TrackedDeviceIndex_t ovrID = deviceID + vr::k_unTrackedDeviceIndex_Hmd;
+    vrSystem->GetStringTrackedDeviceProperty(ovrID, prop, buffer, vr::k_unMaxPropertyStringSize, &propError);
     if (propError != vr::TrackedProp_Success)
     {
       osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: Could not get device property " << vrSystem->GetPropErrorNameFromEnum(propError) << std::endl;
@@ -350,6 +351,7 @@ namespace OpenFrames{
         break;
       case vr::TrackedDeviceClass_Controller:
         _deviceIDToModel[deviceID]._class = CONTROLLER;
+        createAndAddLaserToController(deviceID); // Add pick laser to controller
         break;
       case vr::TrackedDeviceClass_TrackingReference:
         _deviceIDToModel[deviceID]._class = BASESTATION;
@@ -492,6 +494,12 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
+  void OpenVRDevice::getControllerState(uint32_t deviceID, vr::VRControllerState_t *state)
+  {
+    _vrSystem->GetControllerState(deviceID, state, sizeof(vr::VRControllerState_t));
+  }
+
+  /*************************************************************/
   bool OpenVREventDevice::checkEvents()
   {
     osg::ref_ptr<OpenVREvent> event = new OpenVREvent;
@@ -529,9 +537,10 @@ namespace OpenFrames{
       switch (ovrEvent->eventType)
       {
       case(vr::VREvent_ButtonPress) :
-
+      {
         // Grip button pressed state transitions: No Motion -> Translate/Rotate -> Scale
-        if (state->ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_Grip))
+        if (state->ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_Grip) ||
+          state->ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_Axis1)) // For Oculus touch trigger
         {
           // Go from No Motion -> Translate/Rotate when a controller's grip button is pressed
           if (_motionData._mode == NONE)
@@ -554,10 +563,26 @@ namespace OpenFrames{
             saveCurrentMotionData();
           }
         }
+
+        // If touchpad is pressed, then pick a point on the ground grid
+        else if ((state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) != 0x0)
+        {
+          // Go from No Motion -> Pick when a controller's touchpad is pressed
+          if (_motionData._mode == NONE)
+          {
+            // Pick using Device 1
+            //_motionData._mode = PICK;
+            _motionData._device1ID = deviceID;
+            _motionData._device2ID = UINT_MAX; // Ignore device 2
+            saveCurrentMotionData();
+          }
+        }
+
         break;
+      }
 
       case(vr::VREvent_ButtonUnpress) :
-
+      {
         // Button unpressed state transitions: Scale -> Translate/Rotate -> No Motion
         if (state->ulButtonPressed == 0)
         {
@@ -603,11 +628,36 @@ namespace OpenFrames{
         break;
       }
 
+      case(vr::VREvent_ButtonTouch) :
+      {
+        // If touchpad is touched, then show the controller's laser
+        if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) != 0x0)
+        {
+          osg::MatrixTransform* laserXform = _ovrDevice->getControllerLaser(deviceID);
+          if (laserXform) laserXform->setNodeMask(0xffffffff);
+        }
+        break;
+      }
+
+      case(vr::VREvent_ButtonUntouch) :
+      {
+        // If touchpad is untouched, then hide the controller's laser
+        if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) == 0x0)
+        {
+          osg::MatrixTransform* laserXform = _ovrDevice->getControllerLaser(deviceID);
+          if (laserXform) laserXform->setNodeMask(0x0);
+        }
+        break;
+      }
+      }
+
+      /*
       osg::notify(osg::NOTICE) << "Switching to ";
       if (_motionData._mode == NONE) osg::notify(osg::NOTICE) << "NONE" << std::endl;
       else if (_motionData._mode == TRANSLATE) osg::notify(osg::NOTICE) << "TRANSLATE" << std::endl;
       else if (_motionData._mode == ROTATE) osg::notify(osg::NOTICE) << "ROTATE" << std::endl;
       else if (_motionData._mode == SCALE) osg::notify(osg::NOTICE) << "SCALE" << std::endl;
+      */
 
       return false;
     }
