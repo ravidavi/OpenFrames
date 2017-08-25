@@ -120,7 +120,7 @@ namespace OpenFrames{
     _deviceModels->addChild(_controllerMidpoint);
 
     // Set midpoint sphere texture
-    osg::Image *image = osgDB::readImageFile("../Images/marble.jpg");
+    osg::Image *image = osgDB::readImageFile("marble.jpg");
     osg::StateSet* ss;
     if (image)
     {
