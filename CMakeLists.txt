@@ -68,6 +68,7 @@ FIND_PACKAGE(OpenSceneGraph 3.4.0 COMPONENTS osg osgText osgGA osgDB osgUtil osg
 
 # Give user a hint if OSG was not found
 IF(NOT OPENSCENEGRAPH_FOUND)
+  SET(OSG_DIR "" CACHE PATH "Set to base OpenSceneGraph install path")
   MESSAGE(FATAL_ERROR "OpenSceneGraph NOT FOUND: Please set OSG_DIR variable to the OpenSceneGraph install path and re-configure.")
 ENDIF()
 
@@ -77,7 +78,8 @@ IF( OF_USE_OSGEARTH )
 
     # Give user a hint if OsgEarth was not found
     IF(NOT OSGEARTH_FOUND)
-      MESSAGE(FATAL_ERROR "OsgEarth NOT FOUND: Please set OSGEARTH_DIR variable to the OsgEarth install path and re-configure.")
+      SET(OSGEARTH_DIR "" CACHE PATH "Set to base osgEarth install path")
+      MESSAGE(FATAL_ERROR "OsgEarth NOT FOUND: Please set OSGEARTH_DIR variable to the osgEarth install path and re-configure.")
     ENDIF()
 ENDIF()
 
