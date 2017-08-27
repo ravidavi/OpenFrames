@@ -48,41 +48,40 @@
 **
 ****************************************************************************/
 
-#ifndef WINDOW_H
-#define WINDOW_H
+#ifndef OFWINDOW_H
+#define OFWINDOW_H
 
-#include <QWidget>
+#include <QWindow>
+#include "renderthread.h"
 
-QT_BEGIN_NAMESPACE
-class QSlider;
-class QPushButton;
-QT_END_NAMESPACE
+class OFRendererIF;
 
-class GLWidget;
-class MainWindow;
-
-class Window : public QWidget
+class OFWindow : public QWindow
 {
-    Q_OBJECT
-
 public:
-    Window(MainWindow *mw);
+    OFWindow(OFRendererIF &renderer, QWindow *parent = 0x0);
+    virtual ~OFWindow();
+
+    void exposeEvent(QExposeEvent *event) override;
+
+    static const bool VERBOSE_CONSOLE;
 
 protected:
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
-
-private slots:
-    void dockUndock();
+    void resizeEvent(QResizeEvent *event) override;
+    void timerEvent(QTimerEvent *event) override;
 
 private:
-    QSlider *createSlider();
+    unsigned int mapQtButtonToOFButton(Qt::MouseButtons qButton);
+    int mapQtKeyEventToOsgKey(QKeyEvent *event);
 
-    GLWidget *glWidget;
-    QSlider *xSlider;
-    QSlider *ySlider;
-    QSlider *zSlider;
-    QPushButton *dockBtn;
-    MainWindow *mainWindow;
+    OFRendererIF &m_renderer;
+    bool m_alreadyExposed;
+    int m_timerID;
 };
 
 #endif

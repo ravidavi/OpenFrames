@@ -23,14 +23,14 @@
 #include <iostream>
 #include <sstream>
 
-#include <OpenFrames/CoordinateAxes>
-#include <OpenFrames/CurveArtist>
-#include <OpenFrames/DrawableTrajectory>
-#include <OpenFrames/FrameManager>
-#include <OpenFrames/MarkerArtist>
-#include <OpenFrames/Model>
-#include <OpenFrames/RadialPlane>
-#include <OpenFrames/SegmentArtist>
+#include <OpenFrames/CoordinateAxes.hpp>
+#include <OpenFrames/CurveArtist.hpp>
+#include <OpenFrames/DrawableTrajectory.hpp>
+#include <OpenFrames/FrameManager.hpp>
+#include <OpenFrames/MarkerArtist.hpp>
+#include <OpenFrames/Model.hpp>
+#include <OpenFrames/RadialPlane.hpp>
+#include <OpenFrames/SegmentArtist.hpp>
 using namespace OpenFrames;
 
 // Initialize static variable

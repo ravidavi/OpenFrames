@@ -362,8 +362,8 @@ int main()
 
         // Create views that look from hubble towards hubble2, using
         // various transformation types
-        View *view5 = new View(earth, hubble, hubble2, View::RELATIVE, View::DIRECT);
-        View *view6 = new View(earth, hubble, hubble2, View::RELATIVE, View::AZEL);
+        View *view5 = new View(earth, hubble, hubble2, View::RELATIVE_FRAME, View::DIRECT);
+        View *view6 = new View(earth, hubble, hubble2, View::RELATIVE_FRAME, View::AZEL);
 
 	// Create a manager to handle the spatial scene
 	FrameManager* fm = new FrameManager;
