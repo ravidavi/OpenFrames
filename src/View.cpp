@@ -25,7 +25,7 @@ namespace OpenFrames
   
   /*******************************************************/
   FollowingTrackball::FollowingTrackball()
-  : _frameType(View::ABSOLUTE), _rotationType(View::DIRECT)
+  : _frameType(View::ABSOLUTE_FRAME), _rotationType(View::DIRECT)
   {
     // We will compute the home position manually
     setAutoComputeHomePosition(false);
@@ -70,7 +70,7 @@ namespace OpenFrames
   void FollowingTrackball::computeWorldToViewMatrix(osg::Matrixd& matrix) const
   {
     // First compute World to Local transform
-    if(_frameType == View::ABSOLUTE)
+    if(_frameType == View::ABSOLUTE_FRAME)
     {
       // Translate origin to the viewed frame's origin.
       // Since there is no rotation, just negate the translation
@@ -190,7 +190,7 @@ namespace OpenFrames
     // Set up the ReferenceFrame transform accumulator
     _xform = new TransformAccumulator;
     _xform_lookat = new TransformAccumulator;
-    _frameType = RELATIVE;
+    _frameType = RELATIVE_FRAME;
     _rotationType = AZEL;
     
     // Setup the trackball view manipulator

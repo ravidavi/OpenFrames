@@ -56,13 +56,13 @@ namespace OpenFrames
       // the body as it translates.
       // If viewing in from-to mode, then the rotation starts in the
       // scene's global reference frame.
-      ABSOLUTE=0,
+      ABSOLUTE_FRAME=0,
       
       // View frame initialized to the frame being viewed. This is
       // equivalent to a "body-fixed" view.
       // If viewing in from-to mode, then the rotation starts in the
       // body-fixed reference frame.
-      RELATIVE
+      RELATIVE_FRAME
     };
     
     /** The method used to rotate the view to look at the "to" frame.
@@ -82,8 +82,8 @@ namespace OpenFrames
     };
     
     View();
-    View(ReferenceFrame *root, ReferenceFrame *viewFrame, ViewFrameType baseframe = RELATIVE);
-    View(ReferenceFrame *root, ReferenceFrame *viewFrame, ReferenceFrame *lookatFrame, ViewFrameType frameType = RELATIVE, ViewRotationType rotationType = AZEL);
+    View(ReferenceFrame *root, ReferenceFrame *viewFrame, ViewFrameType baseframe = RELATIVE_FRAME);
+    View(ReferenceFrame *root, ReferenceFrame *viewFrame, ReferenceFrame *lookatFrame, ViewFrameType frameType = RELATIVE_FRAME, ViewRotationType rotationType = AZEL);
     
     /** Get the projection type */
     inline ProjectionType getProjectionType() { return _projType; }
@@ -152,13 +152,13 @@ namespace OpenFrames
      is part of.
      Optionally, set the reference frame used when viewing the
      target frame. */
-    void setViewFrame( ReferenceFrame* root, ReferenceFrame* viewFrame, ViewFrameType frameType = RELATIVE );
+    void setViewFrame( ReferenceFrame* root, ReferenceFrame* viewFrame, ViewFrameType frameType = RELATIVE_FRAME );
     
     /** View the lookat frame from the point of view of the base frame.
      Optionally, set the reference frame used when viewing the
      target frame and the rotation type that should be used to
      rotate from the target to the lookat frame. */
-    void setViewBetweenFrames( ReferenceFrame* root, ReferenceFrame* viewFrame, ReferenceFrame* lookatFrame, ViewFrameType frameType = RELATIVE, ViewRotationType rotationType = AZEL );
+    void setViewBetweenFrames( ReferenceFrame* root, ReferenceFrame* viewFrame, ReferenceFrame* lookatFrame, ViewFrameType frameType = RELATIVE_FRAME, ViewRotationType rotationType = AZEL );
     
     /** Get the root/origin frames associated with this View */
     ReferenceFrame* getViewRoot() { return _xform->getRoot(); }
