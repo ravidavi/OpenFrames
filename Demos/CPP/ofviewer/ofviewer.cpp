@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 
   // Use VR mode
   bool useVR = arguments.read("--vr");
-  unsigned int width = 640, height = 480;
+  unsigned int width = 800, height = 600;
   if (useVR) // Switch to VR mirror window size
   {
     width = 1080 / 2;
@@ -63,32 +63,32 @@ int main(int argc, char** argv)
     return 1;
   }
 
-	// Create the window interface
-	unsigned int x = 30, y = 30;
-	unsigned int nrows = 1, ncols = 1;
-	bool isEmbedded = false;
-	osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(x, y, width, height, nrows, ncols, isEmbedded, useVR);
-	myWindow->setWorldUnitsPerMeter(worldUnitsPerMeter);
-	myWindow->setWorldUnitsPerMeterLimits(1.0, DBL_MAX);
+  // Create the window interface
+  unsigned int x = 30, y = 30;
+  unsigned int nrows = 1, ncols = 1;
+  bool isEmbedded = false;
+  osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(x, y, width, height, nrows, ncols, isEmbedded, useVR);
+  myWindow->setWorldUnitsPerMeter(worldUnitsPerMeter);
+  myWindow->setWorldUnitsPerMeterLimits(1.0, DBL_MAX);
 
-	// Create Model for Barnegat tileset
-	Model *theModel = new Model("Model", 0.5, 0.5, 0.5, 0.9);
+  // Create Model for to hold user-specified model
+  Model *theModel = new Model("Model", 0.5, 0.5, 0.5, 0.9);
   if (!theModel->setModel(filename))
   {
     return 1;
   }
   theModel->showNameLabel(false);
 
-	// Create a manager to handle the spatial scene
-	FrameManager* fm = new FrameManager;
-	fm->setFrame(theModel);
+  // Create a frame manager to handle the scene
+  FrameManager* fm = new FrameManager;
+  fm->setFrame(theModel);
 
-	// Set up the scene
-	myWindow->setScene(fm, 0, 0);
-	//myWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0);
+  // Set up the scene
+  myWindow->setScene(fm, 0, 0);
+  //myWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0);
 
-	myWindow->startThread(); // Start window animation
-	myWindow->join(); // Wait for window animation to finish
+  myWindow->startThread(); // Start window animation
+  myWindow->join(); // Wait for window animation to finish
 
-	return 0;
+  return 0;
 }
