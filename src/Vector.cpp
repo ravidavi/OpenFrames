@@ -41,6 +41,8 @@ Vector::Vector( const osg::Vec3d& vec )
 
 	  // Create an actual drawable entity out of the vector
 	_vec = new osg::ShapeDrawable(shape, hints);
+  _vec->setUseDisplayList(false);
+  _vec->setUseVertexBufferObjects(true);
 
 	// Enable transparency and color blending
 	osg::StateSet *ss = _vec->getOrCreateStateSet();
@@ -100,7 +102,7 @@ void Vector::setRadius( const double &body, const double &head )
 	// vector's lengths have changed. But we do need to indicate
 	// that the drawable has changed.
 	_vec->dirtyBound();
-	_vec->dirtyDisplayList();
+  _vec->build();
 }
 
 void Vector::getRadius( double &body, double &head ) const
@@ -144,7 +146,7 @@ void Vector::reposition()
 
 	  // Indicate that the drawable has changed somehow
 	_vec->dirtyBound();
-	_vec->dirtyDisplayList();
+  _vec->build();
 }
 
 } // !namespace OpenFrames

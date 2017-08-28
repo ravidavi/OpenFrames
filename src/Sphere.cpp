@@ -54,7 +54,6 @@ namespace OpenFrames
         if(_currentLOD != lod)
         {
           _hints.setDetailRatio(0.1*(double)lod);
-          drawable->dirtyDisplayList();
           _currentLOD = lod;
         }
       }
@@ -99,6 +98,8 @@ namespace OpenFrames
   {
     _sphereSD = new osg::ShapeDrawable;
     _sphereSD->setName("SphereDrawable");
+    _sphereSD->setUseDisplayList(false);
+    _sphereSD->setUseVertexBufferObjects(true);
     osg::Sphere* sphere = new osg::Sphere;
     osg::TessellationHints* hints = new osg::TessellationHints;
 
@@ -132,6 +133,7 @@ namespace OpenFrames
     osg::Sphere *sphere = static_cast<osg::Sphere*>(_sphereSD->getShape());
     sphere->setRadius(radius);
     _sphereSD->dirtyBound();
+    _sphereSD->build();
 
     moveXAxis(osg::Vec3(radius, 0, 0), 0.5*radius);
     moveYAxis(osg::Vec3(0, radius, 0), 0.5*radius);
