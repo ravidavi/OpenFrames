@@ -125,6 +125,7 @@ namespace OpenFrames
     _mouseMotionCallback = NULL;
     _buttonPressCallback = NULL;
     _buttonReleaseCallback = NULL;
+    _vrEventCallback = NULL;
   }
   
   WindowEventHandler::~WindowEventHandler() {}
@@ -278,6 +279,18 @@ namespace OpenFrames
       case(osgGA::GUIEventAdapter::QUIT_APPLICATION):
       {
         _window->shutdown();
+        break;
+      }
+
+      // Check for custom events
+      case(osgGA::GUIEventAdapter::USER):
+      {
+        const OpenVREvent *vrEvent = dynamic_cast<const OpenVREvent*>(&ea);
+        if (vrEvent && _vrEventCallback)
+        {
+          unsigned int id = _window->getID();
+          _vrEventCallback(&id, &_currentRow, &_currentCol, vrEvent);
+        }
         break;
       }
         

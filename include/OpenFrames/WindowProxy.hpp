@@ -36,6 +36,7 @@
 #define KEYPRESS_SIG BASIC_CALLBACK_SIG, int *key
 #define MOUSEMOTION_SIG BASIC_CALLBACK_SIG, float *x, float *y
 #define BUTTON_SIG MOUSEMOTION_SIG, unsigned int *button
+#define VR_SIG BASIC_CALLBACK_SIG, const OpenVREvent *vrEvent
 
 namespace OpenFrames
 {
@@ -116,6 +117,9 @@ namespace OpenFrames
     
     void setButtonReleaseCallback(void (*fcn)(BUTTON_SIG)) // Mouse button released callback
     { _buttonReleaseCallback = fcn; }
+
+    void setVREventCallback(void (*fcn)(VR_SIG)) // VR controller event callback
+    { _vrEventCallback = fcn; }
     
   protected:
     virtual ~WindowEventHandler();
@@ -130,6 +134,7 @@ namespace OpenFrames
     void (*_mouseMotionCallback)(MOUSEMOTION_SIG);
     void (*_buttonPressCallback)(BUTTON_SIG);
     void (*_buttonReleaseCallback)(BUTTON_SIG);
+    void (*_vrEventCallback)(VR_SIG);
   };
   
   /**********************************************************
@@ -230,6 +235,9 @@ namespace OpenFrames
     
     void setButtonReleaseCallback(void (*fcn)(BUTTON_SIG))
     { _eventHandler->setButtonReleaseCallback(fcn); }
+
+    void setVREventCallback(void (*fcn)(VR_SIG))
+    { _eventHandler->setVREventCallback(fcn); }
     
     /** Set the window id that will be passed into all user-defined
 	    callback functions. */
