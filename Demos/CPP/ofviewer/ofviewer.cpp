@@ -18,6 +18,8 @@
 #include <OpenFrames/Model.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <osg/ArgumentParser>
+#include <osgDB/FileNameUtils>
+#include <osgDB/FileUtils>
 
 using namespace OpenFrames;
 
@@ -46,21 +48,17 @@ int main(int argc, char** argv)
     worldUnitsPerMeter = 1.0;
   }
 
+  // Remaining options are unrecognized
+  arguments.reportRemainingOptionsAsUnrecognized();
+
   // Get model filename
-  std::string filename;
+  std::vector<std::string> files;
   for (int pos = 1; pos < arguments.argc(); ++pos)
   {
-    if (!arguments.isOption(pos))
+    if (arguments.isString(pos))
     {
-      filename = arguments[pos];
-      break;
+      files.push_back(arguments[pos]);
     }
-  }
-
-  if (filename.length() == 0)
-  {
-    OSG_NOTICE << "Please specify a filename" << std::endl;
-    return 1;
   }
 
   // Create the window interface
@@ -71,21 +69,44 @@ int main(int argc, char** argv)
   myWindow->setWorldUnitsPerMeter(worldUnitsPerMeter);
   myWindow->setWorldUnitsPerMeterLimits(1.0, DBL_MAX);
 
-  // Create Model for to hold user-specified model
-  Model *theModel = new Model("Model", 0.5, 0.5, 0.5, 0.9);
-  if (!theModel->setModel(filename))
-  {
-    return 1;
-  }
-  theModel->showNameLabel(false);
+  // Create the root frame that will hold all specified models
+  osg::ref_ptr<ReferenceFrame> rootFrame = new ReferenceFrame("Root");
+  rootFrame->showAxes(ReferenceFrame::NO_AXES);
+  rootFrame->showAxesLabels(ReferenceFrame::NO_AXES);
+  rootFrame->showNameLabel(false);
 
   // Create a frame manager to handle the scene
-  FrameManager* fm = new FrameManager;
-  fm->setFrame(theModel);
+  osg::ref_ptr<FrameManager> fm = new FrameManager;
+  fm->setFrame(rootFrame);
 
   // Set up the scene
   myWindow->setScene(fm, 0, 0);
   //myWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0);
+
+  // Create Models to hold user-specified models
+  for (int i = 0; i < files.size(); ++i)
+  {
+    Model *theModel = new Model("Model", 0.5, 0.5, 0.5, 0.9);
+    if (!theModel->setModel(files[i])) continue;
+    std::string fname = osgDB::getNameLessAllExtensions(files[i]);
+    theModel->setName(fname);
+
+    // Reset model pivot so its origin coincides with the root scene origin
+    theModel->setModelPivot(0.0, 0.0, 0.0);
+
+    // Add model to scene
+    rootFrame->addChild(theModel);
+
+    // Create a view for the model
+    View *modelView = new View(rootFrame, theModel);
+    myWindow->getGridPosition(0, 0)->addView(modelView);
+  }
+
+  if (rootFrame->getNumChildren() == 0)
+  {
+    OSG_WARN << "No models loaded, exiting." << std::endl;
+    return 1;
+  }
 
   myWindow->startThread(); // Start window animation
   myWindow->join(); // Wait for window animation to finish

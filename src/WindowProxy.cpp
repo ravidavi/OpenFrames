@@ -520,7 +520,7 @@ namespace OpenFrames
   WindowProxy::~WindowProxy()
   {
     shutdown();
-    join();
+    if (isRunning()) join(); // Only join if thread is running
     if (_useVR) _ovrDevice->shutdownVR();
   }
   
