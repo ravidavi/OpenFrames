@@ -59,12 +59,16 @@ class OF_EXPORT FrameTransform : public osg::Transform
 
 	// Set position wrt parent frame
 	void setPosition(const double &x, const double &y, const double &z);
+  void setPosition(const osg::Vec3d &pos);
 	void getPosition(double &x, double &y, double &z) const;
+  void getPosition(osg::Vec3d &pos) const;
 
 	// Set attitude (orientation) wrt parent frame. Note that this is
 	// a quaternion (qx, qy, qx, qw).
 	void setAttitude(const double &rx, const double &ry, const double &rz, const double &angle);
+  void setAttitude(const osg::Quat &att);
 	void getAttitude(double &rx, double &ry, double &rz, double &angle) const;
+  void getAttitude(osg::Quat &att) const;
 
 	// Set scale wrt parent frame
 	void setScale(const double &sx, const double &sy, const double &sz);

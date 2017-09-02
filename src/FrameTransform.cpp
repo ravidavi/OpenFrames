@@ -47,6 +47,12 @@ void FrameTransform::setPosition(const double &x, const double &y, const double 
 	dirtyBound();
 }
 
+void FrameTransform::setPosition(const osg::Vec3d &pos)
+{
+  _position = pos;
+  dirtyBound();
+}
+
 void FrameTransform::getPosition(double &x, double &y, double &z) const
 {
 	if(_disabled) x = y = z = 0.0;
@@ -58,6 +64,12 @@ void FrameTransform::getPosition(double &x, double &y, double &z) const
 	}
 }
 
+void FrameTransform::getPosition(osg::Vec3d &pos) const
+{
+  if (_disabled) pos.set(0.0, 0.0, 0.0);
+  else pos = _position;
+}
+
 void FrameTransform::setAttitude(const double &rx, const double &ry,
 				const double &rz, const double &angle)
 {
@@ -66,6 +78,12 @@ void FrameTransform::setAttitude(const double &rx, const double &ry,
 	_attitude._v[2] = rz;
 	_attitude._v[3] = angle;
 	dirtyBound();
+}
+
+void FrameTransform::setAttitude(const osg::Quat &att)
+{
+  _attitude = att;
+  dirtyBound();
 }
 
 void FrameTransform::getAttitude(double &rx, double &ry, double &rz, double &angle) const
@@ -82,6 +100,12 @@ void FrameTransform::getAttitude(double &rx, double &ry, double &rz, double &ang
 	  rz = _attitude._v[2];
 	  angle = _attitude._v[3];
 	}
+}
+
+void FrameTransform::getAttitude(osg::Quat &att) const
+{
+  if (_disabled) att.set(0.0, 0.0, 0.0, 1.0);
+  else att = _attitude;
 }
 
 void FrameTransform::setScale(const double &sx, const double &sy, const double &sz)

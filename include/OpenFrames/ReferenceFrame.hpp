@@ -29,13 +29,6 @@
 #include <vector>
 #include <string>
 
-namespace osg {
-  class Vec3f;
-  class Vec4f;
-  typedef Vec3f Vec3;
-  typedef Vec4f Vec4;
-}
-
 namespace OpenFrames {
 
 class FrameTracker;
@@ -142,6 +135,9 @@ class OF_EXPORT ReferenceFrame : public osg::Referenced {
 	inline void setPosition( const double &x, const double &y, const double &z )
 	{ _xform->setPosition(x, y, z); }
 
+  inline void setPosition( const osg::Vec3d &pos )
+  { _xform->setPosition(pos); }
+
     /**
     * \brief Get the position of this frame
     *
@@ -151,6 +147,9 @@ class OF_EXPORT ReferenceFrame : public osg::Referenced {
     **/
 	inline void getPosition( double &x, double &y, double &z ) const
 	{ _xform->getPosition(x, y, z); }
+
+  inline void getPosition( osg::Vec3d &pos ) const
+  { _xform->getPosition(pos); }
 
     /**
     * \brief Set the orientation of this frame
@@ -165,6 +164,9 @@ class OF_EXPORT ReferenceFrame : public osg::Referenced {
 	inline void setAttitude( const double &rx, const double &ry, const double &rz, const double &angle )
 	{ _xform->setAttitude(rx, ry, rz, angle); }
 
+  inline void setAttitude( const osg::Quat &att )
+  { _xform->setAttitude(att); }
+
     /**
     * \brief Get the orientation of this frame
     *
@@ -175,6 +177,9 @@ class OF_EXPORT ReferenceFrame : public osg::Referenced {
     **/
 	inline void getAttitude( double &rx, double &ry, double &rz, double &angle) const
 	{ _xform->getAttitude(rx, ry, rz, angle); }
+
+  inline void getAttitude( osg::Quat &att ) const
+  { _xform->getAttitude(att); }
 	
 	/* Get the BoundingSphere encompassing this frame plus all of its
 	    decorations. Derived classes should override this method

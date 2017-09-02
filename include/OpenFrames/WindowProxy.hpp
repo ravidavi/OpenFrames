@@ -268,6 +268,12 @@ namespace OpenFrames
       if (_useVR) _ovrDevice->getWorldUnitsPerMeterLimits(minWorldUnitsPerMeter, maxWorldUnitsPerMeter);
     }
 
+    /** Set the user height in VR */
+    void setUserHeight(const double &height)
+    {
+      if (_useVR) _ovrDevice->setUserHeight(height);
+    }
+
     /** Inherited from OpenThreads::Thread. Called on thread launch. */
     virtual void run();
     
