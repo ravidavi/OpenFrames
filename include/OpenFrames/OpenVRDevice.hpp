@@ -150,10 +150,7 @@ namespace OpenFrames {
     void computeDeviceTransforms(); // Compute Local<->World device transforms
     
     /** Get/set the world units per meter ratio and its limits */
-    void setWorldUnitsPerMeter(const double& worldUnitsPerMeter)
-    {
-      _worldUnitsPerMeter = std::max(_minWorldUnitsPerMeter, std::min(worldUnitsPerMeter, _maxWorldUnitsPerMeter));
-    }
+    void setWorldUnitsPerMeter(const double& worldUnitsPerMeter);
     double getWorldUnitsPerMeter() { return _worldUnitsPerMeter; }
     void setWorldUnitsPerMeterLimits(const double& minWorldUnitsPerMeter,
                                      const double& maxWorldUnitsPerMeter)

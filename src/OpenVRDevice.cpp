@@ -539,8 +539,7 @@ namespace OpenFrames{
       case(vr::VREvent_ButtonPress) :
       {
         // Grip button pressed state transitions: No Motion -> Translate/Rotate -> Scale
-        if (state->ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_Grip) ||
-          state->ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_Axis1)) // For Oculus touch trigger
+        if (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_Grip))
         {
           // Go from No Motion -> Translate/Rotate when a controller's grip button is pressed
           if (_motionData._mode == NONE)
@@ -564,8 +563,8 @@ namespace OpenFrames{
           }
         }
 
-        // If touchpad is pressed, then pick a point on the ground grid
-        else if ((state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) != 0x0)
+        // If trigger is pressed, then pick a point on the ground grid
+        else if (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
         {
           // Go from No Motion -> Pick when a controller's touchpad is pressed
           if (_motionData._mode == NONE)
@@ -630,8 +629,8 @@ namespace OpenFrames{
 
       case(vr::VREvent_ButtonTouch) :
       {
-        // If touchpad is touched, then show the controller's laser
-        if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) != 0x0)
+        // If trigger is touched, then show the controller's laser
+        if (state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
         {
           osg::MatrixTransform* laserXform = _ovrDevice->getControllerLaser(deviceID);
           if (laserXform) laserXform->setNodeMask(0xffffffff);
@@ -641,8 +640,8 @@ namespace OpenFrames{
 
       case(vr::VREvent_ButtonUntouch) :
       {
-        // If touchpad is untouched, then hide the controller's laser
-        if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) == 0x0)
+        // If trigger is untouched, then hide the controller's laser
+        if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) == 0x0)
         {
           osg::MatrixTransform* laserXform = _ovrDevice->getControllerLaser(deviceID);
           if (laserXform) laserXform->setNodeMask(0x0);

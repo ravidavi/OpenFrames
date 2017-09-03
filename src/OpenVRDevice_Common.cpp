@@ -137,7 +137,7 @@ namespace OpenFrames{
     {
       // Create the ground plane
       osg::Vec3Array* vertices = new osg::Vec3Array(4);
-      int groundSize = 4;
+      int groundSize = 10;
       (*vertices)[0].set(-groundSize, 0, -groundSize);
       (*vertices)[1].set(groundSize, 0, -groundSize);
       (*vertices)[2].set(groundSize, 0, groundSize);
@@ -178,17 +178,33 @@ namespace OpenFrames{
       gridGeom->setColorArray(color, osg::Array::BIND_OVERALL);
       gridGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, numGridPoints));
 
+      // Create text to show WorldUnits/Meter ratio
+      osgText::Text *wumText = new osgText::Text();
+      wumText->setFontResolution(30, 30);
+      wumText->setFont("arial.ttf");
+      wumText->setCharacterSizeMode(osgText::Text::OBJECT_COORDS);
+      wumText->setCharacterSize(0.1);
+      wumText->setPosition(osg::Vec3(0.0, y_offset, 0.0));
+      wumText->setAxisAlignment(osgText::Text::USER_DEFINED_ROTATION);
+      osg::Quat wumRotate;
+      wumRotate.makeRotate(-osg::PI_2, osg::Vec3(1, 0, 0)); // Using XZ_PLANE would make text upside-down
+      wumText->setRotation(wumRotate);
+
       // Create geode to hold plane and grid geometries
       geode = new osg::Geode;
       geode->addDrawable(planeGeom);
       geode->addDrawable(gridGeom);
+      geode->addDrawable(wumText);
       ss = geode->getOrCreateStateSet();
       ss->setMode(GL_BLEND, osg::StateAttribute::ON);
       ss->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
 
+      // Finalize setup of room decorations
       _roomGround = new osg::MatrixTransform;
       _roomGround->addChild(geode);
       _deviceModels->addChild(_roomGround);
+
+      setWorldUnitsPerMeter(_worldUnitsPerMeter); // This sets the text
     }
   }
 
@@ -296,6 +312,31 @@ namespace OpenFrames{
     matWorldToDevice = getHMDPoseMatrix();
     matWorldToDevice.postMultTranslate(_centerViewOffset);
     _deviceModels->setMatrix(matWorldToDevice);
+  }
+
+  /*************************************************************/
+  void OpenVRDevice::setWorldUnitsPerMeter(const double& worldUnitsPerMeter)
+  {
+    // Make sure WorldUnits/Meter stays within desired bounds
+    _worldUnitsPerMeter = std::max(_minWorldUnitsPerMeter, std::min(worldUnitsPerMeter, _maxWorldUnitsPerMeter));
+
+    // Update ground text
+    osg::Geode *geode = static_cast<osg::Geode*>(_roomGround->getChild(0));
+    for (unsigned int i = 0; i < geode->getNumDrawables(); ++i)
+    {
+      osgText::Text *wumText = dynamic_cast<osgText::Text*>(geode->getDrawable(i));
+      if (wumText)
+      {
+        std::string wumString = std::to_string(_worldUnitsPerMeter);
+        size_t loc = wumString.find('.');
+        if (loc != std::string::npos)
+        {
+          wumString.resize(loc + 4);
+        }
+        wumText->setText(wumString + " Units");
+        return;
+      }
+    }
   }
 
   /*************************************************************/

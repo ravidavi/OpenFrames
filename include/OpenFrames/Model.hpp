@@ -58,11 +58,22 @@ namespace OpenFrames
 	    This is useful e.g. if the model's defined origin is not
 	    where you want it to be. */
     void setModelPosition( const double &x, const double &y, const double &z );
+
+    void setModelPosition( const osg::Vec3d &pos )
+    { _modelXform->setPosition(pos); }
     
     void getModelPosition( double &x, double &y, double &z ) const
-    {
-      _modelXform->getPosition(x, y, z);
-    }
+    { _modelXform->getPosition(x, y, z); }
+
+    void getModelPosition( osg::Vec3d &pos ) const
+    { _modelXform->getPosition(pos); }
+
+    /** Set/get the attitude of the model wrt the local frame. */
+    void setModelAttitude( const osg::Quat &att )
+    { _modelXform->setAttitude(att); }
+
+    void getModelAttitude( osg::Quat &att ) const
+    { _modelXform->getAttitude(att); }
     
     /** Set/get the scale of the model wrt the pivot point. */
     void setModelScale( const double &sx, const double &sy, const double &sz);
