@@ -4,12 +4,14 @@ Simple OFInterface test
 
 """
 
-from PyOpenFrames.OFInterface import *
+from OpenFrames.PyOFInterface import *
 
 
 win_id = 1
 fm_id = 2
-frame_name = "O"
+frame_name = "Origin"
+
+of_initialize()
 
 ofwin_createproxy(50, 50, 800, 600, 1, 1, False, win_id)
 
@@ -24,4 +26,6 @@ ofwin_start()
 
 running = True
 while running:
-    running = ofwin_isrunning()
+     running = ofwin_isrunning()
+
+of_cleanup()

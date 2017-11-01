@@ -97,6 +97,7 @@ OF_EXPORT void OF_FCN(of_getreturnedvalue)(int *val);
 ***********************************************************************/
 // Set the current active WindowProxy
 OF_EXPORT void OF_FCN(ofwin_activate)(unsigned int *id);
+OF_EXPORT void OF_FCN(ofwin_getid)(unsigned int *retid);
 
 // Create a new WindowProxy that will manage drawing onto a window.
 // This new WindowProxy will also become the current active one.

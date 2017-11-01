@@ -10,6 +10,7 @@ SET(CMAKE_MODULE_PATH "{CMAKE_MODULE_PATH}" ${CMAKE_CURRENT_SOURCE_DIR}/CMakeMod
 # User options
 OPTION( OF_BUILD_DEMOS "Build Demo Programs" ON )
 OPTION( OF_FORTRAN_MODULE "Compile Fortran Module" OFF )
+OPTION( OF_PYTHON_MODULE "Compile Python Module" OFF )
 #OPTION( OF_USE_OSGEARTH "Enable osgEarth" OFF )
 
 # Options for VR support
@@ -129,6 +130,7 @@ ENDIF()
 
 # Go to the src directory and look for CMake instructions there
 ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(swig)
 
 # Go to the test directory and look for CMake instructions there
 IF(OF_BUILD_DEMOS)

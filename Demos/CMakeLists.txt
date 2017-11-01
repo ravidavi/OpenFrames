@@ -1,5 +1,6 @@
 ADD_SUBDIRECTORY("CPP")
 ADD_SUBDIRECTORY("Fortran/Winteracter")
+ADD_SUBDIRECTORY("Python")
 
 # Install images, models, etc
 INSTALL(

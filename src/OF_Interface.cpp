@@ -240,6 +240,23 @@ void OF_FCN(ofwin_activate)(unsigned int *id)
 }
 
 /**
+* \brief Get ID of the active WindowProxy
+*
+* \param[out] retid ID of the active window
+**/
+void OF_FCN(ofwin_getid)(unsigned int *retid)
+{
+    if(_objs->_currWinProxy)
+    {
+      *retid = _objs->_currWinProxy->getID();
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
+}
+
+/**
 * \brief Create a new WindowProxy that will manage drawing onto a window.
 *
 * This new WindowProxy will also become the current active one.
@@ -379,6 +396,7 @@ OF_EXPORT void OF_FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG))
 **/
 void OF_FCN(ofwin_start)()
 {
+   printf("stargint\n");
 	if(_objs->_currWinProxy) 
 	{
 	  FramerateLimiter waitLimiter;

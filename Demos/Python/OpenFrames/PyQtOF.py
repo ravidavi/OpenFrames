@@ -7,7 +7,7 @@ Qt Widgets for implementing OpenFrames
 from PyQt5.QtWidgets import QWidget, QGridLayout, QSizePolicy
 from PyQt5.QtGui import QWindow, QOpenGLContext
 from PyQt5.QtCore import Qt, QSize
-from .OFInterface import *
+from .PyOFInterface import *
 
 
 DEFAULT_WIDTH = 320
@@ -52,12 +52,9 @@ class Window(QWindow):
         self._window_proxy_id = 0
 
         ofwin_createproxy(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT, 1, 1, True, self._window_proxy_id)
-        self.make_current_function = MakeCurrentCallbackType(self.make_current)
-        ofwin_setmakecurrentfunction(self.make_current_function)
-        self.update_context_function = UpdateContextCallbackType(self.make_current)
-        ofwin_setupdatecontextfunction(self.update_context_function)
-        self.swap_buffers_function = SwapBuffersCallbackType(self.swap_buffers)
-        ofwin_setswapbuffersfunction(self.swap_buffers_function)
+        ofwin_setmakecurrentfunction(self.make_current)
+        ofwin_setupdatecontextfunction(self.make_current)
+        ofwin_setswapbuffersfunction(self.swap_buffers)
 
     def exposeEvent(self, event):
         """
@@ -125,7 +122,7 @@ class Window(QWindow):
             ofwin_keypress(key)
 
     # TODO call glGetError() to print any errors that may have occurred
-    def make_current(self, window_proxy_id, ret_success):
+    def make_current(self):
         """
         Makes _context current for the surface of this window
 
@@ -136,35 +133,29 @@ class Window(QWindow):
             False if an error occurs
 
         """
-        if window_proxy_id[0] == self._window_proxy_id:
-            success = False
-            if self._context is None:
-                self._context = QOpenGLContext()
-                self._context.create()
-                success = self._context.makeCurrent(self)
-                if success:
-                    # self.initializeOpenGLFunctions()
-                    self._context.doneCurrent()
-                else:
-                    ret_success[0] = success
-                    return
-            if self._context is not None:
-                success = self._context.makeCurrent(self)
-                # err = glGetError()
-            ret_success[0] = success
-        else:
-            raise Exception('make_current() callback to incorrect WindowProxy')
+        success = False
+        if self._context is None:
+            self._context = QOpenGLContext()
+            self._context.create()
+            success = self._context.makeCurrent(self)
+            if success:
+                # self.initializeOpenGLFunctions()
+                self._context.doneCurrent()
+            else:
+                return success
+                return
+        if self._context is not None:
+            success = self._context.makeCurrent(self)
+            # err = glGetError()
+        return success
 
-    def swap_buffers(self, window_proxy_id):
+    def swap_buffers(self):
         """
         Swaps the buffer from _context to the surface of this window
 
         """
-        if window_proxy_id[0] == self._window_proxy_id:
-            if self._context is not None:
-                self._context.swapBuffers(self)
-        else:
-            raise Exception('swap_buffers() callback to incorrect WindowProxy')
+        if self._context is not None:
+            self._context.swapBuffers(self)
 
     @staticmethod
     def _map_qt_button_to_of_button(qt_button):
