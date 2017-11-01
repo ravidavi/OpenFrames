@@ -17,6 +17,7 @@
 #include <OpenFrames/SkySphere.hpp>
 #include <osg/BlendFunc>
 #include <osg/PointSprite>
+#include <osgDB/FileUtils>
 #include <iomanip>
 #include <iostream>
 #include <fstream>
@@ -202,7 +203,8 @@ bool SkySphere::processStars()
   }
 
   // Open the star catalog file
-  std::ifstream starfile(_starCatalogFile);
+  std::string fullFile = osgDB::findDataFile(_starCatalogFile);
+  std::ifstream starfile(fullFile);
   if(!starfile.is_open()) 
   {
     std::cerr<< "OpenFrames::SkySphere ERROR: Could not open file " << _starCatalogFile << std::endl;

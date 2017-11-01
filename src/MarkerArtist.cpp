@@ -20,6 +20,7 @@
 #include <osg/PointSprite>
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
+#include <osgDB/FileUtils>
 #include <iostream>
 
 namespace OpenFrames
@@ -292,33 +293,34 @@ bool MarkerArtist::setMarkerImage(const std::string &fname)
 
 bool MarkerArtist::setMarkerShader(const std::string &fname)
 {
-        // Reset shader
-	if(fname.length() == 0) 
-	{
-          resetMarkerShader();
-          return true;
-	}
+  // Reset shader
+  if (fname.length() == 0)
+  {
+    resetMarkerShader();
+    return true;
+  }
 
-        // Load shader source from file
-        bool success = _fragShader->loadShaderSourceFromFile(fname);
-        if(success)
-        {
-          osg::StateSet *ss = getOrCreateStateSet();
+  // Load shader source from file
+  std::string fullFile = osgDB::findDataFile(fname);
+  bool success = _fragShader->loadShaderSourceFromFile(fullFile);
+  if (success)
+  {
+    osg::StateSet *ss = getOrCreateStateSet();
 
-          // Remove existing image texture and blend function
-          ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
-          ss->removeAttribute(osg::StateAttribute::BLENDFUNC);
+    // Remove existing image texture and blend function
+    ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
+    ss->removeAttribute(osg::StateAttribute::BLENDFUNC);
 
-          // Assume opaque marker
-          ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
-        }
-        else
-        {
-          std::cerr<< "OpenFrames::MarkerArtist ERROR: Shader file \'" << fname << "\' not properly loaded!" << std::endl;
-          return false;
-        }
+    // Assume opaque marker
+    ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
+  }
+  else
+  {
+    std::cerr << "OpenFrames::MarkerArtist ERROR: Shader file \'" << fname << "\' not properly loaded!" << std::endl;
+    return false;
+  }
 
-        return true;
+  return true;
 }
 
 void MarkerArtist::setAutoAttenuate(bool attenuate)
