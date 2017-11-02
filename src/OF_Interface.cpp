@@ -396,7 +396,6 @@ OF_EXPORT void OF_FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG))
 **/
 void OF_FCN(ofwin_start)()
 {
-   printf("stargint\n");
 	if(_objs->_currWinProxy) 
 	{
 	  FramerateLimiter waitLimiter;

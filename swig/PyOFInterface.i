@@ -1,11 +1,5 @@
 %module PyOFInterface
 
-%begin %{
-#ifdef _MSC_VER
-#define SWIG_PYTHON_INTERPRETER_NO_DEBUG
-#endif
-%}
-
 %{
 #include "OpenFrames/OF_Interface.h"
 %}
