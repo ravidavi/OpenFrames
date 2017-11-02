@@ -45,7 +45,7 @@ class Window(QWindow):
         """
         super().__init__()
         self._context = None
-        self._proxy_started_once = False
+        self._proxy_started = False
         self._saved_size = None
         self.setSurfaceType(QWindow.OpenGLSurface)
 
@@ -61,13 +61,22 @@ class Window(QWindow):
         Overrides QWindow.exposeEvent()
 
         """
-        if not self._proxy_started_once:
-            self._proxy_started_once = True
+        if not self._proxy_started:
+            self._proxy_started = True
             ofwin_activate(self._window_proxy_id)
             ofwin_start()
             if self._saved_size is not None:
                 ofwin_resizewindow(0, 0, self._saved_size.width(), self._saved_size.height())
                 self._saved_size = None
+
+    def hideEvent(self, event):
+        """
+        Overrides QWindow.exposeEvent()
+
+        """
+        ofwin_activate(self._window_proxy_id)
+        ofwin_stop()
+        self._proxy_started = False
 
     def resizeEvent(self, event):
         """
@@ -143,7 +152,6 @@ class Window(QWindow):
                 self._context.doneCurrent()
             else:
                 return success
-                return
         if self._context is not None:
             success = self._context.makeCurrent(self)
             # err = glGetError()

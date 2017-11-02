@@ -40,12 +40,10 @@ class MyOFDemo(PyQtOF.Window):
 
 
 if __name__ == '__main__':
-    of_initialize()
     app = QApplication(sys.argv)
     ex = PyQtOF.Widget(MyOFDemo)
     ex.setWindowTitle('PyQt5 OpenFrames Demonstration')
     ex.setGeometry(50, 50, 1024, 768)
     ex.show()
     ret = app.exec_()
-    of_cleanup()
     sys.exit(ret)
