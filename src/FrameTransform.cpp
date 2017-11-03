@@ -304,7 +304,50 @@ void TrajectoryFollower::setFollowTrajectory(Trajectory *traj)
   // Indicate that the follower should update its state
 	_needsUpdate = true;
 }
+  
+void TrajectoryFollower::followTrajectory(Trajectory *traj)
+{
+  if(traj == NULL) return; // Error check
+  
+  // Already following specified trajectory
+  if(std::find(_trajList.begin(), _trajList.end(), traj) != _trajList.end()) return;
+  
+  // Add new trajectory
+  _trajList.push_back(traj);
+  
+  // Check for valid data sources
+  _dataValid = _verifyDataSources();
+  
+  // Indicate that the follower should update its state
+  _needsUpdate = true;
+}
 
+void TrajectoryFollower::unfollowTrajectory(Trajectory *traj)
+{
+  // Unfollow all trajectories
+  if(traj == NULL)
+  {
+    _follow = NULL;
+    _trajList.clear();
+  }
+  else // Unfollow specified trajectory
+  {
+    // Reset currently followed trajectory pointer
+    if(_follow == traj) _follow = NULL;
+    
+    // Remove trajectory if it is followed
+    // Note that we use erase-find instead of erase-remove because
+    // followed trajectories are unique
+    _trajList.erase(std::find(_trajList.begin(), _trajList.end(), traj));
+  }
+  
+  // Check for valid data sources
+  _dataValid = _verifyDataSources();
+  
+  // Indicate that the follower should update its state
+  _needsUpdate = true;
+}
+  
 bool TrajectoryFollower::setXData(const Trajectory::DataSource &src)
 {
 	if(_dataSource[0] == src) return _dataValid; // No changes to be made

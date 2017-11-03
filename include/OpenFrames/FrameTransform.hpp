@@ -102,10 +102,17 @@ class OF_EXPORT FrameTransform : public osg::Transform
  * Ravi Mathur
  * OpenFrames API, class TrajectoryFollower
  * This class updates a FrameTransform object with the position/attitude of a given
- * Trajectory which is to be followed.  It should be added as an update callback
+ * set of Trajectory objects. It should be added as an update callback
  * via frameTransformObject->setUpdateCallback(trajectoryFollowerObject).
- * Adjustable parameters are the time scale at which to follow the trajectory, and
+ * Adjustable parameters are the time scale at which to follow the trajectories, and
  * what to do if the current time is not in the trajectory's time list.
+ * If multiple trajectories are specified, then TrajectoryFollower chooses which
+ * one to follow based on the current time and follow mode.
+ * e.g.: Given trajectory set {T} and current time t
+ *  If t within time of trajectory T_i, then follow T_i
+ *  If t within time of {T} but not within any T_i, then follow closest T_i
+ *  If t not within time of {T}, then wrap t to time of {T} (based on follow mode)
+ *     and repeat first two criteria
 ***************************************************************/
 class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
 {
@@ -137,8 +144,15 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
 
 	// Set the trajectory to be followed
 	void setFollowTrajectory(Trajectory *traj);
+  
+  // Start following a trajectory
+  void followTrajectory(Trajectory *traj);
+  
+  // Stop following a trajectory
+  // If input is NULL, then stop following all trajectories
+  void unfollowTrajectory(Trajectory *traj);
 
-	// Set how the trajectory is followed
+	// Set how trajectories are followed
 	inline void setFollowType(unsigned int data, FollowMode mode)
 	{
 	  _data = data;
@@ -150,7 +164,7 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
 	  mode = _mode;
 	}
 
-	// Set where each component of position comes from
+	// Set source for each each position component
 	bool setXData(const Trajectory::DataSource &src);
 	bool setYData(const Trajectory::DataSource &src);
 	bool setZData(const Trajectory::DataSource &src);
