@@ -288,15 +288,16 @@ void TrajectoryFollower::setFollowTrajectory(Trajectory *traj)
   // Already following specified trajectory
 	if((_trajList.size() == 1) && (_trajList[0] == traj)) return;
   
-  // Reference new trajectory in case it's already in current list
+  // Reset currently followed trajectory pointer
+  _follow = NULL;
+ 
+  // Reference new trajectory so that it isn't deleted
+  // if it's already being followed
   osg::ref_ptr<Trajectory> tmptraj(traj);
   
   // Clear existing trajectory list and add new trajectory
   _trajList.clear();
-  _trajList.push_back(traj);
-  
-  // Reset currently followed trajectory pointer
-  _follow = NULL;
+  if(traj != NULL) _trajList.push_back(traj);
   
   // Check for valid data sources
   _dataValid = _verifyDataSources();
@@ -337,7 +338,7 @@ void TrajectoryFollower::unfollowTrajectory(Trajectory *traj)
     
     // Remove trajectory if it is followed
     // Note that we use erase-find instead of erase-remove because
-    // followed trajectories are unique
+    // followed trajectory list is unique
     _trajList.erase(std::find(_trajList.begin(), _trajList.end(), traj));
   }
   

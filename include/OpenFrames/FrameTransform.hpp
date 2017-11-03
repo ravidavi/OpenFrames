@@ -142,14 +142,17 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
 
 	META_Object(OpenFrames, TrajectoryFollower);
 
-	// Set the trajectory to be followed
+  // Follow ONLY the specified trajectory, and unfollow any others
+  // More efficient than unfollowTrajectory(NULL) -> followTrajectory(traj)
+  // NULL input: stop following all trajectories (same as unfollowTrajectory(NULL))
 	void setFollowTrajectory(Trajectory *traj);
   
-  // Start following a trajectory
+  // Add trajectory to be followed
+  // Has no effect if trajectory is already being followed
   void followTrajectory(Trajectory *traj);
   
   // Stop following a trajectory
-  // If input is NULL, then stop following all trajectories
+  // NULL input: stop following all trajectories
   void unfollowTrajectory(Trajectory *traj);
 
 	// Set how trajectories are followed
