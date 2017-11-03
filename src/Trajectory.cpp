@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2017 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -74,6 +74,24 @@ bool Trajectory::getTimeRange( DataType &begin, DataType &end ) const
 	return true;
 }
 
+double Trajectory::getTimeDistance(const DataType &t) const
+{
+  // Empty trajectory
+  if(_time.size() == 0) return DBL_MAX;
+
+  // Sort start/end times
+  double t0 = _time[0];
+  double tf = _time.back();
+  if(t0 > tf) std::swap(t0, tf);
+
+  // Compute distance from given time to this trajectory's time range
+  // Outside trajectory: distance >= 0 (to nearest start/end time)
+  // Inside trajectory: distance < 0 (metric zeros at start/end)
+  if(t <= t0) return (t0 - t); // Distance to t0
+  else if(t >= tf) return (t - tf); // Distance to tf
+  else return (t - t0)*(t - tf); // Quadratic metric always < 0
+}
+
 // Get the index such that times[index] and times[index+1] bound the given time
 int Trajectory::getTimeIndex(const DataType &t, int &index) const
 {
@@ -90,7 +108,7 @@ int Trajectory::getTimeIndex(const DataType &t, int &index) const
 	int direction = (_time[0] <= _time.back())?1:-1;
 
 	// Check if requested time is within [t0, tf] range
-	double val = (t - _time[0])*(t - _time.back());
+	double val = getTimeDistance(t);
 
 	// Requested time is out of bounds
 	if(val > 0)
@@ -416,15 +434,16 @@ unsigned int Trajectory::getNumPoints(const DataSource source[]) const
 	   source[1]._src == ZERO && 
 	   source[2]._src == ZERO) return UINT_MAX;
 
-	// Assume number of points to be equal to number of times
+	// Max number of points equals number of times
 	unsigned int numPoints = _time.size();
 
-	// Go through each data source, and make sure it has as many points as there are times
+        // Actual number of points can be reduced to the least number
+        // of elements of any data source
 	for(int i = 0; i < 3; ++i)
 	{
 	  if(source[i]._src == ATTITUDE && numPoints > _numAtt) 
 	    numPoints = _numAtt;
-	  else if(source[i]._src ==  POSOPT && numPoints > _numPos) 
+	  else if(source[i]._src == POSOPT && numPoints > _numPos) 
 	    numPoints = _numPos;
 	}
 

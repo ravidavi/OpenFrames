@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2017 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -113,11 +113,11 @@ class OF_EXPORT Trajectory : public osg::Referenced
 
 	/** Find the lower bounding index (in the time list) for the given time.
 	    Returns -2 if the requested time could not be found after a
-	    reasonable number of iterations. In this case, the returned value
-	    for index is invalid.
+	    reasonable number of iterations. In this case, index is the
+            last value computed before quitting the search.
 	    Returns -1 if the requested time is out of the time list's bounds:
-	      index = -1: Requested time before earliest time in list
-	      index = numTimes: Requested time after earliest time in list
+	      index = -1: Requested time before first time 
+	      index = numTimes: Requested time after last time 
 	    Returns 0 if the requested time is at the list's bounds:
 	      index = 0: Requested time is at start of time list
 	      index = numTimes-1: Requested time is at end of time list
@@ -130,6 +130,15 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	inline bool isEmpty() const { return _time.empty(); }
 	inline unsigned int getNumTimes() const { return _time.size(); }
 	virtual bool getTimeRange( DataType &begin, DataType &end ) const;
+
+        /** Get the "distance" from given time to this trajectory's time
+            range. Possible return values:
+             = DBL_MAX: No times in trajectory
+             > 0.0: Out of range, either after or before time range
+             = 0.0: At start or end of time range
+             < 0.0: Between start and end of time range
+        */
+        double getTimeDistance(const DataType &t) const;
 
 	/** Add a point with the given time to the end of the time list. */
 	virtual bool addTime( const DataType &t );

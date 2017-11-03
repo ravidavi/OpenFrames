@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2017 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -173,10 +173,33 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
   protected:
 	virtual ~TrajectoryFollower();
 
-	void _updatePosition(double time);
-	void _updateAttitude(double time);
+  // Compute adjusted time based on follow mode
+  double _computeTime(double time);
+  
+  // Choose trajectory to follow based on adjusted time
+  Trajectory* _chooseTrajectory(double time);
+  
+  // Update position & orientation based on adjusted time and chosen trajectory
+	void _updateState(double time, FollowData data);
+  
+  // Check if all followed trajectories support necessary data sources
+  bool _verifyDataSources() const
+  {
+    // Data sources are valid if all followed trajectories support them
+    bool dataValid = true;
+    for(auto traj : _trajList)
+    {
+      if(!traj->verifyData(_dataSource))
+      {
+        dataValid = false;
+        break;
+      }
+    }
+    return dataValid;
+  }
 
-	osg::ref_ptr<Trajectory> _follow; // Trajectory to be followed
+	std::vector<osg::ref_ptr<Trajectory> > _trajList; // All followed trajectories 
+  Trajectory* _follow; // Currently followed trajectory
 	FollowMode _mode; // Mode in which to follow trajectory
 	unsigned int _data; // Whether to follow position and/or attitude
 

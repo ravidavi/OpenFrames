@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2017 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include <osgUtil/CullVisitor>
 #include <iostream>
 #include <climits>
+#include <algorithm>
 
 namespace OpenFrames
 {
@@ -238,10 +239,11 @@ bool FrameTransform::computeWorldToLocalMatrix(osg::Matrix& matrix, osg::NodeVis
 }
 
 TrajectoryFollower::TrajectoryFollower(Trajectory *traj)
+  : _follow(NULL)
 {
 	setFollowTrajectory(traj);
 
-	unsigned int dof = _follow.valid()?_follow->getDOF():0;
+	unsigned int dof = traj?traj->getDOF():0;
 	Trajectory::DataSource dataPoint;
 
 	if(dof >= 1) 
@@ -283,9 +285,23 @@ TrajectoryFollower::~TrajectoryFollower() {}
 
 void TrajectoryFollower::setFollowTrajectory(Trajectory *traj)
 {
-	if(_follow == traj) return; // Already following specified trajectory
-	_dataValid = traj?traj->verifyData(_dataSource):false;
-	_follow = traj;
+  // Already following specified trajectory
+	if((_trajList.size() == 1) && (_trajList[0] == traj)) return;
+  
+  // Reference new trajectory in case it's already in current list
+  osg::ref_ptr<Trajectory> tmptraj(traj);
+  
+  // Clear existing trajectory list and add new trajectory
+  _trajList.clear();
+  _trajList.push_back(traj);
+  
+  // Reset currently followed trajectory pointer
+  _follow = NULL;
+  
+  // Check for valid data sources
+  _dataValid = _verifyDataSources();
+  
+  // Indicate that the follower should update its state
 	_needsUpdate = true;
 }
 
@@ -294,8 +310,8 @@ bool TrajectoryFollower::setXData(const Trajectory::DataSource &src)
 	if(_dataSource[0] == src) return _dataValid; // No changes to be made
 
 	_dataSource[0] = src; // Set new source
-	_dataValid = _follow.valid()?_follow->verifyData(_dataSource):false;
-	_needsUpdate = true;
+  _dataValid = _verifyDataSources(); // Check data validity
+	_needsUpdate = true; // Tell follower to update its state
 
 	return _dataValid;
 }
@@ -305,8 +321,8 @@ bool TrajectoryFollower::setYData(const Trajectory::DataSource &src)
 	if(_dataSource[1] == src) return _dataValid;
 
 	_dataSource[1] = src; // Set new source
-	_dataValid = _follow.valid()?_follow->verifyData(_dataSource):false;
-	_needsUpdate = true;
+  _dataValid = _verifyDataSources(); // Check data validity
+  _needsUpdate = true; // Tell follower to update its state
 
 	return _dataValid;
 }
@@ -316,8 +332,8 @@ bool TrajectoryFollower::setZData(const Trajectory::DataSource &src)
 	if(_dataSource[2] == src) return _dataValid;
 
 	_dataSource[2] = src; // Set new source
-	_dataValid = _follow.valid()?_follow->verifyData(_dataSource):false;
-	_needsUpdate = true;
+  _dataValid = _verifyDataSources(); // Check data validity
+  _needsUpdate = true; // Tell follower to update its state
 
 	return _dataValid;
 }
@@ -365,13 +381,12 @@ void TrajectoryFollower::reset()
 
 void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
 {
-	if(!_follow.valid()) return; // Make sure trajectory is defined
-
 	double refTime = nv->getFrameStamp()->getReferenceTime();
 
-	if(_latestTime != refTime)
+        // Make sure trajectories are defined and time has changed
+	if(!_trajList.empty() && (_latestTime != refTime))
 	{ 
-	  if(_latestTime == DBL_MAX) // First call, so we need to initialize variables
+	  if(_latestTime == DBL_MAX) // First call, initialize variables
 	  {
 	    _latestTime = refTime; // Store the current time
 	    reset(); // Initialize times
@@ -380,31 +395,45 @@ void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
 
 	  if(!_paused || _needsUpdate)
 	  {
-	    // Compute current simulation time as t = _offset + _delta + _tscale*_time
+	    // Current simulation time = _offset + _delta + _tscale*_time
 	    double time = _offsetTime + _deltaTime;
 	    if(_paused) time += _timeScale*_pauseTime;
 	    else time += _timeScale*_latestTime;
 
-	    // Prevent trajectory data from being modified while we are
-	    // using it in computations.
-	    _follow->lockData();
+	    // Prevent trajectories from being modified while reading them
+      for(auto traj : _trajList)
+      {
+        traj->lockData();
+      }
+      
+      // Compute adjusted time based on follow mode
+      double tNew = _computeTime(time);
+      
+      // Choose trajectory based on adjusted time
+      _follow = _chooseTrajectory(tNew);
+
+      // Unlock all trajectories except the one being followed
+      for(auto traj : _trajList)
+      {
+        if(traj != _follow) traj->unlockData();
+      }
 
 	    // Apply new position/attitude to the FrameTransform
 	    FrameTransform *ft = static_cast<FrameTransform*>(node);
-
+      
 	    if(_dataValid && (_data & POSITION)) 
 	    {
-	      _updatePosition(time);
+	      _updateState(tNew, POSITION);
 	      ft->setPosition(_v1[0], _v1[1], _v1[2]);
 	    }
 
 	    if(_data & ATTITUDE) 
 	    {
-	      _updateAttitude(time);
+	      _updateState(tNew, ATTITUDE);
 	      ft->setAttitude(_a1[0], _a1[1], _a1[2], _a1[3]);
 	    }
 
-	    _follow->unlockData(); // Free up the trajectory data
+	    _follow->unlockData(); // Unlock followed trajectory
 
 	    _needsUpdate = false; // Reset update flag
 	  }
@@ -414,198 +443,164 @@ void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
 	osg::NodeCallback::traverse(node, nv);
 }
 
-void TrajectoryFollower::_updatePosition(double time)
+double TrajectoryFollower::_computeTime(double time)
 {
-	int val, index = 0;
-	bool dointerp = false;
+  // Compute start and end times over all trajectories
+  double t0 = DBL_MAX;
+  double tf = -DBL_MAX;
+  for(auto traj : _trajList)
+  {
+    // Get current trajectory's start & end time
+    double traj_t0, traj_tf;
+    if(!traj->getTimeRange(traj_t0, traj_tf)) continue;
+    if(traj_t0 > traj_tf) std::swap(traj_t0, traj_tf); // Enforce t0<=tf
 
-	// Get list of times for the followed Trajectory
-	const Trajectory::DataArray& times = _follow->getTimeList();
+    // Update global start & end times
+    if(traj_t0 < t0) t0 = traj_t0;
+    if(traj_tf > tf) tf = traj_tf;
+  }
 
-	// Number of position points supported by Trajectory
-	unsigned int numPoints = _follow->getNumPoints(_dataSource);
-	if(numPoints == UINT_MAX) numPoints = 1;
-	else if(numPoints == 0)
-	{
-	  _v1.set(0.0, 0.0, 0.0);
-	  return;
-	}
+  // Error check
+  if((t0 == DBL_MAX) || (tf == -DBL_MAX)) return time;
 
-	// Find requested time in the Trajectory
-	val = _follow->getTimeIndex(time, index);
+  // LIMIT mode: don't wrap time
+  if(_mode == LIMIT) return time;
 
-	if(val >= 0) dointerp = true; // Time not out of range
-	else if(val == -1) // Time out of range
-	{
-	  if(_mode == LIMIT) // Set frame to either end of the trajectory
-	  {
-	    if(index < 0) // Requested time is before times in trajectory
-	    {
-	      _follow->getPoint(0, _dataSource, _v1._v);
-	    }
-	    else // Requested time is after times in trajectory
-	    {
-	      _follow->getPoint(numPoints-1, _dataSource, _v1._v);
-	    }
-	  }
-	  else if(_mode == LOOP) // Loop indefinitely
-	  {
-	    double near, far;
+  // Otherwise LOOP mode: wrap time to [t0, tf]
 
-	    // Determine which side of the trajectory's times we are on
-	    if(index < 0) { near = times[0]; far = times[numPoints-1]; }
-	    else { near = times[numPoints-1]; far = times[0]; }
+  // If [t0, tf] range is too small, then just use t0
+  if(tf - t0 <= 8.0*DBL_MIN) return t0;
 
-	    // All points are at the same time, so just use the first point
-	    if(fabs(near-far) <= 1.0e-12)
-	    {
-	      _follow->getPoint(0, _dataSource, _v1._v);
-	    }
-	    else // Shift time such that it lies within range of the trajectory
-	    {
-	      time = time + ((int)ceil(fabs((near-time)/(far-near))))*(far-near);
-	      val = _follow->getTimeIndex(time, index);
-	      if(val >= 0) dointerp = true; // Interpolate time
-	      else if(val == -1) 
-	      {
-		std::cerr<< "FrameTransform::_updatePosition() error: Shifted time is still not within Trajectory's range!" << std::endl;
-	      }
-	      else if(val == -2)
-	      {
-		std::cerr<< "FrameTransform::_updatePosition() error: Shifted time cannot be found within a finite number of iterations!" << std::endl;
-	      }
-	      else
-	      {
-		std::cerr<< "FrameTransform::_updatePosition() error: Unhandled return value after shifting time!" << std::endl;
-	      }
-	    }
-	  }
-	}
-	else if(val == -2) // Error in search (endless iterations)
-	{
-	  std::cerr<< "FrameTransform::_updatePosition() error: Requested time not found in a reasonable number of iterations!" << std::endl;
-	}
-	else // Unhandled return value from getTimeIndex()
-	{
-	  std::cerr<< "FrameTransform::_updatePosition() error: Unhandled return value!" << std::endl;
-	}
-
-	// Interpolate to find position at adjusted time
-	if(dointerp && (index < (int)numPoints))
-	{
-	  // Get the first position used for interpolation
-	  _follow->getPoint(index, _dataSource, _v1._v);
-
-	  // Interpolate only if requested time is fully inside time range and
-	  // the two interpolation times are not equal.
-	  if((index+1 < (int)numPoints) && (times[index] != times[index+1]))
-	  {
-	    double frac = (time - times[index])/(times[index+1] - times[index]);
-
-	    // Get the second position used for interpolation
-	    _follow->getPoint(index+1, _dataSource, _v2._v);
-	    _v1 = _v1 + (_v2-_v1)*frac; // Linear interpolation
-	  }
-	}
+  // All error checks done, now wrap!
+  double tnew = time - std::floor((time - t0)/(tf - t0))*(tf - t0);
+  return tnew;
 }
 
-void TrajectoryFollower::_updateAttitude(double time)
+Trajectory* TrajectoryFollower::_chooseTrajectory(double time)
 {
-	int val, index = 0;
-	bool dointerp = false;
+  // If there is only one trajectory in the list, then use it
+  if(_trajList.size() == 1) return _trajList[0];
 
-	// Get list of times for the followed Trajectory
-	const Trajectory::DataArray& times = _follow->getTimeList();
+  // If current trajectory contains given time, then continue using it
+  if(_follow && (_follow->getTimeDistance(time) <= 0.0)) return _follow;
 
-	// Number of attitude points supported by Trajectory
-	unsigned int numPoints = _follow->getNumAtt();
-	if(numPoints == 0)
-	{
-	  _a1.set(0.0, 0.0, 0.0, 1.0);
-	  return;
-	}
+  // Find first trajectory that contains given time
+  double minTimeDistance = DBL_MAX;
+  Trajectory* minTimeDistanceTraj = _trajList[0];
+  for(auto traj : _trajList)
+  {
+    // Get distance from given time to current trajectory time range
+    double dist = traj->getTimeDistance(time);
 
-	// Find requested time in the Trajectory
-	val = _follow->getTimeIndex(time, index);
+    // Use trajectory if it contains given time
+    if(dist <= 0.0) return traj;
 
-	if(val >= 0) dointerp = true; // Time not out of range
-	else if(val == -1) // Time out of range
-	{
-	  if(_mode == LIMIT) // Set frame to either end of the trajectory
-	  {
-	    if(index < 0) // Requested time is before times in trajectory
-	    {
-	      _follow->getAttitude(0, _a1[0], _a1[1], _a1[2], _a1[3]);
-	    }
-	    else // Requested time is after times in trajectory
-	    {
-	      _follow->getAttitude(numPoints-1, _a1[0], _a1[1], _a1[2], _a1[3]);
-	    }
-	  }
-	  else if(_mode == LOOP) // Loop indefinitely
-	  {
-	    double near, far;
+    // Otherwise save this as a candidate for "closest" trajectory
+    else if(dist < minTimeDistance)
+    {
+      minTimeDistance = dist;
+      minTimeDistanceTraj = traj;
+    }
+  }
 
-	    // Determine which side of the trajectory's times we are on
-	    if(index < 0) { near = times[0]; far = times[numPoints-1]; }
-	    else { near = times[numPoints-1]; far = times[0]; }
+  // No trajectories contain given time, so use the closest trajectory
+  return minTimeDistanceTraj;
+}
 
-	    // All points are at the same time, so just use the first point
-	    if(fabs(near-far) <= 1.0e-12)
-	    {
-	      _follow->getAttitude(0, _a1[0], _a1[1], _a1[2], _a1[3]);
-	    }
-	    else // Shift time such that it lies within range of the trajectory
-	    {
-	      time = time + ((int)ceil(fabs((near-time)/(far-near))))*(far-near);
-	      val = _follow->getTimeIndex(time, index);
-	      if(val >= 0) dointerp = true; // Interpolate time
-	      else if(val == -1) 
-	      {
-		std::cerr<< "FrameTransform::_updateAttitude() error: Shifted time is still not within Trajectory's range!" << std::endl;
-	      }
-	      else if(val == -2)
-	      {
-		std::cerr<< "FrameTransform::_updateAttitude() error: Shifted time cannot be found within a finite number of iterations!" << std::endl;
-	      }
-	      else
-	      {
-		std::cerr<< "FrameTransform::_updateAttitude() error: Unhandled return value after shifting time!" << std::endl;
-	      }
-	    }
-	  }
-	}
-	else if(val == -2) // Error in search (endless iterations)
-	{
-	  std::cerr<< "FrameTransform::_updateAttitude() error: Requested time not found in a reasonable number of iterations!" << std::endl;
-	}
-	else // Unhandled return value from getTimeIndex()
-	{
-	  std::cerr<< "FrameTransform::_updateAttitude() error: Unhandled return value!" << std::endl;
-	}
+void TrajectoryFollower::_updateState(double time, TrajectoryFollower::FollowData data)
+{
+  int val, index = 0;
 
-	// Interpolate to find attitude at adjusted time
-	if(dointerp && (index < (int)numPoints))
-	{
-	  // Get the first attitude used for interpolation
-	  _follow->getAttitude(index, _a1[0], _a1[1], _a1[2], _a1[3]);
+  // Get list of times for the followed Trajectory
+  const Trajectory::DataArray& times = _follow->getTimeList();
 
-	  // Interpolate only if requested time is fully inside time range and
-	  // the two interpolation times are not equal.
-	  if((index+1 < (int)numPoints) && (times[index] != times[index+1]))
-	  {
-	    double frac = (time - times[index])/(times[index+1] - times[index]);
+  // Number of position points supported by Trajectory
+  unsigned int numPoints;
+  if(data == POSITION)
+    numPoints = _follow->getNumPoints(_dataSource);
+  else
+    numPoints = _follow->getNumAtt();
+  
+  // If no points or ZERO used for position, then directly zero out state
+  if(numPoints == 0 || numPoints == UINT_MAX)
+  {
+    if(data == POSITION)
+      _v1.set(0.0, 0.0, 0.0);
+    else
+      _a1.set(0.0, 0.0, 0.0, 1.0);
+    return;
+  }
 
-	    // Get the second attitude used for interpolation
-	    _follow->getAttitude(index+1, _a2[0], _a2[1], _a2[2], _a2[3]);
-	    _a1.slerp(frac, _a1, _a2); // Spherical interpolation for attitude
-	  }
-	}
+  // Find requested time in the Trajectory
+  val = _follow->getTimeIndex(time, index);
+
+  if(val >= 0) // Time not out of range, so interpolate
+  {
+    // Check that time index is less than actual number of points
+    if(index < (int)numPoints)
+    {
+      // Get the first point used for interpolation
+      if(data == POSITION)
+        _follow->getPoint(index, _dataSource, _v1._v);
+      else
+        _follow->getAttitude(index, _a1[0], _a1[1], _a1[2], _a1[3]);
+      
+      // Interpolate if the two times are not equal
+      if((index+1 < (int)numPoints) && (times[index] != times[index+1]))
+      {
+        // Get second interpolation point and do interpolation
+        if(data == POSITION)
+        {
+          _follow->getPoint(index+1, _dataSource, _v2._v);
+          double frac = (time - times[index])/(times[index+1] - times[index]);
+          _v1 = _v1 + (_v2-_v1)*frac; // Linear interpolation
+        }
+        else
+        {
+          _follow->getAttitude(index+1, _a2[0], _a2[1], _a2[2], _a2[3]);
+          double frac = (time - times[index])/(times[index+1] - times[index]);
+          _a1.slerp(frac, _a1, _a2); // Spherical interpolation for attitude
+        }
+      }
+    }
+    else // Otherwise use last available point
+    {
+      if(data == POSITION)
+        _follow->getPoint(numPoints-1, _dataSource, _v1._v);
+      else
+        _follow->getAttitude(numPoints-1, _a1[0], _a1[1], _a1[2], _a1[3]);
+    }
+  }
+  else if(val == -1) // Time out of range
+  {
+    if(index < 0) // Requested time before first time
+    {
+      if(data == POSITION)
+        _follow->getPoint(0, _dataSource, _v1._v);
+      else
+        _follow->getAttitude(0, _a1[0], _a1[1], _a1[2], _a1[3]);
+    }
+    else // Requested time after last time
+    {
+      if(data == POSITION)
+        _follow->getPoint(numPoints-1, _dataSource, _v1._v);
+      else
+        _follow->getAttitude(numPoints-1, _a1[0], _a1[1], _a1[2], _a1[3]);
+    }
+  }
+  else if(val == -2) // Error in search (endless iterations)
+  {
+    std::cerr<< "FrameTransform::_updateState() error: Requested time not found in a reasonable number of iterations!" << std::endl;
+  }
+  else // Unhandled return value from getTimeIndex()
+  {
+    std::cerr<< "FrameTransform::_updateState() error: Unhandled return value!" << std::endl;
+  }
 }
 
 TimeManagementVisitor::TimeManagementVisitor()
 {
-	setTraversalMode(TRAVERSE_ALL_CHILDREN);
+  setTraversalMode(TRAVERSE_ALL_CHILDREN);
 
 	_pauseState = false;
 	_changePauseState = _changeOffsetTime = _changeTimeScale = false;
@@ -654,4 +649,5 @@ void TimeManagementVisitor::apply(osg::Transform &node)
 	// Traverse & pause children if needed
 	osg::NodeVisitor::traverse(node);
 }
+  
 } // !namespace OpenFrames
