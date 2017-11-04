@@ -25,6 +25,7 @@
 #include <osg/Vec3d>
 #include <osg/Vec4d>
 #include <osg/ref_ptr>
+#include <OpenThreads/Mutex>
 
 namespace OpenFrames
 {
@@ -233,6 +234,8 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
 	  // User-specified variables for time control
 	double _offsetTime; // Constant time offset
 	double _timeScale; // Time scale
+  
+  OpenThreads::Mutex _mutex; // For adding/removing followed trajectories
 
   private:
 	osg::Vec3d _v1, _v2; // Used for position interpolation

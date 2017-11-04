@@ -16,6 +16,7 @@
 
 #include <OpenFrames/FrameTransform.hpp>
 #include <osgUtil/CullVisitor>
+#include <OpenThreads/ScopedLock>
 #include <iostream>
 #include <climits>
 #include <algorithm>
@@ -285,6 +286,8 @@ TrajectoryFollower::~TrajectoryFollower() {}
 
 void TrajectoryFollower::setFollowTrajectory(Trajectory *traj)
 {
+  OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
+  
   // Already following specified trajectory
 	if((_trajList.size() == 1) && (_trajList[0] == traj)) return;
   
@@ -308,6 +311,8 @@ void TrajectoryFollower::setFollowTrajectory(Trajectory *traj)
   
 void TrajectoryFollower::followTrajectory(Trajectory *traj)
 {
+  OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
+
   if(traj == NULL) return; // Error check
   
   // Already following specified trajectory
@@ -325,6 +330,8 @@ void TrajectoryFollower::followTrajectory(Trajectory *traj)
 
 void TrajectoryFollower::unfollowTrajectory(Trajectory *traj)
 {
+  OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
+
   // Unfollow all trajectories
   if(traj == NULL)
   {
@@ -427,8 +434,8 @@ void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
 {
 	double refTime = nv->getFrameStamp()->getReferenceTime();
 
-        // Make sure trajectories are defined and time has changed
-	if(!_trajList.empty() && (_latestTime != refTime))
+  // Make time has changed
+	if(_latestTime != refTime)
 	{ 
 	  if(_latestTime == DBL_MAX) // First call, initialize variables
 	  {
@@ -436,8 +443,12 @@ void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
 	    reset(); // Initialize times
 	  }
 	  else _latestTime = refTime; // Just store the current time
-
-	  if(!_paused || _needsUpdate)
+    
+    // Don't allow followed trajectory list to be modified
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
+    
+    // Follow trajectory as needed
+	  if(!_trajList.empty() && (!_paused || _needsUpdate))
 	  {
 	    // Current simulation time = _offset + _delta + _tscale*_time
 	    double time = _offsetTime + _deltaTime;
