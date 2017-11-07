@@ -240,37 +240,10 @@ bool FrameTransform::computeWorldToLocalMatrix(osg::Matrix& matrix, osg::NodeVis
 }
 
 TrajectoryFollower::TrajectoryFollower(Trajectory *traj)
-  : _follow(NULL)
+  : _follow(NULL), _usingDefaultData(true)
 {
 	setFollowTrajectory(traj);
-
-	unsigned int dof = traj?traj->getDOF():0;
-	Trajectory::DataSource dataPoint;
-
-	if(dof >= 1) 
-	{
-	  dataPoint._src = Trajectory::POSOPT;
-	  dataPoint._element = 0;
-	}
-	else dataPoint._src = Trajectory::ZERO;
-	setXData(dataPoint);
-
-	if(dof >= 2)
-	{
-	  dataPoint._src = Trajectory::POSOPT;
-	  dataPoint._element = 1;
-	}
-	else dataPoint._src = Trajectory::ZERO;
-	setYData(dataPoint);
-
-	if(dof >= 3)
-	{
-	  dataPoint._src = Trajectory::POSOPT;
-	  dataPoint._element = 2;
-	}
-	else dataPoint._src = Trajectory::ZERO;
-	setZData(dataPoint);
-
+  
 	_mode = LOOP;
 	_data = POSITION + ATTITUDE;
 
@@ -302,8 +275,11 @@ void TrajectoryFollower::setFollowTrajectory(Trajectory *traj)
   _trajList.clear();
   if(traj != NULL) _trajList.push_back(traj);
   
+  // Set default data sources if needed
+  if(_usingDefaultData) setDefaultData();
+  
   // Check for valid data sources
-  _dataValid = _verifyDataSources();
+  else _dataValid = _verifyDataSources();
   
   // Indicate that the follower should update its state
 	_needsUpdate = true;
@@ -321,8 +297,11 @@ void TrajectoryFollower::followTrajectory(Trajectory *traj)
   // Add new trajectory
   _trajList.push_back(traj);
   
+  // Set default data sources if needed
+  if(_usingDefaultData) setDefaultData();
+  
   // Check for valid data sources
-  _dataValid = _verifyDataSources();
+  else _dataValid = _verifyDataSources();
   
   // Indicate that the follower should update its state
   _needsUpdate = true;
@@ -349,8 +328,11 @@ void TrajectoryFollower::unfollowTrajectory(Trajectory *traj)
     _trajList.erase(std::find(_trajList.begin(), _trajList.end(), traj));
   }
   
+  // Set default data sources if needed
+  if(_usingDefaultData) setDefaultData();
+  
   // Check for valid data sources
-  _dataValid = _verifyDataSources();
+  else _dataValid = _verifyDataSources();
   
   // Indicate that the follower should update its state
   _needsUpdate = true;
@@ -363,6 +345,7 @@ bool TrajectoryFollower::setXData(const Trajectory::DataSource &src)
 	_dataSource[0] = src; // Set new source
   _dataValid = _verifyDataSources(); // Check data validity
 	_needsUpdate = true; // Tell follower to update its state
+  _usingDefaultData = false;
 
 	return _dataValid;
 }
@@ -374,6 +357,7 @@ bool TrajectoryFollower::setYData(const Trajectory::DataSource &src)
 	_dataSource[1] = src; // Set new source
   _dataValid = _verifyDataSources(); // Check data validity
   _needsUpdate = true; // Tell follower to update its state
+  _usingDefaultData = false;
 
 	return _dataValid;
 }
@@ -385,10 +369,47 @@ bool TrajectoryFollower::setZData(const Trajectory::DataSource &src)
 	_dataSource[2] = src; // Set new source
   _dataValid = _verifyDataSources(); // Check data validity
   _needsUpdate = true; // Tell follower to update its state
+  _usingDefaultData = false;
 
 	return _dataValid;
 }
 
+void TrajectoryFollower::setDefaultData()
+{
+  // Get DOF for first followed trajectory
+  unsigned int dof = _trajList.empty()?0:_trajList[0]->getDOF();
+  Trajectory::DataSource dataPoint;
+  
+  // Use X data if at least 1 DOF
+  if(dof >= 1)
+  {
+    dataPoint._src = Trajectory::POSOPT;
+    dataPoint._element = 0;
+  }
+  else dataPoint._src = Trajectory::ZERO;
+  setXData(dataPoint);
+  
+  // Use X/Y data if at least 2 DOF
+  if(dof >= 2)
+  {
+    dataPoint._src = Trajectory::POSOPT;
+    dataPoint._element = 1;
+  }
+  else dataPoint._src = Trajectory::ZERO;
+  setYData(dataPoint);
+  
+  // Use X/Y/Z data if at least 3 DOF
+  if(dof >= 3)
+  {
+    dataPoint._src = Trajectory::POSOPT;
+    dataPoint._element = 2;
+  }
+  else dataPoint._src = Trajectory::ZERO;
+  setZData(dataPoint);
+  
+  _usingDefaultData = true;
+}
+  
 void TrajectoryFollower::setTimeScale(double timeScale)
 {
 	if(_timeScale != timeScale)

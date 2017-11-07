@@ -172,6 +172,13 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
 	bool setXData(const Trajectory::DataSource &src);
 	bool setYData(const Trajectory::DataSource &src);
 	bool setZData(const Trajectory::DataSource &src);
+  
+  // Set default sources for all position components
+  // This means standard X/Y/Z components for position
+  // If following multiple trajectories, then use info for
+  // first followed trajectory to determine data availability
+  void setDefaultData();
+  bool getUsingDefaultData() { return _usingDefaultData; }
 
 	// Time managment functions			 
 	void setTimeScale(double timeScale);
@@ -204,16 +211,11 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
   bool _verifyDataSources() const
   {
     // Data sources are valid if all followed trajectories support them
-    bool dataValid = true;
     for(auto traj : _trajList)
     {
-      if(!traj->verifyData(_dataSource))
-      {
-        dataValid = false;
-        break;
-      }
+      if(!traj->verifyData(_dataSource)) return false;
     }
-    return dataValid;
+    return true;
   }
 
 	std::vector<osg::ref_ptr<Trajectory> > _trajList; // All followed trajectories 
@@ -224,6 +226,7 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
 	  // Specifies which data to follow in the trajectory
 	Trajectory::DataSource _dataSource[3];
 	bool _dataValid; // Test if Trajectory supports needed data
+  bool _usingDefaultData; // Whether to use default data sources
 
 	  // These variables allow for pausing/resuming animation
 	bool _paused, _needsUpdate;
