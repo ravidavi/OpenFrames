@@ -131,7 +131,7 @@ int main()
     drawtraj->addArtist(ca);
     
     // Follow the trajectory (by default in LOOP mode)
-    tf1->followTrajectory(trajset1[i]);
+    tf1->addTrajectory(trajset1[i]);
   }
   
   // Create a drawable trajectory to hold the center marker
@@ -187,7 +187,7 @@ int main()
     drawtraj->addArtist(ca);
     
     // Follow the trajectory (by default in LOOP mode)
-    tf2->followTrajectory(trajset2[i]);
+    tf2->addTrajectory(trajset2[i]);
   }
   
   // Create a drawable trajectory to hold the center marker
@@ -243,7 +243,7 @@ int main()
     drawtraj->addArtist(ca);
     
     // Follow the trajectory (by default in LOOP mode)
-    tf3->followTrajectory(trajset3[i]);
+    tf3->addTrajectory(trajset3[i]);
   }
   
   // Create a drawable trajectory to hold the center marker

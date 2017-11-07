@@ -146,15 +146,15 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
   // Follow ONLY the specified trajectory, and unfollow any others
   // More efficient than unfollowTrajectory(NULL) -> followTrajectory(traj)
   // NULL input: stop following all trajectories (same as unfollowTrajectory(NULL))
-	void setFollowTrajectory(Trajectory *traj);
+	void setTrajectory(Trajectory *traj);
   
   // Add trajectory to be followed
   // Has no effect if trajectory is already being followed
-  void followTrajectory(Trajectory *traj);
+  void addTrajectory(Trajectory *traj);
   
   // Stop following a trajectory
   // NULL input: stop following all trajectories
-  void unfollowTrajectory(Trajectory *traj);
+  void removeTrajectory(Trajectory *traj);
 
 	// Set how trajectories are followed
 	inline void setFollowType(unsigned int data, FollowMode mode)

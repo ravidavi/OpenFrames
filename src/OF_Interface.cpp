@@ -1533,7 +1533,7 @@ void OF_FCN(offrame_followtrajectory)(OF_CHARARG(name))
 	  }
 	  else // Otherwise just update the existing TrajectoryFollower
 	  {
-	    tf->setFollowTrajectory(traj);
+	    tf->setTrajectory(traj);
 	  }
       _objs->_intVal = 0;
     }

@@ -242,7 +242,7 @@ bool FrameTransform::computeWorldToLocalMatrix(osg::Matrix& matrix, osg::NodeVis
 TrajectoryFollower::TrajectoryFollower(Trajectory *traj)
   : _follow(NULL), _usingDefaultData(true)
 {
-	setFollowTrajectory(traj);
+	setTrajectory(traj);
   
 	_mode = LOOP;
 	_data = POSITION + ATTITUDE;
@@ -257,7 +257,7 @@ TrajectoryFollower::TrajectoryFollower(Trajectory *traj)
 
 TrajectoryFollower::~TrajectoryFollower() {}
 
-void TrajectoryFollower::setFollowTrajectory(Trajectory *traj)
+void TrajectoryFollower::setTrajectory(Trajectory *traj)
 {
   OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
   
@@ -285,7 +285,7 @@ void TrajectoryFollower::setFollowTrajectory(Trajectory *traj)
 	_needsUpdate = true;
 }
   
-void TrajectoryFollower::followTrajectory(Trajectory *traj)
+void TrajectoryFollower::addTrajectory(Trajectory *traj)
 {
   OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
 
@@ -307,7 +307,7 @@ void TrajectoryFollower::followTrajectory(Trajectory *traj)
   _needsUpdate = true;
 }
 
-void TrajectoryFollower::unfollowTrajectory(Trajectory *traj)
+void TrajectoryFollower::removeTrajectory(Trajectory *traj)
 {
   OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
 
