@@ -18,6 +18,7 @@
 #include "renderthread.h"
 #include "renderproxy.h"
 #include "mainwindow.h"
+#include <QtGlobal>
 #include <QComboBox>
 #include <QVBoxLayout>
 #include <QKeyEvent>
