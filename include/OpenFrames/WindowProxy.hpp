@@ -181,10 +181,17 @@ namespace OpenFrames
     /** Shut down the WindowProxy entirely. */
     void shutdown() { _viewer->setDone(true); }
     
-    /** Pause animation of the scene. This stops the update/cull/draw cycle
-	    and the proxy's window will not be drawn to. */
+    /** Time control */
+    void setTime(double time);
+    double getTime() const { return _currTime; }
+    void pauseTime(bool pause);
+    bool isTimePaused() const { return _timePaused; }
+    void setTimeScale(double tscale);
+    double getTimeScale() const { return _timeScale; }
+    
+    /** Animation loop control (event/update/render) */
     void pauseAnimation(bool pause);
-    bool isAnimationPaused() const { return _pause; }
+    bool isAnimationPaused() const { return _animPaused; }
     bool isAnimating() const { return _isAnimating; }
     
     /** Set the desired framerate at which animation should occur. */
@@ -313,10 +320,11 @@ namespace OpenFrames
     
     FramerateLimiter _frameThrottle; // Controls animation framerate
     
-    /** Variables dealing with starting/stopping/pausing animation. */	
-    bool _pause;
-    osg::Timer_t _startTime, _pauseTime;
-    bool _isAnimating; // Whether the animation loop has started or not (regardless of pause state)
+    /** Time control variables */
+    bool _animPaused, _isAnimating;
+    bool _timePaused;
+    osg::Timer_t _Tref;
+    double _currTime, _offsetTime, _timeScale;
     
     bool _useVR; // Whether to use VR rendering
     osg::ref_ptr<OpenVRDevice> _ovrDevice; // OpenVR interface

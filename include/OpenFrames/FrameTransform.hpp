@@ -109,11 +109,10 @@ class OF_EXPORT FrameTransform : public osg::Transform
  * what to do if the current time is not in the trajectory's time list.
  * If multiple trajectories are specified, then TrajectoryFollower chooses which
  * one to follow based on the current time and follow mode.
- * e.g.: Given trajectory set {T} and current time t
- *  If t within time of trajectory T_i, then follow T_i
- *  If t within time of {T} but not within any T_i, then follow closest T_i
+ * e.g.: Given trajectory T_i, set of trajectories {T}, and current time t
  *  If t not within time of {T}, then wrap t to time of {T} (based on follow mode)
- *     and repeat first two criteria
+ *  If t within time of {T} but not within any T_i, then follow closest T_i
+ *  If t within time of T_i, then follow T_i
 ***************************************************************/
 class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
 {

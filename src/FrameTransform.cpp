@@ -453,30 +453,30 @@ void TrajectoryFollower::reset()
 
 void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
 {
-	double refTime = nv->getFrameStamp()->getReferenceTime();
-
-  // Make time has changed
-	if(_latestTime != refTime)
-	{ 
-	  if(_latestTime == DBL_MAX) // First call, initialize variables
-	  {
-	    _latestTime = refTime; // Store the current time
-	    reset(); // Initialize times
-	  }
-	  else _latestTime = refTime; // Just store the current time
+  double simTime = nv->getFrameStamp()->getSimulationTime();
+  
+  // Make sure time has changed
+  if(_latestTime != simTime || _needsUpdate)
+  {
+    if(_latestTime == DBL_MAX) // First call, initialize variables
+    {
+      _latestTime = simTime; // Store the current time
+      reset(); // Initialize times
+    }
+    else _latestTime = simTime; // Just store the current time
     
     // Don't allow followed trajectory list to be modified
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
     
     // Follow trajectory as needed
-	  if(!_trajList.empty() && (!_paused || _needsUpdate))
-	  {
-	    // Current simulation time = _offset + _delta + _tscale*_time
-	    double time = _offsetTime + _deltaTime;
-	    if(_paused) time += _timeScale*_pauseTime;
-	    else time += _timeScale*_latestTime;
-
-	    // Prevent trajectories from being modified while reading them
+    if(!_trajList.empty() && (!_paused || _needsUpdate))
+    {
+      // Modified simulation time = _offset + _delta + _tscale*_time
+      double time = _offsetTime + _deltaTime;
+      if(_paused) time += _timeScale*_pauseTime;
+      else time += _timeScale*_latestTime;
+      
+      // Prevent trajectories from being modified while reading them
       for(auto traj : _trajList)
       {
         traj->lockData();
@@ -487,40 +487,43 @@ void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
       
       // Choose trajectory based on adjusted time
       _follow = _chooseTrajectory(tNew);
-
+      
       // Unlock all trajectories except the one being followed
       for(auto traj : _trajList)
       {
         if(traj != _follow) traj->unlockData();
       }
-
-	    // Apply new position/attitude to the FrameTransform
-	    FrameTransform *ft = static_cast<FrameTransform*>(node);
       
-	    if(_dataValid && (_data & POSITION)) 
-	    {
-	      _updateState(tNew, POSITION);
-	      ft->setPosition(_v1[0], _v1[1], _v1[2]);
-	    }
-
-	    if(_data & ATTITUDE) 
-	    {
-	      _updateState(tNew, ATTITUDE);
-	      ft->setAttitude(_a1[0], _a1[1], _a1[2], _a1[3]);
-	    }
-
-	    _follow->unlockData(); // Unlock followed trajectory
-
-	    _needsUpdate = false; // Reset update flag
-	  }
-	}
-
-	// Call nested callbacks and traverse rest of scene graph
-	osg::NodeCallback::traverse(node, nv);
+      // Apply new position/attitude to the FrameTransform
+      FrameTransform *ft = static_cast<FrameTransform*>(node);
+      
+      if(_dataValid && (_data & POSITION))
+      {
+        _updateState(tNew, POSITION);
+        ft->setPosition(_v1[0], _v1[1], _v1[2]);
+      }
+      
+      if(_data & ATTITUDE)
+      {
+        _updateState(tNew, ATTITUDE);
+        ft->setAttitude(_a1[0], _a1[1], _a1[2], _a1[3]);
+      }
+      
+      _follow->unlockData(); // Unlock followed trajectory
+      
+      _needsUpdate = false; // Reset update flag
+    }
+  }
+  
+  // Call nested callbacks and traverse rest of scene graph
+  osg::NodeCallback::traverse(node, nv);
 }
 
 double TrajectoryFollower::_computeTime(double time)
 {
+  // LIMIT mode: don't wrap time
+  if(_mode == LIMIT) return time;
+  
   // Compute start and end times over all trajectories
   double t0 = DBL_MAX;
   double tf = -DBL_MAX;
@@ -539,15 +542,10 @@ double TrajectoryFollower::_computeTime(double time)
   // Error check
   if((t0 == DBL_MAX) || (tf == -DBL_MAX)) return time;
 
-  // LIMIT mode: don't wrap time
-  if(_mode == LIMIT) return time;
-
-  // Otherwise LOOP mode: wrap time to [t0, tf]
-
   // If [t0, tf] range is too small, then just use t0
   if(tf - t0 <= 8.0*DBL_MIN) return t0;
 
-  // All error checks done, now wrap!
+  // All error checks done, now wrap time to [t0, tf]
   double tnew = time - std::floor((time - t0)/(tf - t0))*(tf - t0);
   return tnew;
 }

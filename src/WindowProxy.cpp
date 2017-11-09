@@ -465,7 +465,8 @@ namespace OpenFrames
   
   WindowProxy::WindowProxy( int x, int y, unsigned int width, unsigned int height,
                            unsigned int nrow, unsigned int ncol, bool embedded, bool useVR )
-  : _winID(0), _nRow(0), _nCol(0), _isEmbedded(embedded), _pause(false), _isAnimating(false), _useVR(useVR)
+  : _winID(0), _nRow(0), _nCol(0), _isEmbedded(embedded),
+  _animPaused(false), _isAnimating(false), _timePaused(false), _useVR(useVR)
   {
     _viewer = new osgViewer::CompositeViewer;
     _embeddedGraphics = new EmbeddedGraphics(x, y, width, height, this);
@@ -509,6 +510,10 @@ namespace OpenFrames
     // Create the RenderRectangles immediately so that they can be modified as needed
     setGridSize(nrow, ncol);
     setupGrid(width, height);
+    
+    // Set time parameters
+    setTime(0.0);
+    setTimeScale(1.0);
     
     // Set framerate (in fps) based on whether VR is enabled
     if(_useVR) setDesiredFramerate(0.0); // Don't limit framerate
@@ -692,18 +697,34 @@ namespace OpenFrames
     }
   }
   
+  /** Set the current time */
+  void WindowProxy::setTime(double time)
+  {
+    _currTime = _offsetTime = time;
+    _Tref = osg::Timer::instance()->tick();
+  }
+  
+  /** Pause/unpause time */
+  void WindowProxy::pauseTime(bool pause)
+  {
+    _timePaused = pause;
+    setTime(_currTime);
+  }
+  
+  /** Change time scale */
+  void WindowProxy::setTimeScale(double tscale)
+  {
+    _timeScale = tscale;
+    setTime(_currTime);
+  }
+  
   /** Pause the window's animation */
   void WindowProxy::pauseAnimation(bool pause)
   {
-    if(pause == _pause) return;
+    _animPaused = pause;
     
-    _pause = pause;
-    if(_pause) _pauseTime = osg::Timer::instance()->tick();
-    else
-    {
-      _frameThrottle.reset(); // Reset the framerate limiter so it doesn't stutter on resume
-      _startTime += osg::Timer::instance()->tick() - _pauseTime;
-    }
+    // Reset the framerate limiter so it doesn't stutter on resume
+    if(!_animPaused) _frameThrottle.reset();
   }
   
   /** Add or remove RenderRectangles to the grid to make it the right size. */
@@ -809,19 +830,19 @@ namespace OpenFrames
     _viewer->setUseConfigureAffinity(true);
     _viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
     
-    // Set the starting reference time
-    _startTime = osg::Timer::instance()->tick();
-    
     // Controls the framerate while graphics are paused
     FramerateLimiter _pauseLimiter;
     _pauseLimiter.setDesiredFramerate(5.0); // 5fps while paused
     
     _isAnimating = true; // Indicate that we've started animating
     
+    // Set the reference time
+    _Tref = osg::Timer::instance()->tick();
+    
     // Loop until the user asks us to quit
     while(!_viewer->done())
     {
-      if(_pause)
+      if(_animPaused)
       {
         _pauseLimiter.frame();
         continue;
@@ -830,7 +851,7 @@ namespace OpenFrames
       // Pause to achieve desired framerate
       _frameThrottle.frame();
       
-      // Do one update & event frame
+      // Do one frame: check events, update objects, render scene
       frame();
     }
     
@@ -857,8 +878,15 @@ namespace OpenFrames
       (*sceneIter)->lock();
     }
     
+    // Compute current simulation time
+    if(!_timePaused)
+    {
+      double dt = osg::Timer::instance()->delta_s(_Tref, osg::Timer::instance()->tick());
+      _currTime = _offsetTime + dt*_timeScale;
+    }
+    
     // Update, cull, and draw the scene, and process queued events
-    _viewer->frame(osg::Timer::instance()->delta_s(_startTime, osg::Timer::instance()->tick()));
+    _viewer->frame(_currTime);
     
     // Unlock all scenes so that they can be modified
     for(sceneIter = _scenes.begin(); sceneIter != _scenes.end(); ++sceneIter)

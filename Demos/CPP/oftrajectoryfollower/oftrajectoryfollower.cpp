@@ -25,50 +25,35 @@
 
 using namespace OpenFrames;
 
-double tscale = 0.1; // Animation speedup relative to real time
-TimeManagementVisitor *tmv;
 ReferenceFrame *root;
+WindowProxy *theWindow;
 
 /** The function called when the user presses a key */
 void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
 {
-  static bool paused = false;
-  static bool stereo = false;
-  
   // Pause/unpause animation
   if(*key == 'p')
   {
-    paused = !paused;
-    tmv->setPauseState(true, paused);
-    root->getTransform()->accept(*tmv);
-    tmv->setPauseState(false, paused);
+    theWindow->pauseTime(!theWindow->isTimePaused());
   }
   
   // Reset time to epoch. All ReferenceFrames that are following
   // a Trajectory will return to their starting positions.
   else if(*key == 'r')
   {
-    tmv->setReset(true);
-    root->getTransform()->accept(*tmv);
-    tmv->setReset(false);
+    theWindow->setTime(0.0);
   }
   
   // Speed up time
   else if((*key == '+') || (*key == '='))
   {
-    tscale += 0.01;
-    tmv->setTimeScale(true, tscale);
-    root->getTransform()->accept(*tmv);
-    tmv->setTimeScale(false, tscale);
+    theWindow->setTimeScale(theWindow->getTimeScale() + 0.01);
   }
   
   // Slow down time
   else if((*key == '-') || (*key == '_'))
   {
-    tscale -= 0.01;
-    tmv->setTimeScale(true, tscale);
-    root->getTransform()->accept(*tmv);
-    tmv->setTimeScale(false, tscale);
+    theWindow->setTimeScale(theWindow->getTimeScale() - 0.01);
   }
 }
 
@@ -80,11 +65,7 @@ int main()
   // Create the interface that represents a window
   osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(30, 30, 1024, 768, 1, 1, false);
   myWindow->setKeyPressCallback(KeyPressCallback); // Specify keypress callback
-  
-  // Create the object that will handle keyboard input
-  // This includes pausing, resetting, modifying time, etc...
-  osg::ref_ptr<TimeManagementVisitor> mytmv = new TimeManagementVisitor;
-  tmv = mytmv.get();
+  theWindow = myWindow;
   
   // Create a drawable trajectory to hold all trajectory artists
   // This will also act as the root of the reference frame hierarchy
