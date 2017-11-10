@@ -34,51 +34,7 @@ using namespace OpenFrames;
 
 double tscale = 1.0; // Animation speedup relative to real time
 ReferenceFrame *earth;
-TimeManagementVisitor *tmv;
 WindowProxy *theWindow;
-
-/** The function called when the user presses a key */
-void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
-{
-  static bool paused = false;
-  static bool stereo = false;
-
-  // Pause/unpause animation
-  if (*key == 'p')
-  {
-    paused = !paused;
-    tmv->setPauseState(true, paused);
-    earth->getTransform()->accept(*tmv);
-    tmv->setPauseState(false, paused);
-  }
-
-  // Reset time to epoch. All ReferenceFrames that are following
-  // a Trajectory will return to their starting positions.
-  else if (*key == 'r')
-  {
-    tmv->setReset(true);
-    earth->getTransform()->accept(*tmv);
-    tmv->setReset(false);
-  }
-
-  // Speed up time
-  else if ((*key == '+') || (*key == '='))
-  {
-    tscale += 0.05;
-    tmv->setTimeScale(true, tscale);
-    earth->getTransform()->accept(*tmv);
-    tmv->setTimeScale(false, tscale);
-  }
-
-  // Slow down time
-  else if ((*key == '-') || (*key == '_'))
-  {
-    tscale -= 0.05;
-    tmv->setTimeScale(true, tscale);
-    earth->getTransform()->accept(*tmv);
-    tmv->setTimeScale(false, tscale);
-  }
-}
 
 /** This example shows how to create multiple subwindows, and have
   * a ReferenceFrame follow a path defined by Trajectory points. It also
@@ -97,11 +53,6 @@ int main()
   bool isEmbedded = false, useVR = true;
   osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(x, y, width, height, nrows, ncols, isEmbedded, useVR);
   theWindow = myWindow.get();
-
-  // Create the object that will handle keyboard input 
-  // This includes pausing, resetting, modifying time, etc...
-  osg::ref_ptr<TimeManagementVisitor> mytmv = new TimeManagementVisitor;
-  tmv = mytmv.get();
 
   // Create the objects that will populate the scene using
   // Sphere(name, color(r,g,b,a))
@@ -324,9 +275,6 @@ int main()
   //theWindow->getGridPosition(0, 0)->addView(view2);
   //theWindow->getGridPosition(0, 0)->addView(view3);
   theWindow->getGridPosition(0, 0)->addView(view4);
-
-  // Specify the key press callback
-  theWindow->setKeyPressCallback(KeyPressCallback);
 
   theWindow->startThread(); // Start window animation
 

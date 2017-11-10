@@ -30,6 +30,7 @@
 #include <OpenFrames/TrajectoryArtist.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <OpenThreads/Thread>
+#include <osg/Notify>
 #include <map>
 #include <string>
 #include <iostream>
@@ -75,8 +76,6 @@ class OF_Objects : public osg::Referenced
 	TrajectoryMap _trajMap; ///< Map of ID -> Trajectory
 	ArtistMap _artistMap; ///< Map of ID -> TrajectoryArtist
 	ViewMap _viewMap; ///< Map of ID -> View
-
-	osg::ref_ptr<TimeManagementVisitor> _tmv; ///< Manages the progression of time
 
 	/// Value returned (if any) by last function call
 	int _intVal;
@@ -157,7 +156,6 @@ class OF_Objects : public osg::Referenced
 	  _currFM(NULL), _currArtist(NULL), _currView(NULL), _intVal(0),
 	  _needsCleanup(true)
 	{
-	  _tmv = new TimeManagementVisitor;
 	}
 
 	~OF_Objects()
@@ -502,6 +500,123 @@ OF_EXPORT void OF_FCN(ofwin_isrunning)(unsigned int *state)
     }
 }
 
+/**
+ * \brief Set the simulation time
+ *
+ * This applies to the current active WindowProxy.
+ *
+ * \param time New simulation time
+ **/
+OF_EXPORT void OF_FCN(ofwin_settime)(double *time)
+{
+  if(_objs->_currWinProxy)
+  {
+    _objs->_currWinProxy->setTime(*time);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+/**
+ * \brief Get the simulation time
+ *
+ * This applies to the current active WindowProxy.
+ *
+ * \param time Current simulation time
+ **/
+OF_EXPORT void OF_FCN(ofwin_gettime)(double *time)
+{
+  if(_objs->_currWinProxy)
+  {
+    *time = _objs->_currWinProxy->getTime();
+    _objs->_intVal = 0;
+  }
+  else {
+    *time = DBL_MAX;
+    _objs->_intVal = -2;
+  }
+}
+    
+/**
+ * \brief Set whether to pause time
+ *
+ * This applies to the current active WindowProxy.
+ *
+ * \param pause Set to 1 to pause the simulation time, 0 to unpause
+ **/
+OF_EXPORT void OF_FCN(ofwin_pausetime)(bool *pause)
+{
+  if(_objs->_currWinProxy)
+  {
+    _objs->_currWinProxy->pauseTime(*pause);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+  
+/**
+ * \brief Check if time is paused
+ *
+ * This applies to the current active WindowProxy.
+ *
+ * \param pause Set to 1 if simulation time is paused, 0 if unpaused
+ **/
+OF_EXPORT void OF_FCN(ofwin_istimepaused)(bool *pause)
+{
+  if(_objs->_currWinProxy)
+  {
+    *pause = _objs->_currWinProxy->isTimePaused();
+    _objs->_intVal = 0;
+  }
+  else {
+    *pause = false;
+    _objs->_intVal = -2;
+  }
+}
+   
+/**
+ * \brief Set the simulation time scale
+ *
+ * This applies to the current active WindowProxy.
+ *
+ * \param time New simulation time scale
+ **/
+OF_EXPORT void OF_FCN(ofwin_settimescale)(double *tscale)
+{
+  if(_objs->_currWinProxy)
+  {
+    _objs->_currWinProxy->setTimeScale(*tscale);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+/**
+ * \brief Get the simulation time scale
+ *
+ * This applies to the current active WindowProxy.
+ *
+ * \param time Current simulation time scale
+ **/
+OF_EXPORT void OF_FCN(ofwin_gettimescale)(double *tscale)
+{
+  if(_objs->_currWinProxy)
+  {
+    *tscale = _objs->_currWinProxy->getTimeScale();
+    _objs->_intVal = 0;
+  }
+  else {
+    *tscale = DBL_MAX;
+    _objs->_intVal = -2;
+  }
+}
+    
 /**
 * \brief Set the scene at the specified grid position
 *
@@ -1620,12 +1735,12 @@ OF_EXPORT void OF_FCN(offrame_followposition)(int src[], unsigned int element[],
 }
 
 /**
-* \brief Change how this frame follows a trajectory
+* \brief DEPRECATED Change how this frame follows a trajectory
 *
 * This applies to the current active ReferenceFrame.
 *
 * \param affectChildren   True if the children of this frame are also affected by this function, if false, only this frame is affected
-* \param reset            Set to true to reset the trajectory to its initial time
+* \param reset            UNUSED Set to true to reset the trajectory to its initial time
 * \param changePauseState True if this function call is to set the pauseState, false to ignore the provided value of pauseState
 * \param pauseState       Indicate if the playback is to be paused
 * \param changeOffsetTime True if this function call is to set the offsetTime, false to ignore the provided value of offsetTime
@@ -1638,24 +1753,18 @@ OF_EXPORT void OF_FCN(offrame_managetime)(bool *affectChildren, bool *reset,
                                        bool *changeOffsetTime, double *offsetTime,
                                        bool *changeTimeScale, double *timeScale)
 {
-	if(_objs->_currFrame)
-	{
-	  // Set traversal mode
-	  if(*affectChildren) _objs->_tmv->setTraversalMode(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
-	  else _objs->_tmv->setTraversalMode(osg::NodeVisitor::TRAVERSE_NONE);
-
-	  // Set pause state, offset time, and time scale
-	  _objs->_tmv->setReset(*reset);
-	  _objs->_tmv->setPauseState(*changePauseState, *pauseState);
-	  _objs->_tmv->setOffsetTime(*changeOffsetTime, *offsetTime);
-	  _objs->_tmv->setTimeScale(*changeTimeScale, *timeScale);
-
-	  // Send the visitor to the frame to do it's thing
-	  _objs->_currFrame->getTransform()->accept(*(_objs->_tmv.get()));
-
-	  _objs->_intVal = 0;
-	}
-	else _objs->_intVal = -2;
+  static bool deprecatewarning = true;
+  
+  if(deprecatewarning)
+  {
+    OSG_WARN << "OpenFrames::offrame_managetime DEPRECATION WARNING: function will be removed in the future. Please use WindowProxy time management functions instead." << std::endl;
+    deprecatewarning = false; // Only warn once
+  }
+  
+  if(*reset) OSG_WARN << "OpenFrames::offrame_managetime WARNING: function no longer supports reset input. Please set time via WindowProxy time management functions instead." << std::endl;
+  if(*changePauseState) ofwin_pausetime(pauseState);
+  if(*changeOffsetTime) ofwin_settime(offsetTime);
+  if(*changeTimeScale) ofwin_settimescale(timeScale);
 }
 
 /**

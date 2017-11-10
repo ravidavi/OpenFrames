@@ -120,6 +120,14 @@ OF_EXPORT void OF_FCN(ofwin_stop)();  // Force animation to stop
 OF_EXPORT void OF_FCN(ofwin_waitforstop)(); // Wait for user to exit animation
 OF_EXPORT void OF_FCN(ofwin_pauseanimation)(bool *pause);
 OF_EXPORT void OF_FCN(ofwin_isrunning)(unsigned int *state);
+  
+// Time control
+OF_EXPORT void OF_FCN(ofwin_settime)(double *time);
+OF_EXPORT void OF_FCN(ofwin_gettime)(double *time);
+OF_EXPORT void OF_FCN(ofwin_pausetime)(bool *pause);
+OF_EXPORT void OF_FCN(ofwin_istimepaused)(bool *isPaused);
+OF_EXPORT void OF_FCN(ofwin_settimescale)(double *tscale);
+OF_EXPORT void OF_FCN(ofwin_gettimescale)(double *tscale);
 
 // Set the scene at the specified grid position
 // A scene is specified by the currently active FrameManager

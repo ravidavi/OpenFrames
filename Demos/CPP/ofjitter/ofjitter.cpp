@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2017 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -32,51 +32,34 @@
 
 using namespace OpenFrames;
 
-double tscale = 1.0; // Animation speedup relative to real time
-Sphere *earth;
-TimeManagementVisitor *tmv;
 WindowProxy *theWindow;
 
 /** The function called when the user presses a key */
 void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
 {
-	static bool paused = false;
-	static bool stereo = false;
-
 	// Pause/unpause animation
 	if(*key == 'p')
 	{
-	  paused = !paused;
-	  tmv->setPauseState(true, paused);
-	  earth->getTransform()->accept(*tmv);
-	  tmv->setPauseState(false, paused);
+    theWindow->pauseTime(!theWindow->isTimePaused());
 	}
 
 	// Reset time to epoch. All ReferenceFrames that are following
 	// a Trajectory will return to their starting positions.
 	else if(*key == 'r')
 	{
-	  tmv->setReset(true);
-	  earth->getTransform()->accept(*tmv);
-	  tmv->setReset(false);
+    theWindow->setTime(0.0);
 	}
 
 	// Speed up time
 	else if((*key == '+') || (*key == '='))
 	{
-	  tscale += 0.05;
-	  tmv->setTimeScale(true, tscale);
-	  earth->getTransform()->accept(*tmv);
-	  tmv->setTimeScale(false, tscale);
+    theWindow->setTimeScale(theWindow->getTimeScale() + 0.05);
 	}
 
 	// Slow down time
 	else if((*key == '-') || (*key == '_'))
 	{
-	  tscale -= 0.05;
-	  tmv->setTimeScale(true, tscale);
-	  earth->getTransform()->accept(*tmv);
-	  tmv->setTimeScale(false, tscale);
+    theWindow->setTimeScale(theWindow->getTimeScale() - 0.05);
 	}
 }
 
@@ -93,26 +76,22 @@ int main()
 
 	// Create the interface that will draw a scene onto a window.
 	osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(30, 30, 1024, 768, 1, 1, false);
+  myWindow->setTimeScale(1.0);
 	theWindow = myWindow.get();
-
-	// Create the object that will handle keyboard input 
-	// This includes pausing, resetting, modifying time, etc...
-	osg::ref_ptr<TimeManagementVisitor> mytmv = new TimeManagementVisitor; 
-	tmv = mytmv.get();
 
 	// Create the objects that will populate the scene using
         // Sphere(name, color(r,g,b,a))
 	// Model(name, color(r,g,b,a))
-	earth = new Sphere("Earth", 0, 1, 0, 0.9);
+	Sphere *earth = new Sphere("Earth", 0, 1, 0, 0.9);
 	Model *hubble = new Model("Hubble", 1, 0, 0, 0.9);
 
         // Set Earth parameters
         earth->setRadius(6371.0*km);
-        earth->setTextureMap("../Images/EarthTexture.bmp");
+        earth->setTextureMap("Images/EarthTexture.bmp");
 
 	// Set the spacecraft parameters
         // Scale model down to 1cm
-	hubble->setModel("../Models/Hubble.3ds");
+	hubble->setModel("Models/Hubble.3ds");
         double modelScale = 0.00001*km/hubble->getModel()->getBound()._radius;
         hubble->setModelScale(modelScale, modelScale, modelScale);
 
@@ -134,7 +113,7 @@ int main()
         ma->setMarkerColor(MarkerArtist::START, 0, 1, 0); // Green
         ma->setMarkerColor(MarkerArtist::END,   1, 0, 0); // Red
         ma->setMarkerColor(MarkerArtist::INTERMEDIATE, 1, 1, 0); // Yellow
-        ma->setMarkerShader("../Shaders/Marker_Rose.frag");
+        ma->setMarkerShader("Shaders/Marker_Rose.frag");
         ma->setMarkerSize(10); // In pixels
         drawtraj->addArtist(ma);
 
@@ -147,7 +126,6 @@ int main()
 
 	// Tell model to follow trajectory (by default in LOOP mode)
 	TrajectoryFollower *tf = new TrajectoryFollower(traj);
-	tf->setTimeScale(tscale);
         tf->setFollowType(TrajectoryFollower::POSITION + TrajectoryFollower::ATTITUDE, TrajectoryFollower::LIMIT);
 	hubble->getTransform()->setUpdateCallback(tf);
 
@@ -160,7 +138,7 @@ int main()
 
         // Create an artist to draw spacecraft center marker
         MarkerArtist *centermarker = new MarkerArtist;
-	centermarker->setMarkerShader("../Shaders/Marker_CirclePulse.frag");
+	centermarker->setMarkerShader("Shaders/Marker_CirclePulse.frag");
 	centermarker->setMarkerSize(15);
 
 	// Add the markerartist to the drawable trajectory
@@ -182,8 +160,8 @@ int main()
 	// Set up the scene
 	theWindow->setScene(fm, 0, 0);
         theWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0);
-	//theWindow->getGridPosition(0, 0)->setSkySphereTexture("../Images/StarMap.tif");
-	theWindow->getGridPosition(0, 0)->setSkySphereStarData("../Stars/Stars_HYGv3.txt", -2.0, 6.0, 40000);
+	//theWindow->getGridPosition(0, 0)->setSkySphereTexture("Images/StarMap.tif");
+	theWindow->getGridPosition(0, 0)->setSkySphereStarData("Stars/Stars_HYGv3.txt", -2.0, 6.0, 40000);
 	theWindow->getGridPosition(0, 0)->addView(view);
 	theWindow->getGridPosition(0, 0)->addView(view2);
 

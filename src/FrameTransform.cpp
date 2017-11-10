@@ -247,12 +247,7 @@ TrajectoryFollower::TrajectoryFollower(Trajectory *traj)
 	_mode = LOOP;
 	_data = POSITION + ATTITUDE;
 
-	_offsetTime = 0.0;
-	_timeScale = 1.0;
-	_paused = false;
-	_needsUpdate = false;
-	_deltaTime = _pauseTime = 0.0;
-	_latestTime = DBL_MAX;
+  setOffsetTime(0.0);
 }
 
 TrajectoryFollower::~TrajectoryFollower() {}
@@ -409,45 +404,18 @@ void TrajectoryFollower::setDefaultData()
   
   _usingDefaultData = true;
 }
+
+void TrajectoryFollower::setTime(double time)
+{
+  _timeVal = time;
+  _followTime = false;
+  _needsUpdate = true;
+}
   
-void TrajectoryFollower::setTimeScale(double timeScale)
-{
-	if(_timeScale != timeScale)
-	{
-	  // Compute new time offset to account for change of time scale
-	  if(_paused) _deltaTime += _pauseTime*(_timeScale - timeScale);
-	  else _deltaTime += _latestTime*(_timeScale - timeScale);
-
-	  _timeScale = timeScale;
-	}
-
-	_needsUpdate = true;
-}
-
-void TrajectoryFollower::setPaused(bool pause)
-{
-	if(_paused != pause)
-	{
-	  _paused = pause;
-
-	  if(_paused) _pauseTime = _latestTime;
-	  else _deltaTime += _timeScale*(_pauseTime - _latestTime);
-	}
-
-	_needsUpdate = true;
-}
-
 void TrajectoryFollower::setOffsetTime(double offsetTime)
 {
-	_offsetTime = offsetTime;
-	_needsUpdate = true;
-}
-
-void TrajectoryFollower::reset()
-{
-	// Reset parameters such that the newly computed time will be the user specified time offset
-	_deltaTime = -_timeScale*_latestTime;
-	_pauseTime = _latestTime;
+	_timeVal = offsetTime;
+  _followTime = true;
 	_needsUpdate = true;
 }
 
@@ -456,25 +424,20 @@ void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
   double simTime = nv->getFrameStamp()->getSimulationTime();
   
   // Make sure time has changed
-  if(_latestTime != simTime || _needsUpdate)
+  if((_latestTime != simTime) || _needsUpdate)
   {
-    if(_latestTime == DBL_MAX) // First call, initialize variables
-    {
-      _latestTime = simTime; // Store the current time
-      reset(); // Initialize times
-    }
-    else _latestTime = simTime; // Just store the current time
+    _latestTime = simTime; // Save the current simulation time
     
     // Don't allow followed trajectory list to be modified
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
     
     // Follow trajectory as needed
-    if(!_trajList.empty() && (!_paused || _needsUpdate))
+    if(!_trajList.empty())
     {
-      // Modified simulation time = _offset + _delta + _tscale*_time
-      double time = _offsetTime + _deltaTime;
-      if(_paused) time += _timeScale*_pauseTime;
-      else time += _timeScale*_latestTime;
+      // Get current time, either constant-time or offset-simulation-time
+      double time;
+      if(_followTime) time = _latestTime + _timeVal;
+      else time = _timeVal;
       
       // Prevent trajectories from being modified while reading them
       for(auto traj : _trajList)
@@ -539,13 +502,13 @@ double TrajectoryFollower::_computeTime(double time)
     if(traj_tf > tf) tf = traj_tf;
   }
 
-  // Error check
+  // Make sure valid trajectories were found
   if((t0 == DBL_MAX) || (tf == -DBL_MAX)) return time;
 
   // If [t0, tf] range is too small, then just use t0
   if(tf - t0 <= 8.0*DBL_MIN) return t0;
 
-  // All error checks done, now wrap time to [t0, tf]
+  // Wrap time to [t0, tf]
   double tnew = time - std::floor((time - t0)/(tf - t0))*(tf - t0);
   return tnew;
 }
@@ -670,58 +633,6 @@ void TrajectoryFollower::_updateState(double time, TrajectoryFollower::FollowDat
   {
     std::cerr<< "FrameTransform::_updateState() error: Unhandled return value!" << std::endl;
   }
-}
-
-TimeManagementVisitor::TimeManagementVisitor()
-{
-  setTraversalMode(TRAVERSE_ALL_CHILDREN);
-
-	_pauseState = false;
-	_changePauseState = _changeOffsetTime = _changeTimeScale = false;
-	_offsetTime = 0.0;
-	_timeScale = 1.0;
-	_reset = false;
-}
-
-TimeManagementVisitor::~TimeManagementVisitor() {}
-
-void TimeManagementVisitor::setPauseState(bool changePauseState, bool pauseState) 
-{ 
-	_changePauseState = changePauseState;
-	_pauseState = pauseState; 
-}
-
-void TimeManagementVisitor::setOffsetTime(bool changeOffsetTime, double offsetTime)
-{
-	_changeOffsetTime = changeOffsetTime;
-	_offsetTime = offsetTime;
-}
-
-void TimeManagementVisitor::setTimeScale(bool changeTimeScale, double timeScale)
-{
-	_changeTimeScale = changeTimeScale;
-	_timeScale = timeScale;
-}
-
-void TimeManagementVisitor::apply(osg::Transform &node)
-{
-	// Make sure current node is a FrameTransform
-	FrameTransform *ft = dynamic_cast<FrameTransform*>(&node);
-	if(ft)
-	{
-	  // Make sure FrameTransform has a TrajectoryFollower callback
-	  TrajectoryFollower *tf = dynamic_cast<TrajectoryFollower*>(ft->getUpdateCallback());
-	  if(tf) 
-	  {
-	    if(_changePauseState) tf->setPaused(_pauseState);
-	    if(_changeOffsetTime) tf->setOffsetTime(_offsetTime);
-	    if(_changeTimeScale) tf->setTimeScale(_timeScale);
-	    if(_reset) tf->reset();
-	  }
-	}
-
-	// Traverse & pause children if needed
-	osg::NodeVisitor::traverse(node);
 }
   
 } // !namespace OpenFrames

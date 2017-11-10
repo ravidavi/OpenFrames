@@ -179,15 +179,12 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
   void setDefaultData();
   bool getUsingDefaultData() { return _usingDefaultData; }
 
-	// Time managment functions			 
-	void setTimeScale(double timeScale);
-	inline double getTimeScale() const { return _timeScale; }
-	
-	void setPaused(bool pause);
-	inline bool getPaused() const { return _paused; }
-	
-	void setOffsetTime(double offsetTime);
-	inline double getOffsetTime() const { return _offsetTime; }
+	// Time managment functions
+  // Either follow the global simulation time (set by WindowProxy), or
+  // follow a specific time
+	void setTime(double time); // Follow specific time
+	void setOffsetTime(double offsetTime); // Offset from simulation time
+  inline bool isFollowingTime() const { return _followTime; }
 	
 	void reset();
 
@@ -227,69 +224,16 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
 	bool _dataValid; // Test if Trajectory supports needed data
   bool _usingDefaultData; // Whether to use default data sources
 
-	  // These variables allow for pausing/resuming animation
-	bool _paused, _needsUpdate;
-	double _pauseTime;  // Time at last pause
-	double _latestTime; // Time at most recent update
-	double _deltaTime;  // Internally computed time offset
-	
-	  // User-specified variables for time control
-	double _offsetTime; // Constant time offset
-	double _timeScale; // Time scale
+  // Time control variables
+  bool _needsUpdate, _followTime;
+  double _timeVal;  // Time value to use (offset if following time, constant otherwise)
+  double _latestTime; // Time at most recent update
   
   OpenThreads::Mutex _mutex; // For adding/removing followed trajectories
 
   private:
 	osg::Vec3d _v1, _v2; // Used for position interpolation
 	osg::Quat _a1, _a2; // Used for attitude interpolation
-};
-
-/***************************************************************
- * Ravi Mathur
- * OpenFrames API, class TimeManagementVisitor
- * This class traverses a nodepath, searching for FrameTransform
- * nodes.  It then pauses and/or sets the offset time of any 
- * TrajectoryFollower callback that transform may have attached to it.
-**************************************************************/
-class OF_EXPORT TimeManagementVisitor : public osg::NodeVisitor
-{
-  public:
-	TimeManagementVisitor();
-
-	void setPauseState(bool changePauseState, bool pauseState = true);
-	inline void getPauseState(bool &changePauseState, bool &pauseState) const
-	{
-	  changePauseState = _changePauseState;
-	  pauseState = _pauseState;
-	}
-	
-	void setOffsetTime(bool changeOffsetTime, double offsetTime = 0.0);
-	inline void getOffsetTime(bool &changeOffsetTime, double &offsetTime) const
-	{
-	  changeOffsetTime = _changeOffsetTime;
-	  offsetTime = _offsetTime;
-	}
-		
-	void setTimeScale(bool changeTimeScale, double timeScale = 1.0);
-	inline void setTimeScale(bool &changeTimeScale, double &timeScale) const
-	{
-	  changeTimeScale = _changeTimeScale;
-	  timeScale = _timeScale;
-	}
-	
-	inline void setReset(bool reset) { _reset = reset; }
-	inline bool getReset() const { return _reset; }
-	
-	virtual void apply(osg::Transform &node);
-
-  protected:
-	virtual ~TimeManagementVisitor();
-
-	bool _changePauseState, _pauseState; // Whether to pause or unpause
-	bool _changeOffsetTime; // Whether to set the offset time
-	bool _changeTimeScale; // Whether to set the time scale
-	bool _reset; // Whether the follower should be reset
-	double _offsetTime, _timeScale;
 };
 
 } // !namespace OpenFrames
