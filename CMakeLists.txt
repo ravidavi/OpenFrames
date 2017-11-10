@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.5.2)
-PROJECT(osgqtcube)
+PROJECT(osgqtcube LANGUAGES CXX)
 
 # Make the makefile output verbose (for compiler error checking)
 #SET(CMAKE_VERBOSE_MAKEFILE on)
@@ -90,9 +90,10 @@ FIND_PACKAGE(OpenGL)
 
 # Instruct CMake to run the Qt moc automatically when needed.
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 # Find Qt
-FIND_PACKAGE(Qt5 COMPONENTS Core Widgets OpenGL WebEngineWidgets)
+FIND_PACKAGE(Qt5 COMPONENTS Core Quick Widgets OpenGL WebEngineWidgets)
 IF(NOT Qt5_FOUND)
   MESSAGE("Qt5 not found.")
   RETURN()
@@ -115,11 +116,11 @@ LIST(APPEND osgqtcube_SOURCES /
   OSGQuickAdapter.cpp)
 
 # Specify which file should be compiled for current test
-ADD_EXECUTABLE(osgqtcube ${osgqtcube_SOURCES} ${RESOURCES} ${osgqtcube_HEADERS})
-QT5_USE_MODULES(osgqtcube Core Widgets OpenGL WebEngineWidgets)
+ADD_EXECUTABLE(osgqtcube ${osgqtcube_SOURCES} ${RESOURCES} ${osgqtcube_HEADERS} "rendercontrol.qrc")
+QT5_USE_MODULES(osgqtcube Core Quick Widgets OpenGL WebEngineWidgets)
 
 # Tell linker to link against OpenSceneGraph library
-TARGET_LINK_LIBRARIES(osgqtcube Qt5::Widgets ${OPENSCENEGRAPH_LIBRARIES})
+TARGET_LINK_LIBRARIES(osgqtcube ${OPENSCENEGRAPH_LIBRARIES})
 
 # On Mac/Linux include path to Qt in RPATH
 # Note that this only applies to this demo. In a real application the Qt
