@@ -25,7 +25,8 @@
 #include <Windows.h>
 #else
 #include <unistd.h>
-#define UINT_MAX 2147483647
+#include <climits>
+#include <cstring>
 #endif
 
 namespace OpenFrames{
@@ -263,11 +264,7 @@ namespace OpenFrames{
       osg::Vec3Array *positions = new osg::Vec3Array(numVertices);
       for (uint32_t i = 0; i < numVertices; ++i)
       {
-	#ifdef _WIN32
-	std::memcpy((*positions)[i]._v, (deviceModel->rVertexData)[i].vPosition.v, sizeof(vr::HmdVector3_t));
-	#else
-	memcpy((*positions)[i]._v, (deviceModel->rVertexData)[i].vPosition.v, sizeof(vr::HmdVector3_t));
-	#endif
+      	std::memcpy((*positions)[i]._v, (deviceModel->rVertexData)[i].vPosition.v, sizeof(vr::HmdVector3_t));
       }
       //osg::notify(osg::NOTICE) << "position size = " << positions->size()*sizeof(vr::HmdVector3_t) << std::endl;
 
@@ -279,11 +276,7 @@ namespace OpenFrames{
       osg::Vec3Array *normals = new osg::Vec3Array(numVertices);
       for (uint32_t i = 0; i < numVertices; ++i)
       {
-	#ifdef _WIN32
-	std::memcpy((*normals)[i]._v, (deviceModel->rVertexData)[i].vNormal.v, sizeof(vr::HmdVector3_t));
-	#else
-	memcpy((*normals)[i]._v, (deviceModel->rVertexData)[i].vNormal.v, sizeof(vr::HmdVector3_t));
-	#endif
+      	std::memcpy((*normals)[i]._v, (deviceModel->rVertexData)[i].vNormal.v, sizeof(vr::HmdVector3_t));
       }
       //osg::notify(osg::NOTICE) << "normal size = " << normals->size()*sizeof(vr::HmdVector3_t) << std::endl;
 
@@ -291,11 +284,7 @@ namespace OpenFrames{
       osg::Vec2Array *texCoords = new osg::Vec2Array(numVertices);
       for (uint32_t i = 0; i < numVertices; ++i)
       {
-	#ifdef _WIN32
-	std::memcpy((*texCoords)[i]._v, (deviceModel->rVertexData)[i].rfTextureCoord, 2 * sizeof(float));
-	#else
-	memcpy((*texCoords)[i]._v, (deviceModel->rVertexData)[i].rfTextureCoord, 2 * sizeof(float));
-	#endif
+	      std::memcpy((*texCoords)[i]._v, (deviceModel->rVertexData)[i].rfTextureCoord, 2 * sizeof(float));
       }
       //osg::notify(osg::NOTICE) << "texcoord size = " << texCoords->size()*2*sizeof(float) << std::endl;
 
