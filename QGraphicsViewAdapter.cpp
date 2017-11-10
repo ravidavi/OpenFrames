@@ -119,12 +119,14 @@ void QGraphicsViewAdapter::repaintRequestedSlot(const QList<QRectF>&)
 {
     // OSG_NOTICE<<"QGraphicsViewAdapter::repaintRequestedSlot"<<std::endl;
     _requiresRendering = true;
+    render();
 }
 
 void QGraphicsViewAdapter::repaintRequestedSlot(const QRectF&)
 {
     // OSG_NOTICE<<"QGraphicsViewAdapter::repaintRequestedSlot"<<std::endl;
     _requiresRendering = true;
+    render();
 }
 
 void QGraphicsViewAdapter::customEvent ( QEvent * event )

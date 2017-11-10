@@ -41,7 +41,7 @@ void QWidgetImage::render()
 {
     if (_adapter->requiresRendering())
     {
-       _adapter->render();
+       //_adapter->render();
     }
 }
 

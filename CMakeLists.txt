@@ -92,14 +92,11 @@ FIND_PACKAGE(OpenGL)
 set(CMAKE_AUTOMOC ON)
 
 # Find Qt
-FIND_PACKAGE(Qt5 COMPONENTS Core Widgets OpenGL)
+FIND_PACKAGE(Qt5 COMPONENTS Core Widgets OpenGL WebEngineWidgets)
 IF(NOT Qt5_FOUND)
   MESSAGE("Qt5 not found.")
   RETURN()
 ENDIF()
-
-# Specify headers for Qt example
-FILE(GLOB osgqtcube_HEADERS *.hpp)
 
 ################################################################################
 #               TARGETS                                                        #
@@ -108,9 +105,18 @@ FILE(GLOB osgqtcube_HEADERS *.hpp)
 # Specify that we should look for headers locally
 INCLUDE_DIRECTORIES(${OPENSCENEGRAPH_INCLUDE_DIRS})
 
+# Specify headers for Qt example
+FILE(GLOB osgqtcube_HEADERS *.hpp)
+LIST(APPEND osgqtcube_SOURCES /
+  osgqtcube.cpp /
+  QGraphicsViewAdapter.cpp /
+  QWidgetImage.cpp /
+  OSGQuickImage.cpp /
+  OSGQuickAdapter.cpp)
+
 # Specify which file should be compiled for current test
-ADD_EXECUTABLE(osgqtcube osgqtcube.cpp QGraphicsViewAdapter.cpp QWidgetImage.cpp ${RESOURCES} ${osgqtcube_HEADERS})
-QT5_USE_MODULES(osgqtcube Core Widgets OpenGL)
+ADD_EXECUTABLE(osgqtcube ${osgqtcube_SOURCES} ${RESOURCES} ${osgqtcube_HEADERS})
+QT5_USE_MODULES(osgqtcube Core Widgets OpenGL WebEngineWidgets)
 
 # Tell linker to link against OpenSceneGraph library
 TARGET_LINK_LIBRARIES(osgqtcube Qt5::Widgets ${OPENSCENEGRAPH_LIBRARIES})
