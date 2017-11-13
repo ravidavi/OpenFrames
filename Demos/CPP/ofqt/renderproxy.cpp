@@ -38,10 +38,6 @@ RenderProxy::RenderProxy(QObject *parent)
       m_winproxy(0x0),
       m_spacestation(0x0),
       m_axes(0x0),
-      m_timeManVisitor(0x0),
-      m_tscale(1.0),
-      m_toffset(0.0),
-      m_paused(false),
       m_stereo(false)
 {
     // Create embedded WindowProxy that handles all OpenFrames drawing
@@ -50,12 +46,8 @@ RenderProxy::RenderProxy(QObject *parent)
     m_winproxy->setMakeCurrentFunction(OFRenderPool::dealMakeCurrent);
     m_winproxy->setUpdateContextFunction(OFRenderPool::dealMakeCurrent);
     m_winproxy->setSwapBuffersFunction(OFRenderPool::dealSwapBuffers);
-    m_winproxy->setDesiredFramerate(20);
+    m_winproxy->setTimeScale(1.0);
     
-    // Create the object that will handle keyboard input 
-    // This includes pausing, resetting, modifying time, etc...
-    m_timeManVisitor = new OpenFrames::TimeManagementVisitor;
-
     // Create the models that will populate the scene using
     // Model(name, color(r,g,b,a))
     m_spacestation = new OpenFrames::Model("Space Station", 0, 1, 0, 0.9);
@@ -194,12 +186,10 @@ RenderProxy::RenderProxy(QObject *parent)
 
     // Tell model to follow trajectory (by default in LOOP mode)
     OpenFrames::TrajectoryFollower *tf = new OpenFrames::TrajectoryFollower(traj);
-    tf->setTimeScale(m_tscale);
     hubble->getTransform()->setUpdateCallback(tf);
 
     // Tell trace frame to follow time history
     tf = new OpenFrames::TrajectoryFollower(traj);
-    tf->setTimeScale(m_tscale);
     data._src = OpenFrames::Trajectory::POSOPT;
     data._opt = 0;
     data._element = 0; // Use X position for X coordinate
@@ -215,7 +205,6 @@ RenderProxy::RenderProxy(QObject *parent)
     // Tell radial frame to follow time history's orientation
     tf = new OpenFrames::TrajectoryFollower(traj);
     tf->setFollowType(OpenFrames::TrajectoryFollower::ATTITUDE, OpenFrames::TrajectoryFollower::LOOP);
-    tf->setTimeScale(m_tscale);
     rp->getTransform()->setUpdateCallback(tf);
     rp->setPosition(0.0, 0.0, 0.0);
 
@@ -293,51 +282,28 @@ void RenderProxy::keyPressCallback(int key)
 {
     if (key == 'p') {
         // Pause/unpause animation
-        m_paused = !m_paused;
-        m_timeManVisitor->setPauseState(true, m_paused);
-        m_spacestation->getTransform()->accept(*m_timeManVisitor);
-        m_axes->getTransform()->accept(*m_timeManVisitor);
-        m_timeManVisitor->setPauseState(false, m_paused);
+        m_winproxy->pauseTime(!m_winproxy->isTimePaused());
     }
     else if (key == 'r') {
         // Reset time to epoch. All ReferenceFrames that are following
         // a Trajectory will return to their starting positions.
-        m_timeManVisitor->setReset(true);
-        m_spacestation->getTransform()->accept(*m_timeManVisitor);
-        m_axes->getTransform()->accept(*m_timeManVisitor);
-        m_timeManVisitor->setReset(false);
+      m_winproxy->setTime(0.0);
     }
     else if ((key == Qt::Key_Plus) || (key == Qt::Key_Equal)) {
         // Speed up time
-        m_tscale += 0.1;
-        m_timeManVisitor->setTimeScale(true, m_tscale);
-        m_spacestation->getTransform()->accept(*m_timeManVisitor);
-        m_axes->getTransform()->accept(*m_timeManVisitor);
-        m_timeManVisitor->setTimeScale(false, m_tscale);
+        m_winproxy->setTimeScale(m_winproxy->getTimeScale() + 0.1);
     }
     else if ((key == Qt::Key_Minus) || (key == Qt::Key_Underscore)) {
         // Slow down time
-        m_tscale -= 0.1;
-        m_timeManVisitor->setTimeScale(true, m_tscale);
-        m_spacestation->getTransform()->accept(*m_timeManVisitor);
-        m_axes->getTransform()->accept(*m_timeManVisitor);
-        m_timeManVisitor->setTimeScale(false, m_tscale);
+        m_winproxy->setTimeScale(m_winproxy->getTimeScale() - 0.1);
     }
     else if (key == Qt::Key_Right) {
         // Shift time forward
-        m_toffset += 0.1;
-        m_timeManVisitor->setOffsetTime(true, m_toffset);
-        m_spacestation->getTransform()->accept(*m_timeManVisitor);
-        m_axes->getTransform()->accept(*m_timeManVisitor);
-        m_timeManVisitor->setOffsetTime(false, m_toffset);
+        m_winproxy->setTime(m_winproxy->getTime() + 0.1);
     }
     else if (key == Qt::Key_Left) {
         // Shift time backward
-        m_toffset -= 0.1;
-        m_timeManVisitor->setOffsetTime(true, m_toffset);
-        m_spacestation->getTransform()->accept(*m_timeManVisitor);
-        m_axes->getTransform()->accept(*m_timeManVisitor);
-        m_timeManVisitor->setOffsetTime(false, m_toffset);
+        m_winproxy->setTime(m_winproxy->getTime() - 0.1);
     }
     else {
         // Ignore other keys, but view may have changed

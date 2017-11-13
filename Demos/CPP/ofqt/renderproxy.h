@@ -74,12 +74,8 @@ private:
     /** OpenFrames objects for rendering the scene */
     OpenFrames::Model *m_spacestation;
     OpenFrames::CoordinateAxes *m_axes;
-    OpenFrames::TimeManagementVisitor *m_timeManVisitor;
 
     /** States of the OpenFrames scene */
-    double m_tscale; // Animation speedup relative to real time
-    double m_toffset; // Animation time offset
-    bool m_paused;
     bool m_stereo;
     OpenFrames::View *m_views[2][2];
 };
