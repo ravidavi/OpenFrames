@@ -188,8 +188,8 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
 	
 	void reset();
 
-	/** Inherited from osg::NodeCallback.  Implements the callback. */
-	virtual void operator()(osg::Node *node, osg::NodeVisitor *nv);
+  /** Inherited from osg::Callback, implements the callback. */
+  virtual bool run(osg::Object* object, osg::Object* data);
 
   protected:
 	virtual ~TrajectoryFollower();

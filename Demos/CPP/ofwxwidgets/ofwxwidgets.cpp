@@ -1,5 +1,5 @@
 /***********************************
-  Copyright 2015 Ravishankar Mathur
+  Copyright 2017 Ravishankar Mathur
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
   limitations under the License.
 ***********************************/
 
-// wxWidgets "Hello world" Program, using OpenFrames
-#include "wxtest1.h"
+// wxWidgets program using OpenFrames
+#include "ofwxwidgets.hpp"
 
 #include <wx/sizer.h>
 #include <wx/dcclient.h>
@@ -36,78 +36,47 @@ using namespace OpenFrames;
 // Initialize static variable
 MyGLCanvas* MyGLCanvas::currCanvas = NULL;
 
-// Other global vars
-double tscale = 1.0; // Animation speedup relative to real time
-double toffset = 0.0; // Animation time offset
-Model *spacestation;
-CoordinateAxes *axes;
-TimeManagementVisitor *tmv;
+// Main WindowProxy
 WindowProxy *theWindow;
 
 /** The function called when the user presses a key */
 void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
 {
-  static bool paused = false;
-  static bool stereo = false;
-
   // Pause/unpause animation
   if(*key == 'p')
   {
-    paused = !paused;
-    tmv->setPauseState(true, paused);
-    spacestation->getTransform()->accept(*tmv);
-    axes->getTransform()->accept(*tmv);
-    tmv->setPauseState(false, paused);
+    theWindow->pauseTime(!theWindow->isTimePaused());
   }
 
   // Reset time to epoch. All ReferenceFrames that are following
   // a Trajectory will return to their starting positions.
   else if(*key == 'r')
   {
-    tmv->setReset(true);
-    spacestation->getTransform()->accept(*tmv);
-    axes->getTransform()->accept(*tmv);
-    tmv->setReset(false);
+    theWindow->setTime(0.0);
   }
 
   // Speed up time
   else if((*key == '+') || (*key == '='))
   {
-    tscale += 0.1;
-    tmv->setTimeScale(true, tscale);
-    spacestation->getTransform()->accept(*tmv);
-    axes->getTransform()->accept(*tmv);
-    tmv->setTimeScale(false, tscale);
+    theWindow->setTimeScale(theWindow->getTimeScale() + 0.1);
   }
 
   // Slow down time
   else if((*key == '-') || (*key == '_'))
   {
-    tscale -= 0.1;
-    tmv->setTimeScale(true, tscale);
-    spacestation->getTransform()->accept(*tmv);
-    axes->getTransform()->accept(*tmv);
-    tmv->setTimeScale(false, tscale);
+    theWindow->setTimeScale(theWindow->getTimeScale() - 0.1);
   }
 
   // Shift time forward
   else if(*key == WXK_RIGHT)
   {
-    toffset += 0.1;
-    tmv->setOffsetTime(true, toffset);
-    spacestation->getTransform()->accept(*tmv);
-    axes->getTransform()->accept(*tmv);
-    tmv->setOffsetTime(false, toffset);
+    theWindow->setTime(theWindow->getTime() + 0.1);
   }
 
   // Shift time backward
   else if(*key == WXK_LEFT)
   {
-    toffset -= 0.1;
-    tmv->setOffsetTime(true, toffset);
-    spacestation->getTransform()->accept(*tmv);
-    axes->getTransform()->accept(*tmv);
-    tmv->setOffsetTime(false, toffset);
+    theWindow->setTime(theWindow->getTime() - 0.1);
   }
 
 }
@@ -126,18 +95,14 @@ MyGLCanvas::MyGLCanvas(wxFrame* parent, int* args)
   m_winproxy->setSwapBuffersFunction(MyGLCanvas::swapbuffers);
   m_winproxy->setDesiredFramerate(20);
 
-  // Create the object that will handle keyboard input 
-  // This includes pausing, resetting, modifying time, etc...
-  tmv = new TimeManagementVisitor;
-
   // Create the models that will populate the scene using
   // Model(name, color(r,g,b,a))
-  spacestation = new Model("Space Station", 0, 1, 0, 0.9);
+  Model *spacestation = new Model("Space Station", 0, 1, 0, 0.9);
   Model *hubble = new Model("Hubble", 1, 0, 0, 0.9);
 
   // Set the 3D models
-  spacestation->setModel("../Models/SpaceStation.3ds");
-  hubble->setModel("../Models/Hubble.3ds");
+  spacestation->setModel("Models/SpaceStation.3ds");
+  hubble->setModel("Models/Hubble.3ds");
 
   // Create the trajectory using
   // Trajectory(DOF, number of optionals)
@@ -206,7 +171,7 @@ MyGLCanvas::MyGLCanvas(wxFrame* parent, int* args)
   ma->setMarkerColor(MarkerArtist::START, 0, 1, 0);
   ma->setMarkerColor(MarkerArtist::END,   1, 0, 0);
   ma->setMarkerColor(MarkerArtist::INTERMEDIATE, 1, 1, 0);
-  ma->setMarkerImage("../Images/fuzzyparticle.tiff");
+  ma->setMarkerImage("Images/fuzzyparticle.tiff");
   ma->setMarkerSize(10);
   data._src = Trajectory::POSOPT;
   data._element = 0; // Use X position for X coordinate
@@ -225,11 +190,11 @@ MyGLCanvas::MyGLCanvas(wxFrame* parent, int* args)
   ma->setIntermediateDirection(MarkerArtist::END); // From end of trajectory
 
   // Create a set of Coordinate Axes for time history plot
-  axes = new CoordinateAxes("axes", 0.0, 0.8, 0.8, 1);
+  CoordinateAxes *axes = new CoordinateAxes("axes", 0.0, 0.8, 0.8, 1);
   axes->setAxisLength(2.0*M_PI);
   axes->setTickSpacing(M_PI, 0.25*M_PI);
   axes->setTickSize(8, 5);
-  axes->setTickImage("../Images/circle.tiff");
+  axes->setTickImage("Images/circle.tiff");
   axes->setXLabel("X");
   axes->setYLabel("Z");
   axes->setZLabel("t");
@@ -245,7 +210,7 @@ MyGLCanvas::MyGLCanvas(wxFrame* parent, int* args)
 
   // Create a MarkerArtist to draw the center marker
   MarkerArtist *centermarker = new MarkerArtist();
-  centermarker->setMarkerImage("../Images/target.tiff");
+  centermarker->setMarkerImage("Images/target.tiff");
   centermarker->setMarkerSize(10);
 
   // Add the markerartist to the drawable trajectory
@@ -268,12 +233,10 @@ MyGLCanvas::MyGLCanvas(wxFrame* parent, int* args)
 
   // Tell model to follow trajectory (by default in LOOP mode)
   TrajectoryFollower *tf = new TrajectoryFollower(traj);
-  tf->setTimeScale(tscale);
   hubble->getTransform()->setUpdateCallback(tf);
 
   // Tell trace frame to follow time history
   tf = new TrajectoryFollower(traj);
-  tf->setTimeScale(tscale);
   data._src = Trajectory::POSOPT;
   data._opt = 0;
   data._element = 0; // Use X position for X coordinate
@@ -289,7 +252,6 @@ MyGLCanvas::MyGLCanvas(wxFrame* parent, int* args)
   // Tell radial frame to follow time history's orientation
   tf = new TrajectoryFollower(traj);
   tf->setFollowType(TrajectoryFollower::ATTITUDE, TrajectoryFollower::LOOP);
-  tf->setTimeScale(tscale);
   rp->getTransform()->setUpdateCallback(tf);
   rp->setPosition(0.0, 0.0, 0.0);
 
@@ -310,7 +272,7 @@ MyGLCanvas::MyGLCanvas(wxFrame* parent, int* args)
   // Set up the scene
   theWindow->setScene(fm, 0, 0);
   theWindow->setScene(fm2, 1, 0);
-  theWindow->getGridPosition(0, 0)->setSkySphereTexture("../Images/StarMap.tif");
+  theWindow->getGridPosition(0, 0)->setSkySphereTexture("Images/StarMap.tif");
   theWindow->getGridPosition(0, 0)->addView(view);
   theWindow->getGridPosition(0, 0)->addView(view2);
   theWindow->getGridPosition(1, 0)->addView(view3);

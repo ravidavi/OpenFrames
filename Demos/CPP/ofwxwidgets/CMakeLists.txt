@@ -11,32 +11,26 @@ ENDIF()
 INCLUDE(${wxWidgets_USE_FILE})
 
 # Specify tests that should be built
-SET( ALL_TESTS wxtest1 wxtest_bare )
+SET( curr_demo ofwxwidgets )
 
-IF(OF_BUILD_TESTS) # If user asked for test programs
-  FOREACH(curr_test ${ALL_TESTS})
-    # Specify which file should be compiled for current test
-    ADD_EXECUTABLE(${curr_test} ${curr_test}.cpp)
+# Specify which file should be compiled for this demo
+ADD_EXECUTABLE(${curr_demo} ${curr_demo}.cpp)
 
-    # Tell linker to link against dependencies
-    TARGET_LINK_LIBRARIES(${curr_test} OpenFrames ${OPENSCENEGRAPH_LIBRARIES} ${wxWidgets_LIBRARIES})
+# Tell linker to link against dependencies
+TARGET_LINK_LIBRARIES(${curr_demo} OpenFrames ${OPENSCENEGRAPH_LIBRARIES} ${wxWidgets_LIBRARIES})
 
-    # Executable postfix needs to be explicitly specified
-    SET_TARGET_PROPERTIES(${curr_test} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+# Executable postfix needs to be explicitly specified
+SET_TARGET_PROPERTIES(${curr_demo} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
 
-    # Specify to use Subsystem:Windows on VisualStudio
-    IF(WIN32)
-      IF(MSVC)
-        SET_TARGET_PROPERTIES(${curr_test} PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
-      ENDIF(MSVC)
-    ENDIF(WIN32)
+# Specify to use Subsystem:Windows on VisualStudio
+IF(WIN32)
+  IF(MSVC)
+    SET_TARGET_PROPERTIES(${curr_demo} PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
+  ENDIF(MSVC)
+ENDIF(WIN32)
 
-    # Install test in current directory, not in CMAKE_INSTALL_PREFIX directory
-    # Necessary since models/images are located relative to here
-    INSTALL(
-      TARGETS ${curr_test}
-      RUNTIME DESTINATION bin
-    )
-  ENDFOREACH(curr_test)
-
-ENDIF(OF_BUILD_TESTS)
+# Install demo in CMAKE_INSTALL_PREFIX/bin directory
+INSTALL(
+  TARGETS ${curr_demo}
+  RUNTIME DESTINATION bin
+  )

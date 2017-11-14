@@ -419,9 +419,11 @@ void TrajectoryFollower::setOffsetTime(double offsetTime)
 	_needsUpdate = true;
 }
 
-void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
+bool TrajectoryFollower::run(osg::Object* object, osg::Object* data)
 {
-  double simTime = nv->getFrameStamp()->getSimulationTime();
+  osg::NodeVisitor *nv = data ? data->asNodeVisitor() : 0;
+  double simTime = 0.0;
+  if(nv) simTime = nv->getFrameStamp()->getSimulationTime();
   
   // Make sure time has changed
   if((_latestTime != simTime) || _needsUpdate)
@@ -458,7 +460,7 @@ void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
       }
       
       // Apply new position/attitude to the FrameTransform
-      FrameTransform *ft = static_cast<FrameTransform*>(node);
+      FrameTransform *ft = static_cast<FrameTransform*>(object);
       
       if(_dataValid && (_data & POSITION))
       {
@@ -479,7 +481,7 @@ void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
   }
   
   // Call nested callbacks and traverse rest of scene graph
-  osg::NodeCallback::traverse(node, nv);
+  return osg::Callback::traverse(object, data);
 }
 
 double TrajectoryFollower::_computeTime(double time)
