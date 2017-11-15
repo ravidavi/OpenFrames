@@ -19,7 +19,7 @@
 #include <OpenFrames/Utilities.hpp>
 #include <OpenFrames/VRUtils.hpp>
 
-#include <osg/notify>
+#include <osg/Notify>
 #include <iostream>
 
 static const std::string vrCamNamePrefix("VRCam");

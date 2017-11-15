@@ -20,6 +20,8 @@
 #include <osg/Notify>
 #include <openvr.h>
 #include <cmath>
+#include <climits>
+#include <cstring>
 
 #ifdef _WIN32
 #include <Windows.h>
