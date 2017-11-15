@@ -829,9 +829,21 @@ namespace OpenFrames
     // Create the window
     if(!setupWindow()) return;
 
-    // Set up processor affinity using OSG's affinity configuration
-    // NOTE: Does putting this thread on Proc0 steal CPU time from simulation?
-    _viewer->setUseConfigureAffinity(true);
+    // Set up processor affinity for render and database threads
+    // First let OSG configure affinity
+    _viewer->configureAffinity();
+    
+    // Next override the main rendering thread's affinity so it doesn't
+    // suck up time on Proc0. Generally we want to place the thread on
+    // an even-numbered cpu (in case of hyperthreading)
+    unsigned int numProcessors = OpenThreads::GetNumberOfProcessors();
+    unsigned int cpuNumber = 0; // Default for 1 processor
+    if(numProcessors == 2) cpuNumber = 1; // Only 2 processors
+    else if(numProcessors > 2) cpuNumber = numProcessors - 2; // Use last cpu
+    _viewer->setProcessorAffinity(cpuNumber);
+    
+    // Finally set threading model
+    _viewer->setUseConfigureAffinity(false); // Already called configureAffinity
     _viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
     
     // Controls the framerate while graphics are paused
