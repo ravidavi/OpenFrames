@@ -2711,7 +2711,7 @@ void OF_FCN(oftraj_clear)()
 void OF_FCN(oftraj_informartists)()
 {
 	if (_objs->_currTraj) {
-	  _objs->_currTraj->informArtists();
+	  _objs->_currTraj->informSubscribers();
       _objs->_intVal = 0;
     }
     else {
@@ -2734,7 +2734,7 @@ void OF_FCN(oftraj_informartists)()
 void OF_FCN(oftraj_autoinformartists)(bool *autoinform)
 {
 	if (_objs->_currTraj) {
-	  _objs->_currTraj->autoInformArtists(*autoinform);
+	  _objs->_currTraj->autoInformSubscribers(*autoinform);
       _objs->_intVal = 0;
     }
     else {

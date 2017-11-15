@@ -34,7 +34,7 @@ namespace OpenFrames
  * to deriving classes; this class just stores the Trajectory and line
  * styles that should be used for drawing.
 ***********************************************************/
-class OF_EXPORT TrajectoryArtist : public osg::Drawable
+class OF_EXPORT TrajectoryArtist : public osg::Drawable, public OpenFrames::TrajectorySubscriber
 {
   public:
 	TrajectoryArtist();
@@ -54,11 +54,11 @@ class OF_EXPORT TrajectoryArtist : public osg::Drawable
 
 	/** Called by the trajectory when its data is cleared. Must be
 	    implemented by derived classes. */
-	virtual void dataCleared() = 0;
+	virtual void dataCleared(Trajectory* traj) = 0;
 
 	/** Called by the trajectory when data is added to it. Must be
 	    implemented by derived classes. */
-	virtual void dataAdded() = 0;
+	virtual void dataAdded(Trajectory* traj) = 0;
 
   protected:
 	virtual ~TrajectoryArtist();

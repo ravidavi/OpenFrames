@@ -101,10 +101,10 @@ class OF_EXPORT MarkerArtist : public TrajectoryArtist
 	virtual void drawImplementation(osg::RenderInfo& renderInfo) const;
 
 	/** Tell artist that data was cleared. This is automatically called. */	
-	virtual void dataCleared();
+	virtual void dataCleared(Trajectory* traj);
 
 	/** Tell artist that data was added. This is automatically called. */	
-	virtual void dataAdded();
+	virtual void dataAdded(Trajectory* traj);
 
 	/** Compute the auto attenuation coefficients. */
 	void computeAttenuation();

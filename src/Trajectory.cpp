@@ -15,15 +15,14 @@
 ***********************************/
 
 #include <OpenFrames/Trajectory.hpp>
-#include <OpenFrames/TrajectoryArtist.hpp>
 #include <math.h>
 #include <climits>
+#include <cfloat>
 
 namespace OpenFrames {
 
 Trajectory::Trajectory(unsigned int dof, unsigned int nopt ) 
 {
-	_autoInformArtists = true;
   _autoInformSubscribers = true;
 	_safeReadWrite = true;
 
@@ -34,7 +33,6 @@ Trajectory::Trajectory(unsigned int dof, unsigned int nopt )
 
 Trajectory::~Trajectory()
 {
-	_autoInformArtists = true;
   _autoInformSubscribers = true;
 	clear();
 }
@@ -46,11 +44,9 @@ void Trajectory::setNumOptionals(unsigned int nopt)
 	_nopt = nopt;
 	_base = _dof*(1 + _nopt);
 
-	bool temp = _autoInformArtists;
-	_autoInformArtists = true;
+	bool temp = _autoInformSubscribers;
   _autoInformSubscribers = true;
 	clear();
-	_autoInformArtists = temp;
   _autoInformSubscribers = temp;
 }
 
@@ -61,11 +57,9 @@ void Trajectory::setDOF(unsigned int dof)
 	_dof = dof;
 	_base = _dof*(1 + _nopt);
 
-	bool temp = _autoInformArtists;
-	_autoInformArtists = true;
+  bool temp = _autoInformSubscribers;
   _autoInformSubscribers = true;
 	clear();
-	_autoInformArtists = temp;
   _autoInformSubscribers = temp;
 }
 
@@ -172,7 +166,6 @@ bool Trajectory::addTime( const DataType &t )
 	_time.push_back(t); // Add the time
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
-	if(_autoInformArtists) informArtists();
   if(_autoInformSubscribers) informSubscribers();
 
 	return true;
@@ -195,7 +188,6 @@ bool Trajectory::addPosition( const DataType &x, const DataType &y,
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
-	if(_autoInformArtists) informArtists();
   if(_autoInformSubscribers) informSubscribers();
 
 	return true;
@@ -216,7 +208,6 @@ bool Trajectory::addPosition( const DataType* const pos )
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
-	if(_autoInformArtists) informArtists();
   if(_autoInformSubscribers) informSubscribers();
 
 	return true;
@@ -266,7 +257,6 @@ bool Trajectory::addAttitude( const DataType &x, const DataType &y,
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
-	if(_autoInformArtists) informArtists();
   if(_autoInformSubscribers) informSubscribers();
 
 	return true;
@@ -289,7 +279,6 @@ bool Trajectory::addAttitude( const DataType* const att )
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
-	if(_autoInformArtists) informArtists();
   if(_autoInformSubscribers) informSubscribers();
 
 	return true;
@@ -324,7 +313,6 @@ bool Trajectory::setOptional( unsigned int index, const DataType &x,
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
-	if(_autoInformArtists) informArtists();
   if(_autoInformSubscribers) informSubscribers();
 
 	return true;
@@ -345,7 +333,6 @@ bool Trajectory::setOptional( unsigned int index,
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
-	if(_autoInformArtists) informArtists();
   if(_autoInformSubscribers) informSubscribers();
 
 	return true;
@@ -387,8 +374,7 @@ void Trajectory::clear()
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
-	  // Inform artists
-	if(_autoInformArtists) informArtists();
+	  // Inform subscribers
   if(_autoInformSubscribers) informSubscribers();
 }
 
@@ -463,18 +449,6 @@ unsigned int Trajectory::getNumPoints(const DataSource source[]) const
 	return numPoints;
 }
 
-/** Register the given artist with this Trajectory */
-void Trajectory::addArtist(TrajectoryArtist *artist) const
-{
-	  // Make sure the artist is not already registered
-	for(ArtistArray::iterator i = _artists.begin(); i != _artists.end(); ++i)
-	{
-	  if(*i == artist) return;
-	}
-
-	_artists.push_back(artist);
-}
-
 /** Register the given subscriber with this Trajectory */
 void Trajectory::addSubscriber(TrajectorySubscriber* subscriber) const
 {
@@ -482,43 +456,12 @@ void Trajectory::addSubscriber(TrajectorySubscriber* subscriber) const
   if(std::find(_subscribers.begin(), _subscribers.end(), subscriber) == _subscribers.end())
     _subscribers.push_back(subscriber);
 }
-  
-void Trajectory::removeArtist(TrajectoryArtist *artist) const
-{
-	for(ArtistArray::iterator i = _artists.begin(); i != _artists.end(); ++i)
-	{
-	  if(*i == artist) 
-	  {
-	    _artists.erase(i);
-	    return;
-	  }
-	}
-}
 
 void Trajectory::removeSubscriber(TrajectorySubscriber* subscriber) const
 {
   // Remove subscriber from list of subscribers
   SubscriberArray::iterator i = std::find(_subscribers.begin(), _subscribers.end(), subscriber);
   if(i != _subscribers.end()) _subscribers.erase(i);
-}
-  
-void Trajectory::informArtists()
-{
-	ArtistArray::iterator i = _artists.begin();
-	if(_time.empty())
-	{
-  	  for(; i != _artists.end(); ++i)
-	  {
-	    (*i)->dataCleared();
-	  }
-	}
-	else
-	{
-	  for(; i != _artists.end(); ++i)
-	  {
-	    (*i)->dataAdded();
-	  }
-	}
 }
 
 void Trajectory::informSubscribers()

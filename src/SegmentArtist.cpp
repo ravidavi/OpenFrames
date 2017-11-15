@@ -248,14 +248,14 @@ void SegmentArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	if(!(_startDataZero && _endDataZero)) _traj->unlockData();
 }
 
-void SegmentArtist::dataCleared()
+void SegmentArtist::dataCleared(Trajectory* traj)
 {
 	verifyData();
 	dirtyBound();
 	dirtyDisplayList();
 }
 
-void SegmentArtist::dataAdded()
+void SegmentArtist::dataAdded(Trajectory* traj)
 {
 	// Indicate that the trajectory has changed
 	dirtyBound();

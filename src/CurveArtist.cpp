@@ -190,14 +190,14 @@ void CurveArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	_traj->unlockData();
 }
 
-void CurveArtist::dataCleared()
+void CurveArtist::dataCleared(Trajectory* traj)
 {
 	verifyData();
 	dirtyBound();
 	dirtyDisplayList();
 }
 
-void CurveArtist::dataAdded()
+void CurveArtist::dataAdded(Trajectory* traj)
 {
 	// Indicate that the trajectory has changed
 	dirtyBound();

@@ -579,14 +579,14 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	if(!_dataZero) _traj->unlockData();
 }
 
-void MarkerArtist::dataCleared()
+void MarkerArtist::dataCleared(Trajectory* traj)
 {
 	verifyData();
 	dirtyBound();
 	dirtyDisplayList();
 }
 
-void MarkerArtist::dataAdded()
+void MarkerArtist::dataAdded(Trajectory* traj)
 {
 	dirtyBound();
 	dirtyDisplayList();

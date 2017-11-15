@@ -88,7 +88,7 @@ TrajectoryArtist::TrajectoryArtist( const TrajectoryArtist &ta, const osg::CopyO
 
 TrajectoryArtist::~TrajectoryArtist()
 {
-	if(_traj.valid()) _traj->removeArtist(this); 
+	if(_traj.valid()) _traj->removeSubscriber(this);
 }
 
 void TrajectoryArtist::setTrajectory(const Trajectory *traj)
@@ -96,11 +96,11 @@ void TrajectoryArtist::setTrajectory(const Trajectory *traj)
 	if(_traj == traj) return;
 
 	// Unregister from the old trajectory
-	if(_traj.valid()) _traj->removeArtist(this);
+	if(_traj.valid()) _traj->removeSubscriber(this);
 
 	// Register with the new trajectory
 	_traj = traj;
-	if(_traj.valid()) _traj->addArtist(this);
+	if(_traj.valid()) _traj->addSubscriber(this);
 }
 
 osg::BoundingBox TrajectoryArtist::computeBoundingBox() const

@@ -67,8 +67,8 @@ class OF_EXPORT CurveArtist : public TrajectoryArtist
 
 	/** Data was cleared from or added to the trajectory. Inherited
 	    from TrajectoryArtist */
-	virtual void dataCleared();
-	virtual void dataAdded();
+	virtual void dataCleared(Trajectory* traj);
+	virtual void dataAdded(Trajectory* traj);
 
   protected:
 	virtual ~CurveArtist();

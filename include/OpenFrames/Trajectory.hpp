@@ -24,7 +24,6 @@
 
 namespace OpenFrames {
 
-class TrajectoryArtist; // The class which draws a Trajectory
 class TrajectorySubscriber; // Forward-declare trajectory subscriber
 
 /************************************
@@ -39,7 +38,6 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	    return value of getGLDataType() if you change this! */
 	typedef double DataType;
 	typedef std::vector<DataType> DataArray;
-	typedef std::vector<TrajectoryArtist*> ArtistArray;
   typedef std::vector<TrajectorySubscriber*> SubscriberArray;
 
 	/** SourceType is used to specify where the data for the x/y/z component
@@ -191,14 +189,6 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	    data using the given sources.  If each of the source's components
 	    is ZERO, then this function returns UINT_MAX. */
 	virtual unsigned int getNumPoints(const DataSource source[]) const;
-		
-	/** Register an artist with this trajectory.  The artist will be notified
-	    whenever a position, optional, or attitude is added to the trajectory. */
-	virtual void addArtist(TrajectoryArtist *artist) const;
-	virtual void removeArtist(TrajectoryArtist *artist) const;
-
-	virtual void informArtists();
-	inline void autoInformArtists(bool autoinform) { _autoInformArtists = autoinform; }
 
   /** Register a subscriber with this trajectory. The subscriber will be notified
       whenever the trajectory changes. */
@@ -218,9 +208,6 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	DataArray _time;   // Times
 	DataArray _posopt; // Positions & optionals
 	DataArray _att;    // Attitudes
-
-	mutable ArtistArray _artists; // Artists currently drawing this Trajectory
-	bool _autoInformArtists;
   
   mutable SubscriberArray _subscribers; // Subscribers of this Trajectory
   bool _autoInformSubscribers;
