@@ -241,7 +241,7 @@ bool FrameTransform::computeWorldToLocalMatrix(osg::Matrix& matrix, osg::NodeVis
 }
 
 TrajectoryFollower::TrajectoryFollower(Trajectory *traj)
-  : _follow(NULL), _usingDefaultData(true)
+  : _usingDefaultData(true)
 {
 	setTrajectory(traj);
   
@@ -251,7 +251,14 @@ TrajectoryFollower::TrajectoryFollower(Trajectory *traj)
   setOffsetTime(0.0);
 }
 
-TrajectoryFollower::~TrajectoryFollower() {}
+TrajectoryFollower::~TrajectoryFollower()
+{
+  // Unsubscribe from all followed trajectories
+  for(TrajList::iterator i = _trajList.begin(); i != _trajList.end(); ++i)
+  {
+    (*i)->removeSubscriber(this);
+  }
+}
 
 void TrajectoryFollower::setTrajectory(Trajectory *traj)
 {
@@ -259,9 +266,12 @@ void TrajectoryFollower::setTrajectory(Trajectory *traj)
   
   // Already following specified trajectory
 	if((_trajList.size() == 1) && (_trajList[0] == traj)) return;
-  
-  // Reset currently followed trajectory pointer
-  _follow = NULL;
+
+  // Unsubscribe from all followed trajectories
+  for(TrajList::iterator i = _trajList.begin(); i != _trajList.end(); ++i)
+  {
+    (*i)->removeSubscriber(this);
+  }
  
   // Reference new trajectory so that it isn't deleted
   // if it's already being followed
@@ -269,7 +279,11 @@ void TrajectoryFollower::setTrajectory(Trajectory *traj)
   
   // Clear existing trajectory list and add new trajectory
   _trajList.clear();
-  if(traj != NULL) _trajList.push_back(traj);
+  if(traj != NULL)
+  {
+    _trajList.push_back(traj);
+    traj->addSubscriber(this);
+  }
   
   // Set default data sources if needed
   if(_usingDefaultData) setDefaultData();
@@ -283,15 +297,16 @@ void TrajectoryFollower::setTrajectory(Trajectory *traj)
   
 void TrajectoryFollower::addTrajectory(Trajectory *traj)
 {
-  OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
-
   if(traj == NULL) return; // Error check
+
+  OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
   
   // Already following specified trajectory
   if(std::find(_trajList.begin(), _trajList.end(), traj) != _trajList.end()) return;
   
-  // Add new trajectory
+  // Add new trajectory and subscribe to updates
   _trajList.push_back(traj);
+  traj->addSubscriber(this);
   
   // Set default data sources if needed
   if(_usingDefaultData) setDefaultData();
@@ -307,21 +322,25 @@ void TrajectoryFollower::removeTrajectory(Trajectory *traj)
 {
   OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
 
-  // Unfollow all trajectories
+  // Stop following all trajectories
   if(traj == NULL)
   {
-    _follow = NULL;
+    // Unsubscribe from all followed trajectories
+    for(TrajList::iterator i = _trajList.begin(); i != _trajList.end(); ++i)
+    {
+      (*i)->removeSubscriber(this);
+    }
+    
     _trajList.clear();
   }
-  else // Unfollow specified trajectory
+  else // Stop following specified trajectory
   {
-    // Reset currently followed trajectory pointer
-    if(_follow == traj) _follow = NULL;
-    
-    // Remove trajectory if it is followed
-    // Note that we use erase-find instead of erase-remove because
-    // followed trajectory list is unique
-    _trajList.erase(std::find(_trajList.begin(), _trajList.end(), traj));
+    TrajList::iterator i = std::find(_trajList.begin(), _trajList.end(), traj);
+    if(i != _trajList.end())
+    {
+      (*i)->removeSubscriber(this);
+      _trajList.erase(i);
+    }
   }
   
   // Set default data sources if needed
@@ -457,7 +476,7 @@ bool TrajectoryFollower::run(osg::Object* object, osg::Object* data)
       // Unlock all trajectories except the one being followed
       for(auto traj : _trajList)
       {
-        if(traj != _follow) traj->unlockData();
+        if(traj.get() != _follow.get()) traj->unlockData();
       }
       
       // Apply new position/attitude to the FrameTransform
@@ -524,7 +543,7 @@ Trajectory* TrajectoryFollower::_chooseTrajectory(double time)
   if(_trajList.size() == 1) return _trajList[0];
 
   // If current trajectory contains given time, then continue using it
-  if(_follow && (_follow->getTimeDistance(time) <= 0.0)) return _follow;
+  if(_follow.valid() && (_follow->getTimeDistance(time) <= 0.0)) return _follow.get();
 
   // Find first trajectory that contains given time
   double minTimeDistance = DBL_MAX;

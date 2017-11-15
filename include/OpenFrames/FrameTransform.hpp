@@ -25,6 +25,7 @@
 #include <osg/Vec3d>
 #include <osg/Vec4d>
 #include <osg/ref_ptr>
+#include <osg/observer_ptr>
 #include <OpenThreads/Mutex>
 
 namespace OpenFrames
@@ -114,9 +115,9 @@ class OF_EXPORT FrameTransform : public osg::Transform
  *  If t within time of {T} but not within any T_i, then follow closest T_i
  *  If t within time of T_i, then follow T_i
 ***************************************************************/
-class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
+class OF_EXPORT TrajectoryFollower : public osg::NodeCallback, public OpenFrames::TrajectorySubscriber
 {
-  public:
+public:
 	/** If a trajectory is being followed, the FollowMode specifies how the
 	    transform handles the current time being out of range of the followed
 	    trajectory's times.  If the current time is in the trajectory's time
@@ -179,19 +180,23 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
   void setDefaultData();
   bool getUsingDefaultData() { return _usingDefaultData; }
 
-	// Time managment functions
-  // Either follow the global simulation time (set by WindowProxy), or
-  // follow a specific time
-	void setTime(double time); // Follow specific time
-	void setOffsetTime(double offsetTime); // Offset from simulation time
-  inline bool isFollowingTime() const { return _followTime; }
+  // Time managment functions allow for two types of times
+  // - Offset from the global simulation time (set by WindowProxy)
+  // - Custom simulation time
+  void setTime(double time); // Custom simulation time
+  void setOffsetTime(double offsetTime); // Offset from global simulation time
+  inline bool isFollowingTime() const
+  { return _followTime; } // True for global sim time, false for custom sim time
 	
-	void reset();
-
   /** Inherited from osg::Callback, implements the callback. */
   virtual bool run(osg::Object* object, osg::Object* data);
+  
+  /** Inherited from OpenFrames::TrajectorySubscriber
+      Functions that inform about Trajectory changes */
+  virtual void dataCleared(Trajectory* traj) { _needsUpdate = true; }
+  virtual void dataAdded(Trajectory* traj) { _needsUpdate = true; }
 
-  protected:
+protected:
 	virtual ~TrajectoryFollower();
 
   // Compute adjusted time based on follow mode
@@ -213,9 +218,11 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
     }
     return true;
   }
+  
+  typedef std::vector<osg::ref_ptr<Trajectory> > TrajList;
 
-	std::vector<osg::ref_ptr<Trajectory> > _trajList; // All followed trajectories 
-  Trajectory* _follow; // Currently followed trajectory
+  TrajList _trajList; // All followed trajectories
+  osg::observer_ptr<Trajectory> _follow; // Currently followed trajectory
 	FollowMode _mode; // Mode in which to follow trajectory
 	unsigned int _data; // Whether to follow position and/or attitude
 

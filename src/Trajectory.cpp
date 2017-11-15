@@ -24,6 +24,7 @@ namespace OpenFrames {
 Trajectory::Trajectory(unsigned int dof, unsigned int nopt ) 
 {
 	_autoInformArtists = true;
+  _autoInformSubscribers = true;
 	_safeReadWrite = true;
 
 	if(dof == 0) dof = 1;
@@ -34,6 +35,7 @@ Trajectory::Trajectory(unsigned int dof, unsigned int nopt )
 Trajectory::~Trajectory()
 {
 	_autoInformArtists = true;
+  _autoInformSubscribers = true;
 	clear();
 }
 
@@ -46,8 +48,10 @@ void Trajectory::setNumOptionals(unsigned int nopt)
 
 	bool temp = _autoInformArtists;
 	_autoInformArtists = true;
+  _autoInformSubscribers = true;
 	clear();
 	_autoInformArtists = temp;
+  _autoInformSubscribers = temp;
 }
 
 void Trajectory::setDOF(unsigned int dof)
@@ -59,8 +63,10 @@ void Trajectory::setDOF(unsigned int dof)
 
 	bool temp = _autoInformArtists;
 	_autoInformArtists = true;
+  _autoInformSubscribers = true;
 	clear();
 	_autoInformArtists = temp;
+  _autoInformSubscribers = temp;
 }
 
 bool Trajectory::getTimeRange( DataType &begin, DataType &end ) const
@@ -167,6 +173,7 @@ bool Trajectory::addTime( const DataType &t )
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
 	if(_autoInformArtists) informArtists();
+  if(_autoInformSubscribers) informSubscribers();
 
 	return true;
 }
@@ -189,6 +196,7 @@ bool Trajectory::addPosition( const DataType &x, const DataType &y,
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
 	if(_autoInformArtists) informArtists();
+  if(_autoInformSubscribers) informSubscribers();
 
 	return true;
 }
@@ -209,6 +217,7 @@ bool Trajectory::addPosition( const DataType* const pos )
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
 	if(_autoInformArtists) informArtists();
+  if(_autoInformSubscribers) informSubscribers();
 
 	return true;
 }
@@ -258,6 +267,7 @@ bool Trajectory::addAttitude( const DataType &x, const DataType &y,
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
 	if(_autoInformArtists) informArtists();
+  if(_autoInformSubscribers) informSubscribers();
 
 	return true;
 }
@@ -280,6 +290,7 @@ bool Trajectory::addAttitude( const DataType* const att )
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
 	if(_autoInformArtists) informArtists();
+  if(_autoInformSubscribers) informSubscribers();
 
 	return true;
 }
@@ -314,6 +325,7 @@ bool Trajectory::setOptional( unsigned int index, const DataType &x,
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
 	if(_autoInformArtists) informArtists();
+  if(_autoInformSubscribers) informSubscribers();
 
 	return true;
 }
@@ -333,8 +345,8 @@ bool Trajectory::setOptional( unsigned int index,
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
-
 	if(_autoInformArtists) informArtists();
+  if(_autoInformSubscribers) informSubscribers();
 
 	return true;
 }
@@ -377,6 +389,7 @@ void Trajectory::clear()
 
 	  // Inform artists
 	if(_autoInformArtists) informArtists();
+  if(_autoInformSubscribers) informSubscribers();
 }
 
 void Trajectory::getPoint(unsigned int i, const DataSource source[], DataType val[]) const
@@ -462,6 +475,14 @@ void Trajectory::addArtist(TrajectoryArtist *artist) const
 	_artists.push_back(artist);
 }
 
+/** Register the given subscriber with this Trajectory */
+void Trajectory::addSubscriber(TrajectorySubscriber* subscriber) const
+{
+  // Make sure the subscriber is not already registered
+  if(std::find(_subscribers.begin(), _subscribers.end(), subscriber) == _subscribers.end())
+    _subscribers.push_back(subscriber);
+}
+  
 void Trajectory::removeArtist(TrajectoryArtist *artist) const
 {
 	for(ArtistArray::iterator i = _artists.begin(); i != _artists.end(); ++i)
@@ -474,6 +495,13 @@ void Trajectory::removeArtist(TrajectoryArtist *artist) const
 	}
 }
 
+void Trajectory::removeSubscriber(TrajectorySubscriber* subscriber) const
+{
+  // Remove subscriber from list of subscribers
+  SubscriberArray::iterator i = std::find(_subscribers.begin(), _subscribers.end(), subscriber);
+  if(i != _subscribers.end()) _subscribers.erase(i);
+}
+  
 void Trajectory::informArtists()
 {
 	ArtistArray::iterator i = _artists.begin();
@@ -493,6 +521,16 @@ void Trajectory::informArtists()
 	}
 }
 
+void Trajectory::informSubscribers()
+{
+  bool cleared = _time.empty();
+  for(SubscriberArray::iterator i = _subscribers.begin(); i != _subscribers.end(); ++i)
+  {
+    if(cleared) (*i)->dataCleared(this);
+    else (*i)->dataAdded(this);
+  }
+}
+  
 void Trajectory::lockData() const
 {
 	_readWriteMutex.readLock();

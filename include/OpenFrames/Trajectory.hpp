@@ -25,6 +25,7 @@
 namespace OpenFrames {
 
 class TrajectoryArtist; // The class which draws a Trajectory
+class TrajectorySubscriber; // Forward-declare trajectory subscriber
 
 /************************************
  * Ravi Mathur  
@@ -39,6 +40,7 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	typedef double DataType;
 	typedef std::vector<DataType> DataArray;
 	typedef std::vector<TrajectoryArtist*> ArtistArray;
+  typedef std::vector<TrajectorySubscriber*> SubscriberArray;
 
 	/** SourceType is used to specify where the data for the x/y/z component
 	    of every point is to be taken from. */
@@ -198,6 +200,13 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	virtual void informArtists();
 	inline void autoInformArtists(bool autoinform) { _autoInformArtists = autoinform; }
 
+  /** Register a subscriber with this trajectory. The subscriber will be notified
+      whenever the trajectory changes. */
+  virtual void addSubscriber(TrajectorySubscriber* subscriber) const;
+  virtual void removeSubscriber(TrajectorySubscriber* subscriber) const;
+  virtual void informSubscribers();
+  inline void autoInformSubscribers(bool autoinform) { _autoInformSubscribers = autoinform; }
+  
 	/** Synchronization routines which prevent Trajectory's data from being
 	    moved around in memory while the data is being read. */
 	virtual void lockData() const;   // Block the data from being changed
@@ -212,6 +221,9 @@ class OF_EXPORT Trajectory : public osg::Referenced
 
 	mutable ArtistArray _artists; // Artists currently drawing this Trajectory
 	bool _autoInformArtists;
+  
+  mutable SubscriberArray _subscribers; // Subscribers of this Trajectory
+  bool _autoInformSubscribers;
 
 	unsigned int _nopt; // Number of optionals for each time.
 	unsigned int _base; // Number of data elements taken up by each
@@ -228,6 +240,23 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	bool _safeReadWrite;
 };
 
+/************************************
+ * Ravi Mathur
+ * OpenFrames API, class TrajectorySubscriber
+ * Pure abstract base class that is informed of changes to Trajectory objects
+ ***********************************/
+class TrajectorySubscriber
+{
+public:
+  /** Called by a trajectory when its data is cleared. Must be
+   implemented by derived classes. */
+  virtual void dataCleared(Trajectory *traj) = 0;
+  
+  /** Called by a trajectory when data is added to it. Must be
+   implemented by derived classes. */
+  virtual void dataAdded(Trajectory *traj) = 0;
+};
+  
 } // !namespace OpenFrames
 
 #endif // !define _OF_TRAJECTORY_
