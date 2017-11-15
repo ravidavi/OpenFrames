@@ -201,7 +201,7 @@ class OF_EXPORT TrajectoryFollower : public osg::NodeCallback
   Trajectory* _chooseTrajectory(double time);
   
   // Update position & orientation based on adjusted time and chosen trajectory
-	void _updateState(double time, FollowData data);
+	bool _updateState(double time, FollowData data);
   
   // Check if all followed trajectories support necessary data sources
   bool _verifyDataSources() const

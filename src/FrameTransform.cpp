@@ -15,6 +15,7 @@
 ***********************************/
 
 #include <OpenFrames/FrameTransform.hpp>
+#include <osg/Notify>
 #include <osgUtil/CullVisitor>
 #include <OpenThreads/ScopedLock>
 #include <iostream>
@@ -464,14 +465,16 @@ bool TrajectoryFollower::run(osg::Object* object, osg::Object* data)
       
       if(_dataValid && (_data & POSITION))
       {
-        _updateState(tNew, POSITION);
-        ft->setPosition(_v1[0], _v1[1], _v1[2]);
+        // Apply new position if it can be computed
+        if(_updateState(tNew, POSITION))
+          ft->setPosition(_v1[0], _v1[1], _v1[2]);
       }
       
       if(_data & ATTITUDE)
       {
-        _updateState(tNew, ATTITUDE);
-        ft->setAttitude(_a1[0], _a1[1], _a1[2], _a1[3]);
+        // Apply new attitude if it can be computed
+        if(_updateState(tNew, ATTITUDE))
+          ft->setAttitude(_a1[0], _a1[1], _a1[2], _a1[3]);
       }
       
       _follow->unlockData(); // Unlock followed trajectory
@@ -546,7 +549,7 @@ Trajectory* TrajectoryFollower::_chooseTrajectory(double time)
   return minTimeDistanceTraj;
 }
 
-void TrajectoryFollower::_updateState(double time, TrajectoryFollower::FollowData data)
+bool TrajectoryFollower::_updateState(double time, TrajectoryFollower::FollowData data)
 {
   int val, index = 0;
 
@@ -560,14 +563,15 @@ void TrajectoryFollower::_updateState(double time, TrajectoryFollower::FollowDat
   else
     numPoints = _follow->getNumAtt();
   
-  // If no points or ZERO used for position, then directly zero out state
-  if(numPoints == 0 || numPoints == UINT_MAX)
+  // Don't update state if trajectory has no points
+  if(numPoints == 0) return false;
+  
+  // Trajectory has UINT_MAX points IFF data is POSITION and source is ZERO
+  // In that case set position to origin
+  else if(numPoints == UINT_MAX)
   {
-    if(data == POSITION)
-      _v1.set(0.0, 0.0, 0.0);
-    else
-      _a1.set(0.0, 0.0, 0.0, 1.0);
-    return;
+    _v1.set(0.0, 0.0, 0.0);
+    return true;
   }
 
   // Find requested time in the Trajectory
@@ -587,12 +591,12 @@ void TrajectoryFollower::_updateState(double time, TrajectoryFollower::FollowDat
       // Interpolate if the two times are not equal
       if((index+1 < (int)numPoints) && (times[index] != times[index+1]))
       {
-        // Get second interpolation point and do interpolation
+        // Get second interpolation point and do the interpolation
         if(data == POSITION)
         {
           _follow->getPoint(index+1, _dataSource, _v2._v);
           double frac = (time - times[index])/(times[index+1] - times[index]);
-          _v1 = _v1 + (_v2-_v1)*frac; // Linear interpolation
+          _v1 = _v1 + (_v2-_v1)*frac; // Linear interpolation for position
         }
         else
         {
@@ -629,12 +633,16 @@ void TrajectoryFollower::_updateState(double time, TrajectoryFollower::FollowDat
   }
   else if(val == -2) // Error in search (endless iterations)
   {
-    std::cerr<< "FrameTransform::_updateState() error: Requested time not found in a reasonable number of iterations!" << std::endl;
+    OSG_WARN << "FrameTransform::_updateState() error: Requested time not found in a reasonable number of iterations!" << std::endl;
+    return false;
   }
   else // Unhandled return value from getTimeIndex()
   {
-    std::cerr<< "FrameTransform::_updateState() error: Unhandled return value!" << std::endl;
+    OSG_WARN << "FrameTransform::_updateState() error: Unhandled return value!" << std::endl;
+    return false;
   }
+  
+  return true; // State successfully computed
 }
   
 } // !namespace OpenFrames
