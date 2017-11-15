@@ -33,6 +33,8 @@
 #include <OpenFrames/SegmentArtist.hpp>
 using namespace OpenFrames;
 
+const unsigned int winWidth = 1024, winHeight = 768;
+
 // Initialize static variable
 MyGLCanvas* MyGLCanvas::currCanvas = NULL;
 
@@ -87,12 +89,22 @@ MyGLCanvas::MyGLCanvas(wxFrame* parent, int* args)
   m_context = new wxGLContext(this);
 
   // Create embedded WindowProxy that handles all OpenFrames drawing
-  m_winproxy = new OpenFrames::WindowProxy(0, 0, 450, 300, 2, 1, true);
+  int winX = 0, winY = 0; // Unused since wxWidgets sets window origin
+  unsigned int nRow = 2, nCol = 1;
+  bool embedded = true;
+  bool useVR = false;
+  m_winproxy = new OpenFrames::WindowProxy(winX, winY, winWidth, winHeight, nRow, nCol, embedded, useVR);
   theWindow = m_winproxy;
   m_winproxy->setID(0);
   m_winproxy->setMakeCurrentFunction(MyGLCanvas::makecurrent);
-  m_winproxy->setUpdateContextFunction(MyGLCanvas::makecurrent);
   m_winproxy->setSwapBuffersFunction(MyGLCanvas::swapbuffers);
+  
+  // On OSX, wxWidgets uses Cocoa which requires the context to be updated on reshape (resize)
+  // This is done by calling the makecurrent function
+#ifdef __APPLE__
+  m_winproxy->setUpdateContextFunction(MyGLCanvas::makecurrent);
+#endif
+  
   m_winproxy->setDesiredFramerate(20);
 
   // Create the models that will populate the scene using
@@ -432,7 +444,8 @@ wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit()
 {
-  frame = new MyFrame( "Hello OpenFrames World", wxPoint(50, 50), wxSize(450, 340) );
+  // Increase winHeight to account for title bar
+  frame = new MyFrame( "Hello OpenFrames World", wxPoint(50, 50), wxSize(winWidth, winHeight+40) );
 
   wxBoxSizer *sizer = new wxBoxSizer(wxHORIZONTAL);
 

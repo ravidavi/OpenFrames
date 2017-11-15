@@ -61,7 +61,8 @@ namespace OpenFrames
     /** Callback function for making the OpenGL context current (so it can be drawn on) */
     void setMakeCurrentFunction(void (*fcn)(unsigned int *winID, bool *success));
     
-    /** Callback function for updating the OpenGL context after qualifying events. Currently this includes resize. */
+    /** Callback function for updating the OpenGL context after qualifying events (e.g. resize)
+        This applies on OSX Cocoa, in which the context must be updated when the window is reshaped */
     void setUpdateContextFunction(void (*fcn)(unsigned int *winID, bool *success));
     bool updateContextImplementation();
     

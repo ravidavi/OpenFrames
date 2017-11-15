@@ -25,9 +25,11 @@ namespace OpenFrames {
   /** OpenFrames function that updates a projection matrix with specified near/far plane */
   void updateProjectionMatrix(osg::Matrix& proj, const double &zNear, const double &zfar);
   
-  /** Get the osg::View's master camera's viewport. If that does not exist, then get its
-   first available slave camera's viewport. */
+  /** Get the osg::View's viewport by searching its master camera then slave cameras */
   osg::Viewport* getMainViewport(osg::View *view);
+  
+  /** Get the osg::View's graphics context by searching its master camera then slave cameras */
+  osg::GraphicsContext* getMainGraphicsContext(osg::View *view);
   
 } // !namespace OpenFrames
 

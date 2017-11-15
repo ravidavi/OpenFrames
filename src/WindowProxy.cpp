@@ -16,6 +16,7 @@
 
 #include <OpenFrames/WindowProxy.hpp>
 #include <OpenFrames/FramerateLimiter.hpp>
+#include <OpenFrames/Utilities.hpp>
 #include <osg/GraphicsContext>
 #include <osg/PointSprite>
 #include <osgGA/GUIEventHandler>
@@ -260,8 +261,11 @@ namespace OpenFrames
         // The window was resized
       case(osgGA::GUIEventAdapter::RESIZE):
       {
-        EmbeddedGraphics* eg = dynamic_cast<EmbeddedGraphics*>(aa.asView()->getCamera()->getGraphicsContext());
+        // Get the graphics context that was resized
+        osg::GraphicsContext *gc = OpenFrames::getMainGraphicsContext(aa.asView());
         
+        // If graphics context is EmbeddedGraphics, then call the update context callback
+        EmbeddedGraphics* eg = dynamic_cast<EmbeddedGraphics*>(gc);
         if(eg)
         {
           bool success = eg->updateContextImplementation();

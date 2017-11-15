@@ -68,4 +68,22 @@ namespace OpenFrames{
     return vp; // Return viewport
   }
   
+  /*******************************************************/
+  osg::GraphicsContext* getMainGraphicsContext(osg::View *view)
+  {
+    if(view == NULL) return NULL;
+    
+    // The master camera's graphics context should be returned if available
+    osg::Camera *cam = view->getCamera();
+    osg::GraphicsContext *gc = cam->getGraphicsContext();
+    
+    // Otherwise search through slaves for a valid graphics context
+    for(unsigned int i = 0; (i < view->getNumSlaves()) && (gc == NULL); ++i)
+    {
+      cam = view->getSlave(i)._camera; // Get slave camera
+      gc = cam->getGraphicsContext(); // Get slave's graphics context
+    }
+    
+    return gc;
+  }
 } // !namespace OpenFrames
