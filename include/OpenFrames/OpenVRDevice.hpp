@@ -173,6 +173,9 @@ namespace OpenFrames {
     /** Get the controller laser */
     osg::MatrixTransform* getControllerLaser(uint32_t deviceID);
 
+    /** Get the ground plane */
+    osg::MatrixTransform* getGroundPlane() { return _roomGround; }
+
     /** Submits the latest rendered eye textures to OpenVR */
     void submitFrame(GLuint rightEyeTexName, GLuint leftEyeTexName);
 
@@ -304,8 +307,8 @@ namespace OpenFrames {
   protected:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
     
-    // Translational offset from trackball space to room origin
-    osg::Vec3d _roomOffset;
+    // Transformation from room space to trackball space
+    osg::Matrixd _roomPose;
     
     // Get the Room->World transform for the trackball itself, not including any
     // custom view transformations by FollowingTrackball. This allows transformations
@@ -337,7 +340,7 @@ namespace OpenFrames {
       double _origWorldUnitsPerMeter;
       osg::Quat _origRotation;
       osg::Matrixd _origTrackball;
-      osg::Vec3d _origRoomOffset;
+      osg::Matrixd _origRoomPose;
     } _motionData;
     void saveCurrentMotionData();
   };

@@ -18,6 +18,8 @@
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/VRUtils.hpp>
 #include <osgDB/ReadFile>
+#include <osg/io_utils>
+#include <osgUtil/RayIntersector>
 
 namespace OpenFrames{
 
@@ -120,7 +122,7 @@ namespace OpenFrames{
     _deviceModels->addChild(_controllerMidpoint);
 
     // Set midpoint sphere texture
-    osg::Image *image = osgDB::readImageFile("marble.jpg");
+    osg::Image *image = osgDB::readImageFile("Images/marble.jpg");
     osg::StateSet* ss;
     if (image)
     {
@@ -445,8 +447,8 @@ namespace OpenFrames{
     // Get World->Local (trackball space) view matrix
     osg::Matrixd matWorldToLocal = FollowingTrackball::getInverseMatrix();
     
-    // Translate from trackball to room origin
-    matWorldToLocal.postMultTranslate(-_roomOffset);
+    // Include Trackball->Room transform
+    matWorldToLocal.postMult(osg::Matrixd::inverse(_roomPose));
     
     // Include Room->HMD transform
     matWorldToLocal.postMult(_ovrDevice->getHMDPoseMatrix());
@@ -473,7 +475,7 @@ namespace OpenFrames{
     {
     case(ROTATE) :
     {
-      // Set the trackball rotation and distance based on controller motion
+      // Set the trackball rotation based on controller motion
       // Start by getting the controller location when the button was pressed
       osg::Vec3d origPos = _motionData._device1OrigPoseRaw.getTrans()*_motionData._origWorldUnitsPerMeter;
 
@@ -514,7 +516,7 @@ namespace OpenFrames{
       const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
       osg::Vec3d currPos = device1Model->_rawDeviceToWorld.getTrans();
 
-      // Move pose offset in the opposite direction as controller motion.
+      // Move room in the opposite direction as controller motion.
       osg::Vec3d deltaPos = origPos - currPos;
       double deltaLen = deltaPos.length() + fastMotionThreshold;
       if (deltaLen > 1.0)
@@ -522,8 +524,9 @@ namespace OpenFrames{
         deltaPos *= deltaLen*deltaLen;
       }
 
-      // Compute new pose offset based on controller motion
-      _roomOffset = _motionData._origRoomOffset + deltaPos*_motionData._origWorldUnitsPerMeter;
+      // Compute new room position based on controller motion
+      _roomPose = _motionData._origRoomPose;
+      _roomPose.postMultTranslate(deltaPos*_motionData._origWorldUnitsPerMeter);
 
       break;
     }
@@ -539,12 +542,16 @@ namespace OpenFrames{
       // Get the center point between controllers
       osg::Vec3d origCenter = (device1Trans + device2Trans) * 0.5;
 
+      // Get the vector from controller 1 -> 2
+      osg::Vec3d origDeviceLine = device2Trans - device1Trans;
+
       // Get the current controller distance
       const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
       const OpenVRDevice::DeviceModel *device2Model = _ovrDevice->getDeviceModel(_motionData._device2ID);
       device1Trans = device1Model->_rawDeviceToWorld.getTrans();
       device2Trans = device2Model->_rawDeviceToWorld.getTrans();
       osg::Vec3d currCenter = (device1Trans + device2Trans) * 0.5; // Center point between controllers
+      osg::Vec3d currDeviceLine = device2Trans - device1Trans; // Vector between controllers
       double currDist = (device1Trans - device2Trans).length();
       double distRatio = origDist / currDist; // controllers apart -> 0, controllers together -> inf
 
@@ -571,13 +578,53 @@ namespace OpenFrames{
       osg::Vec3d centerPoint;
       if (distRatio < 1.0) centerPoint = origCenter; // Expand universe
       else centerPoint = currCenter; // Shrink universe
-      _roomOffset = _motionData._origRoomOffset + centerPoint*(_motionData._origWorldUnitsPerMeter*(1.0 - distRatio));
+      _roomPose = _motionData._origRoomPose;
+      _roomPose.postMultTranslate(centerPoint*(_motionData._origWorldUnitsPerMeter*(1.0 - distRatio)));
+
+      // Compute and apply rotation from original to current line between controllers
+      //osg::Quat q;
+      //q.makeRotate(currDeviceLine, origDeviceLine);
+      //_roomOrientation = q*_motionData._origRoomOrientation; // OSG uses premultiply convention
+
+      // Compute change in room origin corresponding to a fixed controller centerpoint
+      //origCenter *= _motionData._origWorldUnitsPerMeter; // Scale to world units
+      //_roomOffset = origCenter + q * (_motionData._origRoomOffset - origCenter);
 
       break;
     }
 
     case(PICK) :
     {
+      // Start by getting the controller origin in room space
+      // Note that we need this in world units (not meters) since the ground plane is scaled to world units
+      osg::Vec3d startPoint = _motionData._device1OrigPoseRaw.getTrans()*_motionData._origWorldUnitsPerMeter;
+
+      // Compute the line segment along the controller's -Z axis in room space
+      osg::Vec3d endPoint = osg::Vec3d(0, 0, -1)*_motionData._device1OrigPoseRaw*_motionData._origWorldUnitsPerMeter;
+      osg::Vec3d rayDir = endPoint - startPoint;
+
+      // Perform the pick operation on the ground plane, which is already in room-space coordinates
+      //osgUtil::LineSegmentIntersector* intersector = new osgUtil::LineSegmentIntersector(startPoint, endPoint);
+      osgUtil::RayIntersector* intersector = new osgUtil::RayIntersector(startPoint, rayDir);
+      osgUtil::IntersectionVisitor iv(intersector);
+      _ovrDevice->getGroundPlane()->accept(iv);
+      if (intersector->containsIntersections())
+      {
+        auto intersections = intersector->getIntersections();
+        osg::notify(osg::NOTICE) << "Got " << intersections.size() << " intersections:\n";
+        for (auto&& intersection : intersections)
+        {
+          osg::notify(osg::NOTICE) << "  - Local intersection point = " << intersection.localIntersectionPoint << std::endl;
+          osg::Vec3d worldPoint = intersection.getWorldIntersectPoint()*_motionData._origTrackball;
+          osg::notify(osg::NOTICE) << "  - World intersection point = " << worldPoint << std::endl;
+        }
+      }
+      else
+      {
+        osg::notify(osg::NOTICE) << "No intersections!" << std::endl;
+      }
+
+      _motionData._mode = NONE; // Revert to no motion
       break;
     }
 
@@ -592,8 +639,8 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRTrackball::getTrackballRoomToWorldMatrix(osg::Matrixd& matrix)
   {
-    // Translate from room origin to trackball origin
-    matrix.makeTranslate(_roomOffset);
+    // Transform from room space to trackball space
+    matrix = _roomPose;
     
     // Transform from trackball space to view space
     matrix.postMult(osgGA::TrackballManipulator::getMatrix());
@@ -614,7 +661,7 @@ namespace OpenFrames{
     _motionData._origWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
     _motionData._origRotation = osgGA::TrackballManipulator::getRotation();
     getTrackballRoomToWorldMatrix(_motionData._origTrackball);
-    _motionData._origRoomOffset = _roomOffset;
+    _motionData._origRoomPose = _roomPose;
   }
   
   /*************************************************************/
