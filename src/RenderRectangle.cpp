@@ -426,6 +426,7 @@ namespace OpenFrames
       // Added first view, so make sure that it is selected
       if(_views.size() == 1)
       {
+        _defaultView->saveTrackball(); // Save default trackball's data
         _currView = 0;
         selectCurrentView();
       }
@@ -539,6 +540,7 @@ namespace OpenFrames
   
   void RenderRectangle::selectCurrentView()
   {
+    getCurrentView()->restoreTrackball();
     _sceneView->setCameraManipulator(getCurrentView()->getTrackball());
     applyCurrentViewProjection();
   }

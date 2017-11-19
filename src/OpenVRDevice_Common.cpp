@@ -87,7 +87,7 @@ namespace OpenFrames{
   
   /*************************************************************/
   OpenVRDevice::OpenVRDevice(double worldUnitsPerMeter, double userHeight)
-    : _worldUnitsPerMeter(worldUnitsPerMeter),
+    : _worldUnitsPerMeter(-1.0),
     _minWorldUnitsPerMeter(0.0),
     _maxWorldUnitsPerMeter(DBL_MAX),
     _userHeight(userHeight),
@@ -206,7 +206,7 @@ namespace OpenFrames{
       _roomGround->addChild(geode);
       _deviceModels->addChild(_roomGround);
 
-      setWorldUnitsPerMeter(_worldUnitsPerMeter); // This sets the text
+      setWorldUnitsPerMeter(worldUnitsPerMeter); // Set the WorldUnits/Meter text
     }
   }
 
@@ -319,6 +319,9 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRDevice::setWorldUnitsPerMeter(const double& worldUnitsPerMeter)
   {
+    // Make sure WorldUnits/Meter changed
+    if (_worldUnitsPerMeter == worldUnitsPerMeter) return;
+
     // Make sure WorldUnits/Meter stays within desired bounds
     _worldUnitsPerMeter = std::max(_minWorldUnitsPerMeter, std::min(worldUnitsPerMeter, _maxWorldUnitsPerMeter));
 
@@ -434,11 +437,33 @@ namespace OpenFrames{
   OpenVRTrackball::OpenVRTrackball(OpenVRDevice *ovrDevice)
   : _ovrDevice(ovrDevice)
   {
+    _savedWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
+
     // The motion mode defines how controllers change the scene in response
     // to user inputs. Start with no motion.
     _motionData._mode = NONE;
     _motionData._prevMode = TRANSLATE; // Initial button press will go to this mode
     _motionData._prevTime = 0.0;
+  }
+
+  /*******************************************************/
+  void OpenVRTrackball::saveTrackballData()
+  {
+    // Save data for parent trackball
+    FollowingTrackball::saveTrackballData();
+
+    // Save WorldUnits/Meter ratio
+    _savedWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
+  }
+
+  /*******************************************************/
+  void OpenVRTrackball::restoreTrackballData()
+  {
+    // Restore data for parent trackball
+    FollowingTrackball::restoreTrackballData();
+
+    // Restore WorldUnits/Meter ratio
+    _ovrDevice->setWorldUnitsPerMeter(_savedWorldUnitsPerMeter);
   }
   
   /*************************************************************/

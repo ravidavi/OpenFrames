@@ -46,7 +46,20 @@ namespace OpenFrames
     _frameType = frameType;
     _rotationType = rotationType;
   }
-  
+
+  /*******************************************************/
+  void FollowingTrackball::saveTrackballData()
+  {
+    // Save data for parent trackball (from osgGA)
+    osg::Vec3d eye, center, up;
+
+    // Get the look vectors for the current view
+    osgGA::TrackballManipulator::getInverseMatrix().getLookAt(eye, center, up, getDistance());
+
+    // Save the current view as the home position
+    setHomePosition(eye, center, up);
+  }
+
   /*******************************************************/
   // Get the Viewpoint to World transformation matrix
   osg::Matrixd FollowingTrackball::getMatrix() const
@@ -252,16 +265,15 @@ namespace OpenFrames
   }
   
   /*******************************************************/
-  /** Save the trackball's current view */
   void View::saveTrackball()
   {
-    osg::Vec3d eye, center, up;
-    
-    // Get the look vectors for the current view
-    _trackball->TrackballManipulator::getInverseMatrix().getLookAt(eye, center, up, _trackball->getDistance());
-    
-    // Save the current view as the home position
-    _trackball->setHomePosition(eye, center, up);
+    _trackball->saveTrackballData();
+  }
+
+  /*******************************************************/
+  void View::restoreTrackball()
+  {
+    _trackball->restoreTrackballData();
   }
   
   /*******************************************************/

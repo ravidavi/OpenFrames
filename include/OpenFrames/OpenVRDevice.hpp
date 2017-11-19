@@ -158,7 +158,9 @@ namespace OpenFrames {
       _minWorldUnitsPerMeter = std::max(0.0, minWorldUnitsPerMeter);
       _maxWorldUnitsPerMeter = std::max(_minWorldUnitsPerMeter, maxWorldUnitsPerMeter);
       
-      _worldUnitsPerMeter = std::max(_minWorldUnitsPerMeter, std::min(_worldUnitsPerMeter, _maxWorldUnitsPerMeter));
+      // Ensure current WorldUnits/Meter is within bounds
+      double newWUM = std::max(_minWorldUnitsPerMeter, std::min(_worldUnitsPerMeter, _maxWorldUnitsPerMeter));
+      setWorldUnitsPerMeter(newWUM);
     }
     void getWorldUnitsPerMeterLimits(double &minWorldUnitsPerMeter, double &maxWorldUnitsPerMeter)
     {
@@ -298,6 +300,10 @@ namespace OpenFrames {
     
     virtual const char* className() const { return "OpenVRTrackball"; }
 
+    // Save and restore VR-related trackball data
+    virtual void saveTrackballData();
+    virtual void restoreTrackballData();
+
     // Get World to HMD (Center) matrix
     virtual osg::Matrixd getInverseMatrix() const;
 
@@ -309,6 +315,9 @@ namespace OpenFrames {
     
     // Transformation from room space to trackball space
     osg::Matrixd _roomPose;
+
+    // Last saved WorldUnits/Meter ratio
+    double _savedWorldUnitsPerMeter;
     
     // Get the Room->World transform for the trackball itself, not including any
     // custom view transformations by FollowingTrackball. This allows transformations

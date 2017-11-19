@@ -145,6 +145,7 @@ namespace OpenFrames
     
     /** Save the current trackball view as the home view */
     void saveTrackball();
+    void restoreTrackball();
     
     /** Set the frame to be viewed and the root frame that it should be
 	    viewed with respect to. Generally the root frame should be
@@ -211,6 +212,10 @@ namespace OpenFrames
     
     // Set the frame transform sources
     void setTransformSources(TransformAccumulator *xform, TransformAccumulator *xform_lookat, View::ViewFrameType frameType, View::ViewRotationType rotationType);
+
+    // Save and restore trackball data
+    virtual void saveTrackballData();
+    virtual void restoreTrackballData() {};
 
     // Inherited from TrackballManipulator
     virtual osg::Matrixd getMatrix() const; // Get local to world matrix
