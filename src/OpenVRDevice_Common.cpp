@@ -479,7 +479,7 @@ namespace OpenFrames{
       // Start by getting the controller location when the button was pressed
       osg::Vec3d origPos = _motionData._device1OrigPoseRaw.getTrans()*_motionData._origWorldUnitsPerMeter;
 
-      // Convert to position relative to trackball center
+      // Convert to position relative to trackball's world space
       osg::Vec3d origPosWorld = origPos * _motionData._origTrackball;
 
       // Next get the current controller location relative to trackball center
@@ -526,7 +526,7 @@ namespace OpenFrames{
 
       // Compute new room position based on controller motion
       _roomPose = _motionData._origRoomPose;
-      _roomPose.postMultTranslate(deltaPos*_motionData._origWorldUnitsPerMeter);
+      _roomPose.preMultTranslate(deltaPos*_motionData._origWorldUnitsPerMeter);
 
       break;
     }
@@ -535,24 +535,20 @@ namespace OpenFrames{
     {
       // Set the WorldUnits/Meter ratio based on how the controllers are moved together/apart
       // Start by getting the controller distance when the action was started
-      osg::Vec3d device1Trans = _motionData._device1OrigPoseRaw.getTrans();
-      osg::Vec3d device2Trans = _motionData._device2OrigPoseRaw.getTrans();
-      double origDist = (device1Trans - device2Trans).length();
+      osg::Vec3d device1TransOrig = _motionData._device1OrigPoseRaw.getTrans();
+      osg::Vec3d device2TransOrig = _motionData._device2OrigPoseRaw.getTrans();
+      double origDist = (device1TransOrig - device2TransOrig).length();
 
       // Get the center point between controllers
-      osg::Vec3d origCenter = (device1Trans + device2Trans) * 0.5;
-
-      // Get the vector from controller 1 -> 2
-      osg::Vec3d origDeviceLine = device2Trans - device1Trans;
+      osg::Vec3d origCenter = (device1TransOrig + device2TransOrig) * 0.5;
 
       // Get the current controller distance
       const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
       const OpenVRDevice::DeviceModel *device2Model = _ovrDevice->getDeviceModel(_motionData._device2ID);
-      device1Trans = device1Model->_rawDeviceToWorld.getTrans();
-      device2Trans = device2Model->_rawDeviceToWorld.getTrans();
-      osg::Vec3d currCenter = (device1Trans + device2Trans) * 0.5; // Center point between controllers
-      osg::Vec3d currDeviceLine = device2Trans - device1Trans; // Vector between controllers
-      double currDist = (device1Trans - device2Trans).length();
+      osg::Vec3d device1TransCurr = device1Model->_rawDeviceToWorld.getTrans();
+      osg::Vec3d device2TransCurr = device2Model->_rawDeviceToWorld.getTrans();
+      osg::Vec3d currCenter = (device1TransCurr + device2TransCurr) * 0.5; // Center point between controllers
+      double currDist = (device1TransCurr - device2TransCurr).length();
       double distRatio = origDist / currDist; // controllers apart -> 0, controllers together -> inf
 
       // Exaggerate large controller motions
@@ -573,22 +569,35 @@ namespace OpenFrames{
 
       // Compute new pose offset location that keeps the central point at the same world
       // location both before and after the scale.
-      // Expand universe from point between controllers when motion was started
-      // Shrink universe to current point between controllers
+      // - Expand universe from original center point between controllers
+      // - Shrink universe to current center point between controllers
       osg::Vec3d centerPoint;
       if (distRatio < 1.0) centerPoint = origCenter; // Expand universe
       else centerPoint = currCenter; // Shrink universe
       _roomPose = _motionData._origRoomPose;
-      _roomPose.postMultTranslate(centerPoint*(_motionData._origWorldUnitsPerMeter*(1.0 - distRatio)));
+      _roomPose.preMultTranslate(centerPoint*_motionData._origWorldUnitsPerMeter*(1.0 - distRatio));
 
-      // Compute and apply rotation from original to current line between controllers
-      //osg::Quat q;
-      //q.makeRotate(currDeviceLine, origDeviceLine);
-      //_roomOrientation = q*_motionData._origRoomOrientation; // OSG uses premultiply convention
+      // Rotating the controllers about each other rotates the scene about the controller midpoint
+      // This is done by moving the controller midpoint to the origin, then performing the rotation,
+      // then moving the controller midpoint back to its original position.
+      // Since _roomPose is the Room->Trackball transform, these steps are applied in reverse
+      // order using premultiplication
 
-      // Compute change in room origin corresponding to a fixed controller centerpoint
-      //origCenter *= _motionData._origWorldUnitsPerMeter; // Scale to world units
-      //_roomOffset = origCenter + q * (_motionData._origRoomOffset - origCenter);
+      // Step 3: Move controller midpoint back to its original location
+      osg::Vec3d origCenterWU = origCenter * newWorldUnitsPerMeter;
+      _roomPose.preMultTranslate(origCenterWU);
+
+      // Step 2: Rotate room about new origin (controller center) based on controller motion
+      // Note that the room should rotate in the opposite direction as controllers, since the
+      // goal is to make the scene appear to rotate in the same direction as controllers.
+      osg::Vec3d origDeviceLine = device2TransOrig - device1TransOrig;
+      osg::Vec3d currDeviceLine = device2TransCurr - device1TransCurr;
+      osg::Quat q;
+      q.makeRotate(currDeviceLine, origDeviceLine);
+      _roomPose.preMultRotate(q);
+
+      // Step 1: Move controller midpoint to the room center
+      _roomPose.preMultTranslate(-origCenterWU);
 
       break;
     }
