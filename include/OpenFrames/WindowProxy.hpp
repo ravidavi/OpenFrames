@@ -255,6 +255,9 @@ namespace OpenFrames
     /** Get whether VR rendering is enabled */
     bool getUseVR() { return _useVR; }
 
+    /** Get the OpenVRDevice object that manages VR rendering */
+    const OpenVRDevice* getOpenVRDevice() const { return _ovrDevice; }
+
     /** Set the ratio of WorldUnits to Meters used for VR rendering */
     void setWorldUnitsPerMeter(double worldUnitsPerMeter)
     {

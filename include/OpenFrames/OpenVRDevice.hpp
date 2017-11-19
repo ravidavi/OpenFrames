@@ -87,13 +87,13 @@ namespace OpenFrames {
     void shutdownVR();
 
     /** Get the per-eye texture size recommended by OpenVR */
-    void getRecommendedTextureSize(int& w, int& h)
+    void getRecommendedTextureSize(int& w, int& h) const
     {
       w = _width; h = _height;
     }
 
     /** Get whether OpenVR has been initialized */
-    inline bool isInitialized() { return _isInitialized; }
+    inline bool isInitialized() const { return _isInitialized; }
     
     /** Get render models for devices */
     osg::MatrixTransform* getDeviceRenderModels() { return _deviceModels; }
@@ -122,8 +122,8 @@ namespace OpenFrames {
     };
     
     /** Get device models */
-    unsigned int getNumDeviceModels() { return _deviceIDToModel.size(); }
-    const DeviceModel* getDeviceModel(unsigned int id)
+    unsigned int getNumDeviceModels() const { return _deviceIDToModel.size(); }
+    const DeviceModel* getDeviceModel(unsigned int id) const
     {
       if(id < _deviceIDToModel.size()) return &(_deviceIDToModel[id]);
       else return NULL;
@@ -151,7 +151,7 @@ namespace OpenFrames {
     
     /** Get/set the world units per meter ratio and its limits */
     void setWorldUnitsPerMeter(const double& worldUnitsPerMeter);
-    double getWorldUnitsPerMeter() { return _worldUnitsPerMeter; }
+    double getWorldUnitsPerMeter() const { return _worldUnitsPerMeter; }
     void setWorldUnitsPerMeterLimits(const double& minWorldUnitsPerMeter,
                                      const double& maxWorldUnitsPerMeter)
     {
@@ -162,7 +162,7 @@ namespace OpenFrames {
       double newWUM = std::max(_minWorldUnitsPerMeter, std::min(_worldUnitsPerMeter, _maxWorldUnitsPerMeter));
       setWorldUnitsPerMeter(newWUM);
     }
-    void getWorldUnitsPerMeterLimits(double &minWorldUnitsPerMeter, double &maxWorldUnitsPerMeter)
+    void getWorldUnitsPerMeterLimits(double &minWorldUnitsPerMeter, double &maxWorldUnitsPerMeter) const
     {
       minWorldUnitsPerMeter = _minWorldUnitsPerMeter;
       maxWorldUnitsPerMeter = _maxWorldUnitsPerMeter;
@@ -170,7 +170,7 @@ namespace OpenFrames {
     
     /** Get/set the user height in meters */
     void setUserHeight(double userHeight) { _userHeight = userHeight; }
-    double getUserHeight() { return _userHeight; }
+    double getUserHeight() const { return _userHeight; }
 
     /** Get the controller laser */
     osg::MatrixTransform* getControllerLaser(uint32_t deviceID);
