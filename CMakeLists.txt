@@ -116,7 +116,7 @@ LIST(APPEND osgqtcube_SOURCES /
   OSGQuickAdapter.cpp)
 
 # Specify which file should be compiled for current test
-ADD_EXECUTABLE(osgqtcube ${osgqtcube_SOURCES} ${RESOURCES} ${osgqtcube_HEADERS} "rendercontrol.qrc")
+ADD_EXECUTABLE(osgqtcube ${osgqtcube_SOURCES} ${RESOURCES} ${osgqtcube_HEADERS} "rendercontrol.qrc" "qml.qrc")
 QT5_USE_MODULES(osgqtcube Core Quick Widgets OpenGL WebEngineWidgets)
 
 # Tell linker to link against OpenSceneGraph library

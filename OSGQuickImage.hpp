@@ -20,12 +20,13 @@
 #include "OSGQuickAdapter.hpp"
 
 #include <osg/Image>
+#include <QUrl>
 
 
 class OSGQuickImage : public osg::Image
 {
 public:
-  OSGQuickImage(const QString &qmlScene);
+  OSGQuickImage(const QUrl &qmlScene);
 
   OSGQuickAdapter* getQQuickAdapter() { return _adapter; }
 

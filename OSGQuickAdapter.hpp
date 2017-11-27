@@ -47,7 +47,7 @@ class OSGQuickAdapter : public QObject
 public:
   static QCoreApplication* getOrCreateQApplication();
 
-  OSGQuickAdapter(osg::Image* image, const QString &qmlScene);
+  OSGQuickAdapter(osg::Image* image, const QUrl &qmlScene);
   virtual ~OSGQuickAdapter();
 
   void setUpKeyMap();
@@ -71,6 +71,8 @@ public:
 
   void setBackgroundColor(QColor color) { _backgroundColor = color; }
   QColor getBackgroundColor() const { return _backgroundColor; }
+
+  QQuickWindow *getQuickWindow();
 
 signals:
   void constructed();
@@ -116,7 +118,7 @@ protected:
   unsigned int                    _currentWrite;
   unsigned int                    _previousWrite;
   QImage                          _qimages[3];
-  QString                         _qmlResource;
+  QUrl                         _qmlResource;
 
   virtual void customEvent(QEvent * event);
 

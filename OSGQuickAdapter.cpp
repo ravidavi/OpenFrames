@@ -98,7 +98,7 @@ QWindow *RenderControl::renderWindow(QPoint *offset)
 }
 
 
-OSGQuickAdapter::OSGQuickAdapter(osg::Image* image, const QString &qmlScene) :
+OSGQuickAdapter::OSGQuickAdapter(osg::Image* image, const QUrl &qmlScene) :
   _image(image),
   _previousButtonMask(0),
   _previousMouseX(-1),
@@ -418,7 +418,7 @@ bool OSGQuickAdapter::sendPointerEvent(int x, int y, int buttonMask)
     return false;
   }*/
 
-  if (_previousSentEvent && buttonMask != 0) // targetWidget != NULL
+  if (true || _previousSentEvent && buttonMask != 0) // targetWidget != NULL
   {
     QCoreApplication::postEvent(this, new MyQPointerEvent(x, y, buttonMask));
     _previousSentEvent = true;
@@ -733,7 +733,7 @@ void OSGQuickAdapter::run()
 
 void OSGQuickAdapter::startQuick()
 {
-  m_qmlComponent = new QQmlComponent(m_qmlEngine, QUrl(_qmlResource));
+  m_qmlComponent = new QQmlComponent(m_qmlEngine, _qmlResource);
   if (m_qmlComponent->isLoading())
     connect(m_qmlComponent, &QQmlComponent::statusChanged, this, &OSGQuickAdapter::run);
   else
@@ -748,4 +748,10 @@ void OSGQuickAdapter::updateSizes()
   m_rootItem->setHeight(_size.height());
 
   m_quickWindow->setGeometry(0, 0, _size.width(), _size.height());
+}
+
+
+QQuickWindow *OSGQuickAdapter::getQuickWindow()
+{
+  return m_quickWindow.data();
 }

@@ -19,7 +19,7 @@
 #include <QQuickWindow>
 
 
-OSGQuickImage::OSGQuickImage(const QString &qmlScene)
+OSGQuickImage::OSGQuickImage(const QUrl &qmlScene)
 {
   // make sure we have a valid QApplication before we start creating widgets.
   OSGQuickAdapter::getOrCreateQApplication();
@@ -30,9 +30,8 @@ OSGQuickImage::OSGQuickImage(const QString &qmlScene)
 
 bool OSGQuickImage::sendFocusHint(bool focus)
 {
-  // TODO renable this if its necessary for quick
-  //QFocusEvent event(focus ? QEvent::FocusIn : QEvent::FocusOut, Qt::OtherFocusReason);
-  //QCoreApplication::sendEvent(_adapter->getQuickWindow(), &event);
+  QFocusEvent event(focus ? QEvent::FocusIn : QEvent::FocusOut, Qt::OtherFocusReason);
+  QCoreApplication::sendEvent(_adapter->getQuickWindow(), &event);
   return true;
 }
 
