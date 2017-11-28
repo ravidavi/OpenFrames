@@ -6,7 +6,7 @@ This is no longer used in favor of direct calls to OFInterface.
 
 """
 
-from .PyOFInterface import *
+from .PyOFInterfaceC import *
 
 
 class WindowProxy(object):

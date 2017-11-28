@@ -1,4 +1,4 @@
-%module PyOFInterface
+%module ${SWIG_MODULE_NAME}
 
 %{
 #include "OpenFrames/OF_Interface.h"
@@ -143,42 +143,42 @@ _button_release_c_function = _SwapBuffersCallbackType(button_release_wrapper)
 def ofwin_setmakecurrentfunction(make_current_function):
     _make_current_callbacks[ofwin_getid()] = make_current_function
     f_ptr = cast(_make_current_c_function, c_void_p).value
-    _PyOFInterface.ofwin_setmakecurrentfunction(f_ptr)
+    _${SWIG_MODULE_NAME}.ofwin_setmakecurrentfunction(f_ptr)
 
 
 def ofwin_setupdatecontextfunction(update_context_function):
     _update_context_callbacks[ofwin_getid()] = update_context_function
     f_ptr = cast(_update_context_c_function, c_void_p).value
-    _PyOFInterface.ofwin_setupdatecontextfunction(f_ptr)
+    _${SWIG_MODULE_NAME}.ofwin_setupdatecontextfunction(f_ptr)
 
 
 def ofwin_setswapbuffersfunction(swap_buffers_function):
     _swap_buffers_callbacks[ofwin_getid()] = swap_buffers_function
     f_ptr = cast(_swap_buffers_c_function, c_void_p).value
-    _PyOFInterface.ofwin_setswapbuffersfunction(f_ptr)
+    _${SWIG_MODULE_NAME}.ofwin_setswapbuffersfunction(f_ptr)
 
 
 def ofwin_setkeypresscallback(key_press_function):
     _key_press_callbacks[ofwin_getid()] = key_press_function
     f_ptr = cast(_key_press_c_function, c_void_p).value
-    _PyOFInterface.ofwin_setkeypresscallback(f_ptr)
+    _${SWIG_MODULE_NAME}.ofwin_setkeypresscallback(f_ptr)
 
 
 def ofwin_setmousemotioncallback(mouse_motion_function):
     _mouse_motion_callbacks[ofwin_getid()] = mouse_motion_function
     f_ptr = cast(_mouse_motion_c_function, c_void_p).value
-    _PyOFInterface.ofwin_setmousemotioncallback(f_ptr)
+    _${SWIG_MODULE_NAME}.ofwin_setmousemotioncallback(f_ptr)
 
 
 def ofwin_setbuttonpresscallback(button_press_function):
     _button_press_callbacks[ofwin_getid()] = button_press_function
     f_ptr = cast(_button_press_c_function, c_void_p).value
-    _PyOFInterface.ofwin_setbuttonpresscallback(f_ptr)
+    _${SWIG_MODULE_NAME}.ofwin_setbuttonpresscallback(f_ptr)
 
 
 def ofwin_setbuttonreleasecallback(button_release_function):
     _button_release_callbacks[ofwin_getid()] = button_release_function
     f_ptr = cast(_button_release_c_function, c_void_p).value
-    _PyOFInterface.ofwin_setbuttonreleasecallback(f_ptr)
+    _${SWIG_MODULE_NAME}.ofwin_setbuttonreleasecallback(f_ptr)
 
 %}

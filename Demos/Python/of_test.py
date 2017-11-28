@@ -4,7 +4,7 @@ Simple OFInterface test
 
 """
 
-from OpenFrames.PyOFInterface import *
+from OpenFrames.PyOFInterfaceC import *
 
 
 win_id = 1
