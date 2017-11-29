@@ -1,4 +1,5 @@
 ADD_SUBDIRECTORY("ofcinterface")
+ADD_SUBDIRECTORY("ofcontrols")
 ADD_SUBDIRECTORY("ofjitter")
 ADD_SUBDIRECTORY("ofpointclouds")
 ADD_SUBDIRECTORY("ofqt")

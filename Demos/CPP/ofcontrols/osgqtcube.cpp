@@ -189,7 +189,6 @@ int main(int argc, char **argv)
   }
   else
   {
-    //sceneImage = new OSGQuickImage(QUrl(QStringLiteral("qrc:/rendercontrol/demo.qml")));
     sceneImage = new OSGQuickImage(QUrl(QStringLiteral("qrc:/main.qml")));
   }
 
