@@ -116,7 +116,8 @@ OF_EXPORT void OF_FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG));
 
 // Start/stop animation
 OF_EXPORT void OF_FCN(ofwin_start)(); // Start animation
-OF_EXPORT void OF_FCN(ofwin_stop)();  // Force animation to stop
+OF_EXPORT void OF_FCN(ofwin_stop)();  // Force animation to stop and wait for stop
+OF_EXPORT void OF_FCN(ofwin_signalstop)();  // Force animation to stop
 OF_EXPORT void OF_FCN(ofwin_waitforstop)(); // Wait for user to exit animation
 OF_EXPORT void OF_FCN(ofwin_pauseanimation)(bool *pause);
 OF_EXPORT void OF_FCN(ofwin_isrunning)(unsigned int *state);

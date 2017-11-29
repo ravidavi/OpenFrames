@@ -412,7 +412,7 @@ void OF_FCN(ofwin_start)()
 }
 
 /**
-* \brief Force animation to stop
+* \brief Force animation to stop and wait for the thread to stop
 *
 * This applies to the current active WindowProxy.
 **/
@@ -429,6 +429,24 @@ void OF_FCN(ofwin_stop)()
 	  {
 	    waitLimiter.frame();
 	  }
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
+}
+
+/**
+* \brief Signal animation to stop and return immediately
+*
+* This applies to the current active WindowProxy.
+**/
+void OF_FCN(ofwin_signalstop)()
+{
+	if(_objs->_currWinProxy)
+	{
+	  // Signal WindowProxy to stop animating
+	  _objs->_currWinProxy->shutdown();
       _objs->_intVal = 0;
     }
     else {
