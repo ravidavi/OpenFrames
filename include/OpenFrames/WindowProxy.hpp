@@ -25,6 +25,7 @@
 #include <osg/FrameStamp>
 #include <osg/Timer>
 #include <osg/Referenced>
+#include <osg/observer_ptr>
 #include <osg/ref_ptr>
 #include <osgViewer/CompositeViewer>
 #include <osgViewer/GraphicsWindow>
@@ -190,6 +191,11 @@ namespace OpenFrames
     void setTimeScale(double tscale);
     double getTimeScale() const { return _timeScale; }
     
+    /** Synchronize time with another WindowProxy
+        This causes all time control to be forwarded to the other WindowProxy */
+    void synchronizeTime(WindowProxy *winproxy);
+    WindowProxy* getSynchronizeTime() const { return _timeSyncWinProxy.get(); }
+    
     /** Animation loop control (event/update/render) */
     void pauseAnimation(bool pause);
     bool isAnimationPaused() const { return _animPaused; }
@@ -329,6 +335,7 @@ namespace OpenFrames
     bool _timePaused;
     osg::Timer_t _Tref;
     double _currTime, _offsetTime, _timeScale;
+    osg::observer_ptr<WindowProxy> _timeSyncWinProxy;
     
     bool _useVR; // Whether to use VR rendering
     osg::ref_ptr<OpenVRDevice> _ovrDevice; // OpenVR interface

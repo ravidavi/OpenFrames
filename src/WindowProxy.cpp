@@ -704,22 +704,41 @@ namespace OpenFrames
   /** Set the current time */
   void WindowProxy::setTime(double time)
   {
-    _currTime = _offsetTime = time;
-    _Tref = osg::Timer::instance()->tick();
+    if(_timeSyncWinProxy.valid()) _timeSyncWinProxy->setTime(time);
+    else
+    {
+      _currTime = _offsetTime = time;
+      _Tref = osg::Timer::instance()->tick();
+    }
   }
   
   /** Pause/unpause time */
   void WindowProxy::pauseTime(bool pause)
   {
-    _timePaused = pause;
-    setTime(_currTime);
+    if(_timeSyncWinProxy.valid()) _timeSyncWinProxy->pauseTime(pause);
+    else
+    {
+      _timePaused = pause;
+      setTime(_currTime);
+    }
   }
   
   /** Change time scale */
   void WindowProxy::setTimeScale(double tscale)
   {
-    _timeScale = tscale;
-    setTime(_currTime);
+    if(_timeSyncWinProxy.valid()) _timeSyncWinProxy->setTimeScale(tscale);
+    else
+    {
+      _timeScale = tscale;
+      setTime(_currTime);
+    }
+  }
+  
+  /** Synchronize time with specified WindowProxy */
+  void WindowProxy::synchronizeTime(WindowProxy *winproxy)
+  {
+    _timeSyncWinProxy = winproxy;
+    if(!_timeSyncWinProxy) setTime(_currTime);
   }
   
   /** Pause the window's animation */
@@ -894,8 +913,14 @@ namespace OpenFrames
       (*sceneIter)->lock();
     }
     
-    // Compute current simulation time
-    if(!_timePaused)
+    // Use simulation time from synchonized WindowProxy
+    if(_timeSyncWinProxy.valid())
+    {
+      _currTime = _timeSyncWinProxy->getTime();
+    }
+    
+    // Otherwise compute current simulation time if not paused
+    else if(!_timePaused)
     {
       double dt = osg::Timer::instance()->delta_s(_Tref, osg::Timer::instance()->tick());
       _currTime = _offsetTime + dt*_timeScale;
