@@ -735,20 +735,31 @@ namespace OpenFrames
   }
   
   /** Synchronize time with specified WindowProxy */
-  void WindowProxy::synchronizeTime(WindowProxy *winproxy)
+  bool WindowProxy::synchronizeTime(WindowProxy *winproxy)
   {
     // Don't synchronize time
-    if(winproxy == NULL)
+    if((winproxy == NULL) || (winproxy == this))
     {
       _timeSyncWinProxy = NULL;
       setTime(_currTime);
+      return true;
     }
     
-    // Make sure other window isn't already synchronizing time with this window
-    else if(winproxy->getSynchronizeTime() != this) _timeSyncWinProxy = winproxy;
+    // Check for circular dependency by traversing full synchronized window chain
+    // Note that this should never be an infinite loop since there should be no existing circular dependencies
+    for(WindowProxy* syncWP = winproxy->getTimeSyncWindow(); syncWP != NULL; syncWP = syncWP->getTimeSyncWindow())
+    {
+      // Make sure synchronized window isn't this window
+      if(syncWP == this)
+      {
+        OSG_WARN << "WindowProxy::synchronizeTime circular dependency not allowed." << std::endl;
+        return false;
+      }
+    }
     
-    // Circular dependency warning
-    else OSG_WARN << "WindowProxy::synchronizeTime circular dependency not allowed." << std::endl;
+    // No circular dependency, so set synchronized window
+    _timeSyncWinProxy = winproxy;
+    return true;
   }
   
   /** Pause the window's animation */

@@ -192,9 +192,15 @@ namespace OpenFrames
     double getTimeScale() const { return _timeScale; }
     
     /** Synchronize time with another WindowProxy
-        This causes all time control to be forwarded to the other WindowProxy */
-    void synchronizeTime(WindowProxy *winproxy);
-    WindowProxy* getSynchronizeTime() const { return _timeSyncWinProxy.get(); }
+        This causes all time control to be forwarded to the other WindowProxy
+        Inputs:
+          NULL or this: Stop synchronizing time
+          Otherwise: Synchronize with specified WindowProxy
+        Return: 
+          true: success, synchronized with input
+          false: circular dependency detected, synchronization unchanged */
+    bool synchronizeTime(WindowProxy *winproxy);
+    WindowProxy* getTimeSyncWindow() const { return _timeSyncWinProxy.get(); }
     
     /** Animation loop control (event/update/render) */
     void pauseAnimation(bool pause);
