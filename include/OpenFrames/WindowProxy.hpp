@@ -185,11 +185,25 @@ namespace OpenFrames
     
     /** Time control */
     void setTime(double time);
-    double getTime() const { return _currTime; }
+    double getTime() const
+    {
+      if(_timeSyncWinProxy.valid()) return _timeSyncWinProxy->getTime();
+      else return _currTime;
+    }
+    
     void pauseTime(bool pause);
-    bool isTimePaused() const { return _timePaused; }
+    bool isTimePaused() const
+    {
+      if(_timeSyncWinProxy.valid()) return _timeSyncWinProxy->isTimePaused();
+      else return _timePaused;
+    }
+    
     void setTimeScale(double tscale);
-    double getTimeScale() const { return _timeScale; }
+    double getTimeScale() const
+    {
+      if(_timeSyncWinProxy.valid()) return _timeSyncWinProxy->getTimeScale();
+      else return _timeScale;
+    }
     
     /** Synchronize time with another WindowProxy
         This causes all time control to be forwarded to the other WindowProxy

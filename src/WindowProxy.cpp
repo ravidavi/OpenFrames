@@ -737,11 +737,20 @@ namespace OpenFrames
   /** Synchronize time with specified WindowProxy */
   bool WindowProxy::synchronizeTime(WindowProxy *winproxy)
   {
-    // Don't synchronize time
+    // Stop synchronizing time
     if((winproxy == NULL) || (winproxy == this))
     {
-      _timeSyncWinProxy = NULL;
-      setTime(_currTime);
+      if(_timeSyncWinProxy.valid())
+      {
+        // Save currently synchronized window's time parameters
+        double newTime = _timeSyncWinProxy->getTime();
+        _timeScale = _timeSyncWinProxy->getTimeScale();
+        _timePaused = _timeSyncWinProxy->isTimePaused();
+        
+        _timeSyncWinProxy = NULL;
+        setTime(newTime);
+      }
+      
       return true;
     }
     
