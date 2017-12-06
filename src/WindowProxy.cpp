@@ -472,6 +472,14 @@ namespace OpenFrames
   : _winID(0), _nRow(0), _nCol(0), _isEmbedded(embedded),
   _animPaused(false), _isAnimating(false), _timePaused(false), _useVR(useVR)
   {
+    // Input value checks
+    if(x < 0) x = 0;
+    if(y < 0) y = 0;
+    if(width == 0) width = 1;
+    if(height == 0) height = 1;
+    if(nrow == 0) nrow = 1;
+    if(ncol == 0) ncol = 1;
+    
     _viewer = new osgViewer::CompositeViewer;
     _embeddedGraphics = new EmbeddedGraphics(x, y, width, height, this);
     _eventHandler = new WindowEventHandler(this);
@@ -670,6 +678,12 @@ namespace OpenFrames
   /** Create a window resized event */
   void WindowProxy::resizeWindow(int x, int y, unsigned int width, unsigned int height)
   {
+    // Input value checks
+    if(x < 0) x = 0;
+    if(y < 0) y = 0;
+    if(width == 0) width = 1;
+    if(height == 0) height = 1;
+    
     // Can this be changed to _window->setWindowRectangle()?
     _window->resized(x, y, width, height);
     _window->getEventQueue()->windowResize(x, y, width, height);

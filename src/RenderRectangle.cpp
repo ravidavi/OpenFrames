@@ -125,6 +125,17 @@ namespace OpenFrames
   
   RenderRectangle::~RenderRectangle() { }
   
+  /** Update back camera with main camera's view and projection matrices */
+  struct BackCameraSlaveCallback : public osg::View::Slave::UpdateSlaveCallback
+  {
+    virtual void updateSlave(osg::View& view, osg::View::Slave& slave)
+    {
+      slave._camera->setViewMatrix(view.getCamera()->getViewMatrix());
+      slave._camera->setProjectionMatrix(view.getCamera()->getProjectionMatrix());
+      slave.updateSlaveImplementation(view);
+    }
+  };
+  
   void RenderRectangle::_init()
   {
     // Master camera reference will be used throughout
@@ -183,12 +194,15 @@ namespace OpenFrames
       }
       else
       {
-        _backCamera->setReferenceFrame(osg::Transform::RELATIVE_RF);
+        // We will set the view and projection matrices ourselves
+        _backCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
         _backCamera->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         _backCamera->setAllowEventFocus(false);
         _backCamera->setRenderOrder(osg::Camera::PRE_RENDER, -1); // Render before other cameras
         _backCamera->setStateSet(ss);
         _sceneView->addSlave(_backCamera, false);
+        osg::View::Slave *slave = _sceneView->findSlaveForCamera(_backCamera);
+        slave->_updateSlaveCallback = new BackCameraSlaveCallback; // Sets view & projection matrices
       }
 
       // Set up mirror camera render properties

@@ -53,7 +53,7 @@ int main()
   // Sphere(name, color[r,g,b,a])
   Sphere *earth = new Sphere("Earth", 0, 0, 1, 0.9);
   earth->setRadius(r_earth);
-  earth->setTextureMap("../Images/EarthTexture.bmp");
+  earth->setTextureMap("Images/EarthTexture.bmp");
   earth->setAutoLOD(true);
 
   Sphere *sun = new Sphere("Sun", 1, 1, 0, 1.0);
@@ -104,7 +104,7 @@ int main()
   theWindow->setScene(fm, 0, 0);
   theWindow->getGridPosition(0, 0)->addView(view);
   theWindow->getGridPosition(0, 0)->addView(view2);
-  theWindow->getGridPosition(0, 0)->setSkySphereTexture("../Images/StarMap.tif");
+  theWindow->getGridPosition(0, 0)->setSkySphereTexture("Images/StarMap.tif");
 
   sun->setPosition(AU, 0.0, 0.0); // Initialize Sun position
 
