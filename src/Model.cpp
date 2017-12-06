@@ -158,9 +158,7 @@ namespace OpenFrames
     
     // Set the model pivot at its geometric center, so that scales/rotations will make sense.
     osg::Vec3d center = _model->getBound()._center;
-    _modelXform->setPivot(center[0], center[1], center[2]);
-    
-    repositionAxes(); // Reset the x/y/z axes
+    setModelPivot(center[0], center[1], center[2]);
     
     return true;
   }
@@ -179,10 +177,8 @@ namespace OpenFrames
     
     // Set the model pivot at its geometric center, so that scales/rotations will make sense.
     osg::Vec3d center = _model->getBound()._center;
-    _modelXform->setPivot(center[0], center[1], center[2]);
-    
-    repositionAxes(); // Reset the x/y/z axes
-    
+    setModelPivot(center[0], center[1], center[2]);
+
     // Get any extras such as ParticleSystems
     osg::Geode *otherExtras = otherModel->getExtras();
     if(otherExtras->getNumDrawables() > 0)
@@ -217,26 +213,27 @@ namespace OpenFrames
     
     repositionAxes(); // Reset the x/y/z axes
   }
+
+  /** Set/get the pivot point of the model. */
+  void Model::setModelPivot(const double &px, const double &py, const double &pz)
+  {
+    _modelXform->setPivot(px, py, pz);
+
+    repositionAxes(); // Reset the x/y/z axes
+  }
   
   /** Move the model's x/y/z axes to default positions. */
   void Model::repositionAxes()
   {
-    if(_model) // If model exists, move its axes to the model's scaled bounds
+    if(_model) // If model exists, move the axes to the its bounds
     {
-      // Get the center point, radius, and scale of the model
-      double px, py, pz;
-      double sx, sy, sz;
-      double radius, scale;
-      _modelXform->getPosition(px, py, pz);
-      _modelXform->getScale(sx, sy, sz);
-      scale = std::max(std::max(sx, sy), sz); // Get the largest scale
-      radius = _model->getBound()._radius;
+      // Get the model's transformed bounding sphere
+      osg::BoundingSphere bs = _modelXform->getBound();
       
-      // We want to place the x/y/z axes around the circle that fits the
-      // scaled model, so we use the largest scale.
-      moveXAxis(osg::Vec3(scale*radius + px, py, pz), 0.5*scale*radius);
-      moveYAxis(osg::Vec3(px, scale*radius + py, pz), 0.5*scale*radius);
-      moveZAxis(osg::Vec3(px, py, scale*radius + pz), 0.5*scale*radius);
+      // Place the axes at the edge of the bounding sphere
+      moveXAxis(bs._center + osg::Vec3(bs._radius, 0, 0), 0.5*bs._radius);
+      moveYAxis(bs._center + osg::Vec3(0, bs._radius, 0), 0.5*bs._radius);
+      moveZAxis(bs._center + osg::Vec3(0, 0, bs._radius), 0.5*bs._radius);
     }
     else // Otherwise move its axes to the origin
     {
