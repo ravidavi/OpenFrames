@@ -21,6 +21,11 @@
 #include <osg/Geode>
 #include <string>
 
+#include <qglobal.h>
+
+QT_FORWARD_DECLARE_CLASS(QWidget);
+class QWidgetImage;
+
 namespace OpenFrames
 {
 
@@ -43,9 +48,8 @@ namespace OpenFrames
       void setHalfLengths( const double &xHalfLength, const double &yHalfLength, const double &zHalfLength );
       void getHalfLengths( double &xHalfLength, double &yHalfLength, double &zHalfLength ) const;
 
-      /** Set the filename of the texture to map onto the box.  Consult the
-        osg documentation to see which image filetypes are supported. */
-      bool setTextureMap( const std::string &fname, bool force_reload = false );
+      /** Set the QWidget containing controls for the control box. */
+      bool setQtControls( QWidget *widget );
 
       /** Inherited from ReferenceFrame.
         Set the color of the box.  If a texture is applied, the color is
@@ -62,6 +66,7 @@ namespace OpenFrames
 
       osg::ref_ptr<osg::Geode> _geode; // Node containing the box
       osg::ref_ptr<osg::Geometry> _panel; // A panel for rendering the controls
+      osg::ref_ptr<QWidgetImage> _image; // The image to which controls are drawn
 
     private:
       static const double DEFAULT_LENGTH;

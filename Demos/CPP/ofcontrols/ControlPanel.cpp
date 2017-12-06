@@ -15,6 +15,8 @@
 ***********************************/
 
 #include "ControlPanel.hpp"
+#include "QWidgetImage.hpp"
+
 #include <osg/Vec3d>
 #include <osg/Quat>
 #include <osg/Geode>
@@ -23,6 +25,8 @@
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
 #include <osgUtil/CullVisitor>
+#include <osgViewer/ViewerEventHandlers>
+
 #include <iostream>
 
 namespace OpenFrames
@@ -109,10 +113,12 @@ namespace OpenFrames
     zHalfLength = halfLenghts[2];
   }
 
-  bool ControlPanel::setTextureMap(const std::string &fname, bool force_reload)
+  bool ControlPanel::setWidgetControls(QWidget *widget)
   {
-    if(fname.length() == 0) // Remove existing texture
+    if(widget == nullptr) // Remove existing texture
     {
+      _image.release(); // Release the old controls
+
       osg::StateSet* stateset = _panel->getStateSet();
       if(stateset)
       {
@@ -120,24 +126,33 @@ namespace OpenFrames
         stateset->removeTextureAttribute(0, osg::StateAttribute::TEXENV);
       }
 
+      // Revert color to setting
+      osg::Vec4Array* colours = new osg::Vec4Array(1);
+      (*colours)[0] = getColor();
+      _panel->setColorArray(colours, osg::Array::BIND_OVERALL);
+
       return false;
     }
-
-    // Check if there is already a texture being used.
-    osg::StateSet* stateset = _panel->getOrCreateStateSet();
-    osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(stateset->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
-
-    // If the current texture has the same filename as the new texture, then reload only if we have to.
-    if(texture && (texture->getImage()->getFileName() == fname) && !force_reload) return true;
-
-    osg::Image* image = osgDB::readImageFile(fname);
-    if(image)
+    else
     {
+      // Check if there is already a texture being used.
+      osg::StateSet* stateset = _panel->getOrCreateStateSet();
+      osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(stateset->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
+
+      // Wrap the QWidget into an osg::Image
+      _image = new QWidgetImage(widget);
+#if (QT_VERSION >= QT_VERSION_CHECK(4, 5, 0))
+      _image->getQWidget()->setAttribute(Qt::WA_TranslucentBackground);
+#endif
+      const osg::Vec4 &color = getColor();
+      _image->getQGraphicsViewAdapter()->setBackgroundColor(QColor(255.0f*color[0], 255.0f*color[1], 255.0f*color[2], 255.0f*color[3]));
+      _image->getQGraphicsViewAdapter()->setBackgroundWidget(widget);
+
       // Create texture using image, and make sure it wraps around the
       // box without a seam at the edges.
       texture = new osg::Texture2D;
-      texture->setImage(image);
       texture->setResizeNonPowerOfTwoHint(false);
+      texture->setImage(_image);
       texture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
       texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
       texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
@@ -149,23 +164,38 @@ namespace OpenFrames
       osg::TexEnv* texenv = new osg::TexEnv;
       texenv->setMode(osg::TexEnv::MODULATE);
       stateset->setTextureAttribute(0, texenv);
+      stateset->setAttribute(new osg::Program); // TODO What is this for??
+      stateset->setMode(GL_LIGHTING, osg::StateAttribute::ON);
+      stateset->setMode(GL_BLEND, osg::StateAttribute::ON);
+      stateset->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+
+      // Image handler
+      osgViewer::InteractiveImageHandler* handler = new osgViewer::InteractiveImageHandler(_image.get());
+      _panel->setEventCallback(handler);
+      _panel->setCullCallback(handler);
+
+      // Set color to white for modulation of texture
+      osg::Vec4Array* colours = new osg::Vec4Array(1);
+      (*colours)[0] = { 1.0, 1.0, 1.0, 1.0 };
+      _panel->setColorArray(colours, osg::Array::BIND_OVERALL);
 
       return true;
-    }
-    else
-    {
-      std::cerr<< "ControlPanel::setTextureMap ERROR: File \'" << fname 
-        << "\' could not be loaded." << std::endl;
-      return false;
     }
   }
 
   void ControlPanel::setColor( const osg::Vec4 &color )
   {
     ReferenceFrame::setColor(color);
-    osg::Vec4Array* colours = new osg::Vec4Array(1);
-    (*colours)[0] = color;
-    _panel->setColorArray(colours, osg::Array::BIND_OVERALL);
+    if (_image.valid())
+    {
+      _image->getQGraphicsViewAdapter()->setBackgroundColor(QColor(255.0f*color[0], 255.0f*color[1], 255.0f*color[2], 255.0f*color[3]));
+    }
+    else
+    {
+      osg::Vec4Array* colours = new osg::Vec4Array(1);
+      (*colours)[0] = color;
+      _panel->setColorArray(colours, osg::Array::BIND_OVERALL);
+    }
   }
 
   const osg::BoundingSphere& ControlPanel::getBound() const
@@ -198,7 +228,7 @@ namespace OpenFrames
     osg::Vec3 heightVec(halfLengths[0] * 2.0f, 0.0f, 0.0f);
     osg::Vec3 widthVec(0.0f, halfLengths[1] * 2.0f, 0.0f);
     osg::Vec3 lengthVec(0.0f, 0.0f, halfLengths[2] * 2.0f);
-
+;
     osg::Vec3Array* coords = new osg::Vec3Array(24);
     (*coords)[0] = corner + heightVec;
     (*coords)[1] = corner;
@@ -228,11 +258,31 @@ namespace OpenFrames
 
     setColor(getColor());
 
-    osg::Vec2Array* tcoords = new osg::Vec2Array(4);
+    osg::Vec2Array* tcoords = new osg::Vec2Array(24);
     (*tcoords)[0].set(l, t);
     (*tcoords)[1].set(l, b);
     (*tcoords)[2].set(r, b);
     (*tcoords)[3].set(r, t);
+    (*tcoords)[4].set(l, t);
+    (*tcoords)[5].set(l, b);
+    (*tcoords)[6].set(r, b);
+    (*tcoords)[7].set(r, t);
+    (*tcoords)[8].set(l, t);
+    (*tcoords)[9].set(l, b);
+    (*tcoords)[10].set(l, b);
+    (*tcoords)[11].set(l, t);
+    (*tcoords)[12].set(r, t);
+    (*tcoords)[13].set(r, b);
+    (*tcoords)[14].set(r, b);
+    (*tcoords)[15].set(r, t);
+    (*tcoords)[16].set(l, b);
+    (*tcoords)[17].set(r, b);
+    (*tcoords)[18].set(l, b);
+    (*tcoords)[19].set(r, b);
+    (*tcoords)[20].set(r, t);
+    (*tcoords)[21].set(l, t);
+    (*tcoords)[22].set(r, t);
+    (*tcoords)[23].set(l, t);
     _panel->setTexCoordArray(0, tcoords);
 
     osg::Vec3Array* normals = new osg::Vec3Array(6);
