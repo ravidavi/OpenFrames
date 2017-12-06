@@ -126,6 +126,7 @@ IF( ${OF_VR_TYPE} MATCHES ${VR_OpenVRStub} )
 ELSEIF( ${OF_VR_TYPE} MATCHES ${VR_OpenVR} )
   MESSAGE(STATUS "OpenFrames enabling OpenVR support")
   FIND_PACKAGE(OpenVR REQUIRED)
+  SET_PROPERTY(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS USE_OPENVR)
 ENDIF()
 
 # Go to the src directory and look for CMake instructions there

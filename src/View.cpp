@@ -214,7 +214,7 @@ namespace OpenFrames
     
     // Set up the projection matrix
     _projType = PERSPECTIVE;
-    setPerspective(30.0, 640.0/480.0);
+    setPerspective(45.0, 640.0/480.0);
   }
   
   /*******************************************************/

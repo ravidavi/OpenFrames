@@ -496,12 +496,6 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
-  void OpenVRDevice::getControllerState(uint32_t deviceID, vr::VRControllerState_t *state)
-  {
-    _vrSystem->GetControllerState(deviceID, state, sizeof(vr::VRControllerState_t));
-  }
-
-  /*************************************************************/
   bool OpenVREventDevice::checkEvents()
   {
     osg::ref_ptr<OpenVREvent> event = new OpenVREvent;
