@@ -88,8 +88,8 @@ int main(int argc, char** argv)
   {
     Model *theModel = new Model("Model", 0.5, 0.5, 0.5, 0.9);
     if (!theModel->setModel(files[i])) continue;
-    std::string fname = osgDB::getNameLessAllExtensions(files[i]);
-    theModel->setName(fname);
+    std::string fname = osgDB::getSimpleFileName(files[i]);
+    theModel->setName(osgDB::getNameLessAllExtensions(fname));
 
     // Reset model pivot so its origin coincides with the root scene origin
     theModel->setModelPivot(0.0, 0.0, 0.0);

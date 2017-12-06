@@ -86,10 +86,7 @@ namespace OpenFrames
     /** Set/get the pivot point of the model. This is the point about
 	    which all rotations happen, and wrt which all points are moved
 	    during a scale. */
-    void setModelPivot( const double &px, const double &py, const double &pz)
-    {
-      _modelXform->setPivot(px, py, pz);
-    }
+    void setModelPivot(const double &px, const double &py, const double &pz);
     
     void getModelPivot( double &px, double &py, double &pz ) const
     {
