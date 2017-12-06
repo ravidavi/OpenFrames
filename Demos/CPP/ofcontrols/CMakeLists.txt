@@ -18,11 +18,13 @@ ENDIF()
 # Specify headers for Qt example
 FILE(GLOB osgqtcube_HEADERS *.hpp)
 LIST(APPEND osgqtcube_SOURCES
+  ofcontrols.cpp
   osgqtcube.cpp
   QGraphicsViewAdapter.cpp
   QWidgetImage.cpp
   OSGQuickImage.cpp
-  OSGQuickAdapter.cpp)
+  OSGQuickAdapter.cpp
+  ControlPanel.cpp)
 
 # Specify which file should be compiled for current test
 ADD_EXECUTABLE(${curr_demo} ${osgqtcube_SOURCES} ${RESOURCES} ${osgqtcube_HEADERS} qml.qrc)

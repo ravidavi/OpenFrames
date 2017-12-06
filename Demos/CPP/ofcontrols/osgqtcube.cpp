@@ -112,7 +112,7 @@ public:
 //----------------------------------------------
 
 
-int main(int argc, char **argv)
+int old_main(int argc, char **argv)
 {
   // Qt requires that we construct the global QApplication before creating any widgets.
   QApplication app(argc, argv);
