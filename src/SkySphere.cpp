@@ -170,7 +170,7 @@ unsigned int SkySphere::getDrawMode()
 bool SkySphere::setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int maxNumStars,
                             float minPixSize, float maxPixSize, float minDimRatio)
 {
-  if((minMag >= maxMag) || (maxNumStars == 0) || (minPixSize >= maxPixSize) ||
+  if((minMag > maxMag) || (maxNumStars == 0) || (minPixSize > maxPixSize) ||
      (minDimRatio > 1.0) || (minDimRatio < 0.0)) return false;
   _starCatalogFile = catalogName;
   _minMag = minMag;
@@ -258,8 +258,16 @@ bool SkySphere::processStars()
     StarToPoint(currStar, currVert, currColor); // Size in currColor[3]
 
     // Linearly interpolate star size between specified bounds
-    float ratio = (currColor[3] - minRawSize) / (maxRawSize - minRawSize); // Interpolation size ratio
-    currColor[3] = _minPixSize + ratio*(_maxPixSize - _minPixSize);
+    float ratio = 0.0;
+    if (maxRawSize != minRawSize)
+    {
+      ratio = (currColor[3] - minRawSize) / (maxRawSize - minRawSize); // Interpolation size ratio
+      currColor[3] = _minPixSize + ratio*(_maxPixSize - _minPixSize);
+    }
+    else // All stars are same raw size, so make them all the same pixel size
+    {
+      currColor[3] = _minPixSize;
+    }
 
     // Dim star color according to its size ratio
     // With this, big stars have their full color, but small stars are dimmed towards black
@@ -449,7 +457,9 @@ void SkySphere::clearStars()
     vertices = static_cast<osg::Vec3Array*>(_starBinGeoms[i]->getVertexArray());
     colors = static_cast<osg::Vec4Array*>(_starBinGeoms[i]->getColorArray());
     vertices->clear();
+    vertices->dirty();
     colors->clear();
+    colors->dirty();
     _starBinGeoms[i]->removePrimitiveSet(0, _starBinGeoms[i]->getNumPrimitiveSets());
   }
 }
