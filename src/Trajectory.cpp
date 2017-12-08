@@ -18,10 +18,12 @@
 #include <math.h>
 #include <climits>
 #include <cfloat>
+#include <cstring>
+#include <algorithm>
 
 namespace OpenFrames {
 
-Trajectory::Trajectory(unsigned int dof, unsigned int nopt ) 
+Trajectory::Trajectory(unsigned int dof, unsigned int nopt )
 {
   _autoInformSubscribers = true;
 	_safeReadWrite = true;
@@ -202,7 +204,7 @@ bool Trajectory::addPosition( const DataType* const pos )
 
 	  // Add the position and create dummy optionals to go with it
 	_posopt.insert(_posopt.end(), _dof, 0);
-	memcpy(&_posopt[_posopt.size()-_dof], pos, _dof*sizeof(DataType));
+	std::memcpy(&_posopt[_posopt.size()-_dof], pos, _dof*sizeof(DataType));
 	if(_nopt > 0) _posopt.insert(_posopt.end(), _nopt*_dof, 0);
 	++_numPos;
 
@@ -274,7 +276,7 @@ bool Trajectory::addAttitude( const DataType* const att )
 
 	  // Add the attitude
 	_att.insert(_att.end(), 4, 0);
-	memcpy(&_att[_att.size()-4], att, sizeof(DataType) << 2);
+	std::memcpy(&_att[_att.size()-4], att, sizeof(DataType) << 2);
 	++_numAtt;
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
@@ -329,7 +331,7 @@ bool Trajectory::setOptional( unsigned int index,
 
 	  // Add the optional 
 	index = _posopt.size() - _dof*(_nopt - index);
-	memcpy(&_posopt[index], opt, _dof*sizeof(DataType));
+	std::memcpy(&_posopt[index], opt, _dof*sizeof(DataType));
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
