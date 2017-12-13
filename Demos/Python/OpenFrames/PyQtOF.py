@@ -6,7 +6,7 @@ Qt Widgets for implementing OpenFrames
 
 from PyQt5.QtWidgets import QWidget, QGridLayout, QSizePolicy
 from PyQt5.QtGui import QWindow, QOpenGLContext
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import Qt, QSize, QCoreApplication, QEventLoop
 from .PyOFInterfaceC import *
 
 
@@ -75,7 +75,9 @@ class Window(QWindow):
 
         """
         ofwin_activate(self._window_proxy_id)
-        ofwin_stop()
+        ofwin_signalstop()
+        while ofwin_isrunning() == 1:
+            QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
         self._proxy_started = False
 
     def resizeEvent(self, event):
