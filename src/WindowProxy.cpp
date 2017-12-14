@@ -569,7 +569,17 @@ namespace OpenFrames
         traits->samples = 4; // Enable 4x MSAA
       }
       
+      // Try creating graphics context
       osg::GraphicsContext* gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+
+      // On error, try again without MSAA
+      if(!gc) 
+      {
+        OSG_WARN << "Couldn't create 4x MSAA window, trying again without MSAA..." << std::endl;
+        traits->samples = 0; // Disable MSAA
+        gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+      }
+
       _window = dynamic_cast<osgViewer::GraphicsWindow*>(gc);
     }
     

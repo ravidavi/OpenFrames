@@ -64,6 +64,16 @@ IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   SET(CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/OpenFrames-${CMAKE_SYSTEM_NAME}-install" CACHE PATH "OpenFrames installation location" FORCE)
 ENDIF()
 
+# Additional Linux compile/link flags
+IF(UNIX AND NOT APPLE)
+  # Tell CMake Find* commands to search for lib64 paths on Linux
+  SET_PROPERTY(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
+
+  # Generate link errors for undefined symbols
+  # This is enabled by default on OSX but not Linux
+  SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined -Wl,--no-allow-shlib-undefined")
+ENDIF()
+
 # Find OpenSceneGraph
 FIND_PACKAGE(OpenSceneGraph 3.5.6 COMPONENTS osg osgText osgGA osgDB osgUtil osgViewer osgParticle)
 
