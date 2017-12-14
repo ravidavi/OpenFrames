@@ -71,7 +71,7 @@ IF(UNIX AND NOT APPLE)
 
   # Generate link errors for undefined symbols
   # This is enabled by default on OSX but not Linux
-  SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined -Wl,--no-allow-shlib-undefined")
+  SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 ENDIF()
 
 # Find OpenSceneGraph
