@@ -21,7 +21,68 @@
 #include <osgDB/FileNameUtils>
 #include <osgDB/FileUtils>
 
+#ifdef USE_OPENVR
+#include <openvr.h>
+#endif
+
 using namespace OpenFrames;
+
+// Global pointer to the WindowProxy created in main()
+// In a real program, this would probably be wrapped in a class and not in the global namespace
+WindowProxy *theWinProxy;
+
+// Callback to handle VR controller events
+// This is called by WindowProxy when a new OpenVR event is detected
+#ifdef USE_OPENVR
+void VREventCallback(unsigned int *winID, unsigned int *row, unsigned int *col, const OpenFrames::OpenVREvent *vrEvent)
+{
+  // Get the OpenFrames::OpenVRDevice object that handles OpenVR rendering & interaction
+  const OpenFrames::OpenVRDevice* ovrDevice = theWinProxy->getOpenVRDevice();
+  vr::IVRSystem* vrSystem = ovrDevice->getVRSystem();
+
+  // Get OpenVR event data; see openvr.h and online documentation/examples for details
+  const vr::VREvent_t *ovrEvent = vrEvent->_vrEventData._ovrEvent;  // OpenVR data type
+  vr::TrackedDeviceIndex_t deviceID = ovrEvent->trackedDeviceIndex; // Device index that generated event
+  const vr::VRControllerState_t *state = vrEvent->_vrEventData._controllerState; // Current device state
+
+  // OpenVR will sometimes send a dummy event with an invalid device ID; ignore those
+  if (deviceID >= ovrDevice->getNumDeviceModels()) return;
+
+  // Ignore event if it came from device that's not a controller (e.g. headset or tracking events)
+  if (ovrDevice->getDeviceModel(deviceID)->_class != OpenFrames::OpenVRDevice::CONTROLLER) return;
+
+  // Process OpenVR controller event
+  // Note that events are sent ONCE when they happen. e.g. if the grip button is held down, then
+  // a vr::VREvent_ButtonPress event is sent just once, not continuously while the button is held.
+  switch (ovrEvent->eventType)
+  {
+  // A controller button was pressed
+  case(vr::VREvent_ButtonPress):
+  {
+    // If only touchpad is pressed, then play/pause time
+    if (state->ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad))
+    {
+      theWinProxy->pauseTime(!theWinProxy->isTimePaused());
+    }
+
+    // If grip and touchpad are pressed at same time, then switch views
+    // Note that for this to work properly, the grip button should be pressed first, then touchpad.
+    // Otherwise if touchpad is pressed first, then the above if() statement will also execute.
+    else if ((state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_Grip)) &&
+      (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)))
+    {
+      theWinProxy->getGridPosition(0, 0)->nextView();
+    }
+
+    break;
+  }
+  }
+}
+#else // OpenVR not available, so just create a stub VR event callback function
+void VREventCallback(unsigned int *winID, unsigned int *row, unsigned int *col, const OpenFrames::OpenVREvent *vrEvent)
+{
+}
+#endif
 
 /** This example loads and displays a model using OpenFrames.
   **/
@@ -66,8 +127,12 @@ int main(int argc, char** argv)
   unsigned int nrows = 1, ncols = 1;
   bool isEmbedded = false;
   osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(x, y, width, height, nrows, ncols, isEmbedded, useVR);
+  theWinProxy = myWindow;
   myWindow->setWorldUnitsPerMeter(worldUnitsPerMeter);
   myWindow->setWorldUnitsPerMeterLimits(1.0, DBL_MAX);
+
+  // Set VR callback if needed
+  if (useVR) myWindow->setVREventCallback(VREventCallback);
 
   // Create the root frame that will hold all specified models
   osg::ref_ptr<ReferenceFrame> rootFrame = new ReferenceFrame("Root");
