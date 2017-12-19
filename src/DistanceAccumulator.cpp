@@ -94,7 +94,11 @@ namespace OpenFrames
    is true, then store the node's near & far plane distances. */
   bool DistanceAccumulator::shouldContinueTraversal(osg::Node &node)
   {
-    // Allow traversal to continue if we haven't reached maximum depth.
+    // Allow traversal to continue if culling is disabled, e.g. if subgraph contans
+    // an ABSOLUTE_RF child
+    if(node.isCullingActive() == false) return true;
+    
+    // Potentially allow traversal to continue if we haven't reached maximum depth
     bool keepTraversing = (_currentDepth < _maxDepth);
     
     osg::BoundingSphere bs = node.getBound();

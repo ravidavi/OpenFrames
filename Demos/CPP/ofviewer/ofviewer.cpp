@@ -31,6 +31,16 @@ using namespace OpenFrames;
 // In a real program, this would probably be wrapped in a class and not in the global namespace
 WindowProxy *theWinProxy;
 
+// Callback to handle key press events
+void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
+{
+  // Pause/unpause animation
+  if(*key == 'p')
+  {
+    theWinProxy->pauseTime(!theWinProxy->isTimePaused());
+  }
+}
+
 // Callback to handle VR controller events
 // This is called by WindowProxy when a new OpenVR event is detected
 #ifdef USE_OPENVR
@@ -130,6 +140,9 @@ int main(int argc, char** argv)
   theWinProxy = myWindow;
   myWindow->setWorldUnitsPerMeter(worldUnitsPerMeter);
   myWindow->setWorldUnitsPerMeterLimits(1.0, DBL_MAX);
+  
+  // Set key press callback
+  myWindow->setKeyPressCallback(KeyPressCallback);
 
   // Set VR callback if needed
   if (useVR) myWindow->setVREventCallback(VREventCallback);
