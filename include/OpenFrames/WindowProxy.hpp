@@ -191,6 +191,10 @@ namespace OpenFrames
       else return _currTime;
     }
     
+    /// Control allowable time range; computed simulation time will always obey this
+    void setTimeRange(double tMin, double tMax);
+    void getTimeRange(double& tMin, double& tMax) const;
+    
     void pauseTime(bool pause);
     bool isTimePaused() const
     {
@@ -355,6 +359,7 @@ namespace OpenFrames
     bool _timePaused;
     osg::Timer_t _Tref;
     double _currTime, _offsetTime, _timeScale;
+    double _minTime, _maxTime;
     osg::observer_ptr<WindowProxy> _timeSyncWinProxy;
     
     bool _useVR; // Whether to use VR rendering

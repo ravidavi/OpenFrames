@@ -21,6 +21,7 @@
 #include <osg/PointSprite>
 #include <osgGA/GUIEventHandler>
 #include <iostream>
+#include <limits>
 
 namespace OpenFrames
 {
@@ -524,6 +525,7 @@ namespace OpenFrames
     setupGrid(width, height);
     
     // Set time parameters
+    setTimeRange(std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
     setTime(0.0);
     setTimeScale(1.0);
     
@@ -731,8 +733,32 @@ namespace OpenFrames
     if(_timeSyncWinProxy.valid()) _timeSyncWinProxy->setTime(time);
     else
     {
+      if(time < _minTime) time = _minTime;
+      else if(time > _maxTime) time = _maxTime;
       _currTime = _offsetTime = time;
       _Tref = osg::Timer::instance()->tick();
+    }
+  }
+  
+  /** Set the time range */
+  void WindowProxy::setTimeRange(double tMin, double tMax)
+  {
+    if(_timeSyncWinProxy.valid()) _timeSyncWinProxy->setTimeRange(tMin, tMax);
+    else if(tMax >= tMin)
+    {
+      _minTime = tMin;
+      _maxTime = tMax;
+    }
+  }
+  
+  /** Get the time range */
+  void WindowProxy::getTimeRange(double& tMin, double& tMax) const
+  {
+    if(_timeSyncWinProxy.valid()) _timeSyncWinProxy->getTimeRange(tMin, tMax);
+    else
+    {
+      tMin = _minTime;
+      tMax = _maxTime;
     }
   }
   
@@ -770,6 +796,7 @@ namespace OpenFrames
         double newTime = _timeSyncWinProxy->getTime();
         _timeScale = _timeSyncWinProxy->getTimeScale();
         _timePaused = _timeSyncWinProxy->isTimePaused();
+        _timeSyncWinProxy->getTimeRange(_minTime, _maxTime);
         
         _timeSyncWinProxy = NULL;
         setTime(newTime);
@@ -978,6 +1005,8 @@ namespace OpenFrames
     {
       double dt = osg::Timer::instance()->delta_s(_Tref, osg::Timer::instance()->tick());
       _currTime = _offsetTime + dt*_timeScale;
+      if(_currTime < _minTime) _currTime = _minTime;
+      else if(_currTime > _maxTime) _currTime = _maxTime;
     }
     
     // Update, cull, and draw the scene, and process queued events
