@@ -32,37 +32,41 @@ namespace OpenFrames
     away it is from the eye point. */
   struct SphereLODCallback : public osg::DrawableCullCallback
   {
-    SphereLODCallback(const osg::Sphere& sphere, osg::TessellationHints& hints) 
-      : _sphere(sphere), _hints(hints), _currentLOD(0) {}
+    SphereLODCallback()
+      : _currentLOD(0) {}
 
     virtual bool cull(osg::NodeVisitor* nv, osg::Drawable* drawable, osg::RenderInfo* renderInfo) const 
     {
       osgUtil::CullVisitor *cv = dynamic_cast<osgUtil::CullVisitor*>(nv);
-      if(cv)
+      osg::ShapeDrawable *sphereSD = dynamic_cast<osg::ShapeDrawable*>(drawable);
+      if(cv && sphereSD)
       {
+        osg::Sphere *sphere = static_cast<osg::Sphere*>(sphereSD->getShape());
+        osg::TessellationHints *hints = static_cast<osg::TessellationHints*>(sphereSD->getTessellationHints());
+          
         // Get the eye point in the Sphere's local coordinates
         // Can't use cv->getEyeLocal() since Vec3=Vec3f
         osg::Vec3d eye = osg::Matrix::inverse(*cv->getModelViewMatrix()).getTrans();
 
         // Compute the ratio of distance to sphere radius
-        double ratio = (eye - _sphere.getCenter()).length() / _sphere.getRadius();
-        int lod;
-        if(ratio <= 1.0) lod = 50;
-        else if(ratio >= 5.0) lod = 10;
-        else lod = 50.0/ratio;
+        double ratio = (eye - sphere->getCenter()).length() / sphere->getRadius();
+        if(ratio < 1.0) ratio = 1.0;
+        const double maxLOD = 50, minLOD = 5;
+        double lod = maxLOD / ratio;
+        if(lod < minLOD) lod = minLOD;
 
-        if(_currentLOD != lod)
+        if(_currentLOD != (int)lod)
         {
-          _hints.setDetailRatio(0.1*(double)lod);
-          _currentLOD = lod;
+          hints->setDetailRatio(0.1*lod);
+          _currentLOD = (int)lod;
+          sphereSD->dirtyBound();
+          sphereSD->build();
         }
       }
 
       return false; 
     }
 
-    const osg::Sphere& _sphere;
-    osg::TessellationHints& _hints;
     mutable int _currentLOD;
   };
 
@@ -199,11 +203,8 @@ namespace OpenFrames
   {
     if(lod)
     {
-      osg::Sphere *sphere = static_cast<osg::Sphere*>(_sphereSD->getShape());
-      osg::TessellationHints *hints = static_cast<osg::TessellationHints*>(_sphereSD->getTessellationHints());
-
       if(_sphereSD->getCullCallback() == NULL)
-        _sphereSD->setCullCallback(new SphereLODCallback(*sphere, *hints));
+        _sphereSD->setCullCallback(new SphereLODCallback());
     }
     else
     {
