@@ -325,13 +325,6 @@ MyGLCanvas::~MyGLCanvas()
 void MyGLCanvas::makecurrent(unsigned int *winID, bool *success)
 {
   *success = currCanvas->m_context->SetCurrent(*currCanvas);
-
-  // check OpenGL errors
-  GLenum err;
-  while ((err = glGetError()) != GL_NO_ERROR)
-  {
-    std::cout << "OpenGL error: " << err << std::endl;
-  }
 }
 
 void MyGLCanvas::swapbuffers(unsigned int *winID)

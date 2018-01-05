@@ -96,6 +96,7 @@ int main()
   // Set Earth parameters
   const double r_earth = 6371.0;
   earth->setRadius(r_earth);
+  earth->setAutoLOD(true);
   earth->setTextureMap("Images/EarthTexture.bmp");
   
   // Create a set of Coordinate Axes for Earth axes

@@ -25,6 +25,7 @@
 #include <osg/FrameStamp>
 #include <osg/Timer>
 #include <osg/Referenced>
+#include <osg/observer_ptr>
 #include <osg/ref_ptr>
 #include <osgViewer/CompositeViewer>
 #include <osgViewer/GraphicsWindow>
@@ -184,11 +185,40 @@ namespace OpenFrames
     
     /** Time control */
     void setTime(double time);
-    double getTime() const { return _currTime; }
+    double getTime() const
+    {
+      if(_timeSyncWinProxy.valid()) return _timeSyncWinProxy->getTime();
+      else return _currTime;
+    }
+    
+    /// Control allowable time range; computed simulation time will always obey this
+    void setTimeRange(double tMin, double tMax);
+    void getTimeRange(double& tMin, double& tMax) const;
+    
     void pauseTime(bool pause);
-    bool isTimePaused() const { return _timePaused; }
+    bool isTimePaused() const
+    {
+      if(_timeSyncWinProxy.valid()) return _timeSyncWinProxy->isTimePaused();
+      else return _timePaused;
+    }
+    
     void setTimeScale(double tscale);
-    double getTimeScale() const { return _timeScale; }
+    double getTimeScale() const
+    {
+      if(_timeSyncWinProxy.valid()) return _timeSyncWinProxy->getTimeScale();
+      else return _timeScale;
+    }
+    
+    /** Synchronize time with another WindowProxy
+        This causes all time control to be forwarded to the other WindowProxy
+        Inputs:
+          NULL or this: Stop synchronizing time
+          Otherwise: Synchronize with specified WindowProxy
+        Return: 
+          true: success, synchronized with input
+          false: circular dependency detected, synchronization unchanged */
+    bool synchronizeTime(WindowProxy *winproxy);
+    WindowProxy* getTimeSyncWindow() const { return _timeSyncWinProxy.get(); }
     
     /** Animation loop control (event/update/render) */
     void pauseAnimation(bool pause);
@@ -329,6 +359,8 @@ namespace OpenFrames
     bool _timePaused;
     osg::Timer_t _Tref;
     double _currTime, _offsetTime, _timeScale;
+    double _minTime, _maxTime;
+    osg::observer_ptr<WindowProxy> _timeSyncWinProxy;
     
     bool _useVR; // Whether to use VR rendering
     osg::ref_ptr<OpenVRDevice> _ovrDevice; // OpenVR interface

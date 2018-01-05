@@ -184,8 +184,8 @@ namespace OpenFrames {
     /** Get the next OpenVR event */
     bool pollNextEvent(OpenVREvent *event);
 
-    /** Get the state of the specified OpenVR controller */
-    void getControllerState(uint32_t deviceID, vr::VRControllerState_t *state);
+    /** Get the OpenVR subsystem */
+    vr::IVRSystem* getVRSystem() const { return _vrSystem; }
     
   protected:
     virtual ~OpenVRDevice();

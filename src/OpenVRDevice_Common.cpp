@@ -100,7 +100,7 @@ namespace OpenFrames{
   {
     // Set up a transform for the device render models
     // These models exist in local space (the room), so their view matrix should only
-    // include the HMD transform. The OpenVRPoseCallback will set this matrix at every frame.
+    // include the HMD transform.
     _deviceModels = new osg::MatrixTransform();
     _deviceModels->setCullCallback(new OpenVRDeviceTransformCallback(this));
     _deviceModels->setReferenceFrame(osg::Transform::ABSOLUTE_RF); // Override view matrix

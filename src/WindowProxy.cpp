@@ -21,6 +21,7 @@
 #include <osg/PointSprite>
 #include <osgGA/GUIEventHandler>
 #include <iostream>
+#include <limits>
 
 namespace OpenFrames
 {
@@ -472,6 +473,14 @@ namespace OpenFrames
   : _winID(0), _nRow(0), _nCol(0), _isEmbedded(embedded),
   _animPaused(false), _isAnimating(false), _timePaused(false), _useVR(useVR)
   {
+    // Input value checks
+    if(x < 0) x = 0;
+    if(y < 0) y = 0;
+    if(width == 0) width = 1;
+    if(height == 0) height = 1;
+    if(nrow == 0) nrow = 1;
+    if(ncol == 0) ncol = 1;
+    
     _viewer = new osgViewer::CompositeViewer;
     _embeddedGraphics = new EmbeddedGraphics(x, y, width, height, this);
     _eventHandler = new WindowEventHandler(this);
@@ -516,6 +525,7 @@ namespace OpenFrames
     setupGrid(width, height);
     
     // Set time parameters
+    setTimeRange(std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
     setTime(0.0);
     setTimeScale(1.0);
     
@@ -561,7 +571,17 @@ namespace OpenFrames
         traits->samples = 4; // Enable 4x MSAA
       }
       
+      // Try creating graphics context
       osg::GraphicsContext* gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+
+      // On error, try again without MSAA
+      if(!gc) 
+      {
+        OSG_WARN << "Couldn't create 4x MSAA window, trying again without MSAA..." << std::endl;
+        traits->samples = 0; // Disable MSAA
+        gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+      }
+
       _window = dynamic_cast<osgViewer::GraphicsWindow*>(gc);
     }
     
@@ -670,6 +690,12 @@ namespace OpenFrames
   /** Create a window resized event */
   void WindowProxy::resizeWindow(int x, int y, unsigned int width, unsigned int height)
   {
+    // Input value checks
+    if(x < 0) x = 0;
+    if(y < 0) y = 0;
+    if(width == 0) width = 1;
+    if(height == 0) height = 1;
+    
     // Can this be changed to _window->setWindowRectangle()?
     _window->resized(x, y, width, height);
     _window->getEventQueue()->windowResize(x, y, width, height);
@@ -704,22 +730,96 @@ namespace OpenFrames
   /** Set the current time */
   void WindowProxy::setTime(double time)
   {
-    _currTime = _offsetTime = time;
-    _Tref = osg::Timer::instance()->tick();
+    if(_timeSyncWinProxy.valid()) _timeSyncWinProxy->setTime(time);
+    else
+    {
+      if(time < _minTime) time = _minTime;
+      else if(time > _maxTime) time = _maxTime;
+      _currTime = _offsetTime = time;
+      _Tref = osg::Timer::instance()->tick();
+    }
+  }
+  
+  /** Set the time range */
+  void WindowProxy::setTimeRange(double tMin, double tMax)
+  {
+    if(_timeSyncWinProxy.valid()) _timeSyncWinProxy->setTimeRange(tMin, tMax);
+    else if(tMax >= tMin)
+    {
+      _minTime = tMin;
+      _maxTime = tMax;
+    }
+  }
+  
+  /** Get the time range */
+  void WindowProxy::getTimeRange(double& tMin, double& tMax) const
+  {
+    if(_timeSyncWinProxy.valid()) _timeSyncWinProxy->getTimeRange(tMin, tMax);
+    else
+    {
+      tMin = _minTime;
+      tMax = _maxTime;
+    }
   }
   
   /** Pause/unpause time */
   void WindowProxy::pauseTime(bool pause)
   {
-    _timePaused = pause;
-    setTime(_currTime);
+    if(_timeSyncWinProxy.valid()) _timeSyncWinProxy->pauseTime(pause);
+    else
+    {
+      _timePaused = pause;
+      setTime(_currTime);
+    }
   }
   
   /** Change time scale */
   void WindowProxy::setTimeScale(double tscale)
   {
-    _timeScale = tscale;
-    setTime(_currTime);
+    if(_timeSyncWinProxy.valid()) _timeSyncWinProxy->setTimeScale(tscale);
+    else
+    {
+      _timeScale = tscale;
+      setTime(_currTime);
+    }
+  }
+  
+  /** Synchronize time with specified WindowProxy */
+  bool WindowProxy::synchronizeTime(WindowProxy *winproxy)
+  {
+    // Stop synchronizing time
+    if((winproxy == NULL) || (winproxy == this))
+    {
+      if(_timeSyncWinProxy.valid())
+      {
+        // Save currently synchronized window's time parameters
+        double newTime = _timeSyncWinProxy->getTime();
+        _timeScale = _timeSyncWinProxy->getTimeScale();
+        _timePaused = _timeSyncWinProxy->isTimePaused();
+        _timeSyncWinProxy->getTimeRange(_minTime, _maxTime);
+        
+        _timeSyncWinProxy = NULL;
+        setTime(newTime);
+      }
+      
+      return true;
+    }
+    
+    // Check for circular dependency by traversing full synchronized window chain
+    // Note that this should never be an infinite loop since there should be no existing circular dependencies
+    for(WindowProxy* syncWP = winproxy->getTimeSyncWindow(); syncWP != NULL; syncWP = syncWP->getTimeSyncWindow())
+    {
+      // Make sure synchronized window isn't this window
+      if(syncWP == this)
+      {
+        OSG_WARN << "WindowProxy::synchronizeTime circular dependency not allowed." << std::endl;
+        return false;
+      }
+    }
+    
+    // No circular dependency, so set synchronized window
+    _timeSyncWinProxy = winproxy;
+    return true;
   }
   
   /** Pause the window's animation */
@@ -894,11 +994,19 @@ namespace OpenFrames
       (*sceneIter)->lock();
     }
     
-    // Compute current simulation time
-    if(!_timePaused)
+    // Use simulation time from synchonized WindowProxy
+    if(_timeSyncWinProxy.valid())
+    {
+      _currTime = _timeSyncWinProxy->getTime();
+    }
+    
+    // Otherwise compute current simulation time if not paused
+    else if(!_timePaused)
     {
       double dt = osg::Timer::instance()->delta_s(_Tref, osg::Timer::instance()->tick());
       _currTime = _offsetTime + dt*_timeScale;
+      if(_currTime < _minTime) _currTime = _minTime;
+      else if(_currTime > _maxTime) _currTime = _maxTime;
     }
     
     // Update, cull, and draw the scene, and process queued events
