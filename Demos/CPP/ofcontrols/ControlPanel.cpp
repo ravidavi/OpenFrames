@@ -212,10 +212,10 @@ namespace OpenFrames
 
   void ControlPanel::buildPanelGeometry(const osg::Vec3 &halfLengths)
   {
-    float l = 0.0;
-    float b = 0.0;
-    float r = 1.0;
-    float t = 1.0;
+    const float l = 0.0;
+    const float b = 0.0;
+    const float r = 1.0;
+    const float t = 1.0;
 
     _panel->setVertexArray(nullptr);
     _panel->setColorArray(nullptr);
@@ -259,30 +259,30 @@ namespace OpenFrames
     setColor(getColor());
 
     osg::Vec2Array* tcoords = new osg::Vec2Array(24);
-    (*tcoords)[0].set(l, t);
-    (*tcoords)[1].set(l, b);
-    (*tcoords)[2].set(r, b);
-    (*tcoords)[3].set(r, t);
-    (*tcoords)[4].set(l, t);
-    (*tcoords)[5].set(l, b);
-    (*tcoords)[6].set(r, b);
-    (*tcoords)[7].set(r, t);
-    (*tcoords)[8].set(l, t);
-    (*tcoords)[9].set(l, b);
-    (*tcoords)[10].set(l, b);
-    (*tcoords)[11].set(l, t);
-    (*tcoords)[12].set(r, t);
-    (*tcoords)[13].set(r, b);
-    (*tcoords)[14].set(r, b);
-    (*tcoords)[15].set(r, t);
-    (*tcoords)[16].set(l, b);
-    (*tcoords)[17].set(r, b);
-    (*tcoords)[18].set(l, b);
-    (*tcoords)[19].set(r, b);
-    (*tcoords)[20].set(r, t);
-    (*tcoords)[21].set(l, t);
-    (*tcoords)[22].set(r, t);
-    (*tcoords)[23].set(l, t);
+    (*tcoords)[0].set(r, t);
+    (*tcoords)[1].set(l, t);
+    (*tcoords)[2].set(l, b);
+    (*tcoords)[3].set(r, b);
+    (*tcoords)[4].set(r, t);
+    (*tcoords)[5].set(l, t);
+    (*tcoords)[6].set(l, b);
+    (*tcoords)[7].set(r, b);
+    (*tcoords)[8].set(r, t);
+    (*tcoords)[9].set(l, t);
+    (*tcoords)[10].set(l, t);
+    (*tcoords)[11].set(r, t);
+    (*tcoords)[12].set(r, b);
+    (*tcoords)[13].set(l, b);
+    (*tcoords)[14].set(l, b);
+    (*tcoords)[15].set(r, b);
+    (*tcoords)[16].set(l, t);
+    (*tcoords)[17].set(l, b);
+    (*tcoords)[18].set(l, t);
+    (*tcoords)[19].set(l, b);
+    (*tcoords)[20].set(r, b);
+    (*tcoords)[21].set(r, t);
+    (*tcoords)[22].set(r, b);
+    (*tcoords)[23].set(r, t);
     _panel->setTexCoordArray(0, tcoords);
 
     osg::Vec3Array* normals = new osg::Vec3Array(6);
