@@ -48,8 +48,12 @@ namespace OpenFrames
       void setHalfLengths( const double &xHalfLength, const double &yHalfLength, const double &zHalfLength );
       void getHalfLengths( double &xHalfLength, double &yHalfLength, double &zHalfLength ) const;
 
-      /** Set the QWidget containing controls for the control box. */
-      bool setQtControls( QWidget *widget );
+      /** Set the pixels per unit for scaling the controls widget */
+      void setPixelsPerUnit( double pixelsPerUnit );
+      double getPixelsPerUnit();
+
+      /** Set the QWidget containing controls for the control box */
+      bool setWidget( QWidget *widget );
 
       /** Inherited from ReferenceFrame.
         Set the color of the box.  If a texture is applied, the color is
@@ -70,8 +74,12 @@ namespace OpenFrames
 
     private:
       static const double DEFAULT_LENGTH;
+      static const double DEFAULT_PIXELS_PER_UNIT;
+
+      double _pixelsPerUnit;
 
       void _init();
+      void _rescaleWidget();
   };
 
 } // !namespace OpenFrames

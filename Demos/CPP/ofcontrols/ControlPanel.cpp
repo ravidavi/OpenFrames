@@ -33,27 +33,28 @@ namespace OpenFrames
 {
 
   const double ControlPanel::DEFAULT_LENGTH = 1.0;
+  const double ControlPanel::DEFAULT_PIXELS_PER_UNIT = 100.0;
 
   ControlPanel::ControlPanel(const std::string &name)
-    : ReferenceFrame(name)
+    : ReferenceFrame(name), _pixelsPerUnit(DEFAULT_PIXELS_PER_UNIT)
   {
     _init();
   }
 
   ControlPanel::ControlPanel(const std::string &name, const osg::Vec3 &color)
-    : ReferenceFrame(name, color)
+    : ReferenceFrame(name, color), _pixelsPerUnit(DEFAULT_PIXELS_PER_UNIT)
   {
     _init();
   }
 
   ControlPanel::ControlPanel(const std::string &name, const osg::Vec4 &color)
-    : ReferenceFrame(name, color)
+    : ReferenceFrame(name, color), _pixelsPerUnit(DEFAULT_PIXELS_PER_UNIT)
   {
     _init();
   }
 
   ControlPanel::ControlPanel(const std::string &name, float r, float g, float b, float a)
-    : ReferenceFrame(name, r, g, b, a)
+    : ReferenceFrame(name, r, g, b, a), _pixelsPerUnit(DEFAULT_PIXELS_PER_UNIT)
   {
     _init();
   }
@@ -102,6 +103,9 @@ namespace OpenFrames
     moveXAxis(osg::Vec3(xHalfLength, 0, 0), 0.5*averageHalfLength);
     moveYAxis(osg::Vec3(0, yHalfLength, 0), 0.5*averageHalfLength);
     moveZAxis(osg::Vec3(0, 0, zHalfLength), 0.5*averageHalfLength);
+
+    // Resize the underlying QWidget
+    _rescaleWidget();
   }
 
   void ControlPanel::getHalfLengths(double &xHalfLength, double &yHalfLength, double &zHalfLength) const
@@ -113,7 +117,21 @@ namespace OpenFrames
     zHalfLength = halfLenghts[2];
   }
 
-  bool ControlPanel::setWidgetControls(QWidget *widget)
+  void ControlPanel::setPixelsPerUnit(double pixelsPerUnit)
+  {
+    if (_pixelsPerUnit != pixelsPerUnit)
+    {
+      _pixelsPerUnit = pixelsPerUnit;
+      _rescaleWidget();
+    }
+  }
+
+  double ControlPanel::getPixelsPerUnit()
+  {
+    return _pixelsPerUnit;
+  }
+
+  bool ControlPanel::setWidget(QWidget *widget)
   {
     if(widget == nullptr) // Remove existing texture
     {
@@ -147,6 +165,7 @@ namespace OpenFrames
       const osg::Vec4 &color = getColor();
       _image->getQGraphicsViewAdapter()->setBackgroundColor(QColor(255.0f*color[0], 255.0f*color[1], 255.0f*color[2], 255.0f*color[3]));
       _image->getQGraphicsViewAdapter()->setBackgroundWidget(widget);
+      _rescaleWidget();
 
       // Create texture using image, and make sure it wraps around the
       // box without a seam at the edges.
@@ -228,7 +247,7 @@ namespace OpenFrames
     osg::Vec3 heightVec(halfLengths[0] * 2.0f, 0.0f, 0.0f);
     osg::Vec3 widthVec(0.0f, halfLengths[1] * 2.0f, 0.0f);
     osg::Vec3 lengthVec(0.0f, 0.0f, halfLengths[2] * 2.0f);
-;
+
     osg::Vec3Array* coords = new osg::Vec3Array(24);
     (*coords)[0] = corner + heightVec;
     (*coords)[1] = corner;
@@ -263,10 +282,10 @@ namespace OpenFrames
     (*tcoords)[1].set(l, t);
     (*tcoords)[2].set(l, b);
     (*tcoords)[3].set(r, b);
-    (*tcoords)[4].set(r, t);
-    (*tcoords)[5].set(l, t);
-    (*tcoords)[6].set(l, b);
-    (*tcoords)[7].set(r, b);
+    (*tcoords)[4].set(l, b);
+    (*tcoords)[5].set(r, b);
+    (*tcoords)[6].set(r, t);
+    (*tcoords)[7].set(l, t);
     (*tcoords)[8].set(r, t);
     (*tcoords)[9].set(l, t);
     (*tcoords)[10].set(l, t);
@@ -356,6 +375,22 @@ namespace OpenFrames
     _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 16, 4));
     _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 20, 4));
 #endif
+  }
+
+  void ControlPanel::_rescaleWidget()
+  {
+    if (_image.valid())
+    {
+      // Scale the QWidget to the X-Y plane size
+      double x, y, z;
+      double scale = 2.0 * _pixelsPerUnit;
+
+      getHalfLengths(x, y, z);
+      x = x * scale;
+      y = y * scale;
+      z = z * scale;
+      _image->scaleImage(x, y, z, 0U);
+    }
   }
 
 } // !namespace OpenFrames
