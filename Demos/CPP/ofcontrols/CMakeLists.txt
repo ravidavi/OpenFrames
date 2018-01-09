@@ -9,7 +9,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 # Find Qt
-FIND_PACKAGE(Qt5 COMPONENTS Core Quick Widgets OpenGL WebEngineWidgets)
+FIND_PACKAGE(Qt5 COMPONENTS Core Widgets OpenGL)
 IF(NOT Qt5_FOUND)
   MESSAGE("Qt5 not found: will not build Qt controls demo.")
   RETURN()
@@ -19,16 +19,13 @@ ENDIF()
 FILE(GLOB osgqtcube_HEADERS *.hpp)
 LIST(APPEND osgqtcube_SOURCES
   ofcontrols.cpp
-  osgqtcube.cpp
   QGraphicsViewAdapter.cpp
   QWidgetImage.cpp
-  OSGQuickImage.cpp
-  OSGQuickAdapter.cpp
   ControlPanel.cpp)
 
 # Specify which file should be compiled for current test
-ADD_EXECUTABLE(${curr_demo} ${osgqtcube_SOURCES} ${RESOURCES} ${osgqtcube_HEADERS} qml.qrc)
-QT5_USE_MODULES(${curr_demo} Core Quick Widgets OpenGL WebEngineWidgets)
+ADD_EXECUTABLE(${curr_demo} ${osgqtcube_SOURCES} ${osgqtcube_HEADERS})
+QT5_USE_MODULES(${curr_demo} Core Widgets OpenGL)
 
 # Tell linker to link against OpenSceneGraph library
 TARGET_LINK_LIBRARIES(${curr_demo} OpenFrames ${OPENSCENEGRAPH_LIBRARIES})

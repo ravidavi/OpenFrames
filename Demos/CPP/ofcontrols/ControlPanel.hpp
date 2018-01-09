@@ -17,13 +17,16 @@
 #ifndef _OF_CONTROLPANEL_
 #define _OF_CONTROLPANEL_
 
+// OpenFrames and OpenSceneGraph headers
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Geode>
-#include <string>
+#include <osg/Geometry>
 
-#include <qglobal.h>
-
+// Qt forward declarations
+#include <qglobal.h> // for QT_FORWARD_DECLARE_CLASS
 QT_FORWARD_DECLARE_CLASS(QWidget);
+
+// OpenFrames forward declarations
 class QWidgetImage;
 
 namespace OpenFrames
