@@ -36,9 +36,6 @@ const double OFControls::MAIN_LOOP_PERIOD = 10;
 const char *OFControls::LOREM_IPSUM_DOLOR =
   "This is an example of Qt widgets in an OSG texture. The widgets control the sphere sitting above.";
 
-/// Default color for the sphere
-const char *OFControls::DEFAULT_SPHERE_COLOR = "Blue";
-
 /// Colors for the sphere demo
 const std::map<std::string, osg::Vec4> OFControls::COLORS =
   {
@@ -52,6 +49,9 @@ const std::map<std::string, osg::Vec4> OFControls::COLORS =
     { "Navy",{ 0.0, 0.0, 0.5, 0.0 } },
     { "Gray",{ 0.5, 0.5, 0.5, 0.0 } },
 };
+
+/// Default color for the sphere
+const char *OFControls::DEFAULT_SPHERE_COLOR = COLORS.begin()->first.c_str();
 
 int main(int argc, char **argv)
 {
@@ -111,14 +111,14 @@ OFControls::OFControls()
   _hiddenPanel = new OpenFrames::ControlPanel("panel");
   _hiddenPanel->setColor(0.8, 0.8, 0.8, 0.8);
   _hiddenPanel->setHalfLengths(1.5, 1.2, 0.1);
-  _hiddenPanel->setPosition(6.2, 0.0, -1.0);
+  _hiddenPanel->setPosition(3.1, 0.0, 1.5);
   _hiddenPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
   _hiddenPanel->showAxes(0U);
   _hiddenPanel->showAxesLabels(0U);
   _hiddenPanel->setPixelsPerUnit(50.0);
 
   _sphere = new OpenFrames::Sphere("sphere");
-  _sphere->setPosition(0.0, 0.0, 1.0);
+  _sphere->setPosition(-1.55, 0.0, 1.0);
   _sphere->setColor(COLORS.at(DEFAULT_SPHERE_COLOR));
   _sphere->showNameLabel(false);
   _sphere->showAxes(7U);
@@ -270,7 +270,7 @@ void OFControls::setXLocation(int position)
 {
   osg::Vec3d spherePosition;
   _sphere->getPosition(spherePosition);
-  spherePosition[0] = static_cast<double>(position) * 0.1;
+  spherePosition[0] = static_cast<double>(position) * 0.1 - 1.55;
   _sphere->setPosition(spherePosition);
 }
 

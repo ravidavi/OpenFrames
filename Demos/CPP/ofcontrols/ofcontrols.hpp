@@ -74,8 +74,8 @@ public slots:
 private:
   static const double MAIN_LOOP_PERIOD;
   static const char *LOREM_IPSUM_DOLOR;
-  static const char *DEFAULT_SPHERE_COLOR;
   static const std::map<std::string, osg::Vec4> COLORS;
+  static const char *DEFAULT_SPHERE_COLOR;
 
   QPushButton *_toggleButton;
   QCheckBox *_checkBox;
