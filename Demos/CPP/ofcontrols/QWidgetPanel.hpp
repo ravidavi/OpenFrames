@@ -14,8 +14,8 @@
    limitations under the License.
 ***********************************/
 
-#ifndef _OF_CONTROLPANEL_
-#define _OF_CONTROLPANEL_
+#ifndef _OF_QWIDGETPANEL_
+#define _OF_QWIDGETPANEL_
 
 // OpenFrames and OpenSceneGraph headers
 #include <OpenFrames/ReferenceFrame.hpp>
@@ -27,24 +27,27 @@
 QT_FORWARD_DECLARE_CLASS(QWidget);
 
 // OpenFrames forward declarations
-class QWidgetImage;
+namespace OpenFrames
+{
+  class QWidgetImage;
+}
 
 namespace OpenFrames
 {
 
   /*******************************************************************
    * Matthew Ruschmann
-   * OpenFrames API, class ControlPanel
-   * A ControlPanel is a ReferenceFrame with a Qt control panel on a
+   * OpenFrames API, class QWidgetPanel
+   * A QWidgetPanel is a ReferenceFrame with a Qt control panel on a
    * plane. The size of the control panel is adjustable.
    ******************************************************************/
-  class ControlPanel : public ReferenceFrame
+  class QWidgetPanel : public ReferenceFrame
   {
     public:
-      ControlPanel( const std::string &name );
-      ControlPanel( const std::string &name, const osg::Vec3 &color );
-      ControlPanel( const std::string &name, const osg::Vec4 &color );
-      ControlPanel( const std::string &name , float r, float g, float b, float a = 1.0 );
+      QWidgetPanel( const std::string &name );
+      QWidgetPanel( const std::string &name, const osg::Vec3 &color );
+      QWidgetPanel( const std::string &name, const osg::Vec4 &color );
+      QWidgetPanel( const std::string &name , float r, float g, float b, float a = 1.0 );
 
       /** Set the half lengths for sides of the box, given wrt the origin of
           the box's reference frame */
@@ -68,8 +71,8 @@ namespace OpenFrames
       virtual const osg::BoundingSphere& getBound() const;
 
     protected:
-      virtual ~ControlPanel();
-      void buildPanelGeometry(const osg::Vec3 &halfLengths);
+      virtual ~QWidgetPanel();
+      void buildPanelGeometry( const osg::Vec3 &halfLengths );
 
       osg::ref_ptr<osg::Geode> _geode; // Node containing the box
       osg::ref_ptr<osg::Geometry> _panel; // A panel for rendering the controls

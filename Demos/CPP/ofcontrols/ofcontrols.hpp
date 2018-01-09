@@ -34,7 +34,7 @@ namespace OpenFrames
 {
   class WindowProxy;
   class ReferenceFrame;
-  class ControlPanel;
+  class QWidgetPanel;
   class Sphere;
 }
 
@@ -83,7 +83,7 @@ private:
 
   osg::ref_ptr<OpenFrames::WindowProxy> _windowProxy;
   osg::ref_ptr<OpenFrames::ReferenceFrame> _root;
-  osg::ref_ptr<OpenFrames::ControlPanel> _hiddenPanel;
+  osg::ref_ptr<OpenFrames::QWidgetPanel> _hiddenPanel;
   osg::ref_ptr<OpenFrames::Sphere> _sphere;
 };
 

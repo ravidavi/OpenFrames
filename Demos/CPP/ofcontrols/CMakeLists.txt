@@ -19,9 +19,8 @@ ENDIF()
 FILE(GLOB osgqtcube_HEADERS *.hpp)
 LIST(APPEND osgqtcube_SOURCES
   ofcontrols.cpp
-  QGraphicsViewAdapter.cpp
-  QWidgetImage.cpp
-  ControlPanel.cpp)
+  QtOSGAdapters.cpp
+  QWidgetPanel.cpp)
 
 # Specify which file should be compiled for current test
 ADD_EXECUTABLE(${curr_demo} ${osgqtcube_SOURCES} ${osgqtcube_HEADERS})

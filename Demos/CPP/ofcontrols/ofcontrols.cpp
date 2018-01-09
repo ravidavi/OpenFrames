@@ -15,7 +15,7 @@ limitations under the License.
 ***********************************/
 
 #include "ofcontrols.hpp"
-#include "ControlPanel.hpp"
+#include "QWidgetPanel.hpp"
 
 #include <OpenFrames/WindowProxy.hpp>
 #include <OpenFrames/Sphere.hpp>
@@ -78,7 +78,7 @@ OFControls::OFControls()
   _root->showAxes(0U);
   _root->showAxesLabels(0U);
 
-  OpenFrames::ControlPanel *panel1 = new OpenFrames::ControlPanel("panel");
+  OpenFrames::QWidgetPanel *panel1 = new OpenFrames::QWidgetPanel("panel");
   panel1->setColor(0.8, 0.8, 0.8, 0.9);
   panel1->setHalfLengths(1.5, 1.2, 0.1);
   panel1->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
@@ -88,7 +88,7 @@ OFControls::OFControls()
   panel1->setPixelsPerUnit(100.0);
   _root->addChild(panel1);
 
-  OpenFrames::ControlPanel *panel2 = new OpenFrames::ControlPanel("panel");
+  OpenFrames::QWidgetPanel *panel2 = new OpenFrames::QWidgetPanel("panel");
   panel2->setColor(0.8, 0.8, 0.8, 0.9);
   panel2->setHalfLengths(1.5, 1.2, 0.1);
   panel2->setPosition(3.1, 0.0, -1.0);
@@ -98,7 +98,7 @@ OFControls::OFControls()
   panel2->setPixelsPerUnit(50.0);
   _root->addChild(panel2);
 
-  OpenFrames::ControlPanel *panel3 = new OpenFrames::ControlPanel("panel");
+  OpenFrames::QWidgetPanel *panel3 = new OpenFrames::QWidgetPanel("panel");
   panel3->setColor(0.8, 0.8, 0.8, 0.9);
   panel3->setHalfLengths(1.5, 1.2, 0.1);
   panel3->setPosition(-3.1, 0.0, -1.0);
@@ -108,7 +108,7 @@ OFControls::OFControls()
   panel3->setPixelsPerUnit(90.0);
   _root->addChild(panel3);
 
-  _hiddenPanel = new OpenFrames::ControlPanel("panel");
+  _hiddenPanel = new OpenFrames::QWidgetPanel("panel");
   _hiddenPanel->setColor(0.8, 0.8, 0.8, 0.8);
   _hiddenPanel->setHalfLengths(1.5, 1.2, 0.1);
   _hiddenPanel->setPosition(3.1, 0.0, 1.5);

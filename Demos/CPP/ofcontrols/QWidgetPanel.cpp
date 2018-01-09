@@ -14,8 +14,8 @@
    limitations under the License.
 ***********************************/
 
-#include "ControlPanel.hpp"
-#include "QWidgetImage.hpp"
+#include "QWidgetPanel.hpp"
+#include "QtOSGAdapters.hpp"
 
 #include <osg/Vec3d>
 #include <osg/Quat>
@@ -32,50 +32,50 @@
 namespace OpenFrames
 {
 
-  const double ControlPanel::DEFAULT_LENGTH = 1.0;
-  const double ControlPanel::DEFAULT_PIXELS_PER_UNIT = 100.0;
+  const double QWidgetPanel::DEFAULT_LENGTH = 1.0;
+  const double QWidgetPanel::DEFAULT_PIXELS_PER_UNIT = 100.0;
 
-  ControlPanel::ControlPanel(const std::string &name)
+  QWidgetPanel::QWidgetPanel(const std::string &name)
     : ReferenceFrame(name), _pixelsPerUnit(DEFAULT_PIXELS_PER_UNIT)
   {
     _init();
   }
 
-  ControlPanel::ControlPanel(const std::string &name, const osg::Vec3 &color)
+  QWidgetPanel::QWidgetPanel(const std::string &name, const osg::Vec3 &color)
     : ReferenceFrame(name, color), _pixelsPerUnit(DEFAULT_PIXELS_PER_UNIT)
   {
     _init();
   }
 
-  ControlPanel::ControlPanel(const std::string &name, const osg::Vec4 &color)
+  QWidgetPanel::QWidgetPanel(const std::string &name, const osg::Vec4 &color)
     : ReferenceFrame(name, color), _pixelsPerUnit(DEFAULT_PIXELS_PER_UNIT)
   {
     _init();
   }
 
-  ControlPanel::ControlPanel(const std::string &name, float r, float g, float b, float a)
+  QWidgetPanel::QWidgetPanel(const std::string &name, float r, float g, float b, float a)
     : ReferenceFrame(name, r, g, b, a), _pixelsPerUnit(DEFAULT_PIXELS_PER_UNIT)
   {
     _init();
   }
 
-  ControlPanel::~ControlPanel() { }
+  QWidgetPanel::~QWidgetPanel() { }
 
   /** Create the box with default radius = 1,
     and color = the color of the box's reference frame. */
-  void ControlPanel::_init()
+  void QWidgetPanel::_init()
   {
     // Set the shape to be drawn
     _panel = new osg::Geometry();
     osg::Box* box = new osg::Box;
     box->setHalfLengths(osg::Vec3(1.0, 1.0, 1.0));
     _panel->setShape(box);
-    _panel->setName("ControlPanelDrawable");
+    _panel->setName("QWidgetPanelDrawable");
     _panel->setUseDisplayList(false);
     _panel->setUseVertexBufferObjects(true);
     buildPanelGeometry(osg::Vec3(1.0, 1.0, 1.0));
 
-    // Create the node that contains the ControlPanel
+    // Create the node that contains the QWidgetPanel
     _geode = new osg::Geode;
     _geode->setName(_name);
     _geode->addDrawable(_panel);
@@ -89,7 +89,7 @@ namespace OpenFrames
     showAxesLabels(0U);
   }
 
-  void ControlPanel::setHalfLengths(const double &xHalfLength, const double &yHalfLength, const double &zHalfLength)
+  void QWidgetPanel::setHalfLengths(const double &xHalfLength, const double &yHalfLength, const double &zHalfLength)
   {
     // Set shape half lengths
     osg::Box *box = static_cast<osg::Box*>(_panel->getShape());
@@ -108,7 +108,7 @@ namespace OpenFrames
     _rescaleWidget();
   }
 
-  void ControlPanel::getHalfLengths(double &xHalfLength, double &yHalfLength, double &zHalfLength) const
+  void QWidgetPanel::getHalfLengths(double &xHalfLength, double &yHalfLength, double &zHalfLength) const
   {
     osg::Box *box = static_cast<osg::Box*>(_panel->getShape());
     const osg::Vec3 halfLenghts = box->getHalfLengths();
@@ -117,7 +117,7 @@ namespace OpenFrames
     zHalfLength = halfLenghts[2];
   }
 
-  void ControlPanel::setPixelsPerUnit(double pixelsPerUnit)
+  void QWidgetPanel::setPixelsPerUnit(double pixelsPerUnit)
   {
     if (_pixelsPerUnit != pixelsPerUnit)
     {
@@ -126,12 +126,12 @@ namespace OpenFrames
     }
   }
 
-  double ControlPanel::getPixelsPerUnit()
+  double QWidgetPanel::getPixelsPerUnit()
   {
     return _pixelsPerUnit;
   }
 
-  bool ControlPanel::setWidget(QWidget *widget)
+  bool QWidgetPanel::setWidget(QWidget *widget)
   {
     if(widget == nullptr) // Remove existing texture
     {
@@ -202,7 +202,7 @@ namespace OpenFrames
     }
   }
 
-  void ControlPanel::setColor( const osg::Vec4 &color )
+  void QWidgetPanel::setColor( const osg::Vec4 &color )
   {
     ReferenceFrame::setColor(color);
     if (_image.valid())
@@ -217,7 +217,7 @@ namespace OpenFrames
     }
   }
 
-  const osg::BoundingSphere& ControlPanel::getBound() const
+  const osg::BoundingSphere& QWidgetPanel::getBound() const
   {
     osg::BoundingSphere bs = _geode->getBound();
 
@@ -229,7 +229,7 @@ namespace OpenFrames
     return _bound;
   }
 
-  void ControlPanel::buildPanelGeometry(const osg::Vec3 &halfLengths)
+  void QWidgetPanel::buildPanelGeometry(const osg::Vec3 &halfLengths)
   {
     const float l = 0.0;
     const float b = 0.0;
@@ -377,7 +377,7 @@ namespace OpenFrames
 #endif
   }
 
-  void ControlPanel::_rescaleWidget()
+  void QWidgetPanel::_rescaleWidget()
   {
     if (_image.valid())
     {
