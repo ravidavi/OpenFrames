@@ -251,6 +251,8 @@ namespace OpenFrames
     const float r = 1.0;
     const float t = 1.0;
 
+    bool hasDepth = ( halfLengths[2] != 0 );
+
     _panel->setVertexArray(nullptr);
     _panel->setColorArray(nullptr);
     _panel->setNormalArray(nullptr);
@@ -338,57 +340,63 @@ namespace OpenFrames
     elems->push_back(0);
     _panel->addPrimitiveSet(elems);
 
-    elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
-    elems->push_back(4);
-    elems->push_back(5);
-    elems->push_back(6);
-    elems->push_back(6);
-    elems->push_back(7);
-    elems->push_back(4);
-    _panel->addPrimitiveSet(elems);
+    if (hasDepth)
+    {
+      elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
+      elems->push_back(4);
+      elems->push_back(5);
+      elems->push_back(6);
+      elems->push_back(6);
+      elems->push_back(7);
+      elems->push_back(4);
+      _panel->addPrimitiveSet(elems);
 
-    elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
-    elems->push_back(8);
-    elems->push_back(9);
-    elems->push_back(10);
-    elems->push_back(10);
-    elems->push_back(11);
-    elems->push_back(8);
-    _panel->addPrimitiveSet(elems);
+      elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
+      elems->push_back(8);
+      elems->push_back(9);
+      elems->push_back(10);
+      elems->push_back(10);
+      elems->push_back(11);
+      elems->push_back(8);
+      _panel->addPrimitiveSet(elems);
 
-    elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
-    elems->push_back(12);
-    elems->push_back(13);
-    elems->push_back(14);
-    elems->push_back(14);
-    elems->push_back(15);
-    elems->push_back(12);
-    _panel->addPrimitiveSet(elems);
+      elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
+      elems->push_back(12);
+      elems->push_back(13);
+      elems->push_back(14);
+      elems->push_back(14);
+      elems->push_back(15);
+      elems->push_back(12);
+      _panel->addPrimitiveSet(elems);
 
-    elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
-    elems->push_back(16);
-    elems->push_back(17);
-    elems->push_back(18);
-    elems->push_back(18);
-    elems->push_back(19);
-    elems->push_back(16);
-    _panel->addPrimitiveSet(elems);
+      elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
+      elems->push_back(16);
+      elems->push_back(17);
+      elems->push_back(18);
+      elems->push_back(18);
+      elems->push_back(19);
+      elems->push_back(16);
+      _panel->addPrimitiveSet(elems);
 
-    elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
-    elems->push_back(20);
-    elems->push_back(21);
-    elems->push_back(22);
-    elems->push_back(22);
-    elems->push_back(23);
-    elems->push_back(20);
-    _panel->addPrimitiveSet(elems);
+      elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
+      elems->push_back(20);
+      elems->push_back(21);
+      elems->push_back(22);
+      elems->push_back(22);
+      elems->push_back(23);
+      elems->push_back(20);
+      _panel->addPrimitiveSet(elems);
+    }
 #else
     _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 0, 4));
-    _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 4, 4));
-    _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 8, 4));
-    _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 12, 4));
-    _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 16, 4));
-    _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 20, 4));
+    if (hasDepth)
+    {
+      _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 4, 4));
+      _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 8, 4));
+      _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 12, 4));
+      _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 16, 4));
+      _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 20, 4));
+    }
 #endif
   }
 
