@@ -144,7 +144,7 @@ namespace OpenFrames
         stateset->removeTextureAttribute(0, osg::StateAttribute::TEXENV);
       }
 
-      // Revert color to setting
+      // Revert color from white to reference frame color
       osg::Vec4Array* colours = new osg::Vec4Array(1);
       (*colours)[0] = getColor();
       _panel->setColorArray(colours, osg::Array::BIND_OVERALL);
@@ -222,10 +222,12 @@ namespace OpenFrames
     ReferenceFrame::setColor(color);
     if (_image.valid())
     {
+      // Set the QWidget background color, keep geometry white
       _image->getQGraphicsViewAdapter()->setBackgroundColor(QColor(255.0f*color[0], 255.0f*color[1], 255.0f*color[2], 255.0f*color[3]));
     }
     else
     {
+      // Set the geometry color
       osg::Vec4Array* colours = new osg::Vec4Array(1);
       (*colours)[0] = color;
       _panel->setColorArray(colours, osg::Array::BIND_OVERALL);

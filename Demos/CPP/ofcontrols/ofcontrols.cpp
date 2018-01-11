@@ -28,7 +28,6 @@ limitations under the License.
 #include <QCheckBox>
 #include <QListWidget>
 #include <QSlider>
-#include <QScrollbar>
 
 /// The period of event checking in the main loop (milliseconds)
 const double OFControls::MAIN_LOOP_PERIOD = 10;
@@ -40,15 +39,15 @@ const char *OFControls::LOREM_IPSUM_DOLOR =
 /// Colors for the sphere demo
 const std::map<std::string, osg::Vec4> OFControls::COLORS =
   {
-    { "Red",{ 1.0, 0.0, 0.0, 0.0 } },
-    { "Green",{ 0.0, 0.5, 0.0, 0.0 } },
-    { "Blue",{ 0.0, 0.0, 1.0, 0.0 } },
-    { "Purple",{ 1.0, 0.0, 1.0, 0.0 } },
-    { "Yellow",{ 1.0, 1.0, 0.0, 0.0 } },
-    { "Cyan",{ 0.0, 1.0, 1.0, 0.0 } },
-    { "Orange",{ 1.0, 0.5, 0.0, 0.0 } },
-    { "Navy",{ 0.0, 0.0, 0.5, 0.0 } },
-    { "Gray",{ 0.5, 0.5, 0.5, 0.0 } },
+    { "Red", { 1.0, 0.0, 0.0, 1.0 } },
+    { "Green", { 0.0, 0.5, 0.0, 1.0 } },
+    { "Blue", { 0.0, 0.0, 1.0, 1.0 } },
+    { "Purple", { 1.0, 0.0, 1.0, 1.0 } },
+    { "Yellow", { 1.0, 1.0, 0.0, 1.0 } },
+    { "Cyan", { 0.0, 1.0, 1.0, 1.0 } },
+    { "Orange", { 1.0, 0.5, 0.0, 1.0 } },
+    { "Navy", { 0.0, 0.0, 0.5, 1.0 } },
+    { "Gray", { 0.5, 0.5, 0.5, 1.0 } },
 };
 
 /// Default color for the sphere
@@ -57,12 +56,13 @@ const char *OFControls::DEFAULT_SPHERE_COLOR = COLORS.begin()->first.c_str();
 int main(int argc, char **argv)
 {
   // Qt requires that we construct the global QApplication before creating any widgets.
-  QApplication app(argc, argv);
+  QApplication *app;
+  app = new QApplication(argc, argv);
 
   // Configure the default appearance for our VR world
-  QFont font = app.font();
+  QFont font = app->font();
   font.setPixelSize(20);
-  app.setFont(font);
+  app->setFont(font);
 
   // Start main app
   static OFControls controls;
@@ -71,6 +71,8 @@ int main(int argc, char **argv)
 
 OFControls::OFControls()
 {
+  osg::Vec4 bgColor = { 0.8f, 0.8f, 0.8f, 0.9f };
+
   // Instantiate and configure OpenFrames objects
   _windowProxy = new OpenFrames::WindowProxy(100, 100, 640, 480, 1, 1, false, false);
 
@@ -80,7 +82,7 @@ OFControls::OFControls()
   _root->showAxesLabels(0U);
 
   OpenFrames::QWidgetPanel *panel1 = new OpenFrames::QWidgetPanel("panel");
-  panel1->setColor(0.8, 0.8, 0.8, 0.9);
+  panel1->setColor(bgColor);
   panel1->setHalfLengths(1.5, 1.2, 0.1);
   panel1->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
   panel1->setPosition(0.0, 0.0, -1.0);
@@ -90,7 +92,7 @@ OFControls::OFControls()
   _root->addChild(panel1);
 
   OpenFrames::QWidgetPanel *panel2 = new OpenFrames::QWidgetPanel("panel");
-  panel2->setColor(0.8, 0.8, 0.8, 0.9);
+  panel2->setColor(bgColor);
   panel2->setHalfLengths(1.5, 1.2, 0.1);
   panel2->setPosition(3.1, 0.0, -1.0);
   panel2->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
@@ -100,7 +102,7 @@ OFControls::OFControls()
   _root->addChild(panel2);
 
   OpenFrames::QWidgetPanel *panel3 = new OpenFrames::QWidgetPanel("panel");
-  panel3->setColor(0.8, 0.8, 0.8, 0.9);
+  panel3->setColor(bgColor);
   panel3->setHalfLengths(1.5, 1.2, 0.1);
   panel3->setPosition(-3.1, 0.0, -1.0);
   panel3->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
@@ -110,7 +112,7 @@ OFControls::OFControls()
   _root->addChild(panel3);
 
   _hiddenPanel = new OpenFrames::QWidgetPanel("panel");
-  _hiddenPanel->setColor(0.8, 0.8, 0.8, 0.8);
+  _hiddenPanel->setColor(bgColor);
   _hiddenPanel->setHalfLengths(1.5, 1.2, 0.1);
   _hiddenPanel->setPosition(3.1, 0.0, 1.5);
   _hiddenPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
@@ -122,8 +124,8 @@ OFControls::OFControls()
   _sphere->setPosition(-1.55, 0.0, 1.0);
   _sphere->setColor(COLORS.at(DEFAULT_SPHERE_COLOR));
   _sphere->showNameLabel(false);
-  _sphere->showAxes(7U);
-  _sphere->showAxesLabels(7U);
+  _sphere->showAxes(0U);
+  _sphere->showAxesLabels(0U);
   _sphere->setRadius(1.0);
   _root->addChild(_sphere);
 
