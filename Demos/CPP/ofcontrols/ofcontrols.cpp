@@ -23,7 +23,7 @@ limitations under the License.
 #include <QApplication>
 #include <QWidget>
 #include <QVBoxLayout>
-#include <QLabel>
+#include <QTextEdit>
 #include <QPushButton>
 #include <QCheckBox>
 #include <QListWidget>
@@ -131,9 +131,13 @@ OFControls::OFControls()
   QWidget *widget1 = new QWidget;
   widget1->setLayout(new QVBoxLayout);
   QString text(LOREM_IPSUM_DOLOR);
-  QLabel *textLabel = new QLabel(text);
-  textLabel->setWordWrap(true);
-  widget1->layout()->addWidget(textLabel);
+  QTextEdit *textEdit = new QTextEdit(text);
+  textEdit->setReadOnly(false);
+  QPalette palette = textEdit->palette();
+  palette.setColor(QPalette::Highlight, Qt::darkBlue);
+  palette.setColor(QPalette::HighlightedText, Qt::white);
+  textEdit->setPalette(palette);
+  widget1->layout()->addWidget(textEdit);
   _toggleButton = new QPushButton("Hide Sphere");
   widget1->layout()->addWidget(_toggleButton);
   panel1->setWidget(widget1);
