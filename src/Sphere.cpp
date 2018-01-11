@@ -15,15 +15,12 @@
 ***********************************/
 
 #include <OpenFrames/Sphere.hpp>
-#include <osg/Vec3d>
-#include <osg/Quat>
 #include <osg/Geode>
 #include <osg/PolygonOffset>
 #include <osg/Shape>
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
 #include <osgUtil/CullVisitor>
-#include <iostream>
 
 namespace OpenFrames
 {
@@ -152,20 +149,16 @@ namespace OpenFrames
 
   bool Sphere::setTextureMap(const std::string &fname, bool force_reload)
   {
+    osg::StateSet* stateset = _sphereSD->getStateSet();
+
     if(fname.length() == 0) // Remove existing texture
     {
-      osg::StateSet* stateset = _sphereSD->getStateSet();
-      if(stateset)
-      {
-        stateset->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
-        stateset->removeTextureAttribute(0, osg::StateAttribute::TEXENV);
-      }
-
+      stateset->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
+      setColor(getColor()); // Restore sphere color
       return false;
     }
 
     // Check if there is already a texture being used.
-    osg::StateSet* stateset = _sphereSD->getOrCreateStateSet();
     osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(stateset->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
 
     // If the current texture has the same filename as the new texture, then reload only if we have to.
@@ -181,19 +174,18 @@ namespace OpenFrames
       texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
       texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
 
-      // Don't use the sphere's color when mapping the texture.
-      osg::TexEnv* texenv = new osg::TexEnv;
-      texenv->setMode(osg::TexEnv::DECAL);
-
       // Set the texture to the sphere
       stateset->setTextureAttributeAndModes(0, texture);
-      stateset->setTextureAttribute(0, texenv);
+      
+      // Set the sphere's color to white to avoid artificially coloring the texture
+      // Don't use Sphere::setColor since that will affect the ReferenceFrame color
+      _sphereSD->setColor(osg::Vec4(1.0, 1.0, 1.0, 1.0));
 
       return true;
     }
     else
     {
-      std::cerr<< "Sphere::setTextureMap ERROR: File \'" << fname 
+      OSG_WARN<< "Sphere::setTextureMap ERROR: File \'" << fname
         << "\' could not be loaded." << std::endl;
       return false;
     }
@@ -215,7 +207,20 @@ namespace OpenFrames
   void Sphere::setColor( const osg::Vec4 &color )
   {
     ReferenceFrame::setColor(color);
-    _sphereSD->setColor(color);
+    
+    // Only set sphere color if there is no texture, so that an exiting texture
+    // doesn't have its color altered by the sphere's color
+    osg::StateSet* ss = _sphereSD->getStateSet();
+    osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(ss->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
+    if(!texture) _sphereSD->setColor(color);
+  }
+  
+  void Sphere::setMaterial( osg::Material *mat )
+  {
+    if(mat)
+      _sphereSD->getStateSet()->setAttributeAndModes(mat);
+    else
+      _sphereSD->getStateSet()->removeAttribute(osg::StateAttribute::MATERIAL);
   }
 
   const osg::BoundingSphere& Sphere::getBound() const

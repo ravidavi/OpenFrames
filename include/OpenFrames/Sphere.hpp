@@ -20,11 +20,12 @@
 #include <OpenFrames/Export.h>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Geode>
+#include <osg/Material>
 #include <string>
 
 namespace OpenFrames
 {
-
+  
   /*******************************************************************
    * Ravi Mathur
    * OpenFrames API, class Sphere
@@ -34,44 +35,51 @@ namespace OpenFrames
    ******************************************************************/
   class OF_EXPORT Sphere : public ReferenceFrame
   {
-    public:
-      Sphere( const std::string &name );
-      Sphere( const std::string &name, const osg::Vec3 &color );
-      Sphere( const std::string &name, const osg::Vec4 &color );
-      Sphere( const std::string &name , float r, float g, float b, float a = 1.0 );
-
-      /** Set the radius of the sphere, given wrt the origin of
-        the sphere's reference frame */
-      void setRadius( const double &radius );
-      double getRadius() const;
-
-      /** Set the filename of the texture to map onto the sphere.  Consult the
-        osg documentation to see which image filetypes are supported. */
-      bool setTextureMap( const std::string &fname, bool force_reload = false );
-
-      /** Have the sphere automatically adjust its detail level depending on
-        how far it is from the current eye point. */
-      void setAutoLOD( bool lod );
-
-      /** Inherited from ReferenceFrame.
-        Set the color of the sphere.  If a texture is applied, the color is
-        used to filter the texture. */
-      virtual void setColor( const osg::Vec4 &color );
-      using ReferenceFrame::setColor; // Unhide other setColor() functions
-
-      /** Inherited from ReferenceFrame. */
-      virtual const osg::BoundingSphere& getBound() const;
-
-    protected:
-      virtual ~Sphere();
-
-      osg::ref_ptr<osg::Geode> _geode; // Node containing the sphere
-      osg::ref_ptr<osg::ShapeDrawable> _sphereSD; // The actual sphere
-
-    private:
-      void _init();
+  public:
+    Sphere( const std::string &name );
+    Sphere( const std::string &name, const osg::Vec3 &color );
+    Sphere( const std::string &name, const osg::Vec4 &color );
+    Sphere( const std::string &name , float r, float g, float b, float a = 1.0 );
+    
+    /** Set the radius of the sphere, given wrt the origin of
+     the sphere's reference frame */
+    void setRadius( const double &radius );
+    double getRadius() const;
+    
+    /** Set the filename of the texture to map onto the sphere. Consult the
+     osg documentation to see which image filetypes are supported. */
+    bool setTextureMap( const std::string &fname, bool force_reload = false );
+    
+    /** Have the sphere automatically adjust its detail level depending on
+     how far it is from the current eye point. */
+    void setAutoLOD( bool lod );
+    
+    /** Inherited from ReferenceFrame
+     Set the color of the sphere.
+     Has no effect if a texture or material are applied to the sphere. */
+    virtual void setColor( const osg::Vec4 &color );
+    using ReferenceFrame::setColor; // Unhide other setColor() functions
+    
+    /** Set the material used for sphere lighting.
+     See osg::Material and OpenGL documentation for material parameters.
+     This overrides color set by setColor(), and affects texture color. */
+    void setMaterial( osg::Material *mat );
+    osg::Material* getMaterial() const
+    { return dynamic_cast<osg::Material*>(_sphereSD->getStateSet()->getAttribute(osg::StateAttribute::MATERIAL)); }
+     
+    /** Inherited from ReferenceFrame. */
+    virtual const osg::BoundingSphere& getBound() const;
+    
+  protected:
+    virtual ~Sphere();
+    
+    osg::ref_ptr<osg::Geode> _geode; // Node containing the sphere
+    osg::ref_ptr<osg::ShapeDrawable> _sphereSD; // The actual sphere
+    
+  private:
+    void _init();
   };
-
+  
 } // !namespace OpenFrames
 
 #endif
