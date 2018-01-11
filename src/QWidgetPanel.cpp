@@ -157,6 +157,14 @@ namespace OpenFrames
       osg::StateSet* stateset = _panel->getOrCreateStateSet();
       osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(stateset->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
 
+      // Disable context menus when embedding. They can popup outside the scene graph.
+      widget->setContextMenuPolicy(Qt::NoContextMenu);
+      QList<QWidget*> children = widget->findChildren<QWidget*>();
+      for(QList<QWidget*>::iterator child = children.begin(); child < children.end(); child++)
+      {
+        (*child)->setContextMenuPolicy(Qt::NoContextMenu);
+      }
+
       // Wrap the QWidget into an osg::Image
       _image = new QWidgetImage(widget);
 #if (QT_VERSION >= QT_VERSION_CHECK(4, 5, 0))

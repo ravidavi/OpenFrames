@@ -25,6 +25,7 @@
 #include <QPainter>
 #include <QtEvents>
 #include <QGraphicsItem>
+#include <QScrollbar>
 #include <QGraphicsProxyWidget>
 
 #define MYQKEYEVENT 2000
@@ -94,6 +95,9 @@ namespace OpenFrames
     _graphicsView = new QGraphicsView;
     _graphicsView->setScene(_graphicsScene);
     _graphicsView->viewport()->setParent(0);
+    _graphicsView->horizontalScrollBar()->setContextMenuPolicy(Qt::NoContextMenu);
+    _graphicsView->verticalScrollBar()->setContextMenuPolicy(Qt::NoContextMenu);
+    _graphicsView->setContextMenuPolicy(Qt::NoContextMenu);
 
 #if (QT_VERSION_CHECK(4, 5, 0) <= QT_VERSION)
     _graphicsScene->setStickyFocus(true);
@@ -664,4 +668,4 @@ namespace OpenFrames
     return _adapter->sendKeyEvent(key, keyDown);
   }
 
-} 
+}

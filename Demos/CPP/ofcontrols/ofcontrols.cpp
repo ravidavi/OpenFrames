@@ -28,6 +28,7 @@ limitations under the License.
 #include <QCheckBox>
 #include <QListWidget>
 #include <QSlider>
+#include <QScrollbar>
 
 /// The period of event checking in the main loop (milliseconds)
 const double OFControls::MAIN_LOOP_PERIOD = 10;
