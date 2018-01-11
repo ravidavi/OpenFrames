@@ -18,6 +18,7 @@
 #include <OpenFrames/Utilities.hpp>
 #include <osg/Geometry>
 #include <osg/Group>
+#include <osg/LightModel>
 #include <osg/LineWidth>
 #include <osg/Depth>
 #include <osg/StateSet>
@@ -276,9 +277,26 @@ namespace OpenFrames
       _scene->addChild(_ovrDevice->getDeviceRenderModels());
     }
     
+    // Default lighting: disable global ambient light, use LIGHT0 for global light
+    osg::StateSet* sceneSS = _scene->getOrCreateStateSet();
+    sceneSS->setMode(GL_LIGHTING, osg::StateAttribute::ON); // Enable lighting
+    osg::LightModel* globalLightModel = new osg::LightModel;
+    globalLightModel->setAmbientIntensity(osg::Vec4(0.0, 0.0, 0.0, 1.0)); // Disable global ambient light
+    sceneSS->setAttributeAndModes(globalLightModel);
+    _globalLightSource = new osg::LightSource;
+    osg::Light* globalLight = _globalLightSource->getLight(); // Defaults to LIGHT0
+    _globalLightSource->setReferenceFrame(osg::LightSource::ABSOLUTE_RF);
+    globalLight->setAmbient(osg::Vec4(0.1, 0.1, 0.1, 1.0)); // Copy OSG's default lighting parameters
+    globalLight->setDiffuse(osg::Vec4(0.8, 0.8, 0.8, 1.0));
+    globalLight->setSpecular(osg::Vec4(1.0, 1.0, 1.0, 1.0));
+    _scene->addChild(_globalLightSource);
+    
+    // Default lighting: for VR use skylight, otherwise use headlight
+    if (_useVR) _globalLightSource->setReferenceFrame(osg::LightSource::RELATIVE_RF);
+    else _globalLightSource->setReferenceFrame(osg::LightSource::ABSOLUTE_RF);
+    
     // Set up the SceneView with the user-specified scene data
     _sceneView->setSceneData(_scene);
-    if (_useVR) _sceneView->setLightingMode(osg::View::SKY_LIGHT);
     
     // Set up master camera render settings
     // The DepthPartitioner will automatically inherit these via its main slave camera
