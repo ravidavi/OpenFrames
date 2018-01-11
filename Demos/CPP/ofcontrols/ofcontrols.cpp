@@ -141,6 +141,7 @@ OFControls::OFControls()
   _toggleButton = new QPushButton("Hide Sphere");
   widget1->layout()->addWidget(_toggleButton);
   panel1->setWidget(widget1);
+  panel1->setBackgroundWidget(widget1);
 
   // Create the example controls widget
   QWidget *widget2 = new QWidget;
@@ -151,10 +152,9 @@ OFControls::OFControls()
   widget2->layout()->addWidget(_checkBox);
   widget2->layout()->addWidget(moveSphereBox);
   panel2->setWidget(widget2);
+  panel2->setBackgroundWidget(widget2);
 
   // Create the example list view
-  QWidget *widget3 = new QWidget;
-  widget3->setLayout(new QVBoxLayout);
   _list = new QListWidget();
   _list->setIconSize(QSize(30, 30));
   for (auto color = COLORS.begin(); color != COLORS.end(); color++)
@@ -175,8 +175,7 @@ OFControls::OFControls()
   {
     _list->setCurrentItem(matchingItems[0]);
   }
-  widget3->layout()->addWidget(_list);
-  panel3->setWidget(widget3);
+  panel3->setWidget(_list);
 
   // Create the example controls widget
   QWidget *widget = new QWidget;
@@ -191,6 +190,7 @@ OFControls::OFControls()
   widget->layout()->addWidget(ySlider);
   widget->layout()->addWidget(zSlider);
   _hiddenPanel->setWidget(widget);
+  _hiddenPanel->setBackgroundWidget(widget);
 
   // Connect QObject signals to our slots
   connect(moveSphereBox, &QCheckBox::clicked, this, &OFControls::toggleHiddenPanel);

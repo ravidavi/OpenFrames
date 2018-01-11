@@ -172,7 +172,6 @@ namespace OpenFrames
 #endif
       const osg::Vec4 &color = getColor();
       _image->getQGraphicsViewAdapter()->setBackgroundColor(QColor(255.0f*color[0], 255.0f*color[1], 255.0f*color[2], 255.0f*color[3]));
-      _image->getQGraphicsViewAdapter()->setBackgroundWidget(widget);
       _rescaleWidget();
 
       // Create texture using image, and make sure it wraps around the
@@ -207,6 +206,14 @@ namespace OpenFrames
       _panel->setColorArray(colours, osg::Array::BIND_OVERALL);
 
       return true;
+    }
+  }
+
+  void QWidgetPanel::setBackgroundWidget( QWidget *widget )
+  {
+    if (_image.valid())
+    {
+      _image->getQGraphicsViewAdapter()->setBackgroundWidget(widget);
     }
   }
 

@@ -62,6 +62,9 @@ namespace OpenFrames
       /** Set the QWidget containing controls for the control box */
       bool setWidget( QWidget *widget );
 
+      /** Sets a background widget that will not be passed keyboard and mouse events */
+      void setBackgroundWidget( QWidget *widget );
+
       /** Inherited from ReferenceFrame.
         Set the color of the box.  If a texture is applied, the color is
         used to filter the texture. */
