@@ -644,7 +644,7 @@ namespace OpenFrames
   {
     if (_adapter->requiresRendering())
     {
-      //_adapter->render();
+      _adapter->render();
     }
   }
 
