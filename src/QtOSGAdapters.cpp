@@ -11,7 +11,7 @@
  * OpenSceneGraph Public License for more details.
 */
 
-#include "QtOSGAdapters.hpp"
+#include <OpenFrames/QtOSGAdapters.hpp>
 
 // OSG headers
 #include <osg/Version>
@@ -122,14 +122,14 @@ namespace OpenFrames
 
   void QGraphicsViewAdapter::repaintRequestedSlot(const QList<QRectF>&)
   {
-    OSG_NOTICE<<"QGraphicsViewAdapter::repaintRequestedSlot"<<std::endl;
+    //OSG_NOTICE<<"QGraphicsViewAdapter::repaintRequestedSlot"<<std::endl;
     _requiresRendering = true;
     render();
   }
 
   void QGraphicsViewAdapter::repaintRequestedSlot(const QRectF&)
   {
-    OSG_NOTICE<<"QGraphicsViewAdapter::repaintRequestedSlot"<<std::endl;
+    //OSG_NOTICE<<"QGraphicsViewAdapter::repaintRequestedSlot"<<std::endl;
     _requiresRendering = true;
     render();
   }

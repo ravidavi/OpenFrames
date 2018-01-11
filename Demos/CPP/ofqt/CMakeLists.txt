@@ -8,20 +8,26 @@ SET( curr_demo ofqt )
 set(CMAKE_AUTOMOC ON)
 
 # Find Qt
-FIND_PACKAGE(Qt5 COMPONENTS Core Widgets)
-IF(NOT Qt5_FOUND)
-  MESSAGE("Qt5 not found: will not build Qt demo.")
+IF(NOT OF_USE_QT)
   RETURN()
 ENDIF()
 
 # Specify headers for Qt example
 FILE(GLOB OFQT_HEADERS *.h)
+LIST(APPEND ofqt_SOURCES
+  main.cpp
+  mainwindow.cpp
+  ofwidget.cpp
+  ofwindow.cpp
+  ofrenderpool.cpp
+  renderthread.cpp
+  renderproxy.cpp)
 
 # Specify files for Qt example
-ADD_EXECUTABLE(${curr_demo} ${OFQT_HEADERS} main.cpp mainwindow.cpp ofwidget.cpp ofwindow.cpp ofrenderpool.cpp renderthread.cpp renderproxy.cpp)
+ADD_EXECUTABLE(${curr_demo} ${OFQT_HEADERS} ${ofqt_SOURCES})
 
 # Tell linker to use OpenFrames, OpenSceneGraph, and Qt5Widgets
-TARGET_LINK_LIBRARIES(${curr_demo} OpenFrames Qt5::Widgets ${OPENSCENEGRAPH_LIBRARIES})
+TARGET_LINK_LIBRARIES(${curr_demo} OpenFrames ${OPENSCENEGRAPH_LIBRARIES} Qt5::Core Qt5::Widgets)
 
 # On Mac/Linux include path to Qt in RPATH
 # Note that this only applies to this demo. In a real application the Qt
@@ -34,6 +40,6 @@ SET_TARGET_PROPERTIES(${curr_demo} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFI
 
 # Install demo in CMAKE_INSTALL_PREFIX/bin directory
 INSTALL(
-  TARGETS ofqt
+  TARGETS ${curr_demo}
   RUNTIME DESTINATION bin
   )

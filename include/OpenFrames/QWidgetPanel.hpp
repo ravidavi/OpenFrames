@@ -18,6 +18,7 @@
 #define _OF_QWIDGETPANEL_
 
 // OpenFrames and OpenSceneGraph headers
+#include <OpenFrames/Export.h>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Geode>
 #include <osg/Geometry>
@@ -41,7 +42,7 @@ namespace OpenFrames
    * A QWidgetPanel is a ReferenceFrame with a Qt control panel on a
    * plane. The size of the control panel is adjustable.
    ******************************************************************/
-  class QWidgetPanel : public ReferenceFrame
+  class OF_EXPORT QWidgetPanel : public ReferenceFrame
   {
     public:
       QWidgetPanel( const std::string &name );

@@ -14,7 +14,8 @@
 #ifndef _OF_QTOSGADAPTERS_
 #define _OF_QTOSGADAPTERS_
 
-// OSG headers
+// OpenFrames and OSG headers
+#include <OpenFrames/Export.h>
 #include <osg/Image>
 #include <osg/observer_ptr>
 
@@ -37,7 +38,7 @@ namespace OpenFrames
 
   extern QCoreApplication* getOrCreateQApplication();
 
-  class QGraphicsViewAdapter : public QObject
+  class OF_EXPORT QGraphicsViewAdapter : public QObject
   {
     Q_OBJECT
 

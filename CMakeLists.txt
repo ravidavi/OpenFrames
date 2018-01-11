@@ -139,6 +139,15 @@ ELSEIF( ${OF_VR_TYPE} MATCHES ${VR_OpenVR} )
   SET_PROPERTY(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS USE_OPENVR)
 ENDIF()
 
+# Find Qt
+FIND_PACKAGE(Qt5 COMPONENTS Core Widgets OpenGL)
+IF( Qt5_FOUND )
+  SET(OF_USE_QT TRUE)
+ELSE()
+  SET(OF_USE_QT FALSE)
+  MESSAGE("Qt5 not found: will not build Qt widget panel or Qt demos.")
+ENDIF()
+
 # Go to the src directory and look for CMake instructions there
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(swig)

@@ -4,30 +4,23 @@ INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include ${OPENSCENEGRAPH_INCLUDE_DI
 # Create alias for current demo
 SET( curr_demo ofcontrols )
 
-# Instruct CMake to run the Qt moc automatically when needed.
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
 
 # Find Qt
-FIND_PACKAGE(Qt5 COMPONENTS Core Widgets OpenGL)
-IF(NOT Qt5_FOUND)
-  MESSAGE("Qt5 not found: will not build Qt controls demo.")
+IF(NOT OF_USE_QT)
   RETURN()
 ENDIF()
 
 # Specify headers for Qt example
 FILE(GLOB osgqtcube_HEADERS *.hpp)
 LIST(APPEND osgqtcube_SOURCES
-  ofcontrols.cpp
-  QtOSGAdapters.cpp
-  QWidgetPanel.cpp)
+  ofcontrols.cpp)
 
 # Specify which file should be compiled for current test
 ADD_EXECUTABLE(${curr_demo} ${osgqtcube_SOURCES} ${osgqtcube_HEADERS})
-QT5_USE_MODULES(${curr_demo} Core Widgets OpenGL)
 
 # Tell linker to link against OpenSceneGraph library
-TARGET_LINK_LIBRARIES(${curr_demo} OpenFrames ${OPENSCENEGRAPH_LIBRARIES})
+TARGET_LINK_LIBRARIES(${curr_demo} OpenFrames ${OPENSCENEGRAPH_LIBRARIES} Qt5::Core Qt5::Widgets)
 
 # On Mac/Linux include path to Qt in RPATH
 # Note that this only applies to this demo. In a real application the Qt

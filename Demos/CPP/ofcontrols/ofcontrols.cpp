@@ -15,8 +15,8 @@ limitations under the License.
 ***********************************/
 
 #include "ofcontrols.hpp"
-#include "QWidgetPanel.hpp"
 
+#include <OpenFrames/QWidgetPanel.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <OpenFrames/Sphere.hpp>
 

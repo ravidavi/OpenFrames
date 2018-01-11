@@ -14,8 +14,8 @@
    limitations under the License.
 ***********************************/
 
-#include "QWidgetPanel.hpp"
-#include "QtOSGAdapters.hpp"
+#include <OpenFrames/QWidgetPanel.hpp>
+#include <OpenFrames/QtOSGAdapters.hpp>
 
 #include <osg/Vec3d>
 #include <osg/Quat>
