@@ -71,10 +71,6 @@ namespace OpenFrames
     void setShowBorder(bool show);
     bool getShowBorder() { return (_borderGeode->getNodeMask() != 0x0); }
     
-    /** Get the global light model, which can be modified to change global
-     lighting parameters */
-    osg::LightSource* getGlobalLightSource() const { return _globalLightSource; }
-    
     /** Set the sky sphere texture */
     void setSkySphereTexture(const std::string& fname);
     
@@ -129,8 +125,6 @@ namespace OpenFrames
     osg::ref_ptr<DepthPartitioner> _depthPartitioner;
     
     osg::ref_ptr<osg::Group> _scene; // Everything to be drawn
-    
-    osg::ref_ptr<osg::LightSource> _globalLightSource; // Global scene lighting
     
     // Cameras used to render various parts of the scene
     osg::ref_ptr<osg::Camera> _hudCamera; // Heads-up-display camera

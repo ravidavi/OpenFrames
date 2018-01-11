@@ -36,7 +36,6 @@ int main()
   
   // Create a Sphere for the Earth
   Sphere* earth = new Sphere("Earth");
-  earth->setColor(0.0, 0.0, 1.0, 1.0);
   earth->showAxes(ReferenceFrame::NO_AXES);
   earth->showAxesLabels(ReferenceFrame::NO_AXES);
   earth->showNameLabel(false);
@@ -44,18 +43,15 @@ int main()
   earth->setRadius(r_earth);
   root->addChild(earth);
   
-  // Set Earth material
-  // Earth has ambient, diffuse, and specular reflections
+  // Set Earth material, which overrides any color set for the Sphere
+  // Use diffuse and diffuse reflections (dark side of Earth will have dim lighting)
   osg::Material* mat = new osg::Material;
-  mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0.75, 0.75, 0.75, 1.0));
-  mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(0.5, 0.5, 0.5, 1.0));
-  mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
-  mat->setShininess(osg::Material::FRONT_AND_BACK, 100.0);
+  mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
+  mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
   earth->setMaterial(mat);
   
   // Create a Sphere for the Moon
   Sphere* moon = new Sphere("Moon");
-  moon->setColor(0.5, 0.5, 0.5, 1.0);
   moon->showAxes(ReferenceFrame::NO_AXES);
   moon->showAxesLabels(ReferenceFrame::NO_AXES);
   moon->showNameLabel(false);
@@ -65,11 +61,39 @@ int main()
   root->addChild(moon);
   
   // Set Moon material
-  // Moon has ambient & diffuse but no specular reflection
+  // Use diffuse but no ambient reflections (dark side of Moon will be black)
   mat = new osg::Material;
-  mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
+  mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0.0, 0.0, 0.0, 1.0));
   mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
   moon->setMaterial(mat);
+  
+  // Create a Sphere for the Sun
+  Sphere* sun = new Sphere("Sun");
+  sun->showAxes(ReferenceFrame::NO_AXES);
+  sun->showAxesLabels(ReferenceFrame::NO_AXES);
+  sun->showNameLabel(false);
+  sun->setTextureMap("Images/SunTexture.jpg");
+  sun->setRadius(r_sun);
+  sun->setPosition(-1000.0, 0.0, 0.0);
+  root->addChild(sun);
+  
+  // Set Sun material
+  // Sun has emission but no reflection
+  mat = new osg::Material;
+  mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0, 0, 0, 1));
+  mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(0, 0, 0, 1));
+  mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(0, 0, 0, 1));
+  mat->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4(1, 1, 1, 1));
+  sun->setMaterial(mat);
+  
+  // Make the Sun a light source
+  // By default this will use GL_LIGHT0 which overrides the global light
+  // If using multiple lights, call light->setLightNum(num) with unique light numbers
+  osg::Light* sunLight = sun->setLightSourceEnabled(true)->getLight();
+  sunLight->setPosition(osg::Vec4(0.0, 0.0, 0.0, 1.0)); // At center of Sun
+  sunLight->setAmbient(osg::Vec4(0.4, 0.4, 0.4, 1.0));
+  sunLight->setDiffuse(osg::Vec4(2.0, 2.0, 2.0, 1.0)); // Bright sun!
+  sunLight->setSpecular(osg::Vec4(0.8, 0.8, 0.8, 1.0));
   
   // Create a manager to handle access to the scene
   FrameManager* fm = new FrameManager;
@@ -79,19 +103,13 @@ int main()
   myWindow->setScene(fm, 0, 0);
   myWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0); // Black background
   
-  // Create a view of the Earth
+  // Create views of the Earth and Moon
   View *viewEarth = new View(root, earth);
   View *viewMoon = new View(root, moon);
+  View *viewSun = new View(root, sun);
   myWindow->getGridPosition(0, 0)->addView(viewEarth);
   myWindow->getGridPosition(0, 0)->addView(viewMoon);
-  
-  // Change global lighting to a skylight (from +Z axis)
-  osg::LightSource* globalLightSource = myWindow->getGridPosition(0, 0)->getGlobalLightSource();
-  globalLightSource->setReferenceFrame(osg::LightSource::RELATIVE_RF);
-  globalLightSource->getLight()->setPosition(osg::Vec4(0, 0, 1, 0));
-  globalLightSource->getLight()->setAmbient(osg::Vec4(0.4, 0.4, 0.4, 1.0));
-  globalLightSource->getLight()->setDiffuse(osg::Vec4(1.0, 1.0, 1.0, 1.0));
-  globalLightSource->getLight()->setSpecular(osg::Vec4(0.8, 0.8, 0.8, 1.0));
+  myWindow->getGridPosition(0, 0)->addView(viewSun);
   
   myWindow->startThread(); // Start window animation
   myWindow->join(); // Wait for window animation to finish

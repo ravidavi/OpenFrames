@@ -277,23 +277,19 @@ namespace OpenFrames
       _scene->addChild(_ovrDevice->getDeviceRenderModels());
     }
     
-    // Default lighting: disable global ambient light, use LIGHT0 for global light
+    // Default lighting: disable global ambient light, use master camera's light for
+    // global light. This can be overridden by ReferenceFrame::setLightSourceEnabled()
     osg::StateSet* sceneSS = _scene->getOrCreateStateSet();
     sceneSS->setMode(GL_LIGHTING, osg::StateAttribute::ON); // Enable lighting
     osg::LightModel* globalLightModel = new osg::LightModel;
     globalLightModel->setAmbientIntensity(osg::Vec4(0.0, 0.0, 0.0, 1.0)); // Disable global ambient light
     sceneSS->setAttributeAndModes(globalLightModel);
-    _globalLightSource = new osg::LightSource;
-    osg::Light* globalLight = _globalLightSource->getLight(); // Defaults to LIGHT0
-    _globalLightSource->setReferenceFrame(osg::LightSource::ABSOLUTE_RF);
-    globalLight->setAmbient(osg::Vec4(0.1, 0.1, 0.1, 1.0)); // Copy OSG's default lighting parameters
-    globalLight->setDiffuse(osg::Vec4(0.8, 0.8, 0.8, 1.0));
-    globalLight->setSpecular(osg::Vec4(1.0, 1.0, 1.0, 1.0));
-    _scene->addChild(_globalLightSource);
+    osg::Light* globalLight = _sceneView->getLight();
+    globalLight->setAmbient(osg::Vec4(0.1, 0.1, 0.1, 1.0)); // OSG's default ambient light
     
-    // Default lighting: for VR use skylight, otherwise use headlight
-    if (_useVR) _globalLightSource->setReferenceFrame(osg::LightSource::RELATIVE_RF);
-    else _globalLightSource->setReferenceFrame(osg::LightSource::ABSOLUTE_RF);
+    // Default lighting: use skylight (model space) for VR, otherwise headlight (eye space)
+    if (_useVR) _sceneView->setLightingMode(osg::View::SKY_LIGHT);
+    else _sceneView->setLightingMode(osg::View::HEADLIGHT);
     
     // Set up the SceneView with the user-specified scene data
     _sceneView->setSceneData(_scene);
