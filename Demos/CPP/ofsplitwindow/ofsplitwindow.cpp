@@ -84,6 +84,7 @@ int main()
   // Create the interface that will draw a scene onto a window.
   osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(30, 30, 640, 480, 2, 1, false);
   myWindow->setTimeScale(0.1);
+  myWindow->setWindowName("OpenFrames Split Window Example");
   theWindow = myWindow.get();
   
   // Create the objects that will populate the scene using

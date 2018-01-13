@@ -292,6 +292,24 @@ void OF_FCN(ofwin_createproxy)(int *x, int *y,
 }
 
 /**
+ * \brief Set the window name (title). Only applies to non-embedded windows.
+ *
+ * \param winname The new window name
+ **/
+void OF_FCN(ofwin_setwindowname)(OF_CHARARG(winname))
+{
+  if(_objs->_currWinProxy)
+  {
+    std::string temp(OF_STRING(winname));
+    _objs->_currWinProxy->setWindowName(temp);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
+/**
 * \brief Set the number rows and columns in the grid.
 *
 * This applies to the current active WindowProxy.

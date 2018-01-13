@@ -485,6 +485,8 @@ namespace OpenFrames
     _embeddedGraphics = new EmbeddedGraphics(x, y, width, height, this);
     _eventHandler = new WindowEventHandler(this);
     
+    setWindowName("OpenFrames Window");
+    
     /** Make sure that OpenGL checks are done when the window is created */
     _viewer->setRealizeOperation(new CheckPrerequisites(this));
     
@@ -547,6 +549,19 @@ namespace OpenFrames
   {
     std::cout<< "WindowProxy::cancelCleanup()" << std::endl;
     shutdown();
+  }
+  
+  void WindowProxy::setWindowName(const std::string& name)
+  {
+    // Ignore if in embedded window mode
+    if(_isEmbedded) return;
+    
+    // If window exists, then directly set its name
+    else if(_window) _window->setWindowName(name);
+    
+    // Otherwise set the name in the EmbeddedGraphics object, which will be used to initialize
+    // the window when it is created
+    else _embeddedGraphics->setWindowName(name);
   }
   
   bool WindowProxy::setupWindow()

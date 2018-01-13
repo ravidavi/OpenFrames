@@ -103,6 +103,11 @@
 	LOGICAL, INTENT(IN) :: embedded
 	END SUBROUTINE
 	
+	SUBROUTINE ofwin_setwindowname(winname)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setwindowname
+	CHARACTER(LEN=*), INTENT(IN) :: winname
+	END SUBROUTINE
+
 	SUBROUTINE ofwin_setgridsize(nrow, ncol)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setgridsize
 	INTEGER, INTENT(IN) :: nrow, ncol
