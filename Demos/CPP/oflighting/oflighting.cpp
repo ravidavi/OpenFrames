@@ -39,14 +39,16 @@ int main()
   earth->showAxes(ReferenceFrame::NO_AXES);
   earth->showAxesLabels(ReferenceFrame::NO_AXES);
   earth->showNameLabel(false);
-  earth->setTextureMap("Images/EarthTexture.bmp");
+  earth->setTextureMap("Images/land_shallow_topo_2048.jpg");
+  earth->setNightTextureMap("Images/land_ocean_ice_lights_2048.jpg");
   earth->setRadius(r_earth);
+  earth->setAutoLOD(true);
   root->addChild(earth);
   
   // Set Earth material, which overrides any color set for the Sphere
-  // Use diffuse and diffuse reflections (dark side of Earth will have dim lighting)
+  // Use diffuse but no ambient reflections (so dark side can show night texture)
   osg::Material* mat = new osg::Material;
-  mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
+  mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0.0, 0.0, 0.0, 1.0));
   mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
   earth->setMaterial(mat);
   
@@ -58,7 +60,7 @@ int main()
   moon->setTextureMap("Images/MoonTexture.bmp");
   moon->setRadius(r_moon);
   moon->setPosition(10.0, -10.0, 0.0);
-  root->addChild(moon);
+  earth->addChild(moon);
   
   // Set Moon material
   // Use diffuse but no ambient reflections (dark side of Moon will be black)

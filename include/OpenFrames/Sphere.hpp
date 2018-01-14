@@ -41,6 +41,11 @@ namespace OpenFrames
     Sphere( const std::string &name, const osg::Vec4 &color );
     Sphere( const std::string &name , float r, float g, float b, float a = 1.0 );
     
+    /** Needed because osg::ShapeDrawable only sets texture coordinates for unit0.
+        This can be removed once the Sphere creates its own geometry.
+        Not for use by end user. */
+    void restoreTexCoords();
+    
     /** Set the radius of the sphere, given wrt the origin of
      the sphere's reference frame */
     void setRadius( const double &radius );
@@ -48,7 +53,14 @@ namespace OpenFrames
     
     /** Set the filename of the texture to map onto the sphere. Consult the
      osg documentation to see which image filetypes are supported. */
-    bool setTextureMap( const std::string &fname, bool force_reload = false );
+    bool setTextureMap( const std::string &fname, unsigned int unit = 0, bool force_reload = false );
+    
+    /** Set the texture environment for the specified texture unit. */
+    bool setTexEnv(osg::StateAttribute* texenv, unsigned int unit);
+    
+    /** Convenience function to specify a night texture map. This is combined with the day
+     texture map (assumed to be on previous texture unit) and shows on the dark side of the sphere. */
+    bool setNightTextureMap(const std::string &fname, unsigned int unit = 1, bool force_reload = false);
     
     /** Have the sphere automatically adjust its detail level depending on
      how far it is from the current eye point. */
