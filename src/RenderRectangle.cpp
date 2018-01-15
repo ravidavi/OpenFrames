@@ -283,9 +283,12 @@ namespace OpenFrames
     sceneSS->setMode(GL_LIGHTING, osg::StateAttribute::ON); // Enable lighting
     osg::LightModel* globalLightModel = new osg::LightModel;
     globalLightModel->setAmbientIntensity(osg::Vec4(0.0, 0.0, 0.0, 1.0)); // Disable global ambient light
+    globalLightModel->setColorControl(osg::LightModel::SEPARATE_SPECULAR_COLOR);
     sceneSS->setAttributeAndModes(globalLightModel);
     osg::Light* globalLight = _sceneView->getLight();
-    globalLight->setAmbient(osg::Vec4(0.1, 0.1, 0.1, 1.0)); // OSG's default ambient light
+    globalLight->setAmbient(osg::Vec4(0.2, 0.2, 0.2, 1.0)); // low-level ambient light
+    globalLight->setDiffuse(osg::Vec4(1.0, 1.0, 1.0, 1.0)); // full diffuse light
+    globalLight->setSpecular(osg::Vec4(0.0, 0.0, 0.0, 1.0)); // Disable specular light
     
     // Default lighting: use skylight (model space) for VR, otherwise headlight (eye space)
     if (_useVR) _sceneView->setLightingMode(osg::View::SKY_LIGHT);

@@ -24,6 +24,7 @@ int main()
   const double r_earth = 6.371;
   const double r_moon = 1.737;
   const double r_sun = 695.7;
+  const double d_sun = 149600;
   
   // Create the interface that represents a window
   osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(30, 30, 640, 480, 1, 1, false, false);
@@ -50,6 +51,8 @@ int main()
   osg::Material* mat = new osg::Material;
   mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0.0, 0.0, 0.0, 1.0));
   mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
+  mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(0.5, 0.5, 0.5, 1.0));
+  mat->setShininess(osg::Material::FRONT_AND_BACK, 100);
   earth->setMaterial(mat);
   
   // Create a Sphere for the Moon
@@ -76,7 +79,7 @@ int main()
   sun->showNameLabel(false);
   sun->setTextureMap("Images/SunTexture.jpg");
   sun->setRadius(r_sun);
-  sun->setPosition(-1000.0, 0.0, 0.0);
+  sun->setPosition(-d_sun, 0.0, 0.0);
   root->addChild(sun);
   
   // Set Sun material
