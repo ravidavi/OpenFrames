@@ -84,7 +84,8 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
 }
 
 MyGLCanvas::MyGLCanvas(wxFrame* parent, int* args) 
-: wxGLCanvas(parent, wxID_ANY, args, wxDefaultPosition, wxDefaultSize)
+: wxGLCanvas(parent, wxID_ANY, args, wxDefaultPosition, wxDefaultSize),
+  specialKeyPressed(0), lastButtonPressed(0)
 {
   m_context = new wxGLContext(this);
 
@@ -367,9 +368,17 @@ void MyGLCanvas::mouseDownLeft(wxMouseEvent& event)
   wxFrame *p_frm = wxStaticCast(GetParent(), wxFrame);
   std::ostringstream os;
   os << "mouseDown left at (" << event.GetX() << ", " << event.GetY() << ")";
+  
+  // Check if alt/ctrl keys were pressed to emulate middle/right mouse buttons
+  // Note that on wxOSX, the command key registers as ctrl
+  if(specialKeyPressed == WXK_CONTROL) lastButtonPressed = 3;  // Right-click
+  else if(specialKeyPressed == WXK_ALT) lastButtonPressed = 2; // Middle-click
+  else lastButtonPressed = 1;                   // Left-click
+  
+  os << ", interpreting as button " << lastButtonPressed;
   p_frm->SetStatusText(os.str());
 
-  m_winproxy->buttonPress(event.GetX(), event.GetY(), 1);
+  m_winproxy->buttonPress(event.GetX(), event.GetY(), lastButtonPressed);
 }
 
 void MyGLCanvas::mouseUpLeft(wxMouseEvent& event)
@@ -377,9 +386,10 @@ void MyGLCanvas::mouseUpLeft(wxMouseEvent& event)
   wxFrame *p_frm = wxStaticCast(GetParent(), wxFrame);
   std::ostringstream os;
   os << "mouseUp left at (" << event.GetX() << ", " << event.GetY() << ")";
+  os << ", interpreting as button " << lastButtonPressed;
   p_frm->SetStatusText(os.str());
 
-  m_winproxy->buttonRelease(event.GetX(), event.GetY(), 1);
+  m_winproxy->buttonRelease(event.GetX(), event.GetY(), lastButtonPressed);
 }
 
 void MyGLCanvas::mouseDownRight(wxMouseEvent& event)
@@ -402,6 +412,26 @@ void MyGLCanvas::mouseUpRight(wxMouseEvent& event)
   m_winproxy->buttonRelease(event.GetX(), event.GetY(), 3);
 }
 
+void MyGLCanvas::mouseDownMiddle(wxMouseEvent& event)
+{
+  wxFrame *p_frm = wxStaticCast(GetParent(), wxFrame);
+  std::ostringstream os;
+  os << "mouseDown middle at (" << event.GetX() << ", " << event.GetY() << ")";
+  p_frm->SetStatusText(os.str());
+  
+  m_winproxy->buttonPress(event.GetX(), event.GetY(), 2);
+}
+
+void MyGLCanvas::mouseUpMiddle(wxMouseEvent& event)
+{
+  wxFrame *p_frm = wxStaticCast(GetParent(), wxFrame);
+  std::ostringstream os;
+  os << "mouseUp middle at (" << event.GetX() << ", " << event.GetY() << ")";
+  p_frm->SetStatusText(os.str());
+  
+  m_winproxy->buttonRelease(event.GetX(), event.GetY(), 2);
+}
+
 void MyGLCanvas::keyPressed(wxKeyEvent& event)
 {
   wxFrame *p_frm = wxStaticCast(GetParent(), wxFrame);
@@ -410,6 +440,64 @@ void MyGLCanvas::keyPressed(wxKeyEvent& event)
   p_frm->SetStatusText(os.str());
 
   m_winproxy->keyPress(event.GetKeyCode());
+}
+
+void MyGLCanvas::keyDown(wxKeyEvent& event)
+{
+  wxFrame *p_frm = wxStaticCast(GetParent(), wxFrame);
+  std::ostringstream os;
+  os << "keyDown ";
+  
+  bool shouldSkip = true;
+  switch(event.GetKeyCode())
+  {
+    case WXK_ALT:
+    {
+      specialKeyPressed = WXK_ALT;
+      shouldSkip = true;
+      os << "WXK_ALT";
+      break;
+    }
+    case WXK_CONTROL: // On wxMac this is triggered by pressing the 'command' key
+    {
+      specialKeyPressed = WXK_CONTROL;
+      shouldSkip = true;
+      os << "WXK_CONTROL";
+      break;
+    }
+  }
+  p_frm->SetStatusText(os.str());
+  
+  if(shouldSkip) event.Skip();
+}
+
+void MyGLCanvas::keyUp(wxKeyEvent& event)
+{
+  wxFrame *p_frm = wxStaticCast(GetParent(), wxFrame);
+  std::ostringstream os;
+  os << "keyUp ";
+  
+  bool shouldSkip = true;
+  switch(event.GetKeyCode())
+  {
+    case WXK_ALT:
+    {
+      specialKeyPressed = 0;
+      shouldSkip = true;
+      os << "WXK_ALT";
+      break;
+    }
+    case WXK_CONTROL: // On wxMac this is triggered by pressing the 'command' key
+    {
+      specialKeyPressed = 0;
+      shouldSkip = true;
+      os << "WXK_CONTROL";
+      break;
+    }
+  }
+  p_frm->SetStatusText(os.str());
+  
+  if(shouldSkip) event.Skip();
 }
 
 enum
@@ -429,8 +517,14 @@ wxBEGIN_EVENT_TABLE(MyGLCanvas, wxGLCanvas)
   EVT_LEFT_UP(MyGLCanvas::mouseUpLeft)
   EVT_RIGHT_DOWN(MyGLCanvas::mouseDownRight)
   EVT_RIGHT_UP(MyGLCanvas::mouseUpRight)
+  EVT_MIDDLE_DOWN(MyGLCanvas::mouseDownMiddle)
+  EVT_MIDDLE_UP(MyGLCanvas::mouseUpMiddle)
   EVT_SIZE(MyGLCanvas::resized)
   EVT_CHAR(MyGLCanvas::keyPressed)
+  // Macbooks have 1-button mouse so we have to manually emulate middle-click
+  // Probably not needed on Win/Linux, but enable it anyway for consistency
+  EVT_KEY_DOWN(MyGLCanvas::keyDown)
+  EVT_KEY_UP(MyGLCanvas::keyUp)
 wxEND_EVENT_TABLE()
 
 wxIMPLEMENT_APP(MyApp);
