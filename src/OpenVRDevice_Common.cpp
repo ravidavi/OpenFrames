@@ -117,9 +117,6 @@ namespace OpenFrames{
     osg::ShapeDrawable *sd = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(), radius));
     sd->setColor(osg::Vec4(1.0, 1.0, 1.0, 0.2));
     geode->addDrawable(sd);
-    _controllerMidpoint = new osg::MatrixTransform;
-    _controllerMidpoint->addChild(geode);
-    _deviceModels->addChild(_controllerMidpoint);
 
     // Set midpoint sphere texture
     osg::Image *image = osgDB::readImageFile("Images/marble.jpg");
@@ -134,6 +131,29 @@ namespace OpenFrames{
       ss->setMode(GL_BLEND, osg::StateAttribute::ON);
       ss->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
     }
+    
+    // Create text to show WorldUnits/Meter ratio
+    osgText::Text *wumText = new osgText::Text();
+    wumText->setFontResolution(30, 30);
+    wumText->setFont("arial.ttf");
+    wumText->setCharacterSizeMode(osgText::Text::OBJECT_COORDS);
+    wumText->setCharacterSize(0.1);
+    wumText->setAlignment(osgText::Text::CENTER_BOTTOM);
+    
+    // Controller Z-axis points down, so we want text on the -XZ plane
+    // OSG doesn't have a preset for this (XZ_PLANE would make text upside-down)
+    // So rotate default XY_PLANE by -90deg about the X axis
+    wumText->setAxisAlignment(osgText::Text::USER_DEFINED_ROTATION);
+    osg::Quat wumRotate;
+    wumRotate.makeRotate(-osg::PI_2, osg::Vec3(1, 0, 0));
+    wumText->setRotation(wumRotate);
+    wumText->setPosition(osg::Vec3(0.0, 0.0, -radius)); // Position above midpoint sphere
+    geode->addDrawable(wumText);
+    
+    // Add geode decorations to controller midpoint
+    _controllerMidpoint = new osg::MatrixTransform;
+    _controllerMidpoint->addChild(geode);
+    _deviceModels->addChild(_controllerMidpoint);
 
     // Create a flat grid to represent the ground
     {
@@ -179,18 +199,6 @@ namespace OpenFrames{
       gridGeom->setVertexArray(vertices);
       gridGeom->setColorArray(color, osg::Array::BIND_OVERALL);
       gridGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, numGridPoints));
-
-      // Create text to show WorldUnits/Meter ratio
-      osgText::Text *wumText = new osgText::Text();
-      wumText->setFontResolution(30, 30);
-      wumText->setFont("arial.ttf");
-      wumText->setCharacterSizeMode(osgText::Text::OBJECT_COORDS);
-      wumText->setCharacterSize(0.1);
-      wumText->setPosition(osg::Vec3(0.0, y_offset, 0.0));
-      wumText->setAxisAlignment(osgText::Text::USER_DEFINED_ROTATION);
-      osg::Quat wumRotate;
-      wumRotate.makeRotate(-osg::PI_2, osg::Vec3(1, 0, 0)); // Using XZ_PLANE would make text upside-down
-      wumText->setRotation(wumRotate);
 
       // Create geode to hold plane and grid geometries
       geode = new osg::Geode;
@@ -326,7 +334,7 @@ namespace OpenFrames{
     _worldUnitsPerMeter = std::max(_minWorldUnitsPerMeter, std::min(worldUnitsPerMeter, _maxWorldUnitsPerMeter));
 
     // Update ground text
-    osg::Geode *geode = static_cast<osg::Geode*>(_roomGround->getChild(0));
+    osg::Geode *geode = static_cast<osg::Geode*>(_controllerMidpoint->getChild(0));
     for (unsigned int i = 0; i < geode->getNumDrawables(); ++i)
     {
       osgText::Text *wumText = dynamic_cast<osgText::Text*>(geode->getDrawable(i));
