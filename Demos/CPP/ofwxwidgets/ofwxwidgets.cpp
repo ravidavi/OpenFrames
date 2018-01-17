@@ -454,14 +454,14 @@ void MyGLCanvas::keyDown(wxKeyEvent& event)
     case WXK_ALT:
     {
       specialKeyPressed = WXK_ALT;
-      shouldSkip = true;
+      shouldSkip = false;
       os << "WXK_ALT";
       break;
     }
     case WXK_CONTROL: // On wxMac this is triggered by pressing the 'command' key
     {
       specialKeyPressed = WXK_CONTROL;
-      shouldSkip = true;
+      shouldSkip = false;
       os << "WXK_CONTROL";
       break;
     }
@@ -483,14 +483,14 @@ void MyGLCanvas::keyUp(wxKeyEvent& event)
     case WXK_ALT:
     {
       specialKeyPressed = 0;
-      shouldSkip = true;
+      shouldSkip = false;
       os << "WXK_ALT";
       break;
     }
     case WXK_CONTROL: // On wxMac this is triggered by pressing the 'command' key
     {
       specialKeyPressed = 0;
-      shouldSkip = true;
+      shouldSkip = false;
       os << "WXK_CONTROL";
       break;
     }

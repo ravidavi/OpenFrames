@@ -57,6 +57,9 @@ namespace OpenFrames
     /** Get the OpenSceneGraph View associated with this RenderRectangle */
     osgViewer::View* getSceneView() const { return _sceneView.get(); }
     
+    /** Get the HUD group, which can be used to add HUD decorations such as text */
+    osg::Group* getHUD() const { return _hudCamera.get(); }
+    
     /** Set the graphics context that is used for all OpenGL rendering */
     void setGraphicsContext(osg::GraphicsContext *gc);
     
