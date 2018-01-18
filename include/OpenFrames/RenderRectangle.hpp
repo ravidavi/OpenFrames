@@ -1,5 +1,5 @@
 /***********************************
- Copyright 2017 Ravishankar Mathur
+ Copyright 2018 Ravishankar Mathur
  
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -56,6 +56,9 @@ namespace OpenFrames
     
     /** Get the OpenSceneGraph View associated with this RenderRectangle */
     osgViewer::View* getSceneView() const { return _sceneView.get(); }
+    
+    /** Get the HUD group, which can be used to add HUD decorations such as text */
+    osg::Group* getHUD() const { return _hudCamera.get(); }
     
     /** Set the graphics context that is used for all OpenGL rendering */
     void setGraphicsContext(osg::GraphicsContext *gc);

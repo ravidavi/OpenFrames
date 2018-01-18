@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2017 Ravishankar Mathur
+   Copyright 2018 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <OpenFrames/Vector.hpp>
 
 #include <osg/Geode>
+#include <osg/LightSource>
 #include <osgText/Text>
 #include <osg/Referenced>
 #include <osg/ref_ptr>
@@ -235,6 +236,21 @@ class OF_EXPORT ReferenceFrame : public osg::Referenced {
 	/* Add/remove a frame as a child to this one */
 	bool addChild( ReferenceFrame* frame );
 	bool removeChild( ReferenceFrame* frame );
+  
+  /**
+   * \brief Set whether this frame's light source is enabled.
+   * A light source will be created as needed.
+   * A ReferenceFrame's light source disabled by default.
+   *
+   * \param enable Whether to enable/disable light source
+   * \return Enabled light source, or NULL if disabled
+   */
+  osg::LightSource* setLightSourceEnabled(bool enable);
+  
+  /**
+   * \brief Check whether this frame's light source is enabled.
+   */
+  bool getLightSourceEnabled() const;
 
     /**
     * \brief Get the number of children

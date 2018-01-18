@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2017 Ravishankar Mathur
+   Copyright 2018 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -15,15 +15,13 @@
 ***********************************/
 
 #include <OpenFrames/Sphere.hpp>
-#include <osg/Vec3d>
-#include <osg/Quat>
 #include <osg/Geode>
 #include <osg/PolygonOffset>
 #include <osg/Shape>
 #include <osg/Texture2D>
+#include <osg/TexEnvCombine>
 #include <osgDB/ReadFile>
 #include <osgUtil/CullVisitor>
-#include <iostream>
 
 namespace OpenFrames
 {
@@ -32,8 +30,8 @@ namespace OpenFrames
     away it is from the eye point. */
   struct SphereLODCallback : public osg::DrawableCullCallback
   {
-    SphereLODCallback()
-      : _currentLOD(0) {}
+    SphereLODCallback(OpenFrames::Sphere& sphere)
+      : _currentLOD(0), _ofSphere(sphere) {}
 
     virtual bool cull(osg::NodeVisitor* nv, osg::Drawable* drawable, osg::RenderInfo* renderInfo) const 
     {
@@ -61,6 +59,7 @@ namespace OpenFrames
           _currentLOD = (int)lod;
           sphereSD->dirtyBound();
           sphereSD->build();
+          _ofSphere.restoreTexCoords();
         }
       }
 
@@ -68,6 +67,7 @@ namespace OpenFrames
     }
 
     mutable int _currentLOD;
+    OpenFrames::Sphere& _ofSphere;
   };
 
   Sphere::Sphere(const std::string &name)
@@ -104,6 +104,7 @@ namespace OpenFrames
     _sphereSD->setName("SphereDrawable");
     _sphereSD->setUseDisplayList(false);
     _sphereSD->setUseVertexBufferObjects(true);
+    _sphereSD->getOrCreateStateSet(); // Will be used for textures and modes
     osg::Sphere* sphere = new osg::Sphere;
     osg::TessellationHints* hints = new osg::TessellationHints;
 
@@ -117,7 +118,7 @@ namespace OpenFrames
     // Offset the sphere's polygons backwards so that a decal on the sphere's
     // surface will always show up on top of the sphere.
     osg::PolygonOffset *offset = new osg::PolygonOffset(1, 1);
-    _sphereSD->getOrCreateStateSet()->setAttributeAndModes(offset);
+    _sphereSD->getStateSet()->setAttributeAndModes(offset);
 
     // Create the node that contains the Sphere
     _geode = new osg::Geode;
@@ -131,6 +132,25 @@ namespace OpenFrames
     setRadius(1.0);
     setColor(getColor());
   }
+  
+  void Sphere::restoreTexCoords()
+  {
+    osg::StateSet* stateset = _sphereSD->getStateSet();
+    const osg::StateSet::TextureAttributeList& texAttribList = stateset->getTextureAttributeList();
+    
+    // Loop through each texture unit
+    for(unsigned int unit = 1; unit < texAttribList.size(); ++unit)
+    {
+      // If unit has texture attributes, then set the ShapeDrawable's texture coords
+      // Needed because ShapeDrawable only sets texcoords for unit 0, and drawing night
+      // texture requires using other texture units
+      const osg::StateSet::AttributeList& attribList = texAttribList[unit];
+      if(!attribList.empty())
+      {
+        _sphereSD->setTexCoordArray(unit, _sphereSD->getTexCoordArray(0));
+      }
+    }
+  }
 
   void Sphere::setRadius(const double &radius)
   {
@@ -138,6 +158,7 @@ namespace OpenFrames
     sphere->setRadius(radius);
     _sphereSD->dirtyBound();
     _sphereSD->build();
+    restoreTexCoords();
 
     moveXAxis(osg::Vec3(radius, 0, 0), 0.5*radius);
     moveYAxis(osg::Vec3(0, radius, 0), 0.5*radius);
@@ -150,23 +171,20 @@ namespace OpenFrames
     return sphere->getRadius();
   }
 
-  bool Sphere::setTextureMap(const std::string &fname, bool force_reload)
+  bool Sphere::setTextureMap(const std::string &fname, unsigned int unit, bool force_reload)
   {
-    if(fname.length() == 0) // Remove existing texture
-    {
-      osg::StateSet* stateset = _sphereSD->getStateSet();
-      if(stateset)
-      {
-        stateset->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
-        stateset->removeTextureAttribute(0, osg::StateAttribute::TEXENV);
-      }
+    osg::StateSet* stateset = _sphereSD->getStateSet();
 
+    if(fname.length() == 0) // Remove existing texture and environment
+    {
+      stateset->removeTextureAttribute(unit, osg::StateAttribute::TEXTURE);
+      stateset->removeTextureAttribute(unit, osg::StateAttribute::TEXENV);
+      setColor(getColor()); // Restore sphere color
       return false;
     }
 
     // Check if there is already a texture being used.
-    osg::StateSet* stateset = _sphereSD->getOrCreateStateSet();
-    osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(stateset->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
+    osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(stateset->getTextureAttribute(unit, osg::StateAttribute::TEXTURE));
 
     // If the current texture has the same filename as the new texture, then reload only if we have to.
     if(texture && (texture->getImage()->getFileName() == fname) && !force_reload) return true;
@@ -181,22 +199,55 @@ namespace OpenFrames
       texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
       texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
 
-      // Don't use the sphere's color when mapping the texture.
-      osg::TexEnv* texenv = new osg::TexEnv;
-      texenv->setMode(osg::TexEnv::DECAL);
-
       // Set the texture to the sphere
-      stateset->setTextureAttributeAndModes(0, texture);
-      stateset->setTextureAttribute(0, texenv);
+      stateset->setTextureAttributeAndModes(unit, texture);
+      
+      // Set the sphere's color to white to avoid artificially coloring the texture
+      // Don't use Sphere::setColor since that will affect the ReferenceFrame color
+      _sphereSD->setColor(osg::Vec4(1.0, 1.0, 1.0, 1.0));
+      
+      // Copy tex coords from unit0
+      if(unit != 0) _sphereSD->setTexCoordArray(unit, _sphereSD->getTexCoordArray(0));
 
       return true;
     }
     else
     {
-      std::cerr<< "Sphere::setTextureMap ERROR: File \'" << fname 
+      OSG_WARN<< "Sphere::setTextureMap ERROR: File \'" << fname
         << "\' could not be loaded." << std::endl;
       return false;
     }
+  }
+  
+  bool Sphere::setTexEnv(osg::StateAttribute* texenv, unsigned int unit)
+  {
+    if(texenv->getType() != osg::StateAttribute::TEXENV)
+    {
+      OSG_WARN<< "Sphere::setTexEnv ERROR: Only accepts TEXENV attributes at this time." << std::endl;
+      return false;
+    }
+    
+    _sphereSD->getStateSet()->setTextureAttribute(unit, texenv);
+    return true;
+  }
+  
+  bool Sphere::setNightTextureMap(const std::string &fname, unsigned int unit, bool force_reload)
+  {
+    // Set a night texture to specified texture unit
+    if(!setTextureMap(fname, unit, force_reload)) return false;
+    
+    // Combine night texture with day texture (assumed to be on unit 0)
+    osg::TexEnvCombine* texenv = new osg::TexEnvCombine;
+    texenv->setCombine_RGB(osg::TexEnvCombine::INTERPOLATE);
+    texenv->setSource0_RGB(osg::TexEnvCombine::PREVIOUS);
+    texenv->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+    texenv->setSource1_RGB(osg::TexEnvCombine::TEXTURE);
+    texenv->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+    texenv->setSource2_RGB(osg::TexEnvCombine::PRIMARY_COLOR);
+    texenv->setOperand2_RGB(osg::TexEnvCombine::SRC_COLOR);
+    
+    setTexEnv(texenv, unit);
+    return true;
   }
 
   void Sphere::setAutoLOD( bool lod )
@@ -204,7 +255,7 @@ namespace OpenFrames
     if(lod)
     {
       if(_sphereSD->getCullCallback() == NULL)
-        _sphereSD->setCullCallback(new SphereLODCallback());
+        _sphereSD->setCullCallback(new SphereLODCallback(*this));
     }
     else
     {
@@ -215,7 +266,20 @@ namespace OpenFrames
   void Sphere::setColor( const osg::Vec4 &color )
   {
     ReferenceFrame::setColor(color);
-    _sphereSD->setColor(color);
+    
+    // Only set sphere color if there is no texture, so that an exiting texture
+    // doesn't have its color altered by the sphere's color
+    osg::StateSet* ss = _sphereSD->getStateSet();
+    osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(ss->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
+    if(!texture) _sphereSD->setColor(color);
+  }
+  
+  void Sphere::setMaterial( osg::Material *mat )
+  {
+    if(mat)
+      _sphereSD->getStateSet()->setAttributeAndModes(mat);
+    else
+      _sphereSD->getStateSet()->removeAttribute(osg::StateAttribute::MATERIAL);
   }
 
   const osg::BoundingSphere& Sphere::getBound() const

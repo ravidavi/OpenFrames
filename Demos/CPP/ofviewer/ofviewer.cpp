@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2017 Ravishankar Mathur
+   Copyright 2018 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -160,6 +160,9 @@ int main(int argc, char** argv)
   // Set up the scene
   myWindow->setScene(fm, 0, 0);
   //myWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0);
+  
+  // Initialize window title
+  std::string windowName = "OpenFrames Viewer:";
 
   // Create Models to hold user-specified models
   for (int i = 0; i < files.size(); ++i)
@@ -167,7 +170,9 @@ int main(int argc, char** argv)
     Model *theModel = new Model("Model", 0.5, 0.5, 0.5, 0.9);
     if (!theModel->setModel(files[i])) continue;
     std::string fname = osgDB::getSimpleFileName(files[i]);
-    theModel->setName(osgDB::getNameLessAllExtensions(fname));
+    std::string fname_noext = osgDB::getNameLessAllExtensions(fname);
+    theModel->setName(fname_noext);
+    windowName += " " + fname_noext;
 
     // Reset model pivot so its origin coincides with the root scene origin
     theModel->setModelPivot(0.0, 0.0, 0.0);
@@ -185,7 +190,8 @@ int main(int argc, char** argv)
     OSG_WARN << "No models loaded, exiting." << std::endl;
     return 1;
   }
-
+  
+  myWindow->setWindowName(windowName);
   myWindow->startThread(); // Start window animation
   myWindow->join(); // Wait for window animation to finish
 

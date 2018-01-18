@@ -1,4 +1,4 @@
-!  Copyright 2013 Ravishankar Mathur
+!  Copyright 2018 Ravishankar Mathur
 !
 !  Licensed under the Apache License, Version 2.0 (the "License")
 !  you may not use this file except in compliance with the License.
@@ -103,6 +103,11 @@
 	LOGICAL, INTENT(IN) :: embedded
 	END SUBROUTINE
 	
+	SUBROUTINE ofwin_setwindowname(winname)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setwindowname
+	CHARACTER(LEN=*), INTENT(IN) :: winname
+	END SUBROUTINE
+
 	SUBROUTINE ofwin_setgridsize(nrow, ncol)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setgridsize
 	INTEGER, INTENT(IN) :: nrow, ncol

@@ -1,5 +1,5 @@
 /***********************************
- Copyright 2017 Ravishankar Mathur
+ Copyright 2018 Ravishankar Mathur
  
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include <OpenFrames/Utilities.hpp>
 #include <osg/Geometry>
 #include <osg/Group>
+#include <osg/LightModel>
 #include <osg/LineWidth>
 #include <osg/Depth>
 #include <osg/StateSet>
@@ -276,9 +277,25 @@ namespace OpenFrames
       _scene->addChild(_ovrDevice->getDeviceRenderModels());
     }
     
+    // Default lighting: disable global ambient light, use master camera's light for
+    // global light. This can be overridden by ReferenceFrame::setLightSourceEnabled()
+    osg::StateSet* sceneSS = _scene->getOrCreateStateSet();
+    sceneSS->setMode(GL_LIGHTING, osg::StateAttribute::ON); // Enable lighting
+    osg::LightModel* globalLightModel = new osg::LightModel;
+    globalLightModel->setAmbientIntensity(osg::Vec4(0.0, 0.0, 0.0, 1.0)); // Disable global ambient light
+    globalLightModel->setColorControl(osg::LightModel::SEPARATE_SPECULAR_COLOR);
+    sceneSS->setAttributeAndModes(globalLightModel);
+    osg::Light* globalLight = _sceneView->getLight();
+    globalLight->setAmbient(osg::Vec4(0.2, 0.2, 0.2, 1.0)); // low-level ambient light
+    globalLight->setDiffuse(osg::Vec4(1.0, 1.0, 1.0, 1.0)); // full diffuse light
+    globalLight->setSpecular(osg::Vec4(0.0, 0.0, 0.0, 1.0)); // Disable specular light
+    
+    // Default lighting: use skylight (model space) for VR, otherwise headlight (eye space)
+    if (_useVR) _sceneView->setLightingMode(osg::View::SKY_LIGHT);
+    else _sceneView->setLightingMode(osg::View::HEADLIGHT);
+    
     // Set up the SceneView with the user-specified scene data
     _sceneView->setSceneData(_scene);
-    if (_useVR) _sceneView->setLightingMode(osg::View::SKY_LIGHT);
     
     // Set up master camera render settings
     // The DepthPartitioner will automatically inherit these via its main slave camera

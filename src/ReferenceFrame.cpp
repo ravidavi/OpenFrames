@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2017 Ravishankar Mathur
+   Copyright 2018 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -546,6 +546,57 @@ bool ReferenceFrame::removeChild( ReferenceFrame* child )
 
 	return true;
 }
+  
+  /********************************************/
+  osg::LightSource* ReferenceFrame::setLightSourceEnabled(bool enable)
+  {
+    // Find existing LightSource
+    // Search from back since LightSource will exist near end of children list
+    osg::LightSource* lightSource = NULL;
+    for(int i = _xform->getNumChildren()-1; i >= 0; --i)
+    {
+      lightSource = dynamic_cast<osg::LightSource*>(_xform->getChild(i));
+      if(lightSource)
+      {
+        // Light source already enabled, so just return it
+        if(enable) return lightSource;
+        
+        // Disable light source
+        else
+        {
+          _xform->removeChild(lightSource);
+          return NULL;
+        }
+      }
+    }
+    
+    // Light source doesn't exist, so create it if needed
+    if(enable)
+    {
+      // Create new LightSource
+      lightSource = new osg::LightSource;
+      _xform->addChild(lightSource);
+      return lightSource;
+    }
+    
+    // Light source doesn't exist and should stay disabled, so nothing to do
+    return NULL;
+  }
+
+  /********************************************/
+  bool ReferenceFrame::getLightSourceEnabled() const
+  {
+    // Find existing LightSource
+    // Search from back since LightSource will exist near end of children list
+    for(int i = _xform->getNumChildren()-1; i >= 0; --i)
+    {
+      osg::LightSource* lightSource = dynamic_cast<osg::LightSource*>(_xform->getChild(i));
+      if(lightSource) return true;
+    }
+    
+    // No light source exists
+    return false;
+  }
 
 /**
 * \brief Create a formatted string containing names of all child frames

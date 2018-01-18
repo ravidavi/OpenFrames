@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2017 Ravishankar Mathur
+   Copyright 2018 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -84,6 +84,7 @@ int main()
   // Create the interface that will draw a scene onto a window.
   osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(30, 30, 640, 480, 2, 1, false);
   myWindow->setTimeScale(0.1);
+  myWindow->setWindowName("OpenFrames Split Window Example");
   theWindow = myWindow.get();
   
   // Create the objects that will populate the scene using

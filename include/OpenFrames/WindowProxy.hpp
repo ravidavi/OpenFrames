@@ -1,5 +1,5 @@
 /***********************************
- Copyright 2017 Ravishankar Mathur
+ Copyright 2018 Ravishankar Mathur
  
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -54,6 +54,10 @@ namespace OpenFrames
     virtual bool isSameKindAs(const Object* object) const { return dynamic_cast<const EmbeddedGraphics*>(object)!=0; }
     virtual const char* libraryName() const { return "OpenFrames"; }
     virtual const char* className() const { return "EmbeddedGraphics"; }
+    
+    /** Save a name to this GraphicsWindow's traits
+        This is used by WindowProxy when creating a non-embedded window */
+    virtual void setWindowName(const std::string& name) { _traits->windowName = name; }
     
     /** Inherited from GraphicsWindow, these functions manage the OpenGL context */
     virtual bool makeCurrentImplementation();
@@ -160,6 +164,11 @@ namespace OpenFrames
                 bool embedded = false, bool useVR = false);
     
     virtual void cancelCleanup();
+    
+    /** Set the window's name
+     Only applies to non-embedded windows. For embedded windows, the window name
+     should be set via the API used to create the window (Qt, wxWidgets, etc.) */
+    void setWindowName(const std::string& name);
     
     unsigned int getWindowWidth() const;
     unsigned int getWindowHeight() const;

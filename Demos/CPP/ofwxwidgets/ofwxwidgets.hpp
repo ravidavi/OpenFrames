@@ -1,5 +1,5 @@
 /***********************************
-  Copyright 2017 Ravishankar Mathur
+  Copyright 2018 Ravishankar Mathur
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ class MyGLCanvas : public wxGLCanvas
   private:
   wxGLContext* m_context = NULL;
   OpenFrames::WindowProxy* m_winproxy = NULL;
+  unsigned int specialKeyPressed; // Whether ctrl/alt are currently pressed
+  unsigned int lastButtonPressed; // Last emulated mouse button
 
   public:
   MyGLCanvas(wxFrame* parent, int* args);
@@ -51,7 +53,11 @@ class MyGLCanvas : public wxGLCanvas
   void mouseUpLeft(wxMouseEvent& event);
   void mouseDownRight(wxMouseEvent& event);
   void mouseUpRight(wxMouseEvent& event);
+  void mouseDownMiddle(wxMouseEvent& event);
+  void mouseUpMiddle(wxMouseEvent& event);
   void keyPressed(wxKeyEvent& event);
+  void keyDown(wxKeyEvent& event);
+  void keyUp(wxKeyEvent& event);
 
   wxDECLARE_EVENT_TABLE();
 };

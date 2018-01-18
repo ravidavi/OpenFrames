@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2017 Ravishankar Mathur
+   Copyright 2018 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -106,6 +106,10 @@ OF_EXPORT void OF_FCN(ofwin_createproxy)(int *x, int *y,
                                       unsigned int *nrow, unsigned int *ncol,
                                       bool *embedded, unsigned int *id);
 
+// Set the window name (title)
+OF_EXPORT void OF_FCN(ofwin_setwindowname)(OF_CHARARG(winname));
+  
+// Set the window grid size
 OF_EXPORT void OF_FCN(ofwin_setgridsize)(int *nrow, int *ncol);
 
 // Set event handling callbacks
