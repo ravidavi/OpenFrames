@@ -295,10 +295,10 @@ namespace OpenFrames
     }
 
     QGraphicsItem* item = _graphicsView->itemAt(pos);
-    if (item /*&& item->contains(item->mapFromScene(pos))*/)
+    if (item != nullptr)
     {
       QGraphicsProxyWidget* p = qgraphicsitem_cast<QGraphicsProxyWidget*>(item);
-      if (p)
+      if (p != nullptr)
       {
         childAt = p->widget();
         QWidget* c;
@@ -551,7 +551,6 @@ namespace OpenFrames
       OSG_INFO << "render image " << _currentWrite << " with size (" << _width << "," << _height << ")" << std::endl;
     }
 
-#if 1
     // paint the image with the graphics view
     QPainter painter(&image);
 
@@ -564,23 +563,6 @@ namespace OpenFrames
     QRect sourceRect(0, 0, image.width(), image.height());
     _graphicsView->render(&painter, destinationRect, sourceRect, Qt::IgnoreAspectRatio);
     painter.end();
-#elif 0
-    QPixmap pixmap(QPixmap::grabWidget(_graphicsView.data(), QRect(0, 0, image.width(), image.height())));
-    image = pixmap.toImage();
-#else
-    // paint the image with the graphics view
-    QPixmap pixmap(image.width(), image.height());
-    // Clear the image otherwise there are artifacts for some widgets that overpaint.
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-
-    QRectF destinationRect(0, 0, image.width(), image.height());
-    QRect sourceRect(0, 0, image.width(), image.height());
-    _graphicsView->render(&painter, destinationRect, _graphicsView->viewport()->rect());
-    painter.end();
-
-    image = pixmap.toImage();
-#endif
 
     // convert into OpenGL format - flipping around the Y axis and swizzling the pixels
     image = QGLWidget::convertToGLFormat(image);
@@ -668,4 +650,5 @@ namespace OpenFrames
     return _adapter->sendKeyEvent(key, keyDown);
   }
 
-}
+} // !namespace OpenFrames
+
