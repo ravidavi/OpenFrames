@@ -948,14 +948,9 @@ namespace OpenFrames
     // First let OSG configure affinity
     _viewer->configureAffinity();
     
-    // Next override the main rendering thread's affinity so it doesn't
-    // suck up time on Proc0. Generally we want to place the thread on
-    // an even-numbered cpu (in case of hyperthreading)
-    unsigned int numProcessors = OpenThreads::GetNumberOfProcessors();
-    unsigned int cpuNumber = 0; // Default for 1 processor
-    if(numProcessors == 2) cpuNumber = 1; // Only 2 processors
-    else if(numProcessors > 2) cpuNumber = numProcessors - 2; // Use last cpu
-    _viewer->setProcessorAffinity(cpuNumber);
+    // Next override this rendering thread's affinity so it doesn't
+    // suck up time on Proc0
+    _viewer->setProcessorAffinity(OpenThreads::Affinity());
     
     // Finally set threading model
     _viewer->setUseConfigureAffinity(false); // Already called configureAffinity
