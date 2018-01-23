@@ -51,6 +51,35 @@ namespace OpenFrames
     void setRadius( const double &radius );
     double getRadius() const;
     
+    /** Set/get the position of the sphere wrt the local frame. */
+    void setSpherePosition( const double &x, const double &y, const double &z );
+    
+    void setSpherePosition( const osg::Vec3d &pos )
+    { _sphereXform->setPosition(pos); }
+    
+    void getSpherePosition( double &x, double &y, double &z ) const
+    { _sphereXform->getPosition(x, y, z); }
+    
+    void getSpherePosition( osg::Vec3d &pos ) const
+    { _sphereXform->getPosition(pos); }
+    
+    /** Set/get the attitude of the sphere wrt the local frame. 
+        Useful for reorienting textures. */
+    void setSphereAttitude( const osg::Quat &att )
+    { _sphereXform->setAttitude(att); }
+    
+    void getSphereAttitude( osg::Quat &att ) const
+    { _sphereXform->getAttitude(att); }
+    
+    /** Set/get the scale of the sphere wrt the pivot point. 
+        Useful for turning a sphere into an ellipsoid. */
+    void setSphereScale( const double &sx, const double &sy, const double &sz);
+    
+    void getSphereScale( double &sx, double &sy, double &sz ) const
+    {
+      _sphereXform->getScale(sx, sy, sz);
+    }
+    
     /** Set the filename of the texture to map onto the sphere. Consult the
      osg documentation to see which image filetypes are supported. */
     bool setTextureMap( const std::string &fname, unsigned int unit = 0, bool force_reload = false );
@@ -84,6 +113,11 @@ namespace OpenFrames
     
   protected:
     virtual ~Sphere();
+    
+    void repositionAxes();
+    
+    /** Transform that applies only to the sphere itself */
+    osg::ref_ptr<FrameTransform> _sphereXform;
     
     osg::ref_ptr<osg::Geode> _geode; // Node containing the sphere
     osg::ref_ptr<osg::ShapeDrawable> _sphereSD; // The actual sphere

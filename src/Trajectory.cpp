@@ -182,11 +182,12 @@ bool Trajectory::addPosition( const DataType &x, const DataType &y,
 	if(_safeReadWrite) _readWriteMutex.writeLock();
 
 	  // Add the position and create dummy optionals to go with it
- 	_posopt.push_back(x);
-	_posopt.push_back(y);
-	if(_dof == 3) _posopt.push_back(z);
-	if(_nopt > 0) _posopt.insert(_posopt.end(), _nopt*_dof, 0.0);
-	++_numPos;
+  unsigned int loc = _posopt.size();
+  _posopt.insert(_posopt.end(), _base, 0.0);
+  _posopt[loc] = x;
+  _posopt[++loc] = y;
+  if(_dof == 3) _posopt[++loc] = z;
+  ++_numPos;
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
@@ -203,9 +204,9 @@ bool Trajectory::addPosition( const DataType* const pos )
 	if(_safeReadWrite) _readWriteMutex.writeLock();
 
 	  // Add the position and create dummy optionals to go with it
-	_posopt.insert(_posopt.end(), _dof, 0);
-	std::memcpy(&_posopt[_posopt.size()-_dof], pos, _dof*sizeof(DataType));
-	if(_nopt > 0) _posopt.insert(_posopt.end(), _nopt*_dof, 0);
+  unsigned int loc = _posopt.size();
+	_posopt.insert(_posopt.end(), _base, 0.0);
+	std::memcpy(&_posopt[loc], pos, _dof*sizeof(DataType));
 	++_numPos;
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
@@ -251,10 +252,12 @@ bool Trajectory::addAttitude( const DataType &x, const DataType &y,
 	if(_safeReadWrite) _readWriteMutex.writeLock();
 
 	  // Add the attitude
-	_att.push_back(x);
-	_att.push_back(y);
-	_att.push_back(z);
-	_att.push_back(w);
+  unsigned int loc = _att.size();
+  _att.insert(_att.end(), 4, 0.0);
+  _att[loc] = x;
+  _att[++loc] = y;
+  _att[++loc] = z;
+  _att[++loc] = w;
 	++_numAtt;
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
@@ -275,7 +278,7 @@ bool Trajectory::addAttitude( const DataType* const att )
 	if(_safeReadWrite) _readWriteMutex.writeLock();
 
 	  // Add the attitude
-	_att.insert(_att.end(), 4, 0);
+	_att.insert(_att.end(), 4, 0.0);
 	std::memcpy(&_att[_att.size()-4], att, sizeof(DataType) << 2);
 	++_numAtt;
 
@@ -310,8 +313,8 @@ bool Trajectory::setOptional( unsigned int index, const DataType &x,
 	  // Add the optional 
 	index = _posopt.size() - _dof*(_nopt - index);
 	_posopt[index] = x;
-	_posopt[index+1] = y;
-	if(_dof == 3) _posopt[index+2] = z;
+	_posopt[++index] = y;
+	if(_dof == 3) _posopt[++index] = z;
 
 	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
