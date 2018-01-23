@@ -26,17 +26,25 @@ namespace OpenFrames {
 Trajectory::Trajectory(unsigned int dof, unsigned int nopt )
 {
   _autoInformSubscribers = true;
-	_safeReadWrite = true;
 
 	if(dof == 0) dof = 1;
 	setDOF(dof);
 	setNumOptionals(nopt);
+  
+  reserveMemory(1024);
 }
 
 Trajectory::~Trajectory()
 {
   _autoInformSubscribers = true;
 	clear();
+}
+  
+void Trajectory::reserveMemory(unsigned int numPoints, bool usePos, bool useAtt)
+{
+  _time.reserve(numPoints);                    // 1 element per time
+  if(usePos) _posopt.reserve(_base*numPoints); // _base elements per position
+  if(useAtt) _att.reserve(4*numPoints);        // 4 elements per attitude
 }
 
 void Trajectory::setNumOptionals(unsigned int nopt)
@@ -164,9 +172,13 @@ int Trajectory::getTimeIndex(const DataType &t, int &index) const
 
 bool Trajectory::addTime( const DataType &t )
 {
-	if(_safeReadWrite) _readWriteMutex.writeLock();
+  // If time size is at capacity, then adding one more point
+  // will resize and reallocate its memory. To prevent readers
+  // from potentially accessing old memory, lock the mutex.
+  const bool shouldLock = (_time.size() == _time.capacity());
+  if(shouldLock) _readWriteMutex.writeLock();
 	_time.push_back(t); // Add the time
-	if(_safeReadWrite) _readWriteMutex.writeUnlock();
+  if(shouldLock) _readWriteMutex.writeUnlock();
 
   if(_autoInformSubscribers) informSubscribers();
 
@@ -177,19 +189,23 @@ bool Trajectory::addPosition( const DataType &x, const DataType &y,
 				const DataType z )
 {
 	  // Make sure we are not adding too many positions
-	if(_posopt.size() == _time.size()*_base) return false;
-
-	if(_safeReadWrite) _readWriteMutex.writeLock();
+  unsigned int loc = _posopt.size();
+	if(loc == _time.size()*_base) return false;
+  
+  // If posopt size is at capacity, then adding one more point
+  // will resize and reallocate its memory. To prevent readers
+  // from potentially accessing old memory, lock the mutex.
+  const bool shouldLock = (loc == _time.capacity());
+  if(shouldLock) _readWriteMutex.writeLock();
 
 	  // Add the position and create dummy optionals to go with it
-  unsigned int loc = _posopt.size();
   _posopt.insert(_posopt.end(), _base, 0.0);
   _posopt[loc] = x;
   _posopt[++loc] = y;
   if(_dof == 3) _posopt[++loc] = z;
   ++_numPos;
-
-	if(_safeReadWrite) _readWriteMutex.writeUnlock();
+  
+  if(shouldLock) _readWriteMutex.writeUnlock();
 
   if(_autoInformSubscribers) informSubscribers();
 
@@ -199,17 +215,21 @@ bool Trajectory::addPosition( const DataType &x, const DataType &y,
 bool Trajectory::addPosition( const DataType* const pos )
 {
 	  // Make sure we are not adding too many positions
-	if(_posopt.size() == _time.size()*_base) return false;
-
-	if(_safeReadWrite) _readWriteMutex.writeLock();
-
-	  // Add the position and create dummy optionals to go with it
   unsigned int loc = _posopt.size();
+	if(loc == _time.size()*_base) return false;
+
+  // If posopt size is at capacity, then adding one more point
+  // will resize and reallocate its memory. To prevent readers
+  // from potentially accessing old memory, lock the mutex.
+  const bool shouldLock = (loc == _time.capacity());
+  if(shouldLock) _readWriteMutex.writeLock();
+  
+	  // Add the position and create dummy optionals to go with it
 	_posopt.insert(_posopt.end(), _base, 0.0);
 	std::memcpy(&_posopt[loc], pos, _dof*sizeof(DataType));
 	++_numPos;
 
-	if(_safeReadWrite) _readWriteMutex.writeUnlock();
+  if(shouldLock) _readWriteMutex.writeUnlock();
 
   if(_autoInformSubscribers) informSubscribers();
 
@@ -247,12 +267,16 @@ bool Trajectory::addAttitude( const DataType &x, const DataType &y,
 	  // There is a max of 1 attitude for each time, and each attitude
 	  // consists of 4 elements (a quaternion).
 	  // Make sure we are not adding too many attitudes
-	if(_att.size() == (_time.size() << 2)) return false;
-
-	if(_safeReadWrite) _readWriteMutex.writeLock();
-
-	  // Add the attitude
   unsigned int loc = _att.size();
+	if(loc == (4*_time.size())) return false;
+
+  // If att size is at capacity, then adding one more point
+  // will resize and reallocate its memory. To prevent readers
+  // from potentially accessing old memory, lock the mutex.
+  const bool shouldLock = (loc == _att.capacity());
+  if(shouldLock) _readWriteMutex.writeLock();
+  
+	  // Add the attitude
   _att.insert(_att.end(), 4, 0.0);
   _att[loc] = x;
   _att[++loc] = y;
@@ -260,7 +284,7 @@ bool Trajectory::addAttitude( const DataType &x, const DataType &y,
   _att[++loc] = w;
 	++_numAtt;
 
-	if(_safeReadWrite) _readWriteMutex.writeUnlock();
+  if(shouldLock) _readWriteMutex.writeUnlock();
 
   if(_autoInformSubscribers) informSubscribers();
 
@@ -273,16 +297,21 @@ bool Trajectory::addAttitude( const DataType* const att )
 	  // There is a max of 1 attitude for each time, and each attitude
 	  // consists of 4 elements (a quaternion).
 	  // Make sure we are not adding too many attitudes
-	if(_att.size() == (_time.size() << 2)) return false;
+  unsigned int loc = _att.size();
+	if(loc == (4*_time.size())) return false;
 
-	if(_safeReadWrite) _readWriteMutex.writeLock();
-
+  // If att size is at capacity, then adding one more point
+  // will resize and reallocate its memory. To prevent readers
+  // from potentially accessing old memory, lock the mutex.
+  const bool shouldLock = (loc == _att.capacity());
+  if(shouldLock) _readWriteMutex.writeLock();
+  
 	  // Add the attitude
 	_att.insert(_att.end(), 4, 0.0);
-	std::memcpy(&_att[_att.size()-4], att, sizeof(DataType) << 2);
+	std::memcpy(&_att[_att.size()-4], att, 4*sizeof(DataType));
 	++_numAtt;
 
-	if(_safeReadWrite) _readWriteMutex.writeUnlock();
+	if(shouldLock) _readWriteMutex.writeUnlock();
 
   if(_autoInformSubscribers) informSubscribers();
 
@@ -293,7 +322,7 @@ bool Trajectory::getAttitude( unsigned int n, DataType &x, DataType &y, DataType
 {
 	if(n >= _numAtt) return false;
 
-	unsigned int index = n << 2; // 4 elements per attitude (quaternion)
+	unsigned int index = 4*n; // 4 elements per attitude (quaternion)
 	x = _att[index];
 	y = _att[++index];
 	z = _att[++index];
@@ -308,15 +337,11 @@ bool Trajectory::setOptional( unsigned int index, const DataType &x,
 	  // at least one position/optional group has already been added.
 	if(index >= _nopt || _posopt.empty()) return false;
 
-	if(_safeReadWrite) _readWriteMutex.writeLock();
-
 	  // Add the optional 
 	index = _posopt.size() - _dof*(_nopt - index);
 	_posopt[index] = x;
 	_posopt[++index] = y;
 	if(_dof == 3) _posopt[++index] = z;
-
-	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
   if(_autoInformSubscribers) informSubscribers();
 
@@ -330,13 +355,9 @@ bool Trajectory::setOptional( unsigned int index,
 	  // at least one position/optional group has already been added.
 	if(index >= _nopt || _posopt.empty()) return false;
 
-	if(_safeReadWrite) _readWriteMutex.writeLock();
-
 	  // Add the optional 
 	index = _posopt.size() - _dof*(_nopt - index);
 	std::memcpy(&_posopt[index], opt, _dof*sizeof(DataType));
-
-	if(_safeReadWrite) _readWriteMutex.writeUnlock();
 
   if(_autoInformSubscribers) informSubscribers();
 
@@ -370,14 +391,14 @@ bool Trajectory::getOptional( unsigned int n, unsigned int index,
 
 void Trajectory::clear()
 {
-	if(_safeReadWrite) _readWriteMutex.writeLock();
+	_readWriteMutex.writeLock();
 
 	_time.clear();
 	_posopt.clear();
 	_att.clear();
 	_numPos = _numAtt = 0;
 
-	if(_safeReadWrite) _readWriteMutex.writeUnlock();
+	_readWriteMutex.writeUnlock();
 
 	  // Inform subscribers
   if(_autoInformSubscribers) informSubscribers();
@@ -399,7 +420,7 @@ void Trajectory::getPoint(unsigned int i, const DataSource source[], DataType va
 	      break;
 
 	    case ATTITUDE:
-	      val[j] = source[j]._scale * _att[(i<<2) + source[j]._element];
+	      val[j] = source[j]._scale * _att[(4*i) + source[j]._element];
 	      break;
 
 	    case TIME:

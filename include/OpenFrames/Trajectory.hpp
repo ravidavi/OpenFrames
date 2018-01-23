@@ -83,6 +83,13 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	/** Initialize with degrees of freedom, an id, and how many 
 	    optionals are at each point of the trajectory. */
 	Trajectory(unsigned int dof = 3, unsigned int nopt = 0 );
+  
+  /** Reserve enough memory for specified number of points. This helps
+   avoid unnecessary memory reallocations while adding points.
+   NOTE: Regardless of this setting, any number of points can be added
+   to a Trajectory. Properly reserving based on estimated upper-bound
+   number of points helps in memory management, but is not required. */
+  void reserveMemory(unsigned int numPoints, bool usePos = true, bool useAtt = true);
 
 	/** Get lists. */
 	inline const DataArray& getTimeList() const { return _time; }
@@ -224,7 +231,6 @@ class OF_EXPORT Trajectory : public osg::Referenced
 
 	// Synchronization variables
 	mutable OpenThreads::ReadWriteMutex _readWriteMutex;
-	bool _safeReadWrite;
 };
 
 /************************************
