@@ -175,9 +175,9 @@ bool Trajectory::addTime( const DataType &t )
   // If time size is at capacity, then adding one more point
   // will resize and reallocate its memory. To prevent readers
   // from potentially accessing old memory, lock the mutex.
-  const bool shouldLock = (_time.size()+1 > _time.capacity());
+  const bool shouldLock = (_time.size() == _time.capacity());
   if(shouldLock) _readWriteMutex.writeLock();
-	_time.push_back(t); // Add the time
+	_time.emplace_back(t); // Add the time
   if(shouldLock) _readWriteMutex.writeUnlock();
 
   if(_autoInformSubscribers) informSubscribers();
@@ -199,7 +199,7 @@ bool Trajectory::addPosition( const DataType &x, const DataType &y,
   if(shouldLock) _readWriteMutex.writeLock();
 
 	  // Add the position and create dummy optionals to go with it
-  _posopt.insert(_posopt.end(), _base, 0.0);
+  _posopt.resize(loc + _base);
   _posopt[loc] = x;
   _posopt[++loc] = y;
   if(_dof == 3) _posopt[++loc] = z;
@@ -225,7 +225,7 @@ bool Trajectory::addPosition( const DataType* const pos )
   if(shouldLock) _readWriteMutex.writeLock();
   
 	  // Add the position and create dummy optionals to go with it
-	_posopt.insert(_posopt.end(), _base, 0.0);
+	_posopt.resize(loc + _base);
 	std::memcpy(&_posopt[loc], pos, _dof*sizeof(DataType));
 	++_numPos;
 
@@ -277,7 +277,7 @@ bool Trajectory::addAttitude( const DataType &x, const DataType &y,
   if(shouldLock) _readWriteMutex.writeLock();
   
 	  // Add the attitude
-  _att.insert(_att.end(), 4, 0.0);
+  _att.resize(loc + 4);
   _att[loc] = x;
   _att[++loc] = y;
   _att[++loc] = z;
@@ -307,7 +307,7 @@ bool Trajectory::addAttitude( const DataType* const att )
   if(shouldLock) _readWriteMutex.writeLock();
   
 	  // Add the attitude
-	_att.insert(_att.end(), 4, 0.0);
+	_att.resize(loc + 4);
 	std::memcpy(&_att[_att.size()-4], att, 4*sizeof(DataType));
 	++_numAtt;
 
@@ -481,7 +481,7 @@ void Trajectory::addSubscriber(TrajectorySubscriber* subscriber) const
 {
   // Make sure the subscriber is not already registered
   if(std::find(_subscribers.begin(), _subscribers.end(), subscriber) == _subscribers.end())
-    _subscribers.push_back(subscriber);
+    _subscribers.emplace_back(subscriber);
 }
 
 void Trajectory::removeSubscriber(TrajectorySubscriber* subscriber) const
