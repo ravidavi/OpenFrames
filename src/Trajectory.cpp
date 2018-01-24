@@ -175,7 +175,7 @@ bool Trajectory::addTime( const DataType &t )
   // If time size is at capacity, then adding one more point
   // will resize and reallocate its memory. To prevent readers
   // from potentially accessing old memory, lock the mutex.
-  const bool shouldLock = (_time.size() == _time.capacity());
+  const bool shouldLock = (_time.size()+1 > _time.capacity());
   if(shouldLock) _readWriteMutex.writeLock();
 	_time.push_back(t); // Add the time
   if(shouldLock) _readWriteMutex.writeUnlock();
@@ -195,7 +195,7 @@ bool Trajectory::addPosition( const DataType &x, const DataType &y,
   // If posopt size is at capacity, then adding one more point
   // will resize and reallocate its memory. To prevent readers
   // from potentially accessing old memory, lock the mutex.
-  const bool shouldLock = (loc == _time.capacity());
+  const bool shouldLock = (loc+_base > _posopt.capacity());
   if(shouldLock) _readWriteMutex.writeLock();
 
 	  // Add the position and create dummy optionals to go with it
@@ -221,7 +221,7 @@ bool Trajectory::addPosition( const DataType* const pos )
   // If posopt size is at capacity, then adding one more point
   // will resize and reallocate its memory. To prevent readers
   // from potentially accessing old memory, lock the mutex.
-  const bool shouldLock = (loc == _time.capacity());
+  const bool shouldLock = (loc+_base > _posopt.capacity());
   if(shouldLock) _readWriteMutex.writeLock();
   
 	  // Add the position and create dummy optionals to go with it
@@ -273,7 +273,7 @@ bool Trajectory::addAttitude( const DataType &x, const DataType &y,
   // If att size is at capacity, then adding one more point
   // will resize and reallocate its memory. To prevent readers
   // from potentially accessing old memory, lock the mutex.
-  const bool shouldLock = (loc == _att.capacity());
+  const bool shouldLock = (loc+4 > _att.capacity());
   if(shouldLock) _readWriteMutex.writeLock();
   
 	  // Add the attitude
@@ -303,7 +303,7 @@ bool Trajectory::addAttitude( const DataType* const att )
   // If att size is at capacity, then adding one more point
   // will resize and reallocate its memory. To prevent readers
   // from potentially accessing old memory, lock the mutex.
-  const bool shouldLock = (loc == _att.capacity());
+  const bool shouldLock = (loc+4 > _att.capacity());
   if(shouldLock) _readWriteMutex.writeLock();
   
 	  // Add the attitude
@@ -391,6 +391,7 @@ bool Trajectory::getOptional( unsigned int n, unsigned int index,
 
 void Trajectory::clear()
 {
+  // Always lock when clearing data
 	_readWriteMutex.writeLock();
 
 	_time.clear();
