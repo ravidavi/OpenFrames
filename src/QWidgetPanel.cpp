@@ -28,6 +28,7 @@
 #include <osgViewer/ViewerEventHandlers>
 
 #include <iostream>
+#include <algorithm>
 
 namespace OpenFrames
 {
@@ -158,10 +159,12 @@ namespace OpenFrames
       osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(stateset->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
 
       // Disable context menus when embedding. They can popup outside the scene graph.
-      widget->setContextMenuPolicy(Qt::NoContextMenu);
+      if (widget->contextMenuPolicy() == Qt::DefaultContextMenu)
+        widget->setContextMenuPolicy(Qt::NoContextMenu);
       QList<QWidget*> children = widget->findChildren<QWidget*>();
       for(QList<QWidget*>::iterator child = children.begin(); child < children.end(); child++)
       {
+        if ((*child)->contextMenuPolicy() == Qt::DefaultContextMenu)
         (*child)->setContextMenuPolicy(Qt::NoContextMenu);
       }
 
@@ -173,6 +176,7 @@ namespace OpenFrames
       const osg::Vec4 &color = getColor();
       _image->getQGraphicsViewAdapter()->setBackgroundColor(QColor(255.0f*color[0], 255.0f*color[1], 255.0f*color[2], 255.0f*color[3]));
       _rescaleWidget();
+      _image->getQGraphicsViewAdapter()->setIgnoredWidgets(_ignoredWidgets);
 
       // Create texture using image, and make sure it wraps around the
       // box without a seam at the edges.
@@ -209,11 +213,27 @@ namespace OpenFrames
     }
   }
 
-  void QWidgetPanel::setBackgroundWidget( QWidget *widget )
+  void QWidgetPanel::setIgnoreWidget( QWidget *widget, bool ignore )
   {
-    if (_image.valid())
+    auto widgetIteratorInList = std::find(_ignoredWidgets.begin(), _ignoredWidgets.end(), widget);
+    bool notInList = ( widgetIteratorInList ==  _ignoredWidgets.end() );
+    if (ignore)
     {
-      _image->getQGraphicsViewAdapter()->setBackgroundWidget(widget);
+      if (notInList)
+      {
+        _ignoredWidgets.push_back(widget);
+        if (_image.valid())
+          _image->getQGraphicsViewAdapter()->setIgnoredWidgets(_ignoredWidgets);
+      }
+    }
+    else
+    {
+      if (!notInList)
+      {
+        _ignoredWidgets.erase(widgetIteratorInList);
+        if (_image.valid())
+          _image->getQGraphicsViewAdapter()->setIgnoredWidgets(_ignoredWidgets);
+      }
     }
   }
 

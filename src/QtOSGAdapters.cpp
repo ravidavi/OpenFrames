@@ -71,7 +71,7 @@ namespace OpenFrames
 
   QGraphicsViewAdapter::QGraphicsViewAdapter(osg::Image* image, QWidget* widget) :
     _image(image),
-    _backgroundWidget(0),
+    _ignoredWidgets(),
     _previousButtonMask(0),
     _previousMouseX(-1),
     _previousMouseY(-1),
@@ -331,10 +331,13 @@ namespace OpenFrames
     OSG_INFO << "Get " << (targetWidget ? targetWidget->metaObject()->className() : std::string("NULL"))
       << " at global pos " << x << ", " << y << std::endl;
 
-    if (_backgroundWidget && _backgroundWidget == targetWidget)
+    for (auto widget = _ignoredWidgets.begin(); widget < _ignoredWidgets.end(); widget++)
     {
-      // Mouse is at background widget, so ignore such events
-      return false;
+      if (*widget == targetWidget)
+      {
+        // Mouse is at background widget, so ignore such events
+        return false;
+      }
     }
 
     if (targetWidget != NULL || (_previousSentEvent && buttonMask != 0))
@@ -432,10 +435,13 @@ namespace OpenFrames
   {
     QPoint pos(_previousQtMouseX, _previousQtMouseY);
     QWidget* targetWidget = getWidgetAt(pos);
-    if (_backgroundWidget && _backgroundWidget == targetWidget)
+    for (auto widget = _ignoredWidgets.begin(); widget < _ignoredWidgets.end(); widget++)
     {
-      // Mouse is at background widget, so ignore such events
-      return false;
+      if (*widget == targetWidget)
+       {
+         // Mouse is at background widget, so ignore such events
+         return false;
+       }
     }
 
     if (targetWidget != NULL)

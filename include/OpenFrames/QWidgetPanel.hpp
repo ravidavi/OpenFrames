@@ -62,8 +62,8 @@ namespace OpenFrames
       /** Set the QWidget containing controls for the control box */
       bool setWidget( QWidget *widget );
 
-      /** Sets a background widget that will not be passed keyboard and mouse events */
-      void setBackgroundWidget( QWidget *widget );
+      /** Sets whether a widget will ignore keyboard and mouse events */
+      void setIgnoreWidget( QWidget *widget, bool ignore );
 
       /** Inherited from ReferenceFrame.
         Set the color of the box.  If a texture is applied, the color is
@@ -87,6 +87,7 @@ namespace OpenFrames
       static const double DEFAULT_PIXELS_PER_UNIT;
 
       double _pixelsPerUnit;
+      std::vector<QWidget *> _ignoredWidgets;
 
       void _init();
       void _rescaleWidget();

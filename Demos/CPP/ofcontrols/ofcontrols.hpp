@@ -59,11 +59,13 @@ public:
 
 public slots:
   /// Slot for toggling visibility
-  void toggleSphere(bool checked = false);
+  void toggleSphere();
+  /// Slot for toggling visibility
+  void setSphere(bool checked);
   /// Slot for toggling color
   void setColor(QListWidgetItem *item);
   /// Slot for toggling hidden panel
-  void toggleHiddenPanel(bool checked = false);
+  void setHiddenPanel(bool checked = false);
   /// Slot for moving the sphere based on slider output
   void setXLocation(int position);
   /// Slot for moving the sphere based on slider output
@@ -78,7 +80,7 @@ private:
   static const char *DEFAULT_SPHERE_COLOR;
 
   QPushButton *_toggleButton;
-  QCheckBox *_checkBox;
+  QCheckBox *_showCheckBox;
   QListWidget *_list;
 
   osg::ref_ptr<OpenFrames::WindowProxy> _windowProxy;

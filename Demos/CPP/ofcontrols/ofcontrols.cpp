@@ -81,45 +81,7 @@ OFControls::OFControls()
   _root->showAxes(0U);
   _root->showAxesLabels(0U);
 
-  OpenFrames::QWidgetPanel *panel1 = new OpenFrames::QWidgetPanel("panel");
-  panel1->setColor(bgColor);
-  panel1->setHalfLengths(1.5, 1.2, 0.1);
-  panel1->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
-  panel1->setPosition(0.0, 0.0, -1.0);
-  panel1->showAxes(0U);
-  panel1->showAxesLabels(0U);
-  panel1->setPixelsPerUnit(100.0);
-  _root->addChild(panel1);
-
-  OpenFrames::QWidgetPanel *panel2 = new OpenFrames::QWidgetPanel("panel");
-  panel2->setColor(bgColor);
-  panel2->setHalfLengths(1.5, 1.2, 0.1);
-  panel2->setPosition(3.1, 0.0, -1.0);
-  panel2->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
-  panel2->showAxes(0U);
-  panel2->showAxesLabels(0U);
-  panel2->setPixelsPerUnit(50.0);
-  _root->addChild(panel2);
-
-  OpenFrames::QWidgetPanel *panel3 = new OpenFrames::QWidgetPanel("panel");
-  panel3->setColor(bgColor);
-  panel3->setHalfLengths(1.5, 1.2, 0.1);
-  panel3->setPosition(-3.1, 0.0, -1.0);
-  panel3->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
-  panel3->showAxes(0U);
-  panel3->showAxesLabels(0U);
-  panel3->setPixelsPerUnit(90.0);
-  _root->addChild(panel3);
-
-  _hiddenPanel = new OpenFrames::QWidgetPanel("panel");
-  _hiddenPanel->setColor(bgColor);
-  _hiddenPanel->setHalfLengths(1.5, 1.2, 0.1);
-  _hiddenPanel->setPosition(3.1, 0.0, 1.5);
-  _hiddenPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
-  _hiddenPanel->showAxes(0U);
-  _hiddenPanel->showAxesLabels(0U);
-  _hiddenPanel->setPixelsPerUnit(50.0);
-
+  // The sphere that will be manipulated by Qt controls
   _sphere = new OpenFrames::Sphere("sphere");
   _sphere->setPosition(-1.55, 0.0, 1.0);
   _sphere->setColor(COLORS.at(DEFAULT_SPHERE_COLOR));
@@ -129,9 +91,52 @@ OFControls::OFControls()
   _sphere->setRadius(1.0);
   _root->addChild(_sphere);
 
+  // Panel that will hold a text editor
+  OpenFrames::QWidgetPanel *editorPanel = new OpenFrames::QWidgetPanel("panel");
+  editorPanel->setColor(bgColor);
+  editorPanel->setHalfLengths(1.5, 1.2, 0.1);
+  editorPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
+  editorPanel->setPosition(0.0, 0.0, -1.0);
+  editorPanel->showAxes(0U);
+  editorPanel->showAxesLabels(0U);
+  editorPanel->setPixelsPerUnit(100.0);
+  _root->addChild(editorPanel);
+
+  // Panel that will hold checkboxes with sphere options
+  OpenFrames::QWidgetPanel *sphereOptionsPanel = new OpenFrames::QWidgetPanel("panel");
+  sphereOptionsPanel->setColor(bgColor);
+  sphereOptionsPanel->setHalfLengths(1.5, 1.2, 0.1);
+  sphereOptionsPanel->setPosition(3.1, 0.0, -1.0);
+  sphereOptionsPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
+  sphereOptionsPanel->showAxes(0U);
+  sphereOptionsPanel->showAxesLabels(0U);
+  sphereOptionsPanel->setPixelsPerUnit(50.0);
+  _root->addChild(sphereOptionsPanel);
+
+  // Panel that will hold a list of colors
+  OpenFrames::QWidgetPanel *colorPanel = new OpenFrames::QWidgetPanel("panel");
+  colorPanel->setColor(bgColor);
+  colorPanel->setHalfLengths(1.5, 1.2, 0.1);
+  colorPanel->setPosition(-3.1, 0.0, -1.0);
+  colorPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
+  colorPanel->showAxes(0U);
+  colorPanel->showAxesLabels(0U);
+  colorPanel->setPixelsPerUnit(90.0);
+  _root->addChild(colorPanel);
+
+  // Hidden panel that will hold sliders to move the sphere
+  _hiddenPanel = new OpenFrames::QWidgetPanel("panel");
+  _hiddenPanel->setColor(bgColor);
+  _hiddenPanel->setHalfLengths(1.5, 1.2, 0.1);
+  _hiddenPanel->setPosition(3.1, 0.0, 1.5);
+  _hiddenPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
+  _hiddenPanel->showAxes(0U);
+  _hiddenPanel->showAxesLabels(0U);
+  _hiddenPanel->setPixelsPerUnit(50.0);
+
   // Create the example controls widget
-  QWidget *widget1 = new QWidget;
-  widget1->setLayout(new QVBoxLayout);
+  QWidget *editorParentWidget = new QWidget;
+  editorParentWidget->setLayout(new QVBoxLayout);
   QString text(LOREM_IPSUM_DOLOR);
   QTextEdit *textEdit = new QTextEdit(text);
   textEdit->setReadOnly(false);
@@ -139,22 +144,22 @@ OFControls::OFControls()
   palette.setColor(QPalette::Highlight, Qt::darkBlue);
   palette.setColor(QPalette::HighlightedText, Qt::white);
   textEdit->setPalette(palette);
-  widget1->layout()->addWidget(textEdit);
+  editorParentWidget->layout()->addWidget(textEdit);
   _toggleButton = new QPushButton("Hide Sphere");
-  widget1->layout()->addWidget(_toggleButton);
-  panel1->setWidget(widget1);
-  panel1->setBackgroundWidget(widget1);
+  editorParentWidget->layout()->addWidget(_toggleButton);
+  editorPanel->setWidget(editorParentWidget);
+  editorPanel->setIgnoreWidget(editorParentWidget, true);
 
   // Create the example controls widget
-  QWidget *widget2 = new QWidget;
-  widget2->setLayout(new QVBoxLayout);
-  _checkBox = new QCheckBox("Show sphere");
-  _checkBox->setChecked(true);
-  QCheckBox *moveSphereBox = new QCheckBox("Move sphere");
-  widget2->layout()->addWidget(_checkBox);
-  widget2->layout()->addWidget(moveSphereBox);
-  panel2->setWidget(widget2);
-  panel2->setBackgroundWidget(widget2);
+  QWidget *sphereOptionsWidget = new QWidget;
+  sphereOptionsWidget->setLayout(new QVBoxLayout);
+  _showCheckBox = new QCheckBox("Show sphere");
+  _showCheckBox->setChecked(true);
+  QCheckBox *moveSphereCheckBox = new QCheckBox("Move sphere");
+  sphereOptionsWidget->layout()->addWidget(_showCheckBox);
+  sphereOptionsWidget->layout()->addWidget(moveSphereCheckBox);
+  sphereOptionsPanel->setWidget(sphereOptionsWidget);
+  sphereOptionsPanel->setIgnoreWidget(sphereOptionsWidget, true);
 
   // Create the example list view
   _list = new QListWidget();
@@ -177,32 +182,32 @@ OFControls::OFControls()
   {
     _list->setCurrentItem(matchingItems[0]);
   }
-  panel3->setWidget(_list);
+  colorPanel->setWidget(_list);
 
   // Create the example controls widget
-  QWidget *widget = new QWidget;
-  widget->setLayout(new QVBoxLayout);
+  QWidget *moveSphereWidget = new QWidget;
+  moveSphereWidget->setLayout(new QVBoxLayout);
   QSlider *xSlider = new QSlider(Qt::Horizontal);
   xSlider->setRange(-20, 20);
   QSlider *ySlider = new QSlider(Qt::Horizontal);
   ySlider->setRange(-20, 20);
   QSlider *zSlider = new QSlider(Qt::Horizontal);
   zSlider->setRange(0, 20);
-  widget->layout()->addWidget(xSlider);
-  widget->layout()->addWidget(ySlider);
-  widget->layout()->addWidget(zSlider);
-  _hiddenPanel->setWidget(widget);
-  _hiddenPanel->setBackgroundWidget(widget);
+  moveSphereWidget->layout()->addWidget(xSlider);
+  moveSphereWidget->layout()->addWidget(ySlider);
+  moveSphereWidget->layout()->addWidget(zSlider);
+  _hiddenPanel->setWidget(moveSphereWidget);
+  _hiddenPanel->setIgnoreWidget(moveSphereWidget, true);
 
   // Connect QObject signals to our slots
-  connect(moveSphereBox, &QCheckBox::clicked, this, &OFControls::toggleHiddenPanel);
-  connect(_toggleButton, &QPushButton::clicked, this, &OFControls::toggleSphere);
-  connect(_checkBox, &QCheckBox::clicked, this, &OFControls::toggleSphere);
-  connect(_list, &QListWidget::itemActivated, this, &OFControls::setColor);
-  connect(_list, &QListWidget::itemClicked, this, &OFControls::setColor);
-  connect(xSlider, &QSlider::valueChanged, this, &OFControls::setXLocation);
-  connect(ySlider, &QSlider::valueChanged, this, &OFControls::setYLocation);
-  connect(zSlider, &QSlider::valueChanged, this, &OFControls::setZLocation);
+  QObject::connect(moveSphereCheckBox, &QCheckBox::clicked, this, &OFControls::setHiddenPanel);
+  QObject::connect(_toggleButton, &QPushButton::clicked, this, &OFControls::toggleSphere);
+  QObject::connect(_showCheckBox, &QCheckBox::clicked, this, &OFControls::setSphere);
+  QObject::connect(_list, &QListWidget::itemActivated, this, &OFControls::setColor);
+  QObject::connect(_list, &QListWidget::itemClicked, this, &OFControls::setColor);
+  QObject::connect(xSlider, &QSlider::valueChanged, this, &OFControls::setXLocation);
+  QObject::connect(ySlider, &QSlider::valueChanged, this, &OFControls::setYLocation);
+  QObject::connect(zSlider, &QSlider::valueChanged, this, &OFControls::setZLocation);
 
   // Setup WindowProxy frame and views
   OpenFrames::FrameManager *frameManager = new OpenFrames::FrameManager();
@@ -236,18 +241,28 @@ int OFControls::main(int argc, char **argv)
   return 0;
 }
 
-void OFControls::toggleSphere(bool checked)
+void OFControls::toggleSphere()
 {
   _windowProxy->getGridPosition(0U, 0U)->getFrameManager()->lock();
   if (_root->getChildIndex(_sphere) >= 0)
+    setSphere(false);
+  else
+    setSphere(true);
+  _windowProxy->getGridPosition(0U, 0U)->getFrameManager()->unlock();
+}
+
+void OFControls::setSphere(bool checked)
+{
+  _windowProxy->getGridPosition(0U, 0U)->getFrameManager()->lock();
+  if (!checked && _root->getChildIndex(_sphere) >= 0)
   {
-    _checkBox->setChecked(false);
+    _showCheckBox->setChecked(false);
     _toggleButton->setText("Show Sphere");
     _root->removeChild(_sphere);
   }
-  else
+  else if (checked && _root->getChildIndex(_sphere) < 0)
   {
-    _checkBox->setChecked(true);
+    _showCheckBox->setChecked(true);
     _toggleButton->setText("Hide Sphere");
     _root->addChild(_sphere);
   }
@@ -259,17 +274,13 @@ void OFControls::setColor(QListWidgetItem *item)
   _sphere->setColor(COLORS.at(item->text().toStdString()));
 }
 
-void OFControls::toggleHiddenPanel(bool checked)
+void OFControls::setHiddenPanel(bool checked)
 {
   _windowProxy->getGridPosition(0U, 0U)->getFrameManager()->lock();
-  if (_root->getChildIndex(_hiddenPanel) >= 0)
-  {
+  if (!checked && _root->getChildIndex(_hiddenPanel) >= 0)
     _root->removeChild(_hiddenPanel);
-  }
-  else
-  {
+  else if (checked && _root->getChildIndex(_hiddenPanel) < 0)
     _root->addChild(_hiddenPanel);
-  }
   _windowProxy->getGridPosition(0U, 0U)->getFrameManager()->unlock();
 }
 

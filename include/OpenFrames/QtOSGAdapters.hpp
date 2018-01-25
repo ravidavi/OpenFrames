@@ -61,8 +61,8 @@ namespace OpenFrames
 
       /// The 'background widget' will ignore mouse/keyboard events and let following handlers handle them
       /// It is mainly used for integrating scene graph and full-screen UIs
-      void setBackgroundWidget(QWidget* w) { _backgroundWidget = w; }
-      QWidget* getBackgroundWidget() { return _backgroundWidget; }
+      void setIgnoredWidgets(const std::vector<QWidget*> &w) { _ignoredWidgets = w; }
+      const std::vector<QWidget*> &getIgnoredWidgets() const { return _ignoredWidgets; }
 
       QGraphicsView* getQGraphicsView() { return _graphicsView.data(); }
       QGraphicsScene* getQGraphicsScene() { return _graphicsScene.data(); }
@@ -73,7 +73,7 @@ namespace OpenFrames
       QWidget* getWidgetAt(const QPoint& pos);
 
       osg::observer_ptr<osg::Image>   _image;
-      QWidget*                        _backgroundWidget;
+      std::vector<QWidget*>           _ignoredWidgets;
 
       int                             _previousButtonMask;
       int                             _previousMouseX;
