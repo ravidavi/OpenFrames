@@ -55,10 +55,6 @@ namespace OpenFrames
       void setHalfLengths( const double &xHalfLength, const double &yHalfLength, const double &zHalfLength );
       void getHalfLengths( double &xHalfLength, double &yHalfLength, double &zHalfLength ) const;
 
-      /** Set the pixels per unit for scaling the controls widget */
-      void setPixelsPerUnit( double pixelsPerUnit );
-      double getPixelsPerUnit();
-
       /** Set the QWidget containing controls for the control box */
       bool setWidget( QWidget *widget );
 
@@ -84,9 +80,8 @@ namespace OpenFrames
 
     private:
       static const double DEFAULT_LENGTH;
-      static const double DEFAULT_PIXELS_PER_UNIT;
+      static const double DEFAULT_PIXELS_PER_UNIT; // Only when QWidget has an invalid preferred size
 
-      double _pixelsPerUnit;
       std::vector<QWidget *> _ignoredWidgets;
 
       void _init();

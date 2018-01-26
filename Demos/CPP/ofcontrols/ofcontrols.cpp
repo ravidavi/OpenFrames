@@ -99,7 +99,6 @@ OFControls::OFControls()
   editorPanel->setPosition(0.0, 0.0, -1.0);
   editorPanel->showAxes(0U);
   editorPanel->showAxesLabels(0U);
-  editorPanel->setPixelsPerUnit(100.0);
   _root->addChild(editorPanel);
 
   // Panel that will hold checkboxes with sphere options
@@ -110,7 +109,6 @@ OFControls::OFControls()
   sphereOptionsPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
   sphereOptionsPanel->showAxes(0U);
   sphereOptionsPanel->showAxesLabels(0U);
-  sphereOptionsPanel->setPixelsPerUnit(50.0);
   _root->addChild(sphereOptionsPanel);
 
   // Panel that will hold a list of colors
@@ -121,7 +119,6 @@ OFControls::OFControls()
   colorPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
   colorPanel->showAxes(0U);
   colorPanel->showAxesLabels(0U);
-  colorPanel->setPixelsPerUnit(90.0);
   _root->addChild(colorPanel);
 
   // Hidden panel that will hold sliders to move the sphere
@@ -132,7 +129,6 @@ OFControls::OFControls()
   _hiddenPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
   _hiddenPanel->showAxes(0U);
   _hiddenPanel->showAxesLabels(0U);
-  _hiddenPanel->setPixelsPerUnit(50.0);
 
   // Create the example controls widget
   QWidget *editorParentWidget = new QWidget;
@@ -158,6 +154,7 @@ OFControls::OFControls()
   QCheckBox *moveSphereCheckBox = new QCheckBox("Move sphere");
   sphereOptionsWidget->layout()->addWidget(_showCheckBox);
   sphereOptionsWidget->layout()->addWidget(moveSphereCheckBox);
+  sphereOptionsWidget->setMinimumSize(QSize(200, 120)); // If Qt's autocomputed preferred size is poor, then you can override it
   sphereOptionsPanel->setWidget(sphereOptionsWidget);
   sphereOptionsPanel->setIgnoreWidget(sphereOptionsWidget, true);
 
@@ -184,7 +181,7 @@ OFControls::OFControls()
   }
   colorPanel->setWidget(_list);
 
-  // Create the example controls widget
+  // Create the example slider controls widget
   QWidget *moveSphereWidget = new QWidget;
   moveSphereWidget->setLayout(new QVBoxLayout);
   QSlider *xSlider = new QSlider(Qt::Horizontal);

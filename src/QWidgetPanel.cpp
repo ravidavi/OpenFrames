@@ -29,33 +29,36 @@
 
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 namespace OpenFrames
 {
 
+  /// Default half length for the hyperrectangle
   const double QWidgetPanel::DEFAULT_LENGTH = 1.0;
+  /// Only used when the QWidget has an invalid preferred size
   const double QWidgetPanel::DEFAULT_PIXELS_PER_UNIT = 100.0;
 
   QWidgetPanel::QWidgetPanel(const std::string &name)
-    : ReferenceFrame(name), _pixelsPerUnit(DEFAULT_PIXELS_PER_UNIT)
+    : ReferenceFrame(name)
   {
     _init();
   }
 
   QWidgetPanel::QWidgetPanel(const std::string &name, const osg::Vec3 &color)
-    : ReferenceFrame(name, color), _pixelsPerUnit(DEFAULT_PIXELS_PER_UNIT)
+    : ReferenceFrame(name, color)
   {
     _init();
   }
 
   QWidgetPanel::QWidgetPanel(const std::string &name, const osg::Vec4 &color)
-    : ReferenceFrame(name, color), _pixelsPerUnit(DEFAULT_PIXELS_PER_UNIT)
+    : ReferenceFrame(name, color)
   {
     _init();
   }
 
   QWidgetPanel::QWidgetPanel(const std::string &name, float r, float g, float b, float a)
-    : ReferenceFrame(name, r, g, b, a), _pixelsPerUnit(DEFAULT_PIXELS_PER_UNIT)
+    : ReferenceFrame(name, r, g, b, a)
   {
     _init();
   }
@@ -69,12 +72,12 @@ namespace OpenFrames
     // Set the shape to be drawn
     _panel = new osg::Geometry();
     osg::Box* box = new osg::Box;
-    box->setHalfLengths(osg::Vec3(1.0, 1.0, 1.0));
+    box->setHalfLengths(osg::Vec3(DEFAULT_LENGTH, DEFAULT_LENGTH, DEFAULT_LENGTH));
     _panel->setShape(box);
     _panel->setName("QWidgetPanelDrawable");
     _panel->setUseDisplayList(false);
     _panel->setUseVertexBufferObjects(true);
-    buildPanelGeometry(osg::Vec3(1.0, 1.0, 1.0));
+    buildPanelGeometry(osg::Vec3(DEFAULT_LENGTH, DEFAULT_LENGTH, DEFAULT_LENGTH));
 
     // Create the node that contains the QWidgetPanel
     _geode = new osg::Geode;
@@ -116,20 +119,6 @@ namespace OpenFrames
     xHalfLength = halfLenghts[0];
     yHalfLength = halfLenghts[1];
     zHalfLength = halfLenghts[2];
-  }
-
-  void QWidgetPanel::setPixelsPerUnit(double pixelsPerUnit)
-  {
-    if (_pixelsPerUnit != pixelsPerUnit)
-    {
-      _pixelsPerUnit = pixelsPerUnit;
-      _rescaleWidget();
-    }
-  }
-
-  double QWidgetPanel::getPixelsPerUnit()
-  {
-    return _pixelsPerUnit;
   }
 
   bool QWidgetPanel::setWidget(QWidget *widget)
@@ -428,13 +417,41 @@ namespace OpenFrames
     {
       // Scale the QWidget to the X-Y plane size
       double x, y, z;
-      double scale = 2.0 * _pixelsPerUnit;
+      double width, height;
 
       getHalfLengths(x, y, z);
-      x = x * scale;
-      y = y * scale;
-      z = z * scale;
-      _image->scaleImage(x, y, z, 0U);
+      x = 2.0 * x;
+      y = 2.0 * y;
+
+      QSize preferredSize = _image->getQGraphicsViewAdapter()->getQGraphicsView()->sizeHint();
+      if (preferredSize.isValid())
+      {
+        double preferredWidth = static_cast<double>(preferredSize.width());
+        double preferredHeight = static_cast<double>(preferredSize.height());
+        if ((x / y) > (preferredWidth / preferredHeight))
+        {
+          // Panel is taller than the preferred size
+          height = preferredHeight;
+          // Qt may get upset if we accidently round down below the minimum size
+          width = ceil(x * preferredHeight / y);
+          std::cout << " y = " << height << " x = " << width << std::endl;
+        }
+        else
+        {
+          // Panel is wider than the preferred size
+          width = preferredWidth;
+          // Qt may get upset if we accidently round down below the minimum size
+          height = ceil(y * preferredWidth / x);
+          std::cout << "x = " << width << " y = " << height << std::endl;
+        }
+      }
+      else
+      {
+        width = DEFAULT_PIXELS_PER_UNIT * x;
+        height = DEFAULT_PIXELS_PER_UNIT * y;
+      }
+
+      _image->scaleImage(width, height, 0, 0U);
     }
   }
 
