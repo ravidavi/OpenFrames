@@ -4,23 +4,43 @@ INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include ${OPENSCENEGRAPH_INCLUDE_DI
 # Create alias for current demo
 SET( curr_demo ofcontrols )
 
-set(CMAKE_AUTOMOC ON)
-
 # Find Qt
-IF(NOT OF_USE_QT)
+# There are two methods for using Qt Ui files as your QWidgets:
+# 1) Run time processing, which loads the Ui file from the disk or Qt resources. (For example resource.qrc)
+# 2) Compile time processing, which builds headers and classes for your Ui file. (For example )
+# See: https://doc.qt.io/qt-5/designer-using-a-ui-file.html
+# See: https://cmake.org/cmake/help/v3.0/manual/cmake-qt.7.html
+
+IF( NOT OF_USE_QT )
   RETURN()
 ENDIF()
+
+FIND_PACKAGE(Qt5 COMPONENTS UiTools) # Library for building ui files at runtime using (1)
+
+IF( NOT Qt5_FOUND )
+  RETURN()
+ENDIF()
+
+set(CMAKE_AUTOMOC ON)
+
+# For inclusion of resource.qrc containing movespherewidget.ui using (1)
+set(CMAKE_AUTORCC ON)
+
+# For inclusion of sphereoptionswidget.ui at compile time using (2)
+set(CMAKE_AUTOUIC ON)
 
 # Specify headers for Qt example
 FILE(GLOB osgqtcube_HEADERS *.hpp)
 LIST(APPEND osgqtcube_SOURCES
   ofcontrols.cpp)
 
-# Specify which file should be compiled for current test
-ADD_EXECUTABLE(${curr_demo} ${osgqtcube_SOURCES} ${osgqtcube_HEADERS})
+# Attach the ui files as a resource using (1)
+ADD_EXECUTABLE(${curr_demo} ${osgqtcube_SOURCES} ${osgqtcube_HEADERS} resources.qrc)
+
+# Alternatively, you can prebuild ui files
 
 # Tell linker to link against OpenSceneGraph library
-TARGET_LINK_LIBRARIES(${curr_demo} OpenFrames ${OPENSCENEGRAPH_LIBRARIES} Qt5::Core Qt5::Widgets)
+TARGET_LINK_LIBRARIES(${curr_demo} OpenFrames ${OPENSCENEGRAPH_LIBRARIES} Qt5::Core Qt5::Widgets Qt5::UiTools)
 
 # On Mac/Linux include path to Qt in RPATH
 # Note that this only applies to this demo. In a real application the Qt

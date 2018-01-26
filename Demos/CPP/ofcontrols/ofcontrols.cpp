@@ -15,6 +15,7 @@ limitations under the License.
 ***********************************/
 
 #include "ofcontrols.hpp"
+#include "ui_sphereoptionsform.h"
 
 #include <OpenFrames/QWidgetPanel.hpp>
 #include <OpenFrames/WindowProxy.hpp>
@@ -28,6 +29,7 @@ limitations under the License.
 #include <QCheckBox>
 #include <QListWidget>
 #include <QSlider>
+#include <QtUiTools>
 
 /// The period of event checking in the main loop (milliseconds)
 const double OFControls::MAIN_LOOP_PERIOD = 10;
@@ -143,18 +145,18 @@ OFControls::OFControls()
   editorParentWidget->layout()->addWidget(textEdit);
   _toggleButton = new QPushButton("Hide Sphere");
   editorParentWidget->layout()->addWidget(_toggleButton);
+  // If Qt's autocomputed preferred size is poor, then you can override it
+  //editorParentWidget->setMinimumSize(QSize(400, 300));
   editorPanel->setWidget(editorParentWidget);
   editorPanel->setIgnoreWidget(editorParentWidget, true);
 
-  // Create the example controls widget
+  // Create the example controls widget, built at compile time from the ui file
   QWidget *sphereOptionsWidget = new QWidget;
-  sphereOptionsWidget->setLayout(new QVBoxLayout);
-  _showCheckBox = new QCheckBox("Show sphere");
+  Ui_SphereOptions ui;
+  ui.setupUi(sphereOptionsWidget);
+  _showCheckBox = sphereOptionsWidget->findChild<QCheckBox*>("showSphereUI");
   _showCheckBox->setChecked(true);
-  QCheckBox *moveSphereCheckBox = new QCheckBox("Move sphere");
-  sphereOptionsWidget->layout()->addWidget(_showCheckBox);
-  sphereOptionsWidget->layout()->addWidget(moveSphereCheckBox);
-  sphereOptionsWidget->setMinimumSize(QSize(200, 120)); // If Qt's autocomputed preferred size is poor, then you can override it
+  QCheckBox *moveSphereCheckBox = sphereOptionsWidget->findChild<QCheckBox*>("moveSphereUI");
   sphereOptionsPanel->setWidget(sphereOptionsWidget);
   sphereOptionsPanel->setIgnoreWidget(sphereOptionsWidget, true);
 
@@ -181,18 +183,14 @@ OFControls::OFControls()
   }
   colorPanel->setWidget(_list);
 
-  // Create the example slider controls widget
-  QWidget *moveSphereWidget = new QWidget;
-  moveSphereWidget->setLayout(new QVBoxLayout);
-  QSlider *xSlider = new QSlider(Qt::Horizontal);
-  xSlider->setRange(-20, 20);
-  QSlider *ySlider = new QSlider(Qt::Horizontal);
-  ySlider->setRange(-20, 20);
-  QSlider *zSlider = new QSlider(Qt::Horizontal);
-  zSlider->setRange(0, 20);
-  moveSphereWidget->layout()->addWidget(xSlider);
-  moveSphereWidget->layout()->addWidget(ySlider);
-  moveSphereWidget->layout()->addWidget(zSlider);
+  // Create the example slider controls widget, loaded from ui file in resources at runtime
+  QFile file(":/forms/movesphereform.ui");
+  file.open(QIODevice::ReadOnly);
+  QUiLoader loader;
+  QWidget *moveSphereWidget = loader.load(&file, nullptr);
+  QSlider *xSlider = moveSphereWidget->findChild<QSlider*>("xSliderUI");
+  QSlider *ySlider = moveSphereWidget->findChild<QSlider*>("ySliderUI");
+  QSlider *zSlider = moveSphereWidget->findChild<QSlider*>("zSliderUI");
   _hiddenPanel->setWidget(moveSphereWidget);
   _hiddenPanel->setIgnoreWidget(moveSphereWidget, true);
 
