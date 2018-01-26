@@ -124,9 +124,13 @@ namespace OpenFrames
     _geode = new osg::Geode;
     _geode->setName(_name);
     _geode->addDrawable(_sphereSD);
+    
+    // Add the sphere to its transform
+    _sphereXform = new FrameTransform;
+    _sphereXform->addChild(_geode);
 
     // Add the sphere to the ReferenceFrame
-    _xform->addChild(_geode.get());
+    _xform->addChild(_sphereXform);
 
     // Resize the axes vectors and set the appropriate color
     setRadius(1.0);
@@ -160,15 +164,37 @@ namespace OpenFrames
     _sphereSD->build();
     restoreTexCoords();
 
-    moveXAxis(osg::Vec3(radius, 0, 0), 0.5*radius);
-    moveYAxis(osg::Vec3(0, radius, 0), 0.5*radius);
-    moveZAxis(osg::Vec3(0, 0, radius), 0.5*radius);
+    repositionAxes(); // Reset the x/y/z axes
   }
 
   double Sphere::getRadius() const
   {
     osg::Sphere *sphere = static_cast<osg::Sphere*>(_sphereSD->getShape());
     return sphere->getRadius();
+  }
+  
+  /** Set the position of the sphere wrt its own ReferenceFrame. */
+  void Sphere::setSpherePosition( const double &x, const double &y, const double &z)
+  {
+    _sphereXform->setPosition(x, y, z);
+    
+    repositionAxes(); // Reset the x/y/z axes
+  }
+  
+  /** Set the scale of the sphere. */
+  void Sphere::setSphereScale( const double &sx, const double &sy, const double &sz)
+  {
+    if((sx <= 0.0) || (sy <= 0.0) || (sz <= 0.0)) return;
+    
+    _sphereXform->setScale(sx, sy, sz);
+    
+    // Rescale sphere normals if any of the scales are non-unity
+    if((sx != 1.0) || (sy != 1.0) || (sz != 1.0))
+      _sphereSD->getStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+    else
+      _sphereSD->getStateSet()->removeMode(GL_RESCALE_NORMAL);
+    
+    repositionAxes(); // Reset the x/y/z axes
   }
 
   bool Sphere::setTextureMap(const std::string &fname, unsigned int unit, bool force_reload)
@@ -281,16 +307,39 @@ namespace OpenFrames
     else
       _sphereSD->getStateSet()->removeAttribute(osg::StateAttribute::MATERIAL);
   }
-
+  
+  /** Move the sphere's x/y/z axes to default positions. */
+  void Sphere::repositionAxes()
+  {
+    // Get the sphere's transformed bounding sphere
+    osg::BoundingSphere bs = _sphereXform->getBound();
+    
+    // Account for scale by using the largest scale value
+    double sx, sy, sz;
+    _sphereXform->getScale(sx, sy, sz);
+    double maxScale = std::max({sx, sy, sz});
+    bs._radius = getRadius()*maxScale;
+    
+    // Place the axes at the edge of the bounding sphere
+    moveXAxis(bs._center + osg::Vec3(bs._radius, 0, 0), 0.5*bs._radius);
+    moveYAxis(bs._center + osg::Vec3(0, bs._radius, 0), 0.5*bs._radius);
+    moveZAxis(bs._center + osg::Vec3(0, 0, bs._radius), 0.5*bs._radius);
+  }
+  
   const osg::BoundingSphere& Sphere::getBound() const
   {
     // Normally we would just get the Sphere's bound by computing its
-    // Geode's bound. However, Geode's bound is computed by fitting
-    // a bounding sphere to its bounding box, which makes the bound
-    // bigger than the specified Sphere radius. So we will just use
-    // the center from the Geode's bound, and set the radius ourselves.
-    osg::BoundingSphere bs = _geode->getBound();
-    bs._radius = getRadius();
+    // transform's bound. However, that is computed by fitting a
+    // bounding sphere to its bounding box, which makes the bound
+    // bigger than the specified radius. So we will just use
+    // the center from the transform's bound, and set the radius ourselves.
+    osg::BoundingSphere bs = _sphereXform->getBound();
+    
+    // Account for scale by using the largest scale value
+    double sx, sy, sz;
+    _sphereXform->getScale(sx, sy, sz);
+    double maxScale = std::max({sx, sy, sz});
+    bs._radius = getRadius()*maxScale;
 
     // Keep bound center but expand to include axes/labels
     ReferenceFrame::getBound();

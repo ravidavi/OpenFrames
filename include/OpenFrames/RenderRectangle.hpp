@@ -81,6 +81,9 @@ namespace OpenFrames
     bool setSkySphereStarData(const std::string& catalogName, float minMag, float maxMag, unsigned int maxNumStars = 100000, 
                               float minPixSize = 1.0, float maxPixSize = 10.0, float minDimRatio = 0.5f);
     
+    /** Get the sky sphere, e.g. to set its transform */
+    SkySphere* getSkySphere() const { return _skySphere.get(); }
+    
     /** Set the background color. Only valid if no sky texture or stars are specified */
     void setBackgroundColor(float r, float g, float b);
     
