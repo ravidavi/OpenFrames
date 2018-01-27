@@ -31,6 +31,8 @@ using namespace OpenFrames;
 // In a real program, this would probably be wrapped in a class and not in the global namespace
 WindowProxy *theWinProxy;
 
+osgText::Text* hudText;
+
 // Callback to handle key press events
 void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
 {
@@ -38,6 +40,12 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
   if(*key == 'p')
   {
     theWinProxy->pauseTime(!theWinProxy->isTimePaused());
+  }
+
+  else if ((*key == 'v') || (*key == 'V'))
+  {
+    std::string frameName = theWinProxy->getGridPosition(0, 0)->getCurrentView()->getViewFrame()->getName();
+    hudText->setText("Viewing: " + frameName);
   }
 }
 
@@ -191,6 +199,38 @@ int main(int argc, char** argv)
     return 1;
   }
   
+  // Create text to go in HUD
+  osg::ref_ptr<osgText::Text> hudText_BottomLeft = new osgText::Text;
+  hudText = hudText_BottomLeft;
+  hudText_BottomLeft->setFont("arial.ttf");
+  hudText_BottomLeft->setColor(osg::Vec4(1, 1, 0, 1));
+  hudText_BottomLeft->setCharacterSizeMode(osgText::Text::SCREEN_COORDS);
+  hudText_BottomLeft->setCharacterSize(20.0);    // In screen coordinates (pixels)
+  hudText_BottomLeft->setFontResolution(40, 40); // In texels (texture pixels)
+  hudText_BottomLeft->setLineSpacing(0.25);
+
+  // Position HUD text
+  // Screen coordinates go from (0,0) bottom-left to (1,1) top-right
+  hudText_BottomLeft->setAlignment(osgText::Text::LEFT_BOTTOM);
+  hudText_BottomLeft->setPosition(osg::Vec3(0.0, 0.0, 0.0));
+
+  // Some graphics drivers have a bug where text can't be properly changed.
+  // Get around this by initializing text using all likely characters.
+  std::string dummyText("the quick brown fox jumps over the lazy dog");
+  dummyText += "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG";
+  dummyText += "1234567890";
+  dummyText += "[]{}()<>,.;:+-*/_";
+  hudText_BottomLeft->setText(dummyText);
+
+  // Now set text to actual model name
+  std::string frameName = theWinProxy->getGridPosition(0, 0)->getCurrentView()->getViewFrame()->getName();
+  hudText_BottomLeft->setText("Viewing: " + frameName);
+
+  // Attach HUD text
+  osg::Geode* geode = new osg::Geode;
+  geode->addDrawable(hudText_BottomLeft);
+  myWindow->getGridPosition(0, 0)->getHUD()->addChild(geode);
+
   myWindow->setWindowName(windowName);
   myWindow->startThread(); // Start window animation
   myWindow->join(); // Wait for window animation to finish
