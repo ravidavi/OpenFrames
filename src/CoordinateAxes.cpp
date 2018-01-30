@@ -251,11 +251,7 @@ void CoordinateAxes::setColor( const osg::Vec4 &color )
 	// Set new color
 	ReferenceFrame::setColor(color);
 	(*_colors)[0] = color;
-
-	// Inform geometries that something has changed
-	_axesGeom->dirtyDisplayList();
-	_majorTickGeom->dirtyDisplayList();
-	_minorTickGeom->dirtyDisplayList();
+  _colors->dirty();
 }
 
 void CoordinateAxes::_init()
@@ -276,6 +272,14 @@ void CoordinateAxes::_init()
 	_axesGeom = new osg::Geometry;
 	_majorTickGeom = new osg::Geometry;
 	_minorTickGeom = new osg::Geometry;
+  
+  // Use VBOs
+  _axesGeom->setUseDisplayList(false);
+  _axesGeom->setUseVertexBufferObjects(true);
+  _majorTickGeom->setUseDisplayList(false);
+  _majorTickGeom->setUseVertexBufferObjects(true);
+  _minorTickGeom->setUseDisplayList(false);
+  _minorTickGeom->setUseVertexBufferObjects(true);
 
         // Add the Point parameter to allow major/minor tick mark resizing
         // Note that major/minor Geoms need separate StateSets since they
@@ -437,6 +441,9 @@ void CoordinateAxes::_createAxes()
 
 	// Tell the minor tick mark geometry to draw data as points
 	_minorTickGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS, start, _vertices->size() - start));
+  
+  // Indicate that data has changed and should be re-rendered
+  _vertices->dirty();
 }
 
 void CoordinateAxes::resetTickShader()

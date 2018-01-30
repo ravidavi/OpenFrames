@@ -245,6 +245,8 @@ namespace OpenFrames
       
       // Set up the geometry object for the border
       osg::Geometry *geom = new osg::Geometry;
+      geom->setUseDisplayList(false);
+      geom->setUseVertexBufferObjects(true);
       geom->setVertexArray(vertices);
       geom->setColorArray(colors);
       geom->setColorBinding(osg::Geometry::BIND_OVERALL);
@@ -369,6 +371,7 @@ namespace OpenFrames
     {
       (*colors)[0].set(0, 1.0, 0, 1.0); // Make green
     }
+    colors->dirty();
     
     // Set line width
     osg::LineWidth *lw = dynamic_cast<osg::LineWidth*>(_borderGeode->getStateSet()->getAttribute(osg::StateAttribute::LINEWIDTH));
@@ -380,8 +383,6 @@ namespace OpenFrames
     {
       lw->setWidth(1.0); // Set a 1.0 line width
     }
-    
-    geom->dirtyDisplayList(); // Indicate that the border should be redrawn
   }
   
   /** Get the selected state of this RenderRectangle */
