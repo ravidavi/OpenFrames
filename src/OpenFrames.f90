@@ -160,6 +160,30 @@
 	INTEGER, INTENT(IN) :: row, col
 	END SUBROUTINE
 
+  SUBROUTINE ofwin_setlightambient(row, col, r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setlightambient
+  INTEGER, INTENT(IN) :: row, col
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_setlightdiffuse(row, col, r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setlightdiffuse
+  INTEGER, INTENT(IN) :: row, col
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_setlightspecular(row, col, r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setlightspecular
+  INTEGER, INTENT(IN) :: row, col
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_setlightposition(row, col, x, y, z, w)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setlightposition
+  INTEGER, INTENT(IN) :: row, col
+  REAL, INTENT(IN) :: x, y, z, w
+  END SUBROUTINE
+
 	SUBROUTINE ofwin_setstereo(row, col, enable, eyeseparation, width, height, distance)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setstereo
 	INTEGER, INTENT(IN) :: row, col

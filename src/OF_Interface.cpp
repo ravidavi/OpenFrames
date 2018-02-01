@@ -674,6 +674,110 @@ void OF_FCN(ofwin_setscene)(unsigned int *row, unsigned int *col)
 }
 
 /**
+* \brief Set the lighting parameters for the specified grid position
+*
+* This applies to the current active WindowProxy.
+*
+* \param row  Row in the grid to set
+* \param col  Column in the grid to set
+* \param r    Red component of specified light
+* \param g    Green component of specified light
+* \param b    Blue component of specified light
+**/
+void OF_FCN(ofwin_setlightambient)(unsigned int *row, unsigned int *col,
+                                   float *r, float *g, float *b)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      osg::Light* globalLight = rr->getSceneView()->getLight();
+      globalLight->setAmbient(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(ofwin_setlightdiffuse)(unsigned int *row, unsigned int *col,
+                                   float *r, float *g, float *b)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      osg::Light* globalLight = rr->getSceneView()->getLight();
+      globalLight->setDiffuse(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
+void OF_FCN(ofwin_setlightspecular)(unsigned int *row, unsigned int *col,
+                                    float *r, float *g, float *b)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      osg::Light* globalLight = rr->getSceneView()->getLight();
+      globalLight->setSpecular(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+/**
+* \brief Set the light position for the specified grid position
+*
+* This applies to the current active WindowProxy.
+*
+* \param row  Row in the grid to set
+* \param col  Column in the grid to set
+* \param x    X position in eye space
+* \param y    Y position in eye space
+* \param z    Z position in eye space
+* \param w    If 0 then directional (antiparallel to x,y,z direction)
+*             If 1 then positional  (radiates from x,y,z direction)
+**/
+void OF_FCN(ofwin_setlightposition)(unsigned int *row, unsigned int *col,
+                                    float *x, float *y, float *z, float *w)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      osg::Light* globalLight = rr->getSceneView()->getLight();
+      globalLight->setPosition(osg::Vec4(*x, *y, *z, *w));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
+/**
 * \brief Set the 3D stereo mode for the specified grid position
 *
 * This applies to the current active WindowProxy.

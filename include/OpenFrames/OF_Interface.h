@@ -134,6 +134,21 @@ OF_EXPORT void OF_FCN(ofwin_istimepaused)(bool *isPaused);
 OF_EXPORT void OF_FCN(ofwin_settimescale)(double *tscale);
 OF_EXPORT void OF_FCN(ofwin_gettimescale)(double *tscale);
 
+// Default lighting control
+// This can be overridden by enabling light from at least one ReferenceFrame
+OF_EXPORT void OF_FCN(ofwin_setlightambient)(unsigned int *row, unsigned int *col,
+                                             float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofwin_setlightdiffuse)(unsigned int *row, unsigned int *col,
+                                             float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofwin_setlightspecular)(unsigned int *row, unsigned int *col,
+                                              float *r, float *g, float *b);
+
+// Light position is defined in eye coordinates (x right, y up, z out of screen)
+// If w = 0 then light is directional: antiparallel to (x,y,z) direction
+// If w = 1 then light is positional:  radiates from (x,y,z) position
+OF_EXPORT void OF_FCN(ofwin_setlightposition)(unsigned int *row, unsigned int *col,
+                                              float *x, float *y, float *z, float *w);
+
 // Set the scene at the specified grid position
 // A scene is specified by the currently active FrameManager
 OF_EXPORT void OF_FCN(ofwin_setscene)(unsigned int *row, unsigned int *col);
