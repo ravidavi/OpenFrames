@@ -312,6 +312,21 @@ OF_EXPORT void OF_FCN(ofsphere_settexturemap)(OF_CHARARG(fname));
 // Enable/disable auto level of detailing for the sphere.
 OF_EXPORT void OF_FCN(ofsphere_setautolod)(bool *lod);
 
+// Set sphere position within its own reference frame
+OF_EXPORT void OF_FCN(ofsphere_setsphereposition)(double *x, double *y, double *z);
+
+// Set sphere attitude within its own reference frame
+OF_EXPORT void OF_FCN(ofsphere_setsphereattitude)(double *rx, double *ry, double *rz, double *angle);
+
+// Set sphere scale (to turn sphere into ellipsoid)
+OF_EXPORT void OF_FCN(ofsphere_setspherescale)(double *sx, double *sy, double *sz);
+  
+// Set material parameters for the sphere
+OF_EXPORT void OF_FCN(ofsphere_setmaterialambient)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofsphere_setmaterialdiffuse)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofsphere_setmaterialspecular)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofsphere_setmaterialshininess)(float *shininess);
+
 /******************************************************************
 	Model Functions
 A Model displays a 3D model (specified in an external file) in the scene.

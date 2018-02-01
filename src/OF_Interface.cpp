@@ -2010,7 +2010,160 @@ void OF_FCN(ofsphere_setautolod)(bool *lod)
       _objs->_intVal = -2;
     }
 }
+   
+/**
+* \brief Set the position of the sphere
+*
+* This applies to the current active Sphere.
+*
+* \param x X position
+* \param y Y position
+* \param z Z position
+**/
+void OF_FCN(ofsphere_setsphereposition)(double *x, double *y, double *z)
+{
+  // Make sure that the currently active ReferenceFrame is a Sphere
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if (sphere == NULL) {
+    _objs->_intVal = 1;
+    return;
+  }
+  
+  sphere->setSpherePosition(*x, *y, *z);
+  _objs->_intVal = 0;
+}
+  
+/**
+* \brief Set the attitude of the sphere
+*
+* This applies to the current active Sphere.
+*
+* \param rx    X component of the rotation quaternion
+* \param ry    Y component of the rotation quaternion
+* \param rz    Z component of the rotation quaternion
+* \param angle Angle component of the rotation quaternion
+**/
+void OF_FCN(ofsphere_setsphereattitude)(double *rx, double *ry, double *rz, double *angle)
+{
+  // Make sure that the currently active ReferenceFrame is a Sphere
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if (sphere == NULL) {
+    _objs->_intVal = 1;
+    return;
+  }
+  
+  sphere->setSphereAttitude(osg::Vec4(*rx, *ry, *rz, *angle));
+  _objs->_intVal = 0;
+}
+   
+/**
+* \brief Set the scale of the sphere
+*
+* This applies to the current active Sphere, and can be used to turn a Sphere into an ellipsoid.
+*
+* \param sx X scale
+* \param sy Y scale
+* \param sz Z scale
+**/
+void OF_FCN(ofsphere_setspherescale)(double *sx, double *sy, double *sz)
+{
+  // Make sure that the currently active ReferenceFrame is a Sphere
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if (sphere == NULL) {
+    _objs->_intVal = 1;
+    return;
+  }
+  
+  sphere->setSphereScale(*sx, *sy, *sz);
+  _objs->_intVal = 0;
+}
+    
+/**
+* \brief Set material parameters for the sphere
+*
+* This applies to the current active Sphere.
+*
+* \param r         Red component of reflectivity for given component
+* \param g         Green component of reflectivity for given component
+* \param b         Blue component of reflectivity for given component
+* \param shininess Specular shininess for given component
+**/
+void OF_FCN(ofsphere_setmaterialambient)(float *r, float *g, float *b)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(*r, *g, *b, 1.0));
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+  
+void OF_FCN(ofsphere_setmaterialdiffuse)(float *r, float *g, float *b)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(*r, *g, *b, 1.0));
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
 
+void OF_FCN(ofsphere_setmaterialspecular)(float *r, float *g, float *b)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(*r, *g, *b, 1.0));
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
+void OF_FCN(ofsphere_setmaterialshininess)(float *shininess)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setShininess(osg::Material::FRONT_AND_BACK, *shininess);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
 /*******************************************
 	Model Functions
 *******************************************/

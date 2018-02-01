@@ -438,11 +438,6 @@
 	CHARACTER(LEN=*), INTENT(IN) :: name
 	END SUBROUTINE
 
-	SUBROUTINE ofsphere_setcenter(x, y, z)
-	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setcenter
-	REAL(8), INTENT(IN) :: x, y, z
-	END SUBROUTINE
-
 	SUBROUTINE ofsphere_setradius(radius)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setradius
 	REAL(8), INTENT(IN) :: radius
@@ -457,6 +452,41 @@
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setautolod
 	LOGICAL, INTENT(IN) :: lod
 	END SUBROUTINE
+
+  SUBROUTINE ofsphere_setsphereposition(x, y, z)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setsphereposition
+  REAL(8), INTENT(IN) :: x, y, z
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setsphereattitude(rx, ry, rz, angle)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setsphereattitude
+  REAL(8), INTENT(IN) :: rx, ry, rz, angle
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setspherescale(sx, sy, sz)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setspherescale
+  REAL(8), INTENT(IN) :: sx, sy, sz
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setmaterialambient(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setmaterialambient
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setmaterialdiffuse(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setmaterialdiffuse
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setmaterialspecular(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setmaterialspecular
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setmaterialshininess(shininess)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setmaterialshininess
+  REAL, INTENT(IN) :: shininess
+  END SUBROUTINE
 
 ! Model Functions
 ! A Model is a type of ReferenceFrame, so all the above ReferenceFrame
