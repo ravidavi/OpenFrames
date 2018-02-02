@@ -397,6 +397,31 @@
 	REAL(8), INTENT(IN) :: pos(3), length, headRatio, bodyRadius, headRadius
 	END SUBROUTINE
 
+  SUBROUTINE offrame_setlightsourceenabled(enabled)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_setlightsourceenabled
+  LOGICAL, INTENT(IN) :: enabled
+  END SUBROUTINE
+
+  SUBROUTINE offrame_getlightsourceenabled(enabled)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_getlightsourceenabled
+  LOGICAL, INTENT(OUT) :: enabled
+  END SUBROUTINE
+
+  SUBROUTINE offrame_setlightambient(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_setlightambient
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE offrame_setlightdiffuse(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_setlightdiffuse
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE offrame_setlightspecular(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_setlightspecular
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
 	SUBROUTINE offrame_followtrajectory(name)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_followtrajectory
 	CHARACTER(LEN=*), INTENT(IN) :: name

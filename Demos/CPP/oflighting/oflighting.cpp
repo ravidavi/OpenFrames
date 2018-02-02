@@ -94,7 +94,8 @@ int main()
   // Make the Sun a light source
   // By default this will use GL_LIGHT0 which overrides the global light
   // If using multiple lights, call light->setLightNum(num) with unique light numbers
-  osg::Light* sunLight = sun->setLightSourceEnabled(true)->getLight();
+  sun->setLightSourceEnabled(true);
+  osg::Light* sunLight = sun->getLightSource()->getLight();
   sunLight->setPosition(osg::Vec4(0.0, 0.0, 0.0, 1.0)); // At center of Sun
   sunLight->setAmbient(osg::Vec4(0.4, 0.4, 0.4, 1.0));
   sunLight->setDiffuse(osg::Vec4(2.0, 2.0, 2.0, 1.0)); // Bright sun!

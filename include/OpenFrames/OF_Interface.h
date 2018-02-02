@@ -270,7 +270,14 @@ OF_EXPORT void OF_FCN(offrame_setaxeslabels)(OF_CHARARG(xlabel),
 OF_EXPORT void OF_FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius);
 OF_EXPORT void OF_FCN(offrame_moveyaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius);
 OF_EXPORT void OF_FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius);
-
+  
+// Enable and manage lighting for the currently active ReferenceFrame
+OF_EXPORT void OF_FCN(offrame_setlightsourceenabled)(bool *enabled);
+OF_EXPORT void OF_FCN(offrame_getlightsourceenabled)(bool *enabled);
+OF_EXPORT void OF_FCN(offrame_setlightambient)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(offrame_setlightdiffuse)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(offrame_setlightspecular)(float *r, float *g, float *b);
+  
 // Have this frame follow the specified trajectory
 OF_EXPORT void OF_FCN(offrame_followtrajectory)(OF_CHARARG(name));
 

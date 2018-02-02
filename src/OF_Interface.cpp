@@ -1748,6 +1748,94 @@ void OF_FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, 
 }
 
 /**
+* \brief Enable and manage per-frame lighting
+*
+* This applies to the current active ReferenceFrame.
+*
+* \param enabled Whether to enable or disable lighting
+* \param r Red component of specified light type
+* \param g Green component of specified light type
+* \param b Blue component of specified light type
+**/
+void OF_FCN(offrame_setlightsourceenabled)(bool *enabled)
+{
+  if(_objs->_currFrame)
+  {
+    _objs->_currFrame->setLightSourceEnabled(*enabled);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(offrame_getlightsourceenabled)(bool *enabled)
+{
+  if(_objs->_currFrame)
+  {
+    *enabled = _objs->_currFrame->getLightSourceEnabled();
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+  
+void OF_FCN(offrame_setlightambient)(float *r, float *g, float *b)
+{
+  if(_objs->_currFrame)
+  {
+    osg::LightSource* lightSource = _objs->_currFrame->getLightSource();
+    if(lightSource)
+    {
+      osg::Light* light = lightSource->getLight();
+      light->setAmbient(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else _objs->_intVal = -1;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(offrame_setlightdiffuse)(float *r, float *g, float *b)
+{
+  if(_objs->_currFrame)
+  {
+    osg::LightSource* lightSource = _objs->_currFrame->getLightSource();
+    if(lightSource)
+    {
+      osg::Light* light = lightSource->getLight();
+      light->setDiffuse(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else _objs->_intVal = -1;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+  
+void OF_FCN(offrame_setlightspecular)(float *r, float *g, float *b)
+{
+  if(_objs->_currFrame)
+  {
+    osg::LightSource* lightSource = _objs->_currFrame->getLightSource();
+    if(lightSource)
+    {
+      osg::Light* light = lightSource->getLight();
+      light->setSpecular(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else _objs->_intVal = -1;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
+/**
 * \brief Have this frame follow the specified trajectory
 *
 * The name used is the one used in the trajecotries creation in oftraj_create().
