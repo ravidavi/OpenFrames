@@ -562,8 +562,9 @@ void ReferenceFrame::setLightSourceEnabled(bool enable)
   // Create light source if it doesn't exist but should be enabled
   else if(enable)
   {
-    // Create new LightSource
+    // Create new LightSource at center of this frame
     lightSource = new osg::LightSource;
+    lightSource->getLight()->setPosition(osg::Vec4(0.0, 0.0, 0.0, 1.0));
     _xform->addChild(lightSource);
   }
 }
