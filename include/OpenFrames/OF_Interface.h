@@ -332,6 +332,7 @@ OF_EXPORT void OF_FCN(ofsphere_setspherescale)(double *sx, double *sy, double *s
 OF_EXPORT void OF_FCN(ofsphere_setmaterialambient)(float *r, float *g, float *b);
 OF_EXPORT void OF_FCN(ofsphere_setmaterialdiffuse)(float *r, float *g, float *b);
 OF_EXPORT void OF_FCN(ofsphere_setmaterialspecular)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofsphere_setmaterialemission)(float *r, float *g, float *b);
 OF_EXPORT void OF_FCN(ofsphere_setmaterialshininess)(float *shininess);
 
 /******************************************************************

@@ -2233,6 +2233,25 @@ void OF_FCN(ofsphere_setmaterialspecular)(float *r, float *g, float *b)
   }
 }
     
+void OF_FCN(ofsphere_setmaterialemission)(float *r, float *g, float *b)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4(*r, *g, *b, 1.0));
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+      
 void OF_FCN(ofsphere_setmaterialshininess)(float *shininess)
 {
   Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);

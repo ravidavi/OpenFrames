@@ -508,6 +508,11 @@
   REAL, INTENT(IN) :: r, g, b
   END SUBROUTINE
 
+  SUBROUTINE ofsphere_setmaterialemission(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setmaterialemission
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
   SUBROUTINE ofsphere_setmaterialshininess(shininess)
   !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setmaterialshininess
   REAL, INTENT(IN) :: shininess
