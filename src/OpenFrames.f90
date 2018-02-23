@@ -160,6 +160,36 @@
 	INTEGER, INTENT(IN) :: row, col
 	END SUBROUTINE
 
+  SUBROUTINE ofwin_settime(time)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_settime
+  REAL(8), INTENT(IN) :: time
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_gettime(time)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_gettime
+  REAL(8), INTENT(OUT) :: time
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_pausetime(pause)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_pausetime
+  LOGICAL, INTENT(IN) :: pause
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_istimepaused(ispaused)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_istimepaused
+  LOGICAL, INTENT(OUT) :: ispaused
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_settimescale(tscale)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_settimescale
+  REAL(8), INTENT(IN) :: tscale
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_gettimescale(tscale)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_gettimescale
+  REAL(8), INTENT(OUT) :: tscale
+  END SUBROUTINE
+
   SUBROUTINE ofwin_setlightambient(row, col, r, g, b)
   !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setlightambient
   INTEGER, INTENT(IN) :: row, col
@@ -438,6 +468,7 @@
 	REAL(8), INTENT(IN) :: scale(3)
 	END SUBROUTINE
 
+  ! offrame_managetime DEPRECATED: use ofwin_*time functions instead
 	SUBROUTINE offrame_managetime(affectChildren, reset, &
 	                              changePauseState, pauseState, &
 	                              changeOffsetTime, offsetTime, &
