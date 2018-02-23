@@ -13,10 +13,10 @@
 
 // Typemaps for callback functions
 %typemap(in) void (*fcn)(unsigned int*, bool*) {
-    $1 = (void (*)(unsigned int* winID, bool* success))PyInt_AsLong($input);;
+    $1 = (void (*)(unsigned int* winID, bool* success))PyLong_AsVoidPtr($input);;
 }
 %typemap(in) void (*fcn)(unsigned int*) {
-    $1 = (void (*)(unsigned int* winID))PyInt_AsLong($input);;
+    $1 = (void (*)(unsigned int* winID))PyLong_AsVoidPtr($input);;
 }
 
 // Specify OUTPUT type handling for outputs only
