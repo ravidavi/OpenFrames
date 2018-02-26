@@ -525,7 +525,7 @@ namespace OpenFrames{
       // the new pose state at each frame, which results in incremental rotations instead of one
       // big rotation from the initial to final controller positions.
       _motionData._device1OrigPoseRaw = device1CurrPoseRaw;
-      getTrackballRoomToWorldMatrix(_motionData._origTrackball);
+      _motionData._origTrackball = _roomPose * osgGA::TrackballManipulator::getMatrix();
       _motionData._origRotation = newRotation;
 
       break;
@@ -671,16 +671,6 @@ namespace OpenFrames{
   }
   
   /*************************************************************/
-  void OpenVRTrackball::getTrackballRoomToWorldMatrix(osg::Matrixd& matrix)
-  {
-    // Transform from room space to trackball space
-    matrix = _roomPose;
-    
-    // Transform from trackball space to view space
-    matrix.postMult(osgGA::TrackballManipulator::getMatrix());
-  }
-  
-  /*************************************************************/
   void OpenVRTrackball::saveCurrentMotionData()
   {
     const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
@@ -694,7 +684,7 @@ namespace OpenFrames{
     
     _motionData._origWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
     _motionData._origRotation = osgGA::TrackballManipulator::getRotation();
-    getTrackballRoomToWorldMatrix(_motionData._origTrackball);
+    _motionData._origTrackball = _roomPose * osgGA::TrackballManipulator::getMatrix();
     _motionData._origRoomPose = _roomPose;
   }
   

@@ -307,6 +307,12 @@ namespace OpenFrames {
     // Get World to HMD (Center) matrix
     virtual osg::Matrixd getInverseMatrix() const;
 
+    // Get Room to Trackball matrix
+    // Additional transformation matrices for an OpenVRTrackball can be computed as follows:
+    // Room -> ViewFrame: tb->getRoomToTrackballMatrix() * tb->osgGA::TrackballManipulator::getMatrix()
+    // Room -> World:     tb->getRoomToTrackballMatrix() * tb->FollowingTrackball::getMatrix()
+    const osg::Matrixd& getRoomToTrackballMatrix() const { return _roomPose; }
+    
     // Handle event
     virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us);
 
@@ -318,11 +324,6 @@ namespace OpenFrames {
 
     // Last saved WorldUnits/Meter ratio
     double _savedWorldUnitsPerMeter;
-    
-    // Get the Room->World transform for the trackball itself, not including any
-    // custom view transformations by FollowingTrackball. This allows transformations
-    // between room space and the space viewed by the osgGA::Trackball.
-    void getTrackballRoomToWorldMatrix(osg::Matrixd& matrix);
 
     void processMotion();
     
