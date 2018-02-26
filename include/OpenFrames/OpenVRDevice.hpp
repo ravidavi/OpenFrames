@@ -304,8 +304,9 @@ namespace OpenFrames {
     virtual void saveTrackballData();
     virtual void restoreTrackballData();
 
-    // Get World to HMD (Center) matrix
-    virtual osg::Matrixd getInverseMatrix() const;
+    // Inherited from FollowingTrackball
+    virtual osg::Matrixd getMatrix() const; // HMD (Center) to World matrix
+    virtual osg::Matrixd getInverseMatrix() const; // World to HMD (Center) matrix
 
     // Get Room to Trackball matrix
     // Additional transformation matrices for an OpenVRTrackball can be computed as follows:

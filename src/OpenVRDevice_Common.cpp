@@ -466,6 +466,12 @@ namespace OpenFrames{
     _ovrDevice->setWorldUnitsPerMeter(_savedWorldUnitsPerMeter);
   }
   
+  /*******************************************************/
+  osg::Matrixd OpenVRTrackball::getMatrix() const
+  {
+    return osg::Matrix::inverse(OpenVRTrackball::getInverseMatrix());
+  }
+
   /*************************************************************/
   osg::Matrixd OpenVRTrackball::getInverseMatrix() const
   {
@@ -649,7 +655,9 @@ namespace OpenFrames{
         for (auto&& intersection : intersections)
         {
           osg::notify(osg::NOTICE) << "  - Local intersection point = " << intersection.localIntersectionPoint << std::endl;
-          osg::Vec3d worldPoint = intersection.getWorldIntersectPoint()*_motionData._origTrackball;
+          osg::Vec3d viewPoint = intersection.getWorldIntersectPoint()*_roomPose*osgGA::TrackballManipulator::getMatrix();
+          osg::notify(osg::NOTICE) << "  - View  intersection point = " << viewPoint << std::endl;
+          osg::Vec3d worldPoint = intersection.getWorldIntersectPoint()*_roomPose*FollowingTrackball::getMatrix();
           osg::notify(osg::NOTICE) << "  - World intersection point = " << worldPoint << std::endl;
         }
       }
