@@ -18,6 +18,7 @@
 #include <OpenFrames/Model.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <osg/ArgumentParser>
+#include <osg/io_utils>
 #include <osgDB/FileNameUtils>
 #include <osgDB/FileUtils>
 
@@ -31,6 +32,8 @@ using namespace OpenFrames;
 // In a real program, this would probably be wrapped in a class and not in the global namespace
 WindowProxy *theWinProxy;
 
+osgText::Text* hudText;
+
 // Callback to handle key press events
 void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
 {
@@ -38,6 +41,12 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
   if(*key == 'p')
   {
     theWinProxy->pauseTime(!theWinProxy->isTimePaused());
+  }
+
+  else if ((*key == 'v') || (*key == 'V'))
+  {
+    std::string frameName = theWinProxy->getGridPosition(0, 0)->getCurrentView()->getViewFrame()->getName();
+    hudText->setText("Viewing: " + frameName);
   }
 }
 
@@ -81,7 +90,33 @@ void VREventCallback(unsigned int *winID, unsigned int *row, unsigned int *col, 
     else if ((state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_Grip)) &&
       (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)))
     {
-      theWinProxy->getGridPosition(0, 0)->nextView();
+      theWinProxy->getGridPosition(*row, *col)->nextView();
+      std::string frameName = theWinProxy->getGridPosition(0, 0)->getCurrentView()->getViewFrame()->getName();
+      hudText->setText("Viewing: " + frameName);
+    }
+
+    // If only trigger is pressed, then compute controller origin in various reference frames
+    else if (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
+    {
+      // Get the currently active OpenVRTrackball
+      OpenVRTrackball *vrTrackball = dynamic_cast<OpenVRTrackball*>(theWinProxy->getGridPosition(*row, *col)->getCurrentView()->getTrackball());
+      if (vrTrackball)
+      {
+        // Get the controller origin in room coordinates
+        // Note that transforming the origin is the same as getting the translation component of the device transformation matrix
+        osg::Vec3d originRoom = ovrDevice->getDeviceModel(deviceID)->_rawDeviceToWorld.getTrans() * ovrDevice->getWorldUnitsPerMeter();
+        osg::notify(osg::NOTICE) << "  - Origin in Room frame  = " << originRoom << std::endl;
+
+        // Get the controller origin in view coordinates by multiplying Room->Trackball with Trackball->View matrices
+        // Here, the TrackballManipulator parent transforms from Trackball space to View space
+        osg::Vec3d originView = originRoom * vrTrackball->getRoomToTrackballMatrix() * vrTrackball->osgGA::TrackballManipulator::getMatrix();
+        osg::notify(osg::NOTICE) << "  - Origin in View frame  = " << originView << std::endl;
+
+        // Get the controller origin in world coordinates by multiplying Room->Trackball with Trackball->World matrices
+        // Here, the FollowingTrackball parent transforms from Trackball space to World space
+        osg::Vec3d originWorld = originRoom * vrTrackball->getRoomToTrackballMatrix() * vrTrackball->FollowingTrackball::getMatrix();
+        osg::notify(osg::NOTICE) << "  - Origin in World frame = " << originWorld << std::endl;
+      }
     }
 
     break;
@@ -191,6 +226,38 @@ int main(int argc, char** argv)
     return 1;
   }
   
+  // Create text to go in HUD
+  osg::ref_ptr<osgText::Text> hudText_BottomLeft = new osgText::Text;
+  hudText = hudText_BottomLeft;
+  hudText_BottomLeft->setFont("arial.ttf");
+  hudText_BottomLeft->setColor(osg::Vec4(1, 1, 0, 1));
+  hudText_BottomLeft->setCharacterSizeMode(osgText::Text::SCREEN_COORDS);
+  hudText_BottomLeft->setCharacterSize(20.0);    // In screen coordinates (pixels)
+  hudText_BottomLeft->setFontResolution(40, 40); // In texels (texture pixels)
+  hudText_BottomLeft->setLineSpacing(0.25);
+
+  // Position HUD text
+  // Screen coordinates go from (0,0) bottom-left to (1,1) top-right
+  hudText_BottomLeft->setAlignment(osgText::Text::LEFT_BOTTOM);
+  hudText_BottomLeft->setPosition(osg::Vec3(0.0, 0.0, 0.0));
+
+  // Some graphics drivers have a bug where text can't be properly changed.
+  // Get around this by initializing text using all likely characters.
+  std::string dummyText("the quick brown fox jumps over the lazy dog");
+  dummyText += "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG";
+  dummyText += "1234567890";
+  dummyText += "[]{}()<>,.;:+-*/_";
+  hudText_BottomLeft->setText(dummyText);
+
+  // Now set text to actual model name
+  std::string frameName = theWinProxy->getGridPosition(0, 0)->getCurrentView()->getViewFrame()->getName();
+  hudText_BottomLeft->setText("Viewing: " + frameName);
+
+  // Attach HUD text
+  osg::Geode* geode = new osg::Geode;
+  geode->addDrawable(hudText_BottomLeft);
+  myWindow->getGridPosition(0, 0)->getHUD()->addChild(geode);
+
   myWindow->setWindowName(windowName);
   myWindow->startThread(); // Start window animation
   myWindow->join(); // Wait for window animation to finish

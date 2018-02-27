@@ -203,7 +203,7 @@ namespace OpenFrames
    * specified ReferenceFrame in body-fixed or absolute coordinates, or looking
    * from one ReferenceFrame to another.
    *****************************************************************/
-  class FollowingTrackball : public osgGA::TrackballManipulator
+  class OF_EXPORT FollowingTrackball : public osgGA::TrackballManipulator
   {
   public:
     FollowingTrackball();

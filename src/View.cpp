@@ -64,11 +64,11 @@ namespace OpenFrames
   // Get the Viewpoint to World transformation matrix
   osg::Matrixd FollowingTrackball::getMatrix() const
   {
-    return osg::Matrix::inverse(getInverseMatrix());    
+    return osg::Matrix::inverse(FollowingTrackball::getInverseMatrix());    
   }
   
   /*******************************************************/
-  // Get the World to Trackball transformation matrix
+  // Get the World to Viewpoint transformation matrix
   osg::Matrixd FollowingTrackball::getInverseMatrix() const
   {
     osg::Matrixd matWorldToLocal;

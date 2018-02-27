@@ -293,7 +293,7 @@ namespace OpenFrames {
    * This results in the World->Head transform, which can be combined
    * with the Head->Eye transform to create the per-eye view matrix.
    ******************************************/
-  class OpenVRTrackball : public FollowingTrackball
+  class OF_EXPORT OpenVRTrackball : public FollowingTrackball
   {
   public:
     OpenVRTrackball(OpenVRDevice *ovrDevice);
@@ -304,9 +304,16 @@ namespace OpenFrames {
     virtual void saveTrackballData();
     virtual void restoreTrackballData();
 
-    // Get World to HMD (Center) matrix
-    virtual osg::Matrixd getInverseMatrix() const;
+    // Inherited from FollowingTrackball
+    virtual osg::Matrixd getMatrix() const; // HMD (Center) to World matrix
+    virtual osg::Matrixd getInverseMatrix() const; // World to HMD (Center) matrix
 
+    // Get Room to Trackball matrix
+    // Additional transformation matrices for an OpenVRTrackball can be computed as follows:
+    // Room -> ViewFrame: tb->getRoomToTrackballMatrix() * tb->osgGA::TrackballManipulator::getMatrix()
+    // Room -> World:     tb->getRoomToTrackballMatrix() * tb->FollowingTrackball::getMatrix()
+    const osg::Matrixd& getRoomToTrackballMatrix() const { return _roomPose; }
+    
     // Handle event
     virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us);
 
@@ -318,11 +325,6 @@ namespace OpenFrames {
 
     // Last saved WorldUnits/Meter ratio
     double _savedWorldUnitsPerMeter;
-    
-    // Get the Room->World transform for the trackball itself, not including any
-    // custom view transformations by FollowingTrackball. This allows transformations
-    // between room space and the space viewed by the osgGA::Trackball.
-    void getTrackballRoomToWorldMatrix(osg::Matrixd& matrix);
 
     void processMotion();
     

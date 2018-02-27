@@ -87,8 +87,7 @@ void LatLonGrid::setColor( const osg::Vec4 &color )
 {
 	ReferenceFrame::setColor(color);
 	(*_colors)[0] = color;
-	_gridGeom->dirtyDisplayList();
-	_mainGeom->dirtyDisplayList();
+  _colors->dirty();
 }
 
 void LatLonGrid::_init()
@@ -104,6 +103,12 @@ void LatLonGrid::_init()
 	// another one for the rest of the grid lines.
 	_gridGeom = new osg::Geometry;
 	_mainGeom = new osg::Geometry;
+  
+  // Use VBOs
+  _gridGeom->setUseDisplayList(false);
+  _gridGeom->setUseVertexBufferObjects(true);
+  _mainGeom->setUseDisplayList(false);
+  _mainGeom->setUseVertexBufferObjects(true);
 
 	// Create the arrays for the vertex data and colors
 	_vertices = new osg::Vec3Array;
@@ -225,6 +230,9 @@ void LatLonGrid::_createGrid()
 	  // since all of their vertices are connected at the poles.
 	  _gridGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_STRIP, start, _vertices->size()-start));
 	}
+  
+  // Indicate that data has changed and should be re-rendered
+  _vertices->dirty();
 }
 
 } // !namespace OpenFrames

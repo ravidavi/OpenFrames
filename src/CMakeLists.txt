@@ -163,3 +163,17 @@ INSTALL(
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
 )
+
+# Set RPATH to find dependencies in same directory as OpenFrames libraries
+# This is useful for when OpenFrames is installed alongside OSG
+if(UNIX)
+  if(APPLE)
+    SET_TARGET_PROPERTIES(${ALL_TARGETS} PROPERTIES INSTALL_RPATH
+      "@loader_path/"
+      )
+  else()
+    SET_TARGET_PROPERTIES(${ALL_TARGETS} PROPERTIES INSTALL_RPATH
+      "\$ORIGIN/"
+      )
+  endif()
+endif()

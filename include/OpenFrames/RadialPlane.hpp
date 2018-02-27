@@ -42,10 +42,12 @@ class OF_EXPORT RadialPlane : public ReferenceFrame
 	/** Set the color of the plane */
 	void setPlaneColor(const osg::Vec4 &color);
 	void setPlaneColor(float r, float g, float b, float a = 1.0);
+  const osg::Vec4& getPlaneColor() const { return (*_planeColor)[0]; }
 
 	/** Set the color of the radial/longitudinal lines on the plane */
 	void setLineColor(const osg::Vec4 &color);
 	void setLineColor(float r, float g, float b, float a = 1.0);
+  const osg::Vec4& getLineColor() const { return (*_lineColor)[0]; }
 
         /** Inherited from ReferenceFrame. */
 	virtual const osg::BoundingSphere& getBound() const;

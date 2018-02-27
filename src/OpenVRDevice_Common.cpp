@@ -466,6 +466,12 @@ namespace OpenFrames{
     _ovrDevice->setWorldUnitsPerMeter(_savedWorldUnitsPerMeter);
   }
   
+  /*******************************************************/
+  osg::Matrixd OpenVRTrackball::getMatrix() const
+  {
+    return osg::Matrix::inverse(OpenVRTrackball::getInverseMatrix());
+  }
+
   /*************************************************************/
   osg::Matrixd OpenVRTrackball::getInverseMatrix() const
   {
@@ -525,7 +531,7 @@ namespace OpenFrames{
       // the new pose state at each frame, which results in incremental rotations instead of one
       // big rotation from the initial to final controller positions.
       _motionData._device1OrigPoseRaw = device1CurrPoseRaw;
-      getTrackballRoomToWorldMatrix(_motionData._origTrackball);
+      _motionData._origTrackball = _roomPose * osgGA::TrackballManipulator::getMatrix();
       _motionData._origRotation = newRotation;
 
       break;
@@ -649,7 +655,9 @@ namespace OpenFrames{
         for (auto&& intersection : intersections)
         {
           osg::notify(osg::NOTICE) << "  - Local intersection point = " << intersection.localIntersectionPoint << std::endl;
-          osg::Vec3d worldPoint = intersection.getWorldIntersectPoint()*_motionData._origTrackball;
+          osg::Vec3d viewPoint = intersection.getWorldIntersectPoint()*_roomPose*osgGA::TrackballManipulator::getMatrix();
+          osg::notify(osg::NOTICE) << "  - View  intersection point = " << viewPoint << std::endl;
+          osg::Vec3d worldPoint = intersection.getWorldIntersectPoint()*_roomPose*FollowingTrackball::getMatrix();
           osg::notify(osg::NOTICE) << "  - World intersection point = " << worldPoint << std::endl;
         }
       }
@@ -671,16 +679,6 @@ namespace OpenFrames{
   }
   
   /*************************************************************/
-  void OpenVRTrackball::getTrackballRoomToWorldMatrix(osg::Matrixd& matrix)
-  {
-    // Transform from room space to trackball space
-    matrix = _roomPose;
-    
-    // Transform from trackball space to view space
-    matrix.postMult(osgGA::TrackballManipulator::getMatrix());
-  }
-  
-  /*************************************************************/
   void OpenVRTrackball::saveCurrentMotionData()
   {
     const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
@@ -694,7 +692,7 @@ namespace OpenFrames{
     
     _motionData._origWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
     _motionData._origRotation = osgGA::TrackballManipulator::getRotation();
-    getTrackballRoomToWorldMatrix(_motionData._origTrackball);
+    _motionData._origTrackball = _roomPose * osgGA::TrackballManipulator::getMatrix();
     _motionData._origRoomPose = _roomPose;
   }
   

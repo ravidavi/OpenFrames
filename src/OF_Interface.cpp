@@ -674,6 +674,110 @@ void OF_FCN(ofwin_setscene)(unsigned int *row, unsigned int *col)
 }
 
 /**
+* \brief Set the lighting parameters for the specified grid position
+*
+* This applies to the current active WindowProxy.
+*
+* \param row  Row in the grid to set
+* \param col  Column in the grid to set
+* \param r    Red component of specified light
+* \param g    Green component of specified light
+* \param b    Blue component of specified light
+**/
+void OF_FCN(ofwin_setlightambient)(unsigned int *row, unsigned int *col,
+                                   float *r, float *g, float *b)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      osg::Light* globalLight = rr->getSceneView()->getLight();
+      globalLight->setAmbient(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(ofwin_setlightdiffuse)(unsigned int *row, unsigned int *col,
+                                   float *r, float *g, float *b)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      osg::Light* globalLight = rr->getSceneView()->getLight();
+      globalLight->setDiffuse(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
+void OF_FCN(ofwin_setlightspecular)(unsigned int *row, unsigned int *col,
+                                    float *r, float *g, float *b)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      osg::Light* globalLight = rr->getSceneView()->getLight();
+      globalLight->setSpecular(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+/**
+* \brief Set the light position for the specified grid position
+*
+* This applies to the current active WindowProxy.
+*
+* \param row  Row in the grid to set
+* \param col  Column in the grid to set
+* \param x    X position in eye space
+* \param y    Y position in eye space
+* \param z    Z position in eye space
+* \param w    If 0 then directional (antiparallel to x,y,z direction)
+*             If 1 then positional  (radiates from x,y,z direction)
+**/
+void OF_FCN(ofwin_setlightposition)(unsigned int *row, unsigned int *col,
+                                    float *x, float *y, float *z, float *w)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      osg::Light* globalLight = rr->getSceneView()->getLight();
+      globalLight->setPosition(osg::Vec4(*x, *y, *z, *w));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
+/**
 * \brief Set the 3D stereo mode for the specified grid position
 *
 * This applies to the current active WindowProxy.
@@ -1644,6 +1748,94 @@ void OF_FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, 
 }
 
 /**
+* \brief Enable and manage per-frame lighting
+*
+* This applies to the current active ReferenceFrame.
+*
+* \param enabled Whether to enable or disable lighting
+* \param r Red component of specified light type
+* \param g Green component of specified light type
+* \param b Blue component of specified light type
+**/
+void OF_FCN(offrame_setlightsourceenabled)(bool *enabled)
+{
+  if(_objs->_currFrame)
+  {
+    _objs->_currFrame->setLightSourceEnabled(*enabled);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(offrame_getlightsourceenabled)(bool *enabled)
+{
+  if(_objs->_currFrame)
+  {
+    *enabled = _objs->_currFrame->getLightSourceEnabled();
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+  
+void OF_FCN(offrame_setlightambient)(float *r, float *g, float *b)
+{
+  if(_objs->_currFrame)
+  {
+    osg::LightSource* lightSource = _objs->_currFrame->getLightSource();
+    if(lightSource)
+    {
+      osg::Light* light = lightSource->getLight();
+      light->setAmbient(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else _objs->_intVal = -1;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(offrame_setlightdiffuse)(float *r, float *g, float *b)
+{
+  if(_objs->_currFrame)
+  {
+    osg::LightSource* lightSource = _objs->_currFrame->getLightSource();
+    if(lightSource)
+    {
+      osg::Light* light = lightSource->getLight();
+      light->setDiffuse(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else _objs->_intVal = -1;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+  
+void OF_FCN(offrame_setlightspecular)(float *r, float *g, float *b)
+{
+  if(_objs->_currFrame)
+  {
+    osg::LightSource* lightSource = _objs->_currFrame->getLightSource();
+    if(lightSource)
+    {
+      osg::Light* light = lightSource->getLight();
+      light->setSpecular(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else _objs->_intVal = -1;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
+/**
 * \brief Have this frame follow the specified trajectory
 *
 * The name used is the one used in the trajecotries creation in oftraj_create().
@@ -1906,7 +2098,179 @@ void OF_FCN(ofsphere_setautolod)(bool *lod)
       _objs->_intVal = -2;
     }
 }
+   
+/**
+* \brief Set the position of the sphere
+*
+* This applies to the current active Sphere.
+*
+* \param x X position
+* \param y Y position
+* \param z Z position
+**/
+void OF_FCN(ofsphere_setsphereposition)(double *x, double *y, double *z)
+{
+  // Make sure that the currently active ReferenceFrame is a Sphere
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if (sphere == NULL) {
+    _objs->_intVal = 1;
+    return;
+  }
+  
+  sphere->setSpherePosition(*x, *y, *z);
+  _objs->_intVal = 0;
+}
+  
+/**
+* \brief Set the attitude of the sphere
+*
+* This applies to the current active Sphere.
+*
+* \param rx    X component of the rotation quaternion
+* \param ry    Y component of the rotation quaternion
+* \param rz    Z component of the rotation quaternion
+* \param angle Angle component of the rotation quaternion
+**/
+void OF_FCN(ofsphere_setsphereattitude)(double *rx, double *ry, double *rz, double *angle)
+{
+  // Make sure that the currently active ReferenceFrame is a Sphere
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if (sphere == NULL) {
+    _objs->_intVal = 1;
+    return;
+  }
+  
+  sphere->setSphereAttitude(osg::Vec4(*rx, *ry, *rz, *angle));
+  _objs->_intVal = 0;
+}
+   
+/**
+* \brief Set the scale of the sphere
+*
+* This applies to the current active Sphere, and can be used to turn a Sphere into an ellipsoid.
+*
+* \param sx X scale
+* \param sy Y scale
+* \param sz Z scale
+**/
+void OF_FCN(ofsphere_setspherescale)(double *sx, double *sy, double *sz)
+{
+  // Make sure that the currently active ReferenceFrame is a Sphere
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if (sphere == NULL) {
+    _objs->_intVal = 1;
+    return;
+  }
+  
+  sphere->setSphereScale(*sx, *sy, *sz);
+  _objs->_intVal = 0;
+}
+    
+/**
+* \brief Set material parameters for the sphere
+*
+* This applies to the current active Sphere.
+*
+* \param r         Red component of reflectivity for given component
+* \param g         Green component of reflectivity for given component
+* \param b         Blue component of reflectivity for given component
+* \param shininess Specular shininess for given component
+**/
+void OF_FCN(ofsphere_setmaterialambient)(float *r, float *g, float *b)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(*r, *g, *b, 1.0));
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+  
+void OF_FCN(ofsphere_setmaterialdiffuse)(float *r, float *g, float *b)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(*r, *g, *b, 1.0));
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
 
+void OF_FCN(ofsphere_setmaterialspecular)(float *r, float *g, float *b)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(*r, *g, *b, 1.0));
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
+void OF_FCN(ofsphere_setmaterialemission)(float *r, float *g, float *b)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4(*r, *g, *b, 1.0));
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+      
+void OF_FCN(ofsphere_setmaterialshininess)(float *shininess)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setShininess(osg::Material::FRONT_AND_BACK, *shininess);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
 /*******************************************
 	Model Functions
 *******************************************/

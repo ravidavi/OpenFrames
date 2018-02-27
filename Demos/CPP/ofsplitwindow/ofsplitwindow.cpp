@@ -31,6 +31,7 @@
 using namespace OpenFrames;
 
 CoordinateAxes *earthaxes;
+RadialPlane *rp;
 WindowProxy *theWindow;
 
 const double rmag = 100000.0; // [km] Size of orbit
@@ -48,10 +49,37 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
     theWindow->pauseTime(!theWindow->isTimePaused());
   }
   
+  // Change CoordinateAxes color
   else if(*key == 'c')
   {
     osg::Vec4 color = earthaxes->getColor();
-    earthaxes->setColor(1.0-color[0], 1.0-color[1], 1.0-color[2]);
+    earthaxes->setColor(1.0-color[0], 1.0-color[1], 1.0-color[2], 1.0);
+    
+    color = rp->getPlaneColor();
+    rp->setPlaneColor(1.0-color[0], 1.0-color[1], 1.0-color[2], 1.0-color[3]);
+    
+    color = rp->getLineColor();
+    rp->setLineColor(1.0-color[0], 1.0-color[1], 1.0-color[2], 1.0);
+  }
+  
+  // Decrease size of onscreen objects
+  else if(*key == 'l')
+  {
+    earthaxes->setAxisLength(earthaxes->getAxisLength() - 10000.0);
+    
+    double radius, radSpace, lonSpace;
+    rp->getParameters(radius, radSpace, lonSpace);
+    rp->setParameters(radius - 10000.0, radSpace, lonSpace);
+  }
+  
+  // Increase size of onscreen objects
+  else if(*key == 'L')
+  {
+    earthaxes->setAxisLength(earthaxes->getAxisLength() + 10000.0);
+    
+    double radius, radSpace, lonSpace;
+    rp->getParameters(radius, radSpace, lonSpace);
+    rp->setParameters(radius + 10000.0, radSpace, lonSpace);
   }
   
   // Reset time to epoch. All ReferenceFrames that are following
@@ -261,7 +289,7 @@ int main()
   drawcenter->addArtist(centermarker);
   
   // Create a RadialPlane to show trace frame's orientation
-  RadialPlane *rp = new RadialPlane("radial", 1, 1, 1, 1);
+  rp = new RadialPlane("radial", 1, 1, 1, 1);
   rp->showAxes(ReferenceFrame::NO_AXES);
   rp->showAxesLabels(ReferenceFrame::NO_AXES);
   rp->showNameLabel(false);

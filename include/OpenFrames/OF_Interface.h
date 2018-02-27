@@ -134,6 +134,21 @@ OF_EXPORT void OF_FCN(ofwin_istimepaused)(bool *isPaused);
 OF_EXPORT void OF_FCN(ofwin_settimescale)(double *tscale);
 OF_EXPORT void OF_FCN(ofwin_gettimescale)(double *tscale);
 
+// Default lighting control
+// This can be overridden by enabling light from at least one ReferenceFrame
+OF_EXPORT void OF_FCN(ofwin_setlightambient)(unsigned int *row, unsigned int *col,
+                                             float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofwin_setlightdiffuse)(unsigned int *row, unsigned int *col,
+                                             float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofwin_setlightspecular)(unsigned int *row, unsigned int *col,
+                                              float *r, float *g, float *b);
+
+// Light position is defined in eye coordinates (x right, y up, z out of screen)
+// If w = 0 then light is directional: antiparallel to (x,y,z) direction
+// If w = 1 then light is positional:  radiates from (x,y,z) position
+OF_EXPORT void OF_FCN(ofwin_setlightposition)(unsigned int *row, unsigned int *col,
+                                              float *x, float *y, float *z, float *w);
+
 // Set the scene at the specified grid position
 // A scene is specified by the currently active FrameManager
 OF_EXPORT void OF_FCN(ofwin_setscene)(unsigned int *row, unsigned int *col);
@@ -255,7 +270,14 @@ OF_EXPORT void OF_FCN(offrame_setaxeslabels)(OF_CHARARG(xlabel),
 OF_EXPORT void OF_FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius);
 OF_EXPORT void OF_FCN(offrame_moveyaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius);
 OF_EXPORT void OF_FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius);
-
+  
+// Enable and manage lighting for the currently active ReferenceFrame
+OF_EXPORT void OF_FCN(offrame_setlightsourceenabled)(bool *enabled);
+OF_EXPORT void OF_FCN(offrame_getlightsourceenabled)(bool *enabled);
+OF_EXPORT void OF_FCN(offrame_setlightambient)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(offrame_setlightdiffuse)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(offrame_setlightspecular)(float *r, float *g, float *b);
+  
 // Have this frame follow the specified trajectory
 OF_EXPORT void OF_FCN(offrame_followtrajectory)(OF_CHARARG(name));
 
@@ -296,6 +318,22 @@ OF_EXPORT void OF_FCN(ofsphere_settexturemap)(OF_CHARARG(fname));
 
 // Enable/disable auto level of detailing for the sphere.
 OF_EXPORT void OF_FCN(ofsphere_setautolod)(bool *lod);
+
+// Set sphere position within its own reference frame
+OF_EXPORT void OF_FCN(ofsphere_setsphereposition)(double *x, double *y, double *z);
+
+// Set sphere attitude within its own reference frame
+OF_EXPORT void OF_FCN(ofsphere_setsphereattitude)(double *rx, double *ry, double *rz, double *angle);
+
+// Set sphere scale (to turn sphere into ellipsoid)
+OF_EXPORT void OF_FCN(ofsphere_setspherescale)(double *sx, double *sy, double *sz);
+  
+// Set material parameters for the sphere
+OF_EXPORT void OF_FCN(ofsphere_setmaterialambient)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofsphere_setmaterialdiffuse)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofsphere_setmaterialspecular)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofsphere_setmaterialemission)(float *r, float *g, float *b);
+OF_EXPORT void OF_FCN(ofsphere_setmaterialshininess)(float *shininess);
 
 /******************************************************************
 	Model Functions
