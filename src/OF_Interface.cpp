@@ -2080,6 +2080,30 @@ void OF_FCN(ofsphere_settexturemap)(OF_CHARARG(fname))
 }
 
 /**
+* \brief Set the image file used as the night texture map for the sphere
+*
+* See the OpenSceneGraph documentation for supported file types
+*
+* This applies to the current active Sphere.
+*
+* \param fname File containing the night texture map
+**/
+void OF_FCN(ofsphere_setnighttexturemap)(OF_CHARARG(fname))
+{
+  // Make sure that the currently active ReferenceFrame is a Sphere
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if (sphere == NULL) {
+    _objs->_intVal = 1;
+    return;
+  }
+
+  // Convert given character string and length to a proper C string
+  std::string temp(OF_STRING(fname));
+  sphere->setNightTextureMap(temp);
+  _objs->_intVal = 0;
+}
+
+/**
 * \brief Enable/disable auto level of detailing for the sphere
 *
 * This applies to the current active Sphere.

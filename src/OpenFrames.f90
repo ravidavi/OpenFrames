@@ -504,6 +504,11 @@
 	CHARACTER(LEN=*), INTENT(IN) :: fname
 	END SUBROUTINE
 
+	SUBROUTINE ofsphere_setnighttexturemap(fname)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setnighttexturemap
+	CHARACTER(LEN=*), INTENT(IN) :: fname
+	END SUBROUTINE
+
 	SUBROUTINE ofsphere_setautolod(lod)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setautolod
 	LOGICAL, INTENT(IN) :: lod

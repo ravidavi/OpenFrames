@@ -316,6 +316,10 @@ OF_EXPORT void OF_FCN(ofsphere_setradius)(double *radius);
 // the OpenSceneGraph documentation for supported file types.
 OF_EXPORT void OF_FCN(ofsphere_settexturemap)(OF_CHARARG(fname));
 
+// Set the image file used as the night texture map for the sphere. See
+// the OpenSceneGraph documentation for supported file types.
+OF_EXPORT void OF_FCN(ofsphere_setnighttexturemap)(OF_CHARARG(fname));
+
 // Enable/disable auto level of detailing for the sphere.
 OF_EXPORT void OF_FCN(ofsphere_setautolod)(bool *lod);
 
