@@ -25,7 +25,8 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
 
     QSurfaceFormat fmt;
-    fmt.setDepthBufferSize(24);
+    fmt.setDepthBufferSize(24); // 24-bit depth buffer
+    fmt.setSamples(4);          // 4x MSAA (multisample antialiasing)
     QSurfaceFormat::setDefaultFormat(fmt);
 
     MainWindow mainWindow;
