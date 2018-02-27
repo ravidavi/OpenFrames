@@ -18,6 +18,7 @@
 #include <OpenFrames/Model.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <osg/ArgumentParser>
+#include <osg/io_utils>
 #include <osgDB/FileNameUtils>
 #include <osgDB/FileUtils>
 
@@ -89,7 +90,33 @@ void VREventCallback(unsigned int *winID, unsigned int *row, unsigned int *col, 
     else if ((state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_Grip)) &&
       (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)))
     {
-      theWinProxy->getGridPosition(0, 0)->nextView();
+      theWinProxy->getGridPosition(*row, *col)->nextView();
+      std::string frameName = theWinProxy->getGridPosition(0, 0)->getCurrentView()->getViewFrame()->getName();
+      hudText->setText("Viewing: " + frameName);
+    }
+
+    // If only trigger is pressed, then compute controller origin in various reference frames
+    else if (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
+    {
+      // Get the currently active OpenVRTrackball
+      OpenVRTrackball *vrTrackball = dynamic_cast<OpenVRTrackball*>(theWinProxy->getGridPosition(*row, *col)->getCurrentView()->getTrackball());
+      if (vrTrackball)
+      {
+        // Get the controller origin in room coordinates
+        // Note that transforming the origin is the same as getting the translation component of the device transformation matrix
+        osg::Vec3d originRoom = ovrDevice->getDeviceModel(deviceID)->_rawDeviceToWorld.getTrans() * ovrDevice->getWorldUnitsPerMeter();
+        osg::notify(osg::NOTICE) << "  - Origin in Room frame  = " << originRoom << std::endl;
+
+        // Get the controller origin in view coordinates by multiplying Room->Trackball with Trackball->View matrices
+        // Here, the TrackballManipulator parent transforms from Trackball space to View space
+        osg::Vec3d originView = originRoom * vrTrackball->getRoomToTrackballMatrix() * vrTrackball->osgGA::TrackballManipulator::getMatrix();
+        osg::notify(osg::NOTICE) << "  - Origin in View frame  = " << originView << std::endl;
+
+        // Get the controller origin in world coordinates by multiplying Room->Trackball with Trackball->World matrices
+        // Here, the FollowingTrackball parent transforms from Trackball space to World space
+        osg::Vec3d originWorld = originRoom * vrTrackball->getRoomToTrackballMatrix() * vrTrackball->FollowingTrackball::getMatrix();
+        osg::notify(osg::NOTICE) << "  - Origin in World frame = " << originWorld << std::endl;
+      }
     }
 
     break;

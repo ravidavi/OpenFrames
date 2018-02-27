@@ -293,7 +293,7 @@ namespace OpenFrames {
    * This results in the World->Head transform, which can be combined
    * with the Head->Eye transform to create the per-eye view matrix.
    ******************************************/
-  class OpenVRTrackball : public FollowingTrackball
+  class OF_EXPORT OpenVRTrackball : public FollowingTrackball
   {
   public:
     OpenVRTrackball(OpenVRDevice *ovrDevice);
