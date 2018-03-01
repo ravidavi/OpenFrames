@@ -25,7 +25,6 @@
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
 #include <osgUtil/CullVisitor>
-#include <osgViewer/ViewerEventHandlers>
 
 #include <iostream>
 #include <algorithm>
@@ -188,10 +187,8 @@ namespace OpenFrames
       stateset->setMode(GL_BLEND, osg::StateAttribute::ON);
       stateset->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
 
-      // Image handler
-      osgViewer::InteractiveImageHandler* handler = new osgViewer::InteractiveImageHandler(_image.get());
-      _panel->setEventCallback(handler);
-      _panel->setCullCallback(handler);
+      // Set default image handler to convert user events to Qt widget selections
+      if (getImageHandler() == NULL) setImageHandler(new osgViewer::InteractiveImageHandler(_image.get()));
 
       // Set color to white for modulation of texture
       osg::Vec4Array* colours = new osg::Vec4Array(1);
@@ -224,6 +221,17 @@ namespace OpenFrames
           _image->getQGraphicsViewAdapter()->setIgnoredWidgets(_ignoredWidgets);
       }
     }
+  }
+
+  void QWidgetPanel::setImageHandler(osgViewer::InteractiveImageHandler *handler)
+  {
+    _panel->setEventCallback(handler);
+    _panel->setCullCallback(handler);
+  }
+
+  osgViewer::InteractiveImageHandler* QWidgetPanel::getImageHandler() const
+  {
+    return dynamic_cast<osgViewer::InteractiveImageHandler*>(_panel->getEventCallback());
   }
 
   void QWidgetPanel::setColor( const osg::Vec4 &color )

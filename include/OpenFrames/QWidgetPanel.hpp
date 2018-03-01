@@ -22,6 +22,7 @@
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Geode>
 #include <osg/Geometry>
+#include <osgViewer/ViewerEventHandlers>
 
 // Qt forward declarations
 #include <qglobal.h> // for QT_FORWARD_DECLARE_CLASS
@@ -60,6 +61,14 @@ namespace OpenFrames
 
       /** Sets whether a widget will ignore keyboard and mouse events */
       void setIgnoreWidget( QWidget *widget, bool ignore );
+
+      /** Get the image onto which the Qt widget is drawn. Useful when creating custom image handlers.
+          Only valid if setWidget() has been called with a valid QWidget, returns NULL otherwise. */
+      osg::Image* getImage() { return (osg::Image*)_image.get(); }
+
+      /** Set the image handler that translates user actions into image actions */
+      void setImageHandler(osgViewer::InteractiveImageHandler *handler);
+      osgViewer::InteractiveImageHandler* getImageHandler() const;
 
       /** Inherited from ReferenceFrame.
         Set the color of the box.  If a texture is applied, the color is

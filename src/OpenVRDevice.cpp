@@ -666,4 +666,11 @@ namespace OpenFrames{
     }
   }
 
+  /*************************************************************/
+  bool OpenVRImageHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa, osg::Object* obj, osg::NodeVisitor* nv)
+  {
+    return osgViewer::InteractiveImageHandler::handle(ea, aa, obj, nv);
+    //return false;
+  }
+
 } // !namespace OpenFrames

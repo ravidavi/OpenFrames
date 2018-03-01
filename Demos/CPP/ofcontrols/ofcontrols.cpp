@@ -20,6 +20,7 @@ limitations under the License.
 #include <OpenFrames/QWidgetPanel.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <OpenFrames/Sphere.hpp>
+#include <OpenFrames/OpenVRDevice.hpp>
 
 #include <QApplication>
 #include <QWidget>
@@ -162,6 +163,7 @@ OFControls::OFControls()
   //editorParentWidget->setMinimumSize(QSize(400, 300));
   editorPanel->setWidget(editorParentWidget);
   editorPanel->setIgnoreWidget(editorParentWidget, true);
+  if(useVR) editorPanel->setImageHandler(new OpenFrames::OpenVRImageHandler(_windowProxy->getOpenVRDevice(), editorPanel->getImage()));
 
   // Create the sphere options widget, built at compile time from the ui file
   QWidget *sphereOptionsWidget = new QWidget;
@@ -172,6 +174,7 @@ OFControls::OFControls()
   QCheckBox *moveSphereCheckBox = sphereOptionsWidget->findChild<QCheckBox*>("moveSphereUI");
   sphereOptionsPanel->setWidget(sphereOptionsWidget);
   sphereOptionsPanel->setIgnoreWidget(sphereOptionsWidget, true);
+  if(useVR) sphereOptionsPanel->setImageHandler(new OpenFrames::OpenVRImageHandler(_windowProxy->getOpenVRDevice(), sphereOptionsPanel->getImage()));
 
   // Create the example list view
   _list = new QListWidget();
@@ -195,6 +198,7 @@ OFControls::OFControls()
     _list->setCurrentItem(matchingItems[0]);
   }
   colorPanel->setWidget(_list);
+  if(useVR) colorPanel->setImageHandler(new OpenFrames::OpenVRImageHandler(_windowProxy->getOpenVRDevice(), colorPanel->getImage()));
 
   // Create the example slider controls widget, loaded from ui file in resources at runtime
   QFile file(":/forms/movesphereform.ui");
@@ -206,6 +210,7 @@ OFControls::OFControls()
   QSlider *zSlider = moveSphereWidget->findChild<QSlider*>("zSliderUI");
   _hiddenPanel->setWidget(moveSphereWidget);
   _hiddenPanel->setIgnoreWidget(moveSphereWidget, true);
+  if(useVR) _hiddenPanel->setImageHandler(new OpenFrames::OpenVRImageHandler(_windowProxy->getOpenVRDevice(), _hiddenPanel->getImage()));
 
   // Connect QObject signals to our slots
   QObject::connect(moveSphereCheckBox, &QCheckBox::clicked, this, &OFControls::setHiddenPanel);

@@ -26,6 +26,7 @@
 #include <osg/Texture>
 #include <osg/Vec3d>
 #include <osgGA/Device>
+#include <osgViewer/ViewerEventHandlers>
 #include <algorithm>
 
 /** 
@@ -371,6 +372,38 @@ namespace OpenFrames {
     
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
     osg::observer_ptr<VRTextureBuffer> _texBuffer;
+  };
+
+  /******************************************
+  * OpenFrames API, class OpenVRImageHandler
+  * Event handler that enables clicking on an image using VR controllers.
+  ******************************************/
+  class OF_EXPORT OpenVRImageHandler : public osgViewer::InteractiveImageHandler
+  {
+  public:
+    OpenVRImageHandler(const OpenVRDevice *ovrDevice, osg::Image* image) :
+      osgViewer::InteractiveImageHandler(image),
+      _ovrDevice(ovrDevice)
+    {}
+
+    META_Object(OpenFrames, OpenVRImageHandler);
+
+    // Inherited from InteractiveImageHandler
+    // Translate an OpenVR controller event to a Qt widget click
+    virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa, osg::Object* obj, osg::NodeVisitor* nv);
+
+  protected:
+    virtual ~OpenVRImageHandler() {}
+
+    OpenVRImageHandler() :
+      osgViewer::InteractiveImageHandler()
+    {}
+
+    OpenVRImageHandler(const OpenVRImageHandler &ovrih, const osg::CopyOp &copyop = osg::CopyOp::SHALLOW_COPY) :
+      osgViewer::InteractiveImageHandler(ovrih, copyop)
+    {}
+
+    osg::observer_ptr<const OpenVRDevice> _ovrDevice;
   };
   
 } // !namespace OpenFrames
