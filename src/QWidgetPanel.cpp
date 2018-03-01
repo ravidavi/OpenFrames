@@ -92,6 +92,17 @@ namespace OpenFrames
     showAxesLabels(0U);
   }
 
+  void QWidgetPanel::showContents(bool showContents)
+  {
+    if (showContents) _geode->setNodeMask(0xffffffff);
+    else _geode->setNodeMask(0x0);
+  }
+
+  bool QWidgetPanel::getContentsShown() const
+  {
+    return (_geode->getNodeMask() != 0x0);
+  }
+
   void QWidgetPanel::setHalfLengths(const double &xHalfLength, const double &yHalfLength, const double &zHalfLength)
   {
     // Set shape half lengths
@@ -182,8 +193,7 @@ namespace OpenFrames
       osg::TexEnv* texenv = new osg::TexEnv;
       texenv->setMode(osg::TexEnv::MODULATE);
       stateset->setTextureAttribute(0, texenv);
-      stateset->setAttribute(new osg::Program); // TODO What is this for??
-      stateset->setMode(GL_LIGHTING, osg::StateAttribute::ON);
+      stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
       stateset->setMode(GL_BLEND, osg::StateAttribute::ON);
       stateset->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
 

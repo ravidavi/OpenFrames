@@ -47,7 +47,7 @@ class OFControls : public QObject
   Q_OBJECT
 
 public:
-  OFControls();
+  OFControls(bool useVR);
   virtual ~OFControls();
 
   // Reserve copy and assignment constructors

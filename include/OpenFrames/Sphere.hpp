@@ -41,6 +41,11 @@ namespace OpenFrames
     Sphere( const std::string &name, const osg::Vec4 &color );
     Sphere( const std::string &name , float r, float g, float b, float a = 1.0 );
     
+    // Show/hide this frame's contents, e.g. everything a frame shows (excluding axes, labels, and children)
+    // Inherited from ReferenceFrame
+    virtual void showContents(bool showContents);
+    virtual bool getContentsShown() const;
+
     /** Needed because osg::ShapeDrawable only sets texture coordinates for unit0.
         This can be removed once the Sphere creates its own geometry.
         Not for use by end user. */

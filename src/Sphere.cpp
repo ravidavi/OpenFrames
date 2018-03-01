@@ -136,6 +136,17 @@ namespace OpenFrames
     setRadius(1.0);
     setColor(getColor());
   }
+
+  void Sphere::showContents(bool showContents)
+  {
+    if (showContents) _sphereXform->setNodeMask(0xffffffff);
+    else _sphereXform->setNodeMask(0x0);
+  }
+
+  bool Sphere::getContentsShown() const
+  {
+    return (_sphereXform->getNodeMask() != 0x0);
+  }
   
   void Sphere::restoreTexCoords()
   {

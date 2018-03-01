@@ -200,6 +200,11 @@ class OF_EXPORT ReferenceFrame : public osg::Referenced {
 	virtual void showAxesLabels(unsigned int labels);
 	virtual void showNameLabel(bool namelabel);
 
+  // Show/hide this frame's contents, e.g. everything a frame shows (excluding axes, labels, and children)
+  // Derived classes should override this 
+  virtual void showContents(bool showContents) {}
+  virtual bool getContentsShown() const { return true; }
+
     // Place x/y/z axis vectors at the given location with given length
     void moveXAxis(osg::Vec3d base, double len, double headRatio = 0.3, double bodyRadius = 0.0, double headRadius = 0.0) const;
     void moveYAxis(osg::Vec3d base, double len, double headRatio = 0.3, double bodyRadius = 0.0, double headRadius = 0.0) const;

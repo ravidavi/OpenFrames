@@ -51,6 +51,11 @@ namespace OpenFrames
       QWidgetPanel( const std::string &name, const osg::Vec4 &color );
       QWidgetPanel( const std::string &name , float r, float g, float b, float a = 1.0 );
 
+      // Show/hide this frame's contents, e.g. everything a frame shows (excluding axes, labels, and children)
+      // Inherited from ReferenceFrame
+      virtual void showContents(bool showContents);
+      virtual bool getContentsShown() const;
+
       /** Set the half lengths for sides of the box, given wrt the origin of
           the box's reference frame */
       void setHalfLengths( const double &xHalfLength, const double &yHalfLength, const double &zHalfLength );

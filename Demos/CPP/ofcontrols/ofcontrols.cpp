@@ -58,6 +58,12 @@ const char *OFControls::DEFAULT_SPHERE_COLOR = COLORS.begin()->first.c_str();
 
 int main(int argc, char **argv)
 {
+  // Parse user inputs
+  osg::ArgumentParser arguments(&argc, argv);
+
+  // Use VR mode
+  bool useVR = arguments.read("--vr");
+
   // Qt requires that we construct the global QApplication before creating any widgets.
   QApplication *app;
   app = new QApplication(argc, argv);
@@ -68,11 +74,11 @@ int main(int argc, char **argv)
   app->setFont(font);
 
   // Start main app
-  static OFControls controls;
+  static OFControls controls(useVR);
   controls.main(argc, argv);
 }
 
-OFControls::OFControls()
+OFControls::OFControls(bool useVR)
 {
   osg::Vec4 bgColor = { 0.8f, 0.8f, 0.8f, 0.9f };
 
@@ -80,7 +86,7 @@ OFControls::OFControls()
   int x = 100, y = 100;
   unsigned int width = 640, height = 480;
   unsigned int nrow = 1, ncol = 1;
-  bool isEmbedded = false, useVR = false;
+  bool isEmbedded = false;
   if (useVR)
   {
     width = 1080 / 2;
@@ -145,6 +151,8 @@ OFControls::OFControls()
   _hiddenPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
   _hiddenPanel->showAxes(0U);
   _hiddenPanel->showAxesLabels(0U);
+  _root->addChild(_hiddenPanel);
+  setHiddenPanel(false);
 
   // Create the text editor widget
   QWidget *editorParentWidget = new QWidget;
@@ -255,30 +263,18 @@ int OFControls::main(int argc, char **argv)
 
 void OFControls::toggleSphere()
 {
-  _windowProxy->getGridPosition(0U, 0U)->getFrameManager()->lock();
-  if (_root->getChildIndex(_sphere) >= 0)
-    setSphere(false);
-  else
-    setSphere(true);
-  _windowProxy->getGridPosition(0U, 0U)->getFrameManager()->unlock();
+  setSphere(!_sphere->getContentsShown());
 }
 
 void OFControls::setSphere(bool checked)
 {
-  _windowProxy->getGridPosition(0U, 0U)->getFrameManager()->lock();
-  if (!checked && _root->getChildIndex(_sphere) >= 0)
-  {
-    _showCheckBox->setChecked(false);
-    _toggleButton->setText("Show Sphere");
-    _root->removeChild(_sphere);
-  }
-  else if (checked && _root->getChildIndex(_sphere) < 0)
-  {
-    _showCheckBox->setChecked(true);
+  _showCheckBox->setChecked(checked);
+  _sphere->showContents(checked);
+
+  if (checked)
     _toggleButton->setText("Hide Sphere");
-    _root->addChild(_sphere);
-  }
-  _windowProxy->getGridPosition(0U, 0U)->getFrameManager()->unlock();
+  else
+    _toggleButton->setText("Show Sphere");
 }
 
 void OFControls::setColor(QListWidgetItem *item)
@@ -288,12 +284,7 @@ void OFControls::setColor(QListWidgetItem *item)
 
 void OFControls::setHiddenPanel(bool checked)
 {
-  _windowProxy->getGridPosition(0U, 0U)->getFrameManager()->lock();
-  if (!checked && _root->getChildIndex(_hiddenPanel) >= 0)
-    _root->removeChild(_hiddenPanel);
-  else if (checked && _root->getChildIndex(_hiddenPanel) < 0)
-    _root->addChild(_hiddenPanel);
-  _windowProxy->getGridPosition(0U, 0U)->getFrameManager()->unlock();
+  _hiddenPanel->showContents(checked);
 }
 
 void OFControls::setXLocation(int position)
