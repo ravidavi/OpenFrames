@@ -174,7 +174,7 @@ namespace OpenFrames {
     double getUserHeight() const { return _userHeight; }
 
     /** Get the controller laser */
-    osg::MatrixTransform* getControllerLaser(uint32_t deviceID);
+    osg::MatrixTransform* getControllerLaser(uint32_t deviceID) const;
 
     /** Get the ground plane */
     osg::MatrixTransform* getGroundPlane() { return _roomGround; }
@@ -402,6 +402,26 @@ namespace OpenFrames {
     OpenVRImageHandler(const OpenVRImageHandler &ovrih, const osg::CopyOp &copyop = osg::CopyOp::SHALLOW_COPY) :
       osgViewer::InteractiveImageHandler(ovrih, copyop)
     {}
+
+    void processImagePick();
+
+    /** Type of image pick action currently being handled */
+    enum PickMode
+    {
+      NONE = 0,
+      MOUSEOVER,
+      LEFTCLICK
+    };
+
+    /** Data used when computing world transformations during user events */
+    struct PickData
+    {
+      PickMode _mode;
+      uint32_t _device1ID;
+      osg::Matrixd _device1PoseRaw;
+      OpenVRTrackball* _trackball;
+    } _pickData;
+    void saveCurrentPickData(PickMode mode, osgViewer::View* view, uint32_t device1ID);
 
     osg::observer_ptr<const OpenVRDevice> _ovrDevice;
   };

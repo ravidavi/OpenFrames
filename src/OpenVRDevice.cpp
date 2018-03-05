@@ -562,7 +562,7 @@ namespace OpenFrames{
         // If trigger is pressed, then pick a point on the ground grid
         else if (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
         {
-          // Go from No Motion -> Pick when a controller's touchpad is pressed
+          // Go from No Motion -> Pick when a controller's trigger is pressed
           if (_motionData._mode == NONE)
           {
             // Pick using Device 1
@@ -669,8 +669,78 @@ namespace OpenFrames{
   /*************************************************************/
   bool OpenVRImageHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa, osg::Object* obj, osg::NodeVisitor* nv)
   {
-    return osgViewer::InteractiveImageHandler::handle(ea, aa, obj, nv);
-    //return false;
+    // Check if incoming event is an OpenVR event
+    const OpenVREvent *event = dynamic_cast<const OpenVREvent*>(&ea);
+    osgViewer::View *view = dynamic_cast<osgViewer::View*>(&aa);
+    if (event && view)
+    {
+      // Get OpenVR event data
+      const vr::VREvent_t *ovrEvent = event->_vrEventData._ovrEvent;
+      vr::TrackedDeviceIndex_t deviceID = ovrEvent->trackedDeviceIndex;
+      const vr::VRControllerState_t *state = event->_vrEventData._controllerState;
+
+      // Only process event if it's from a controller
+      if (deviceID >= _ovrDevice->getNumDeviceModels()) return false;
+      if (_ovrDevice->getDeviceModel(deviceID)->_class != OpenVRDevice::CONTROLLER) return false;
+
+      // Convert controller event types to view changes in VR space
+      switch (ovrEvent->eventType)
+      {
+      case(vr::VREvent_ButtonPress):
+      {
+        // If trigger is pressed, then mouseclick on the image
+        if (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
+        {
+          saveCurrentPickData(PickMode::LEFTCLICK, view, deviceID);
+        }
+        break;
+      }
+
+      case(vr::VREvent_ButtonUnpress):
+      {
+        // If trigger is unpressed, then revert to mouseover on the image
+        if ((state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) == 0x0)
+        {
+          saveCurrentPickData(PickMode::MOUSEOVER, view, deviceID);
+        }
+        break;
+      }
+
+      case(vr::VREvent_ButtonTouch):
+      {
+        // If trigger is touched, then start mouseover on the image
+        if (state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
+        {
+          saveCurrentPickData(PickMode::MOUSEOVER, view, deviceID);
+        }
+        break;
+      }
+
+      case(vr::VREvent_ButtonUntouch):
+      {
+        // If trigger is untouched, then stop mouseover on the image
+        if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) == 0x0)
+        {
+          _pickData._mode = PickMode::NONE;
+        }
+        break;
+      }
+      }
+
+      return false;
+    }
+    else // Otherwise process it as a regular trackball event
+    {
+      // Dispatch new image pick event at each frame
+      if (ea.getEventType() == osgGA::GUIEventAdapter::FRAME)
+      {
+        processImagePick();
+        return false;
+      }
+
+      // Fallback to mouse-based image handler as needed
+      else return osgViewer::InteractiveImageHandler::handle(ea, aa, obj, nv);
+    }
   }
 
 } // !namespace OpenFrames

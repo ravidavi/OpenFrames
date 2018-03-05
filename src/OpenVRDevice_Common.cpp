@@ -389,7 +389,7 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
-  osg::MatrixTransform* OpenVRDevice::getControllerLaser(uint32_t deviceID)
+  osg::MatrixTransform* OpenVRDevice::getControllerLaser(uint32_t deviceID) const
   {
     if (deviceID >= _deviceIDToModel.size()) return NULL;
     if (_deviceIDToModel[deviceID]._class != CONTROLLER) return NULL;
@@ -717,6 +717,25 @@ namespace OpenFrames{
 
     // Get updated device poses for next frame
     _ovrDevice->waitGetPoses();
+  }
+
+  /*************************************************************/
+  void OpenVRImageHandler::processImagePick()
+  {
+  }
+
+  /*************************************************************/
+  void OpenVRImageHandler::saveCurrentPickData(PickMode mode, osgViewer::View* view, uint32_t device1ID)
+  {
+    const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(device1ID);
+    OpenVRTrackball *trackball = dynamic_cast<OpenVRTrackball*>(view->getCameraManipulator());
+    if (device1Model && trackball)
+    {
+      _pickData._mode = mode;
+      _pickData._device1ID = device1ID;
+      _pickData._device1PoseRaw = device1Model->_rawDeviceToWorld;
+      _pickData._trackball = trackball;
+    }
   }
 
 } // !namespace OpenFrames
