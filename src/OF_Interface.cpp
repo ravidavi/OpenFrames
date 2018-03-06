@@ -1681,9 +1681,9 @@ void OF_FCN(offrame_setaxeslabels)(OF_CHARARG(xlabel),
 *
 * \param pos        Position array of the origin of the x-axis component.
 * \param length     Length of the x-axis arrow.
-* \param headRatio  Ratio of the arrow head to body.
-* \param bodyRadius Radius of the body of the arrow.
-* \param headRadius Radius of the head of the arrow.
+* \param headRatio  Ratio of the arrow head to body. Set to 0.0 to use default.
+* \param bodyRadius Radius of the body of the arrow. Set to 0.0 to use default.
+* \param headRadius Radius of the head of the arrow. Set to 0.0 to use default.
 **/
 void OF_FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
 {
@@ -1706,9 +1706,9 @@ void OF_FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, 
 *
 * \param pos        Position array of the origin of the y-axis component.
 * \param length     Length of the y-axis arrow.
-* \param headRatio  Ratio of the arrow head to body.
-* \param bodyRadius Radius of the body of the arrow.
-* \param headRadius Radius of the head of the arrow.
+* \param headRatio  Ratio of the arrow head to body. Set to 0.0 to use default.
+* \param bodyRadius Radius of the body of the arrow. Set to 0.0 to use default.
+* \param headRadius Radius of the head of the arrow. Set to 0.0 to use default.
 **/
 void OF_FCN(offrame_moveyaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
 {
@@ -1731,9 +1731,9 @@ void OF_FCN(offrame_moveyaxis)(double pos[], double *length, double *headRatio, 
 *
 * \param pos        Position array of the origin of the z-axis component.
 * \param length     Length of the z-axis arrow.
-* \param headRatio  Ratio of the arrow head to body.
-* \param bodyRadius Radius of the body of the arrow.
-* \param headRadius Radius of the head of the arrow.
+* \param headRatio  Ratio of the arrow head to body. Set to 0.0 to use default.
+* \param bodyRadius Radius of the body of the arrow. Set to 0.0 to use default.
+* \param headRadius Radius of the head of the arrow. Set to 0.0 to use default.
 **/
 void OF_FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
 {

@@ -317,13 +317,16 @@ namespace OpenFrames
     // Account for scale by using the largest scale value
     double sx, sy, sz;
     _sphereXform->getScale(sx, sy, sz);
-    double maxScale = std::max({sx, sy, sz});
-    bs._radius = getRadius()*maxScale;
+    double rx, ry, rz;
+    rx = sx*getRadius();
+    ry = sy*getRadius();
+    rz = sz*getRadius();
+    bs._radius = std::max({rx, ry, rz});
     
-    // Place the axes at the edge of the bounding sphere
-    moveXAxis(bs._center + osg::Vec3(bs._radius, 0, 0), 0.5*bs._radius);
-    moveYAxis(bs._center + osg::Vec3(0, bs._radius, 0), 0.5*bs._radius);
-    moveZAxis(bs._center + osg::Vec3(0, 0, bs._radius), 0.5*bs._radius);
+    // Place the axes at the edge of the scaled bounding sphere
+    moveXAxis(bs._center + osg::Vec3(rx, 0, 0), 0.5*rx);
+    moveYAxis(bs._center + osg::Vec3(0, ry, 0), 0.5*ry);
+    moveZAxis(bs._center + osg::Vec3(0, 0, rz), 0.5*rz);
   }
   
   const osg::BoundingSphere& Sphere::getBound() const
