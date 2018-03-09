@@ -720,21 +720,79 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
-  void OpenVRImageHandler::processImagePick()
+  OpenVRImageHandler::OpenVRImageHandler(const OpenVRDevice *ovrDevice, osg::Image* image) :
+    osgViewer::InteractiveImageHandler(image),
+    _ovrDevice(ovrDevice)
   {
+    _pickData.mode = NONE;
   }
 
   /*************************************************************/
-  void OpenVRImageHandler::saveCurrentPickData(PickMode mode, osgViewer::View* view, uint32_t device1ID)
+  void OpenVRImageHandler::processImagePick()
+  {
+    // Check if image pick processing is needed
+    if (_pickData.mode == NONE) return;
+
+    // Get controller pose, in room space and room units (meters)
+    const osg::Matrixd &device1PoseRaw = _ovrDevice->getDeviceModel(_pickData.device1ID)->_rawDeviceToWorld;
+
+    // Determine image location at which controller laser is pointing
+    // Start by getting the controller origin and laser direction in room space and world units
+    osg::Vec3d startPoint = device1PoseRaw.getTrans() * _ovrDevice->getWorldUnitsPerMeter();
+    osg::Vec3d endPoint = osg::Vec3d(0, 0, -1) * device1PoseRaw * _ovrDevice->getWorldUnitsPerMeter();
+
+    // Transform to world space
+    // TODO: This assumes the geometry is in world space. Also handle cases where geometry is in room space or controller space.
+    osg::Matrixd matRoomToWorld =  _pickData.trackball->getRoomToTrackballMatrix() * _pickData.trackball->FollowingTrackball::getMatrix();
+
+    // Transform to geometry's local space
+    osg::Matrixd matWorldToGeomLocal = osg::computeWorldToLocal(_pickData.nodePath);
+    osg::Matrixd matRoomToGeomLocal = matRoomToWorld * matWorldToGeomLocal;
+    startPoint = startPoint * matRoomToGeomLocal;
+    endPoint = endPoint * matRoomToGeomLocal;
+
+    // Perform the pick operation
+    osg::Vec3d rayDir = endPoint - startPoint;
+    osg::ref_ptr<osgUtil::RayIntersector> intersector = new osgUtil::RayIntersector(startPoint, rayDir);
+    osgUtil::IntersectionVisitor iv(intersector);
+    _pickData.nodePath.back()->accept(iv);
+    if (intersector->containsIntersections())
+    {
+      auto intersections = intersector->getIntersections();
+      osg::notify(osg::NOTICE) << "Got " << intersections.size() << " intersections:\n";
+      for (auto&& intersection : intersections)
+      {
+        osg::notify(osg::NOTICE) << "  - Local intersection point = " << intersection.localIntersectionPoint << std::endl;
+      }
+    }
+
+    // Dispatch the appropriate mouse event to the Image
+    switch (_pickData.mode)
+    {
+    case(MOUSEOVER):
+    {
+      break;
+    }
+    }
+  }
+
+  /*************************************************************/
+  void OpenVRImageHandler::saveCurrentPickData(PickMode mode, osgViewer::View* view, osg::NodeVisitor* nv, uint32_t device1ID)
   {
     const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(device1ID);
     OpenVRTrackball *trackball = dynamic_cast<OpenVRTrackball*>(view->getCameraManipulator());
-    if (device1Model && trackball)
+
+    if ((device1Model == nullptr) || (trackball == nullptr) || (nv == nullptr) || nv->getNodePath().empty())
     {
-      _pickData._mode = mode;
-      _pickData._device1ID = device1ID;
-      _pickData._device1PoseRaw = device1Model->_rawDeviceToWorld;
-      _pickData._trackball = trackball;
+      _pickData.mode = NONE;
+      _pickData.nodePath.clear();
+    }
+    else
+    {
+      _pickData.mode = mode;
+      _pickData.device1ID = device1ID;
+      _pickData.trackball = trackball;
+      _pickData.nodePath = nv->getNodePath();
     }
   }
 

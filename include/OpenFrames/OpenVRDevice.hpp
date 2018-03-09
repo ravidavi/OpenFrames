@@ -381,10 +381,7 @@ namespace OpenFrames {
   class OF_EXPORT OpenVRImageHandler : public osgViewer::InteractiveImageHandler
   {
   public:
-    OpenVRImageHandler(const OpenVRDevice *ovrDevice, osg::Image* image) :
-      osgViewer::InteractiveImageHandler(image),
-      _ovrDevice(ovrDevice)
-    {}
+    OpenVRImageHandler(const OpenVRDevice *ovrDevice, osg::Image* image);
 
     META_Object(OpenFrames, OpenVRImageHandler);
 
@@ -416,12 +413,12 @@ namespace OpenFrames {
     /** Data used when computing world transformations during user events */
     struct PickData
     {
-      PickMode _mode;
-      uint32_t _device1ID;
-      osg::Matrixd _device1PoseRaw;
-      OpenVRTrackball* _trackball;
+      PickMode mode;
+      uint32_t device1ID;
+      OpenVRTrackball* trackball;
+      osg::NodePath nodePath;
     } _pickData;
-    void saveCurrentPickData(PickMode mode, osgViewer::View* view, uint32_t device1ID);
+    void saveCurrentPickData(PickMode mode, osgViewer::View* view, osg::NodeVisitor* nv, uint32_t device1ID);
 
     osg::observer_ptr<const OpenVRDevice> _ovrDevice;
   };

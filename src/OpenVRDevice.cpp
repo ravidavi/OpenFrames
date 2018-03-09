@@ -691,7 +691,7 @@ namespace OpenFrames{
         // If trigger is pressed, then mouseclick on the image
         if (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
         {
-          saveCurrentPickData(PickMode::LEFTCLICK, view, deviceID);
+          saveCurrentPickData(PickMode::LEFTCLICK, view, nv, deviceID);
         }
         break;
       }
@@ -701,7 +701,7 @@ namespace OpenFrames{
         // If trigger is unpressed, then revert to mouseover on the image
         if ((state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) == 0x0)
         {
-          saveCurrentPickData(PickMode::MOUSEOVER, view, deviceID);
+          saveCurrentPickData(PickMode::MOUSEOVER, view, nv, deviceID);
         }
         break;
       }
@@ -711,7 +711,7 @@ namespace OpenFrames{
         // If trigger is touched, then start mouseover on the image
         if (state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
         {
-          saveCurrentPickData(PickMode::MOUSEOVER, view, deviceID);
+          saveCurrentPickData(PickMode::MOUSEOVER, view, nv, deviceID);
         }
         break;
       }
@@ -721,7 +721,7 @@ namespace OpenFrames{
         // If trigger is untouched, then stop mouseover on the image
         if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) == 0x0)
         {
-          _pickData._mode = PickMode::NONE;
+          _pickData.mode = PickMode::NONE;
         }
         break;
       }
