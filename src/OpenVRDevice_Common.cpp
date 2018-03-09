@@ -727,23 +727,30 @@ namespace OpenFrames{
     _pickData.mode = NONE;
   }
 
-  /*************************************************************/
+  /*************************************************************
+  * Determine the image location at which a VR controller is pointing,
+  * and send a mouse event to the image so it can be processed by
+  * the image's underlying GUI framework (e.g. Qt)
+  *************************************************************/
   void OpenVRImageHandler::processImagePick()
   {
     // Check if image pick processing is needed
     if (_pickData.mode == NONE) return;
 
+    // Pick coordinates on image
+    bool validPick = false;
+    int x = 0, y = 0;
+
     // Get controller pose, in room space and room units (meters)
     const osg::Matrixd &device1PoseRaw = _ovrDevice->getDeviceModel(_pickData.device1ID)->_rawDeviceToWorld;
 
-    // Determine image location at which controller laser is pointing
     // Start by getting the controller origin and laser direction in room space and world units
     osg::Vec3d startPoint = device1PoseRaw.getTrans() * _ovrDevice->getWorldUnitsPerMeter();
     osg::Vec3d endPoint = osg::Vec3d(0, 0, -1) * device1PoseRaw * _ovrDevice->getWorldUnitsPerMeter();
 
     // Transform to world space
     // TODO: This assumes the geometry is in world space. Also handle cases where geometry is in room space or controller space.
-    osg::Matrixd matRoomToWorld =  _pickData.trackball->getRoomToTrackballMatrix() * _pickData.trackball->FollowingTrackball::getMatrix();
+    osg::Matrixd matRoomToWorld = _pickData.trackball->getRoomToTrackballMatrix() * _pickData.trackball->FollowingTrackball::getMatrix();
 
     // Transform to geometry's local space
     osg::Matrixd matWorldToGeomLocal = osg::computeWorldToLocal(_pickData.nodePath);
@@ -759,18 +766,74 @@ namespace OpenFrames{
     if (intersector->containsIntersections())
     {
       auto intersections = intersector->getIntersections();
-      osg::notify(osg::NOTICE) << "Got " << intersections.size() << " intersections:\n";
+      /*
+      osg::notify(osg::NOTICE) << "Got " << intersections.size() << " intersections for " << _pickData.nodePath.back()->getName() << std::endl;
       for (auto&& intersection : intersections)
       {
         osg::notify(osg::NOTICE) << "  - Local intersection point = " << intersection.localIntersectionPoint << std::endl;
       }
+      */
+
+      osg::Vec2 tc(0.5f, 0.5f); // Intersection tex coord
+
+      // Get nearest intersection
+      const osgUtil::RayIntersector::Intersection& intersection = *(intersections.begin());
+      osg::Drawable* drawable = intersection.drawable.get();
+      osg::Geometry* geometry = drawable ? drawable->asGeometry() : nullptr;
+      osg::Vec3Array* vertices = geometry ? dynamic_cast<osg::Vec3Array*>(geometry->getVertexArray()) : nullptr;
+      if (vertices)
+      {
+        // Get vertex indices
+        const osgUtil::RayIntersector::Intersection::IndexList& indices = intersection.indexList;
+        const osgUtil::RayIntersector::Intersection::RatioList& ratios = intersection.ratioList;
+
+        if (indices.size() == 3 && ratios.size() == 3)
+        {
+          unsigned int i1 = indices[0];
+          unsigned int i2 = indices[1];
+          unsigned int i3 = indices[2];
+
+          float r1 = ratios[0];
+          float r2 = ratios[1];
+          float r3 = ratios[2];
+
+          osg::Array* texcoords = (geometry->getNumTexCoordArrays() > 0) ? geometry->getTexCoordArray(0) : nullptr;
+          osg::Vec2Array* texcoords_Vec2Array = dynamic_cast<osg::Vec2Array*>(texcoords);
+          if (texcoords_Vec2Array)
+          {
+            // Compute intersection tex coord
+            osg::Vec2 tc1 = (*texcoords_Vec2Array)[i1];
+            osg::Vec2 tc2 = (*texcoords_Vec2Array)[i2];
+            osg::Vec2 tc3 = (*texcoords_Vec2Array)[i3];
+            tc = tc1*r1 + tc2*r2 + tc3*r3;
+          }
+
+          // Compute intersection x,y coords on image
+          if (_image.valid())
+          {
+            x = int(float(_image->s()) * tc.x());
+            y = int(float(_image->t()) * tc.y());
+            validPick = true;
+          }
+        }
+      }
     }
+
+    if (!validPick) return;
 
     // Dispatch the appropriate mouse event to the Image
     switch (_pickData.mode)
     {
     case(MOUSEOVER):
     {
+      _image->sendPointerEvent(x, y, 0);
+      break;
+    }
+    case(LEFTCLICK):
+    {
+      _image->sendPointerEvent(x, y, osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON);
+      //_image->sendPointerEvent(x, y, 0);
+      //_pickData.mode = NONE;
       break;
     }
     }

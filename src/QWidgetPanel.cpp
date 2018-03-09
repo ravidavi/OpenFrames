@@ -73,7 +73,7 @@ namespace OpenFrames
     osg::Box* box = new osg::Box;
     box->setHalfLengths(osg::Vec3(DEFAULT_LENGTH, DEFAULT_LENGTH, DEFAULT_LENGTH));
     _panel->setShape(box);
-    _panel->setName("QWidgetPanelDrawable");
+    _panel->setName("QWidgetPanel Geometry");
     _panel->setUseDisplayList(false);
     _panel->setUseVertexBufferObjects(true);
     buildPanelGeometry(osg::Vec3(DEFAULT_LENGTH, DEFAULT_LENGTH, DEFAULT_LENGTH));
@@ -85,11 +85,6 @@ namespace OpenFrames
 
     // Add the box to the ReferenceFrame
     _xform->addChild(_geode.get());
-
-    // Hide name and axes by default
-    showNameLabel(false);
-    showAxes(0U);
-    showAxesLabels(0U);
   }
 
   void QWidgetPanel::showContents(bool showContents)

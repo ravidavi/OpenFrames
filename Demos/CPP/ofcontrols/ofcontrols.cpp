@@ -113,42 +113,46 @@ OFControls::OFControls(bool useVR)
   _root->addChild(_sphere);
 
   // Panel that will hold a text editor
-  OpenFrames::QWidgetPanel *editorPanel = new OpenFrames::QWidgetPanel("panel");
+  OpenFrames::QWidgetPanel *editorPanel = new OpenFrames::QWidgetPanel("EditorPanel");
   editorPanel->setColor(bgColor);
   double halfX = 1.5/2.0, halfY = 1.2/2.0, halfZ = 0.1/2.0;
   editorPanel->setHalfLengths(halfX, halfY, halfZ);
-  editorPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
+  editorPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547); // Fix for Qt's Y-down coordinates
   editorPanel->setPosition(0.0, 0.0, -1.0);
+  editorPanel->showNameLabel(false);
   editorPanel->showAxes(0U);
   editorPanel->showAxesLabels(0U);
   _root->addChild(editorPanel);
 
   // Panel that will hold checkboxes with sphere options
-  OpenFrames::QWidgetPanel *sphereOptionsPanel = new OpenFrames::QWidgetPanel("panel");
+  OpenFrames::QWidgetPanel *sphereOptionsPanel = new OpenFrames::QWidgetPanel("OptionsPanel");
   sphereOptionsPanel->setColor(bgColor);
   sphereOptionsPanel->setHalfLengths(halfX, halfY, halfZ);
   sphereOptionsPanel->setPosition(halfX*2.0 + 0.1, 0.0, -1.0);
   sphereOptionsPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
+  sphereOptionsPanel->showNameLabel(false);
   sphereOptionsPanel->showAxes(0U);
   sphereOptionsPanel->showAxesLabels(0U);
   _root->addChild(sphereOptionsPanel);
 
   // Panel that will hold a list of colors
-  OpenFrames::QWidgetPanel *colorPanel = new OpenFrames::QWidgetPanel("panel");
+  OpenFrames::QWidgetPanel *colorPanel = new OpenFrames::QWidgetPanel("ColorPanel");
   colorPanel->setColor(bgColor);
   colorPanel->setHalfLengths(halfX, halfY, halfZ);
   colorPanel->setPosition(-(halfX*2.0 + 0.1), 0.0, -1.0);
   colorPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
+  colorPanel->showNameLabel(false);
   colorPanel->showAxes(0U);
   colorPanel->showAxesLabels(0U);
   _root->addChild(colorPanel);
 
   // Hidden panel that will hold sliders to move the sphere
-  _hiddenPanel = new OpenFrames::QWidgetPanel("panel");
+  _hiddenPanel = new OpenFrames::QWidgetPanel("PositionPanel");
   _hiddenPanel->setColor(bgColor);
   _hiddenPanel->setHalfLengths(halfX, halfY, halfZ);
   _hiddenPanel->setPosition(halfX*2.0 + 0.1, 0.0, 1.5);
   _hiddenPanel->setAttitude(-0.707106781186547, 0.0, 0.0, 0.707106781186547);
+  _hiddenPanel->showNameLabel(false);
   _hiddenPanel->showAxes(0U);
   _hiddenPanel->showAxesLabels(0U);
   _root->addChild(_hiddenPanel);
