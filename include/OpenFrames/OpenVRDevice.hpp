@@ -240,8 +240,6 @@ namespace OpenFrames {
     // Per-eye view offsets, transform from HMD to Eye space
     osg::Vec3d _rightEyeViewOffset, _leftEyeViewOffset, _centerViewOffset;
     osg::Vec3d _rightEyeViewOffsetRaw, _leftEyeViewOffsetRaw, _centerViewOffsetRaw;
-    
-    double _ipd; // Current interpupillary distance
   };
   
   /******************************************

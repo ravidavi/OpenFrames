@@ -407,14 +407,6 @@ namespace OpenFrames{
     _centerViewOffsetRaw = (_rightEyeViewOffsetRaw + _leftEyeViewOffsetRaw)*0.5;
     _rightEyeViewOffsetRaw -= _centerViewOffsetRaw;
     _leftEyeViewOffsetRaw -= _centerViewOffsetRaw;
-
-    // Print new IPD value if needed
-    double ipd = (_rightEyeViewOffsetRaw - _leftEyeViewOffsetRaw).length();
-    if (ipd != _ipd)
-    {
-      osg::notify(osg::ALWAYS) << "VR Interpupillary Distance: " << ipd * 1000.0f << "mm" << std::endl;
-      _ipd = ipd;
-    }
   }
 
   /*************************************************************/

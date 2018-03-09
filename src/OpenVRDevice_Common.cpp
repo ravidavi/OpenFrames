@@ -95,8 +95,7 @@ namespace OpenFrames{
     _height(0),
     _isInitialized(false),
     _vrSystem(nullptr),
-    _vrRenderModels(nullptr),
-    _ipd(-1.0)
+    _vrRenderModels(nullptr)
   {
     // Set up a transform for the device render models
     // These models exist in local space (the room), so their view matrix should only
@@ -813,6 +812,20 @@ namespace OpenFrames{
           {
             x = int(float(_image->s()) * tc.x());
             y = int(float(_image->t()) * tc.y());
+
+            // Get controller laser
+            osg::MatrixTransform* laserXform = _ovrDevice->getControllerLaser(_pickData.device1ID);
+            osg::Geode* laserGeode = (laserXform != nullptr) ? dynamic_cast<osg::Geode*>(laserXform->getChild(0)) : nullptr;
+            osg::Geometry* laserGeom = (laserGeode != nullptr) ? dynamic_cast<osg::Geometry*>(laserGeode->getDrawable(0)) : nullptr;
+            osg::Vec3Array* laserPoints = (laserGeom != nullptr) ? dynamic_cast<osg::Vec3Array*>(laserGeom->getVertexArray()) : nullptr;
+
+            if ((laserPoints != nullptr) && (intersection.distance > 0.0))
+            {
+              (*laserPoints)[1].set(0, 0, -intersection.distance/_ovrDevice->getWorldUnitsPerMeter()); // Laser is in meters
+              laserPoints->dirty();
+              laserGeom->dirtyBound();
+            }
+
             validPick = true;
           }
         }
@@ -832,8 +845,6 @@ namespace OpenFrames{
     case(LEFTCLICK):
     {
       _image->sendPointerEvent(x, y, osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON);
-      //_image->sendPointerEvent(x, y, 0);
-      //_pickData.mode = NONE;
       break;
     }
     }
