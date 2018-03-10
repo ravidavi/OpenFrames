@@ -675,6 +675,9 @@ namespace OpenFrames{
       if (deviceID >= _ovrDevice->getNumDeviceModels()) return false;
       if (_ovrDevice->getDeviceModel(deviceID)->_class != OpenVRDevice::CONTROLLER) return false;
 
+      // Don't process event if another controller is already being used for pick events
+      if ((_pickData.mode != NONE) && (deviceID != _pickData.deviceID)) return false;
+
       // Convert controller event types to view changes in VR space
       switch (ovrEvent->eventType)
       {

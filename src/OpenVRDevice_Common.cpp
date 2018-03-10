@@ -728,8 +728,7 @@ namespace OpenFrames{
 
   /*************************************************************
   * Determine the image location at which a VR controller is pointing,
-  * and send a mouse event to the image so it can be processed by
-  * the image's underlying GUI framework (e.g. Qt)
+  * and send a mouse event to the image for further processing.
   *************************************************************/
   void OpenVRImageHandler::processImagePick()
   {
@@ -741,24 +740,54 @@ namespace OpenFrames{
     int x = 0, y = 0;
 
     // Get controller pose, in room space and room units (meters)
-    const osg::Matrixd &device1PoseRaw = _ovrDevice->getDeviceModel(_pickData.device1ID)->_rawDeviceToWorld;
+    const osg::Matrixd &devicePoseRaw = _ovrDevice->getDeviceModel(_pickData.deviceID)->_rawDeviceToWorld;
 
-    // Start by getting the controller origin and laser direction in room space and world units
-    osg::Vec3d startPoint = device1PoseRaw.getTrans() * _ovrDevice->getWorldUnitsPerMeter();
-    osg::Vec3d endPoint = osg::Vec3d(0, 0, -1) * device1PoseRaw * _ovrDevice->getWorldUnitsPerMeter();
+    // Start by getting the controller laser start and end points in room space and world units
+    osg::Vec3d startPoint = devicePoseRaw.getTrans() * _ovrDevice->getWorldUnitsPerMeter(); // Start point is origin
+    osg::Vec3d endPoint = osg::Vec3d(0, 0, -1) * devicePoseRaw * _ovrDevice->getWorldUnitsPerMeter(); // Use unit length since we just want laser direction
 
-    // Transform to world space
-    // TODO: This assumes the geometry is in world space. Also handle cases where geometry is in room space or controller space.
-    osg::Matrixd matRoomToWorld = _pickData.trackball->getRoomToTrackballMatrix() * _pickData.trackball->FollowingTrackball::getMatrix();
+    // Transform controller laser to the local coordinate space of the geometry containing the image
+    // First determine if the geometry is in world space or room space. Note that room space includes attached to a VR controller
+    // Do this by checking if the geometry's NodePath contains the topmost VR device transform
+    osg::NodePath::iterator itrDevices = std::find(_pickData.nodePath.begin(), _pickData.nodePath.end(), _ovrDevice->getDeviceRenderModels());
 
-    // Transform to geometry's local space
-    osg::Matrixd matWorldToGeomLocal = osg::computeWorldToLocal(_pickData.nodePath);
-    osg::Matrixd matRoomToGeomLocal = matRoomToWorld * matWorldToGeomLocal;
+    osg::Matrixd matRoomToGeomLocal; // Final transform from Room to Geometry's local space
+    double ratioMetersPerLaserDistance; // Conversion from pick point distance to meters, depends on world vs room/controller space
+
+    // Geometry in room/controller space
+    if (itrDevices != _pickData.nodePath.end())
+    {
+      // Controller laser already in room space, so just get the additional NodePath to the geometry
+      if ((itrDevices+1) < (_pickData.nodePath.end()-1))
+      {
+        osg::NodePath geomNodePath(itrDevices + 1, _pickData.nodePath.end() - 1); // Prune room-space NodePath to geometry
+        matRoomToGeomLocal = osg::computeWorldToLocal(geomNodePath);
+      }
+      // else the topmost VR device transform is the geometry's direct parent and there is nothing more to do
+
+      ratioMetersPerLaserDistance = 1.0;
+    }
+    else // Geometry in world space
+    {
+      // Transform to geometry's local space
+      osg::Matrixd matRoomToWorld = _pickData.trackball->getRoomToTrackballMatrix() * _pickData.trackball->FollowingTrackball::getMatrix();
+      if (_pickData.nodePath.size() > 1)
+      {
+        osg::NodePath geomNodePath(_pickData.nodePath.begin(), _pickData.nodePath.end() - 1); // Prune world-space NodePath to geometry
+        osg::Matrixd matWorldToGeomLocal = osg::computeWorldToLocal(geomNodePath);
+        matRoomToGeomLocal = matRoomToWorld * matWorldToGeomLocal;
+      }
+      else matRoomToGeomLocal = matRoomToWorld;
+
+      ratioMetersPerLaserDistance = 1.0 / _ovrDevice->getWorldUnitsPerMeter();
+    }
+
+    // Compute the transformed laser start point and direction
     startPoint = startPoint * matRoomToGeomLocal;
     endPoint = endPoint * matRoomToGeomLocal;
+    osg::Vec3d rayDir = endPoint - startPoint;
 
     // Perform the pick operation
-    osg::Vec3d rayDir = endPoint - startPoint;
     osg::ref_ptr<osgUtil::RayIntersector> intersector = new osgUtil::RayIntersector(startPoint, rayDir);
     osgUtil::IntersectionVisitor iv(intersector);
     _pickData.nodePath.back()->accept(iv);
@@ -814,14 +843,14 @@ namespace OpenFrames{
             y = int(float(_image->t()) * tc.y());
 
             // Get controller laser
-            osg::MatrixTransform* laserXform = _ovrDevice->getControllerLaser(_pickData.device1ID);
+            osg::MatrixTransform* laserXform = _ovrDevice->getControllerLaser(_pickData.deviceID);
             osg::Geode* laserGeode = (laserXform != nullptr) ? dynamic_cast<osg::Geode*>(laserXform->getChild(0)) : nullptr;
             osg::Geometry* laserGeom = (laserGeode != nullptr) ? dynamic_cast<osg::Geometry*>(laserGeode->getDrawable(0)) : nullptr;
             osg::Vec3Array* laserPoints = (laserGeom != nullptr) ? dynamic_cast<osg::Vec3Array*>(laserGeom->getVertexArray()) : nullptr;
 
             if ((laserPoints != nullptr) && (intersection.distance > 0.0))
             {
-              (*laserPoints)[1].set(0, 0, -intersection.distance/_ovrDevice->getWorldUnitsPerMeter()); // Laser is in meters
+              (*laserPoints)[1].set(0, 0, -intersection.distance*ratioMetersPerLaserDistance); // Laser is in meters
               laserPoints->dirty();
               laserGeom->dirtyBound();
             }
@@ -851,9 +880,9 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
-  void OpenVRImageHandler::saveCurrentPickData(PickMode mode, osgViewer::View* view, osg::NodeVisitor* nv, uint32_t device1ID)
+  void OpenVRImageHandler::saveCurrentPickData(PickMode mode, osgViewer::View* view, osg::NodeVisitor* nv, uint32_t deviceID)
   {
-    const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(device1ID);
+    const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(deviceID);
     OpenVRTrackball *trackball = dynamic_cast<OpenVRTrackball*>(view->getCameraManipulator());
 
     if ((device1Model == nullptr) || (trackball == nullptr) || (nv == nullptr) || nv->getNodePath().empty())
@@ -864,7 +893,7 @@ namespace OpenFrames{
     else
     {
       _pickData.mode = mode;
-      _pickData.device1ID = device1ID;
+      _pickData.deviceID = deviceID;
       _pickData.trackball = trackball;
       _pickData.nodePath = nv->getNodePath();
     }

@@ -97,7 +97,7 @@ namespace OpenFrames {
     inline bool isInitialized() const { return _isInitialized; }
     
     /** Get render models for devices */
-    osg::MatrixTransform* getDeviceRenderModels() { return _deviceModels; }
+    osg::MatrixTransform* getDeviceRenderModels() const { return _deviceModels; }
     
     /** An OpenVR device's class */
     enum DeviceClass
@@ -131,7 +131,7 @@ namespace OpenFrames {
     }
     
     /** Get the HMD pose matrix, in world units */
-    const osg::Matrixd& getHMDPoseMatrix()
+    const osg::Matrixd& getHMDPoseMatrix() const
     { return _deviceIDToModel[0]._modelTransform->getMatrix(); }
 
     /** Update the per-eye projection matrix */
@@ -412,7 +412,7 @@ namespace OpenFrames {
     struct PickData
     {
       PickMode mode;
-      uint32_t device1ID;
+      uint32_t deviceID;
       OpenVRTrackball* trackball;
       osg::NodePath nodePath;
     } _pickData;

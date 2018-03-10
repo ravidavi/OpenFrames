@@ -167,7 +167,7 @@ OFControls::OFControls(bool useVR)
       {
         double panelScale = 0.1; // Make hidden panel smaller to fit above controller
         _hiddenPanel->setHalfLengths(halfX*panelScale, halfY*panelScale, halfZ*panelScale);
-        _hiddenPanel->setPosition(0.0, 0.0, -halfY*panelScale);
+        _hiddenPanel->setPosition(0.0, 4.0*halfZ*panelScale, -halfY*panelScale);
         _hiddenPanel->setAttitude(osg::Quat(osg::PI_2, osg::Vec3d(1.0, 0.0, 0.0))); // Make panel face user (panel +y -> controller +z)
         device->_modelTransform->addChild(_hiddenPanel->getGroup());
         foundVRController = true;
