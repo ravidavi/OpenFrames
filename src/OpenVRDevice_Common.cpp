@@ -358,29 +358,26 @@ namespace OpenFrames{
       return;
     }
 
-    // Create the shared laser that will be used for VR controller picking
-    if (_controllerLaser == NULL)
-    {
-      osg::Vec3Array* vertices = new osg::Vec3Array(2);
-      (*vertices)[0].set(0, 0, 0);
-      (*vertices)[1].set(0, 0, -2); // Laser along -Z axis
-      osg::Vec4Array* colors = new osg::Vec4Array;
-      colors->push_back(osg::Vec4(1, 1, 1, 1));
-      osg::Geometry* linesGeom = new osg::Geometry();
-      linesGeom->setUseDisplayList(false);
-      linesGeom->setUseVertexBufferObjects(true);
-      linesGeom->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);
-      linesGeom->setVertexArray(vertices);
-      linesGeom->setColorArray(colors, osg::Array::BIND_OVERALL);
-      linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, 2));
-      _controllerLaser = new osg::Geode;
-      _controllerLaser->addDrawable(linesGeom);
-    }
+    // Create the laser that will be used for VR controller picking
+    osg::Vec3Array* vertices = new osg::Vec3Array(2);
+    (*vertices)[0].set(0, 0, 0);
+    (*vertices)[1].set(0, 0, -2); // Laser along -Z axis
+    osg::Vec4Array* colors = new osg::Vec4Array;
+    colors->push_back(osg::Vec4(1, 1, 1, 1));
+    osg::Geometry* linesGeom = new osg::Geometry();
+    linesGeom->setUseDisplayList(false);
+    linesGeom->setUseVertexBufferObjects(true);
+    linesGeom->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);
+    linesGeom->setVertexArray(vertices);
+    linesGeom->setColorArray(colors, osg::Array::BIND_OVERALL);
+    linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, 2));
+    osg::Geode* controllerLaser = new osg::Geode;
+    controllerLaser->addDrawable(linesGeom);
 
     // Create a transform to hold the laser so that it can be enabled/disabled per-controller
     osg::MatrixTransform *controllerLaserTransform = new osg::MatrixTransform;
     controllerLaserTransform->setName(_controllerLaserName);
-    controllerLaserTransform->addChild(_controllerLaser);
+    controllerLaserTransform->addChild(controllerLaser);
     controllerLaserTransform->setNodeMask(0x0); // Disable by default
 
     // Add laser transform to controller transform

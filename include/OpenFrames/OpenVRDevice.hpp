@@ -230,8 +230,7 @@ namespace OpenFrames {
     // Transform that contains local ground plane
     osg::ref_ptr<osg::MatrixTransform> _roomGround;
 
-    // Geode that contains picking laser for each controller
-    osg::ref_ptr<osg::Geode> _controllerLaser;
+    // Name of picking laser attached to each controller
     const std::string _controllerLaserName = "ControllerLaser";
 
     // Per-eye asymmetric projection matrices
