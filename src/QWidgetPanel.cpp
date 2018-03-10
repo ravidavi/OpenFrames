@@ -69,15 +69,26 @@ namespace OpenFrames
   {
     // Create the panel as a textured quad
     _panel = osg::createTexturedQuadGeometry(
-      osg::Vec3(),
-      osg::Vec3(DEFAULT_LENGTH, 0, 0),
-      osg::Vec3(0, DEFAULT_LENGTH, 0));
-    _panel->setName("QWidgetPanel Geometry");
+      osg::Vec3(0.0, 0.0, 0.001), // Bottom-left corner (panel origin)
+      osg::Vec3(DEFAULT_LENGTH, 0, 0), // Width vector
+      osg::Vec3(0, DEFAULT_LENGTH, 0)); // Height vector
+    _panel->setName("QWidgetPanel Front");
     _panel->setUseDisplayList(false);
     _panel->setUseVertexBufferObjects(true);
 
+    // Create the back panel as a textured quad
+    _panelBack = osg::createTexturedQuadGeometry(
+      osg::Vec3(DEFAULT_LENGTH, 0, -0.001),  // Origin of reversed panel
+      osg::Vec3(-DEFAULT_LENGTH, 0, 0), // Width of reversed panel
+      osg::Vec3(0, DEFAULT_LENGTH, 0)); // Height same as front panel
+    _panelBack->setName("QWidgetPanel Back");
+    _panelBack->setUseDisplayList(false);
+    _panelBack->setUseVertexBufferObjects(true);
+    _panelBack->setColorArray(_panel->getColorArray(), osg::Array::BIND_OVERALL); // Use color from front panel
+
     // Set rendering properties
     osg::StateSet* stateset = _panel->getOrCreateStateSet();
+    _panelBack->setStateSet(stateset); // Share stateset between front & back panels
     stateset->setMode(GL_CULL_FACE, osg::StateAttribute::ON); // Don't draw panel backfaces
     stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF); // Panel not altered by lighting
     stateset->setMode(GL_BLEND, osg::StateAttribute::ON); // Enable transparency
@@ -87,6 +98,7 @@ namespace OpenFrames
     _geode = new osg::Geode;
     _geode->setName(_name);
     _geode->addDrawable(_panel);
+    _geode->addDrawable(_panelBack);
 
     // Add the box to the ReferenceFrame
     _xform->addChild(_geode.get());
@@ -105,20 +117,29 @@ namespace OpenFrames
 
   void QWidgetPanel::setSize(const double &width, const double &height)
   {
-    // Set quad lengths (its normals and colors don't change)
+    // Resize front panel (its normals and colors don't change)
     // Quad vertices are defined as CCW starting from top-left, with origin at bottom-left corner
     // See osg::createTexturedQuadGeometry() for details
     osg::Vec3Array* coords = dynamic_cast<osg::Vec3Array*>(_panel->getVertexArray());
-    osg::Vec3 origin = (*coords)[1];
+    osg::Vec3 corner = (*coords)[1];
     osg::Vec3 widthVec(width, 0, 0);
     osg::Vec3 heightVec(0, height, 0);
-    (*coords)[0] = origin + heightVec; // Top-left vertex
-    (*coords)[2] = origin + widthVec; // Bottom-right vertex
-    (*coords)[3] = origin + widthVec + heightVec; // Top-right vertex
+    (*coords)[0] = corner + heightVec; // Top-left vertex
+    (*coords)[2] = corner + widthVec; // Bottom-right vertex
+    (*coords)[3] = corner + widthVec + heightVec; // Top-right vertex
 
-    // Indicate that quad has changed
+    // Resize back panel
+    osg::Vec3Array* coordsBack = dynamic_cast<osg::Vec3Array*>(_panelBack->getVertexArray());
+    (*coordsBack)[0] = (*coords)[3]; // Back top-left = Front top-right
+    (*coordsBack)[1] = (*coords)[2]; // Back bottom-left = Front bottom-right
+    (*coordsBack)[2] = (*coords)[1]; // Back bottom-right = Front bottom-left
+    (*coordsBack)[3] = (*coords)[0]; // Back top-right = Front top-left
+
+    // Indicate that panel data has changed
     coords->dirty();
+    coordsBack->dirty();
     _panel->dirtyBound();
+    _panelBack->dirtyBound();
 
     // Move axes to compensate for size change
     double averageSize = (width + height) / 2.0;
@@ -142,7 +163,8 @@ namespace OpenFrames
 
   bool QWidgetPanel::setWidget(QWidget *widget)
   {
-    osg::StateSet* stateset = _panel->getOrCreateStateSet();
+    osg::StateSet* stateset = _panel->getStateSet();
+    if (stateset == nullptr) return false;
 
     if(widget == nullptr) // Remove existing texture
     {
@@ -152,9 +174,9 @@ namespace OpenFrames
       stateset->removeTextureAttribute(0, osg::StateAttribute::TEXENV);
 
       // Revert color from white to reference frame color
-      osg::Vec4Array* colours = new osg::Vec4Array(1);
-      (*colours)[0] = getColor();
-      _panel->setColorArray(colours, osg::Array::BIND_OVERALL);
+      osg::Vec4Array* colors = dynamic_cast<osg::Vec4Array*>(_panel->getColorArray());
+      (*colors)[0] = getColor();
+      colors->dirty();
 
       return false;
     }
@@ -204,9 +226,9 @@ namespace OpenFrames
       if (getImageHandler() == NULL) setImageHandler(new osgViewer::InteractiveImageHandler(_image.get()));
 
       // Set color to white for modulation of texture
-      osg::Vec4Array* colours = new osg::Vec4Array(1);
-      (*colours)[0] = { 1.0, 1.0, 1.0, 1.0 };
-      _panel->setColorArray(colours, osg::Array::BIND_OVERALL);
+      osg::Vec4Array* colors = dynamic_cast<osg::Vec4Array*>(_panel->getColorArray());
+      (*colors)[0] = { 1.0, 1.0, 1.0, 1.0 };
+      colors->dirty();
 
       return true;
     }

@@ -88,6 +88,7 @@ namespace OpenFrames
 
       osg::ref_ptr<osg::Geode> _geode; // Node containing the box
       osg::ref_ptr<osg::Geometry> _panel; // A panel for rendering the controls
+      osg::ref_ptr<osg::Geometry> _panelBack; // Controls mirrored on back of panel
       osg::ref_ptr<QWidgetImage> _image; // The image to which controls are drawn
 
     private:
