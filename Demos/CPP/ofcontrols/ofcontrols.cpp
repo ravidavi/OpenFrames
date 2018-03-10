@@ -56,6 +56,12 @@ const std::map<std::string, osg::Vec4> OFControls::COLORS =
 /// Default color for the sphere
 const char *OFControls::DEFAULT_SPHERE_COLOR = COLORS.begin()->first.c_str();
 
+// Default panel dimensions
+const double OFControls::panelWidth = 1.5;
+const double OFControls::panelHeight = 1.2;
+const double OFControls::panelZPos = -1.0;
+
+
 int main(int argc, char **argv)
 {
   // Parse user inputs
@@ -104,21 +110,21 @@ OFControls::OFControls(bool useVR)
 
   // The sphere that will be manipulated by Qt controls
   _sphere = new OpenFrames::Sphere("sphere");
-  _sphere->setPosition(-1.55, 0.0, 1.0);
+  _sphere->setRadius(1.0);
+  _sphereOrigin.set(-1.55, 0.0, panelZPos + panelHeight + _sphere->getRadius());
+  _sphere->setPosition(_sphereOrigin);
   _sphere->setColor(COLORS.at(DEFAULT_SPHERE_COLOR));
   _sphere->showNameLabel(false);
   _sphere->showAxes(0U);
   _sphere->showAxesLabels(0U);
-  _sphere->setRadius(1.0);
   _root->addChild(_sphere);
 
   // Panel that will hold a text editor
   OpenFrames::QWidgetPanel *editorPanel = new OpenFrames::QWidgetPanel("EditorPanel");
   editorPanel->setColor(bgColor);
-  double halfX = 1.5/2.0, halfY = 1.2/2.0, halfZ = 0.1/2.0; // Default panel sizes
-  editorPanel->setHalfLengths(halfX, halfY, halfZ);
-  editorPanel->setAttitude(osg::Quat(osg::PI_2, osg::Vec3d(-1.0, 0.0, 0.0))); // Make panel face user (panel +y -> world -z)
-  editorPanel->setPosition(0.0, 0.0, -1.0);
+  editorPanel->setSize(panelWidth, panelHeight);
+  editorPanel->setAttitude(osg::Quat(osg::PI_2, osg::Vec3d(1.0, 0.0, 0.0))); // Make panel face user (panel +y -> world +z)
+  editorPanel->setPosition(0.0, 0.0, panelZPos);
   editorPanel->showNameLabel(false);
   editorPanel->showAxes(0U);
   editorPanel->showAxesLabels(0U);
@@ -127,9 +133,9 @@ OFControls::OFControls(bool useVR)
   // Panel that will hold checkboxes with sphere options
   OpenFrames::QWidgetPanel *sphereOptionsPanel = new OpenFrames::QWidgetPanel("OptionsPanel");
   sphereOptionsPanel->setColor(bgColor);
-  sphereOptionsPanel->setHalfLengths(halfX, halfY, halfZ);
-  sphereOptionsPanel->setPosition(halfX*2.0 + 0.1, 0.0, -1.0);
-  sphereOptionsPanel->setAttitude(osg::Quat(osg::PI_2, osg::Vec3d(-1.0, 0.0, 0.0))); // Make panel face user (panel +y -> world -z)
+  sphereOptionsPanel->setSize(panelWidth, panelHeight);
+  sphereOptionsPanel->setPosition(panelWidth + 0.1, 0.0, panelZPos);
+  sphereOptionsPanel->setAttitude(osg::Quat(osg::PI_2, osg::Vec3d(1.0, 0.0, 0.0))); // Make panel face user (panel +y -> world +z)
   sphereOptionsPanel->showNameLabel(false);
   sphereOptionsPanel->showAxes(0U);
   sphereOptionsPanel->showAxesLabels(0U);
@@ -138,9 +144,9 @@ OFControls::OFControls(bool useVR)
   // Panel that will hold a list of colors
   OpenFrames::QWidgetPanel *colorPanel = new OpenFrames::QWidgetPanel("ColorPanel");
   colorPanel->setColor(bgColor);
-  colorPanel->setHalfLengths(halfX, halfY, halfZ);
-  colorPanel->setPosition(-(halfX*2.0 + 0.1), 0.0, -1.0);
-  colorPanel->setAttitude(osg::Quat(osg::PI_2, osg::Vec3d(-1.0, 0.0, 0.0))); // Make panel face user (panel +y -> world -z)
+  colorPanel->setSize(panelWidth, panelHeight);
+  colorPanel->setPosition(-(panelWidth + 0.1), 0.0, panelZPos);
+  colorPanel->setAttitude(osg::Quat(osg::PI_2, osg::Vec3d(1.0, 0.0, 0.0))); // Make panel face user (panel +y -> world +z)
   colorPanel->showNameLabel(false);
   colorPanel->showAxes(0U);
   colorPanel->showAxesLabels(0U);
@@ -149,7 +155,6 @@ OFControls::OFControls(bool useVR)
   // Hidden panel that will hold sliders to move the sphere
   _hiddenPanel = new OpenFrames::QWidgetPanel("PositionPanel");
   _hiddenPanel->setColor(bgColor);
-
   _hiddenPanel->showNameLabel(false);
   _hiddenPanel->showAxes(0U);
   _hiddenPanel->showAxesLabels(0U);
@@ -166,9 +171,9 @@ OFControls::OFControls(bool useVR)
       if (device->_class == OpenFrames::OpenVRDevice::CONTROLLER)
       {
         double panelScale = 0.1; // Make hidden panel smaller to fit above controller
-        _hiddenPanel->setHalfLengths(halfX*panelScale, halfY*panelScale, halfZ*panelScale);
-        _hiddenPanel->setPosition(0.0, 4.0*halfZ*panelScale, -halfY*panelScale);
-        _hiddenPanel->setAttitude(osg::Quat(osg::PI_2, osg::Vec3d(1.0, 0.0, 0.0))); // Make panel face user (panel +y -> controller +z)
+        _hiddenPanel->setSize(panelWidth*panelScale, panelHeight*panelScale);
+        _hiddenPanel->setPosition(-panelWidth/2.0*panelScale, 0.05, 0.0);
+        _hiddenPanel->setAttitude(osg::Quat(osg::PI_2, osg::Vec3d(-1.0, 0.0, 0.0))); // Make panel face user (panel +y -> controller -z)
         device->_modelTransform->addChild(_hiddenPanel->getGroup());
         foundVRController = true;
         break;
@@ -178,9 +183,9 @@ OFControls::OFControls(bool useVR)
   
   if(!foundVRController) // Otherwise just place in scene
   {
-    _hiddenPanel->setHalfLengths(halfX, halfY, halfZ);
-    _hiddenPanel->setPosition(halfX*2.0 + 0.1, 0.0, 1.5);
-    _hiddenPanel->setAttitude(osg::Quat(osg::PI_2, osg::Vec3d(-1.0, 0.0, 0.0))); // Make panel face user (panel +y -> world -z)
+    _hiddenPanel->setSize(panelWidth, panelHeight);
+    _hiddenPanel->setPosition(panelWidth + 0.1, 0.0, panelZPos + panelHeight + 0.1);
+    _hiddenPanel->setAttitude(osg::Quat(osg::PI_2, osg::Vec3d(1.0, 0.0, 0.0))); // Make panel face user (panel +y -> world +z)
     _root->addChild(_hiddenPanel);
   }
 
@@ -321,7 +326,7 @@ void OFControls::setXLocation(int position)
 {
   osg::Vec3d spherePosition;
   _sphere->getPosition(spherePosition);
-  spherePosition[0] = static_cast<double>(position) * 0.1 - 1.55;
+  spherePosition[0] = _sphereOrigin[0] + static_cast<double>(position) * 0.1;
   _sphere->setPosition(spherePosition);
 }
 
@@ -329,7 +334,7 @@ void OFControls::setYLocation(int position)
 {
   osg::Vec3d spherePosition;
   _sphere->getPosition(spherePosition);
-  spherePosition[1] = static_cast<double>(position) * 0.1;
+  spherePosition[1] = _sphereOrigin[1] + static_cast<double>(position) * 0.1;
   _sphere->setPosition(spherePosition);
 }
 
@@ -337,6 +342,6 @@ void OFControls::setZLocation(int position)
 {
   osg::Vec3d spherePosition;
   _sphere->getPosition(spherePosition);
-  spherePosition[2] = 1.0 + (static_cast<double>(position) * 0.1);
+  spherePosition[2] = _sphereOrigin[2] + (static_cast<double>(position) * 0.1);
   _sphere->setPosition(spherePosition);
 }

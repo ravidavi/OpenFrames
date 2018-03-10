@@ -64,19 +64,24 @@ namespace OpenFrames
 
   QWidgetPanel::~QWidgetPanel() { }
 
-  /** Create the box with default radius = 1,
-    and color = the color of the box's reference frame. */
+  /** Create the panel */
   void QWidgetPanel::_init()
   {
-    // Set the shape to be drawn
-    _panel = new osg::Geometry();
-    osg::Box* box = new osg::Box;
-    box->setHalfLengths(osg::Vec3(DEFAULT_LENGTH, DEFAULT_LENGTH, DEFAULT_LENGTH));
-    _panel->setShape(box);
+    // Create the panel as a textured quad
+    _panel = osg::createTexturedQuadGeometry(
+      osg::Vec3(),
+      osg::Vec3(DEFAULT_LENGTH, 0, 0),
+      osg::Vec3(0, DEFAULT_LENGTH, 0));
     _panel->setName("QWidgetPanel Geometry");
     _panel->setUseDisplayList(false);
     _panel->setUseVertexBufferObjects(true);
-    buildPanelGeometry(osg::Vec3(DEFAULT_LENGTH, DEFAULT_LENGTH, DEFAULT_LENGTH));
+
+    // Set rendering properties
+    osg::StateSet* stateset = _panel->getOrCreateStateSet();
+    stateset->setMode(GL_CULL_FACE, osg::StateAttribute::ON); // Don't draw panel backfaces
+    stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF); // Panel not altered by lighting
+    stateset->setMode(GL_BLEND, osg::StateAttribute::ON); // Enable transparency
+    stateset->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
 
     // Create the node that contains the QWidgetPanel
     _geode = new osg::Geode;
@@ -98,46 +103,53 @@ namespace OpenFrames
     return (_geode->getNodeMask() != 0x0);
   }
 
-  void QWidgetPanel::setHalfLengths(const double &xHalfLength, const double &yHalfLength, const double &zHalfLength)
+  void QWidgetPanel::setSize(const double &width, const double &height)
   {
-    // Set shape half lengths
-    osg::Box *box = static_cast<osg::Box*>(_panel->getShape());
-    box->setHalfLengths(osg::Vec3(xHalfLength, yHalfLength, zHalfLength));
+    // Set quad lengths (its normals and colors don't change)
+    // Quad vertices are defined as CCW starting from top-left, with origin at bottom-left corner
+    // See osg::createTexturedQuadGeometry() for details
+    osg::Vec3Array* coords = dynamic_cast<osg::Vec3Array*>(_panel->getVertexArray());
+    osg::Vec3 origin = (*coords)[1];
+    osg::Vec3 widthVec(width, 0, 0);
+    osg::Vec3 heightVec(0, height, 0);
+    (*coords)[0] = origin + heightVec; // Top-left vertex
+    (*coords)[2] = origin + widthVec; // Bottom-right vertex
+    (*coords)[3] = origin + widthVec + heightVec; // Top-right vertex
 
+    // Indicate that quad has changed
+    coords->dirty();
     _panel->dirtyBound();
-    buildPanelGeometry(osg::Vec3(xHalfLength, yHalfLength, zHalfLength));
 
     // Move axes to compensate for size change
-    double averageHalfLength = (xHalfLength + yHalfLength + zHalfLength) / 3.0;
-    moveXAxis(osg::Vec3(xHalfLength, 0, 0), 0.5*averageHalfLength);
-    moveYAxis(osg::Vec3(0, yHalfLength, 0), 0.5*averageHalfLength);
-    moveZAxis(osg::Vec3(0, 0, zHalfLength), 0.5*averageHalfLength);
+    double averageSize = (width + height) / 2.0;
+    moveXAxis(osg::Vec3(width, 0, 0), 0.5*averageSize);
+    moveYAxis(osg::Vec3(0, height, 0), 0.5*averageSize);
+    moveZAxis(osg::Vec3(0, 0, 0.5*averageSize), 0.5*averageSize);
 
     // Resize the underlying QWidget
     _rescaleWidget();
   }
 
-  void QWidgetPanel::getHalfLengths(double &xHalfLength, double &yHalfLength, double &zHalfLength) const
+  void QWidgetPanel::getSize(double &width, double &height)
   {
-    osg::Box *box = static_cast<osg::Box*>(_panel->getShape());
-    const osg::Vec3 halfLenghts = box->getHalfLengths();
-    xHalfLength = halfLenghts[0];
-    yHalfLength = halfLenghts[1];
-    zHalfLength = halfLenghts[2];
+    // Quad vertices are defined as CCW starting from top-left, with origin at bottom-left
+    // See osg::createTexturedQuadGeometry() for details
+    osg::Vec3Array* coords = dynamic_cast<osg::Vec3Array*>(_panel->getVertexArray());
+    width = (*coords)[2].x(); // Bottom-right vertex
+    height = (*coords)[0].y(); // Top-left vertex
   }
+
 
   bool QWidgetPanel::setWidget(QWidget *widget)
   {
+    osg::StateSet* stateset = _panel->getOrCreateStateSet();
+
     if(widget == nullptr) // Remove existing texture
     {
       _image.release(); // Release the old controls
 
-      osg::StateSet* stateset = _panel->getStateSet();
-      if(stateset)
-      {
-        stateset->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
-        stateset->removeTextureAttribute(0, osg::StateAttribute::TEXENV);
-      }
+      stateset->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
+      stateset->removeTextureAttribute(0, osg::StateAttribute::TEXENV);
 
       // Revert color from white to reference frame color
       osg::Vec4Array* colours = new osg::Vec4Array(1);
@@ -149,7 +161,6 @@ namespace OpenFrames
     else
     {
       // Check if there is already a texture being used.
-      osg::StateSet* stateset = _panel->getOrCreateStateSet();
       osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(stateset->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
 
       // Disable context menus when embedding. They can popup outside the scene graph.
@@ -188,9 +199,6 @@ namespace OpenFrames
       osg::TexEnv* texenv = new osg::TexEnv;
       texenv->setMode(osg::TexEnv::MODULATE);
       stateset->setTextureAttribute(0, texenv);
-      stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-      stateset->setMode(GL_BLEND, osg::StateAttribute::ON);
-      stateset->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
 
       // Set default image handler to convert user events to Qt widget selections
       if (getImageHandler() == NULL) setImageHandler(new osgViewer::InteractiveImageHandler(_image.get()));
@@ -250,9 +258,9 @@ namespace OpenFrames
     else
     {
       // Set the geometry color
-      osg::Vec4Array* colours = new osg::Vec4Array(1);
-      (*colours)[0] = color;
-      _panel->setColorArray(colours, osg::Array::BIND_OVERALL);
+      osg::Vec4Array* colors = dynamic_cast<osg::Vec4Array*>(_panel->getColorArray());
+      (*colors)[0] = color;
+      colors->dirty();
     }
   }
 
@@ -268,203 +276,45 @@ namespace OpenFrames
     return _bound;
   }
 
-  void QWidgetPanel::buildPanelGeometry(const osg::Vec3 &halfLengths)
-  {
-    const float l = 0.0;
-    const float b = 0.0;
-    const float r = 1.0;
-    const float t = 1.0;
-
-    bool hasDepth = ( halfLengths[2] != 0 );
-
-    _panel->setVertexArray(nullptr);
-    _panel->setColorArray(nullptr);
-    _panel->setNormalArray(nullptr);
-    _panel->getTexCoordArrayList().clear();
-    _panel->getPrimitiveSetList().clear();
-
-    // Set panel half lengths and rebuild
-    osg::Vec3 corner(-halfLengths[0], -halfLengths[1], -halfLengths[2]);
-    osg::Vec3 heightVec(halfLengths[0] * 2.0f, 0.0f, 0.0f);
-    osg::Vec3 widthVec(0.0f, halfLengths[1] * 2.0f, 0.0f);
-    osg::Vec3 lengthVec(0.0f, 0.0f, halfLengths[2] * 2.0f);
-
-    osg::Vec3Array* coords = new osg::Vec3Array(24);
-    (*coords)[0] = corner + heightVec;
-    (*coords)[1] = corner;
-    (*coords)[2] = corner + widthVec;
-    (*coords)[3] = corner + widthVec + heightVec;
-    (*coords)[4] = corner + widthVec + heightVec + lengthVec;
-    (*coords)[5] = corner + widthVec + lengthVec;
-    (*coords)[6] = corner + lengthVec;
-    (*coords)[7] = corner + heightVec + lengthVec;
-    (*coords)[8] = (*coords)[7];
-    (*coords)[9] = (*coords)[6];
-    (*coords)[10] = (*coords)[1];
-    (*coords)[11] = (*coords)[0];
-    (*coords)[12] = (*coords)[3];
-    (*coords)[13] = (*coords)[2];
-    (*coords)[14] = (*coords)[5];
-    (*coords)[15] = (*coords)[4];
-    (*coords)[16] = (*coords)[1];
-    (*coords)[17] = (*coords)[6];
-    (*coords)[18] = (*coords)[5];
-    (*coords)[19] = (*coords)[2];
-    (*coords)[20] = (*coords)[7];
-    (*coords)[21] = (*coords)[0];
-    (*coords)[22] = (*coords)[3];
-    (*coords)[23] = (*coords)[4];
-    _panel->setVertexArray(coords);
-
-    setColor(getColor());
-
-    osg::Vec2Array* tcoords = new osg::Vec2Array(24);
-    (*tcoords)[0].set(r, t);
-    (*tcoords)[1].set(l, t);
-    (*tcoords)[2].set(l, b);
-    (*tcoords)[3].set(r, b);
-    (*tcoords)[4].set(l, b);
-    (*tcoords)[5].set(r, b);
-    (*tcoords)[6].set(r, t);
-    (*tcoords)[7].set(l, t);
-    (*tcoords)[8].set(r, t);
-    (*tcoords)[9].set(l, t);
-    (*tcoords)[10].set(l, t);
-    (*tcoords)[11].set(r, t);
-    (*tcoords)[12].set(r, b);
-    (*tcoords)[13].set(l, b);
-    (*tcoords)[14].set(l, b);
-    (*tcoords)[15].set(r, b);
-    (*tcoords)[16].set(l, t);
-    (*tcoords)[17].set(l, b);
-    (*tcoords)[18].set(l, t);
-    (*tcoords)[19].set(l, b);
-    (*tcoords)[20].set(r, b);
-    (*tcoords)[21].set(r, t);
-    (*tcoords)[22].set(r, b);
-    (*tcoords)[23].set(r, t);
-    _panel->setTexCoordArray(0, tcoords);
-
-    osg::Vec3Array* normals = new osg::Vec3Array(6);
-    (*normals)[0].set(0.0f, 0.0f, -1.0f);
-    (*normals)[1].set(0.0f, 0.0f, 1.0f);
-    (*normals)[2].set(0.0f, -1.0f, 0.0f);
-    (*normals)[3].set(0.0f, 1.0f, 0.0f);
-    (*normals)[4].set(-1.0f, 0.0f, 0.0f);
-    (*normals)[5].set(1.0f, 0.0f, 0.0f);
-    _panel->setNormalArray(normals, osg::Array::BIND_PER_PRIMITIVE_SET);
-
-#if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE)
-    osg::DrawElementsUByte* elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
-    elems->push_back(0);
-    elems->push_back(1);
-    elems->push_back(2);
-    elems->push_back(2);
-    elems->push_back(3);
-    elems->push_back(0);
-    _panel->addPrimitiveSet(elems);
-
-    if (hasDepth)
-    {
-      elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
-      elems->push_back(4);
-      elems->push_back(5);
-      elems->push_back(6);
-      elems->push_back(6);
-      elems->push_back(7);
-      elems->push_back(4);
-      _panel->addPrimitiveSet(elems);
-
-      elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
-      elems->push_back(8);
-      elems->push_back(9);
-      elems->push_back(10);
-      elems->push_back(10);
-      elems->push_back(11);
-      elems->push_back(8);
-      _panel->addPrimitiveSet(elems);
-
-      elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
-      elems->push_back(12);
-      elems->push_back(13);
-      elems->push_back(14);
-      elems->push_back(14);
-      elems->push_back(15);
-      elems->push_back(12);
-      _panel->addPrimitiveSet(elems);
-
-      elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
-      elems->push_back(16);
-      elems->push_back(17);
-      elems->push_back(18);
-      elems->push_back(18);
-      elems->push_back(19);
-      elems->push_back(16);
-      _panel->addPrimitiveSet(elems);
-
-      elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
-      elems->push_back(20);
-      elems->push_back(21);
-      elems->push_back(22);
-      elems->push_back(22);
-      elems->push_back(23);
-      elems->push_back(20);
-      _panel->addPrimitiveSet(elems);
-    }
-#else
-    _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 0, 4));
-    if (hasDepth)
-    {
-      _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 4, 4));
-      _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 8, 4));
-      _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 12, 4));
-      _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 16, 4));
-      _panel->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 20, 4));
-    }
-#endif
-  }
-
   void QWidgetPanel::_rescaleWidget()
   {
     if (_image.valid())
     {
       // Scale the QWidget to the X-Y plane size
-      double x, y, z;
-      double width, height;
+      double panelWidth, panelHeight;
+      double imageWidth, imageHeight;
 
-      getHalfLengths(x, y, z);
-      x = 2.0 * x;
-      y = 2.0 * y;
+      getSize(panelWidth, panelHeight); // Use x,y as current panel width,height
 
       QSize preferredSize = _image->getQGraphicsViewAdapter()->getQGraphicsView()->sizeHint();
       if (preferredSize.isValid())
       {
         double preferredWidth = static_cast<double>(preferredSize.width());
         double preferredHeight = static_cast<double>(preferredSize.height());
-        if ((x / y) > (preferredWidth / preferredHeight))
+        if ((panelWidth / panelHeight) > (preferredWidth / preferredHeight))
         {
           // Panel is taller than the preferred size
-          height = preferredHeight;
+          imageHeight = preferredHeight;
           // Qt may get upset if we accidently round down below the minimum size
-          width = ceil(x * preferredHeight / y);
-          std::cout << " y = " << height << " x = " << width << std::endl;
+          imageWidth = ceil(panelWidth * preferredHeight / panelHeight);
+          std::cout << " y = " << imageHeight << " x = " << imageWidth << std::endl;
         }
         else
         {
           // Panel is wider than the preferred size
-          width = preferredWidth;
+          imageWidth = preferredWidth;
           // Qt may get upset if we accidently round down below the minimum size
-          height = ceil(y * preferredWidth / x);
-          std::cout << "x = " << width << " y = " << height << std::endl;
+          imageHeight = ceil(panelHeight * preferredWidth / panelWidth);
+          std::cout << "x = " << imageWidth << " y = " << imageHeight << std::endl;
         }
       }
       else
       {
-        width = DEFAULT_PIXELS_PER_UNIT * x;
-        height = DEFAULT_PIXELS_PER_UNIT * y;
+        imageWidth = DEFAULT_PIXELS_PER_UNIT * panelWidth;
+        imageHeight = DEFAULT_PIXELS_PER_UNIT * panelHeight;
       }
 
-      _image->scaleImage(width, height, 0, 0U);
+      _image->scaleImage(imageWidth, imageHeight, 0, 0U);
     }
   }
 

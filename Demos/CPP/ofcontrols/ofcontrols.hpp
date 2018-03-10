@@ -23,6 +23,7 @@ limitations under the License.
 #include <QObject>
 
 #include <osg/ref_ptr>
+#include <osg/Vec3d>
 #include <osg/Vec4>
 
 QT_FORWARD_DECLARE_CLASS(QPushButton);
@@ -79,9 +80,15 @@ private:
   static const std::map<std::string, osg::Vec4> COLORS;
   static const char *DEFAULT_SPHERE_COLOR;
 
+  /// Default Panel dimensions
+  static const double panelWidth, panelHeight, panelZPos;
+
   QPushButton *_toggleButton;
   QCheckBox *_showCheckBox;
   QListWidget *_list;
+
+  /// Sphere origin
+  osg::Vec3d _sphereOrigin;
 
   osg::ref_ptr<OpenFrames::WindowProxy> _windowProxy;
   osg::ref_ptr<OpenFrames::ReferenceFrame> _root;

@@ -56,10 +56,9 @@ namespace OpenFrames
       virtual void showContents(bool showContents);
       virtual bool getContentsShown() const;
 
-      /** Set the half lengths for sides of the box, given wrt the origin of
-          the box's reference frame */
-      void setHalfLengths( const double &xHalfLength, const double &yHalfLength, const double &zHalfLength );
-      void getHalfLengths( double &xHalfLength, double &yHalfLength, double &zHalfLength ) const;
+      /** Set the width and height of the panel, given wrt the ReferenceFrame origin */
+      void setSize(const double &width, const double &height);
+      void getSize(double &width, double &height);
 
       /** Set the QWidget containing controls for the control box */
       bool setWidget( QWidget *widget );
@@ -86,7 +85,6 @@ namespace OpenFrames
 
     protected:
       virtual ~QWidgetPanel();
-      void buildPanelGeometry( const osg::Vec3 &halfLengths );
 
       osg::ref_ptr<osg::Geode> _geode; // Node containing the box
       osg::ref_ptr<osg::Geometry> _panel; // A panel for rendering the controls
