@@ -69,7 +69,7 @@ namespace OpenFrames
   {
     // Create the panel as a textured quad
     _panel = osg::createTexturedQuadGeometry(
-      osg::Vec3(0.0, 0.0, 0.001), // Bottom-left corner (panel origin)
+      osg::Vec3(), // Bottom-left corner (panel origin)
       osg::Vec3(DEFAULT_LENGTH, 0, 0), // Width vector
       osg::Vec3(0, DEFAULT_LENGTH, 0)); // Height vector
     _panel->setName("QWidgetPanel Front");
@@ -77,6 +77,8 @@ namespace OpenFrames
     _panel->setUseVertexBufferObjects(true);
 
     // Create the back panel as a textured quad
+    // Note that we slightly offset the back panel Z coordinate so that it is not
+    // coplanar with the front panel (causes picking issues)
     _panelBack = osg::createTexturedQuadGeometry(
       osg::Vec3(DEFAULT_LENGTH, 0, -0.001),  // Origin of reversed panel
       osg::Vec3(-DEFAULT_LENGTH, 0, 0), // Width of reversed panel
@@ -130,10 +132,15 @@ namespace OpenFrames
 
     // Resize back panel
     osg::Vec3Array* coordsBack = dynamic_cast<osg::Vec3Array*>(_panelBack->getVertexArray());
+    float backZ = (*coordsBack)[0].z(); // Save Z-offset for back panel
     (*coordsBack)[0] = (*coords)[3]; // Back top-left = Front top-right
     (*coordsBack)[1] = (*coords)[2]; // Back bottom-left = Front bottom-right
     (*coordsBack)[2] = (*coords)[1]; // Back bottom-right = Front bottom-left
     (*coordsBack)[3] = (*coords)[0]; // Back top-right = Front top-left
+    (*coordsBack)[0].z() = backZ; // Restore Z-offset for back panel
+    (*coordsBack)[1].z() = backZ; // Restore Z-offset for back panel
+    (*coordsBack)[2].z() = backZ; // Restore Z-offset for back panel
+    (*coordsBack)[3].z() = backZ; // Restore Z-offset for back panel
 
     // Indicate that panel data has changed
     coords->dirty();
@@ -260,13 +267,19 @@ namespace OpenFrames
 
   void QWidgetPanel::setImageHandler(osgViewer::InteractiveImageHandler *handler)
   {
-    _panel->setEventCallback(handler);
+    // Add event handler to geode so that it can handle front and back panel events
+    _geode->setEventCallback(handler);
+
+    // NOTE: If the cull handler is added to the geode, then no images are rendered
+    // at all for Qt widgets. This may be because the osg/Qt adapter thinks it has
+    // already rendered the image. This may require future investigation. For now,
+    // we only add the cull handler to the front panel which solves the problem.
     _panel->setCullCallback(handler);
   }
 
   osgViewer::InteractiveImageHandler* QWidgetPanel::getImageHandler() const
   {
-    return dynamic_cast<osgViewer::InteractiveImageHandler*>(_panel->getEventCallback());
+    return dynamic_cast<osgViewer::InteractiveImageHandler*>(_panel->getCullCallback());
   }
 
   void QWidgetPanel::setColor( const osg::Vec4 &color )
