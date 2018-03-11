@@ -349,18 +349,39 @@ namespace OpenFrames{
       switch (devClass)
       {
       case vr::TrackedDeviceClass_HMD:
+      {
         _deviceIDToModel[deviceID]._class = HMD;
         break;
+      }
       case vr::TrackedDeviceClass_Controller:
+      {
         _deviceIDToModel[deviceID]._class = CONTROLLER;
-        createAndAddLaserToController(deviceID); // Add pick laser to controller
+
+        // Add pick laser to controller, and set its transform appropriately
+        osg::MatrixTransform *laserXform = createAndAddLaserToController(deviceID);
+        if (laserXform != nullptr)
+        {
+          vr::VRControllerState_t controllerState;
+          vr::RenderModel_ControllerMode_State_t controllerMode;
+          vr::RenderModel_ComponentState_t componentState;
+          vr::VRRenderModels()->GetComponentState(deviceName.c_str(), vr::k_pch_Controller_Component_Tip,
+            &controllerState, &controllerMode, &componentState);
+          osg::Matrixd tipWorldToLocal;
+          convertMatrix34(tipWorldToLocal, componentState.mTrackingToComponentLocal);
+          laserXform->setMatrix(tipWorldToLocal);
+        }
         break;
+      }
       case vr::TrackedDeviceClass_TrackingReference:
+      {
         _deviceIDToModel[deviceID]._class = BASESTATION;
         break;
+      }
       default:
+      {
         _deviceIDToModel[deviceID]._class = NONE;
         break;
+      }
       }
     }
   }

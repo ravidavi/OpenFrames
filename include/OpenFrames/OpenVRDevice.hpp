@@ -201,7 +201,7 @@ namespace OpenFrames {
     void setupRenderModelForTrackedDevice(uint32_t deviceID);
 
     /** Add laser to controller */
-    void createAndAddLaserToController(uint32_t deviceID);
+    osg::MatrixTransform* createAndAddLaserToController(uint32_t deviceID);
     
     double _worldUnitsPerMeter; // Distance units per real-world meter
     double _minWorldUnitsPerMeter, _maxWorldUnitsPerMeter;

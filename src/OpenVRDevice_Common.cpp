@@ -344,18 +344,18 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
-  void OpenVRDevice::createAndAddLaserToController(uint32_t deviceID)
+  osg::MatrixTransform* OpenVRDevice::createAndAddLaserToController(uint32_t deviceID)
   {
     if (deviceID >= _deviceIDToModel.size())
     {
       osg::notify(osg::WARN) << "OpenVRDevice WARNING: Controller deviceID out of range, can't add laser." << std::endl;
-      return;
+      return nullptr;
     }
 
     if (_deviceIDToModel[deviceID]._class != CONTROLLER)
     {
       osg::notify(osg::WARN) << "OpenVRDevice WARNING: Laser can only be added to a CONTROLLER device." << std::endl;
-      return;
+      return nullptr;
     }
 
     // Create the laser that will be used for VR controller picking
@@ -382,6 +382,7 @@ namespace OpenFrames{
 
     // Add laser transform to controller transform
     _deviceIDToModel[deviceID]._modelTransform->addChild(controllerLaserTransform);
+    return controllerLaserTransform;
   }
 
   /*************************************************************/
@@ -631,12 +632,24 @@ namespace OpenFrames{
 
     case(PICK) :
     {
+      // Get transform from laser space to controller space
+      // This may be non-identity for VR controllers whose ideal pointing direction
+      // is not parallel to the controller's x/y/z axes (e.g. Oculus Touch)
+      osg::MatrixTransform *laserXform = _ovrDevice->getControllerLaser(_motionData._device1ID);
+      const osg::Matrixd &matLaserToController = laserXform->getMatrix();
+
+      // Get transform from controller space to room space
+      const osg::Matrixd &matControllerToRoom = _ovrDevice->getDeviceModel(_motionData._device1ID)->_rawDeviceToWorld;
+
+      // Compute full transform from laser to room space
+      osg::Matrixd matLaserToRoom = matLaserToController * matControllerToRoom;
+
       // Start by getting the controller origin in room space
       // Note that we need this in world units (not meters) since the ground plane is scaled to world units
-      osg::Vec3d startPoint = _motionData._device1OrigPoseRaw.getTrans()*_motionData._origWorldUnitsPerMeter;
+      osg::Vec3d startPoint = matLaserToRoom.getTrans()*_motionData._origWorldUnitsPerMeter;
 
       // Compute the line segment along the controller's -Z axis in room space
-      osg::Vec3d endPoint = osg::Vec3d(0, 0, -1)*_motionData._device1OrigPoseRaw*_motionData._origWorldUnitsPerMeter;
+      osg::Vec3d endPoint = osg::Vec3d(0, 0, -1)*matLaserToRoom*_motionData._origWorldUnitsPerMeter;
       osg::Vec3d rayDir = endPoint - startPoint;
 
       // Perform the pick operation on the ground plane, which is already in room-space coordinates
@@ -736,12 +749,21 @@ namespace OpenFrames{
     bool validPick = false;
     int x = 0, y = 0;
 
-    // Get controller pose, in room space and room units (meters)
-    const osg::Matrixd &devicePoseRaw = _ovrDevice->getDeviceModel(_pickData.deviceID)->_rawDeviceToWorld;
+    // Get transform from laser space to controller space
+    // This may be non-identity for VR controllers whose ideal pointing direction
+    // is not parallel to the controller's x/y/z axes (e.g. Oculus Touch)
+    osg::MatrixTransform *laserXform = _ovrDevice->getControllerLaser(_pickData.deviceID);
+    const osg::Matrixd &matLaserToController = laserXform->getMatrix();
 
-    // Start by getting the controller laser start and end points in room space and world units
-    osg::Vec3d startPoint = devicePoseRaw.getTrans() * _ovrDevice->getWorldUnitsPerMeter(); // Start point is origin
-    osg::Vec3d endPoint = osg::Vec3d(0, 0, -1) * devicePoseRaw * _ovrDevice->getWorldUnitsPerMeter(); // Use unit length since we just want laser direction
+    // Get transform from controller space to room space
+    const osg::Matrixd &matControllerToRoom = _ovrDevice->getDeviceModel(_pickData.deviceID)->_rawDeviceToWorld;
+
+    // Compute full transform from laser to room space
+    osg::Matrixd matLaserToRoom = matLaserToController * matControllerToRoom;
+
+    // Get controller laser start and end points in room space and world units
+    osg::Vec3d startPoint = matLaserToRoom.getTrans() * _ovrDevice->getWorldUnitsPerMeter(); // Start point is origin
+    osg::Vec3d endPoint = osg::Vec3d(0, 0, -1) * matLaserToRoom * _ovrDevice->getWorldUnitsPerMeter(); // Use unit length since we just want laser direction
 
     // Transform controller laser to the local coordinate space of the geometry containing the image
     // First determine if the geometry is in world space or room space. Note that room space includes attached to a VR controller
@@ -840,7 +862,6 @@ namespace OpenFrames{
             y = int(float(_image->t()) * tc.y());
 
             // Get controller laser
-            osg::MatrixTransform* laserXform = _ovrDevice->getControllerLaser(_pickData.deviceID);
             osg::Geode* laserGeode = (laserXform != nullptr) ? dynamic_cast<osg::Geode*>(laserXform->getChild(0)) : nullptr;
             osg::Geometry* laserGeom = (laserGeode != nullptr) ? dynamic_cast<osg::Geometry*>(laserGeode->getDrawable(0)) : nullptr;
             osg::Vec3Array* laserPoints = (laserGeom != nullptr) ? dynamic_cast<osg::Vec3Array*>(laserGeom->getVertexArray()) : nullptr;
