@@ -216,30 +216,61 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
+  struct LaserUpdateCallback : public osg::Callback
+  {
+    LaserUpdateCallback(OpenVRDevice::LaserModel* laser)
+      : _laser(laser)
+    {}
+
+    virtual bool run(osg::Object* object, osg::Object* data)
+    {
+      // Restore laser to default if enough time has passed since it was last updated
+      osg::Timer_t lastUpdateTime = _laser->getUpdateTime();
+      osg::Timer_t currTime = osg::Timer::instance()->tick();
+      double dt = osg::Timer::instance()->delta_s(lastUpdateTime, currTime);
+      if (dt > 0.1) _laser->restoreDefaults();
+
+      // Continue with other callbacks
+      return osg::Callback::traverse(object, data);
+    }
+
+    osg::observer_ptr<OpenVRDevice::LaserModel> _laser;
+  };
+
+  /*************************************************************/
   OpenVRDevice::LaserModel::LaserModel()
   {
+    // Set laser defaults
+    _defaultLength = 10.0;
+    _defaultColor = osg::Vec4(1, 1, 1, 1);
+    _defaultWidth = 2.0;
+
+    // Initialize update time
+    _lastUpdateTime = osg::Timer::instance()->tick();
+
     // Create the laser that will be used for VR controller picking
     _vertices = new osg::Vec3Array(2);
     (*_vertices)[0].set(0, 0, 0);
-    (*_vertices)[1].set(0, 0, -10); // Laser along -Z axis in room units (meters)
+    (*_vertices)[1].set(0, 0, -_defaultLength); // Laser along -Z axis in room units (meters)
     _colors = new osg::Vec4Array;
-    _colors->push_back(osg::Vec4(1, 1, 1, 1));
-    osg::Geometry* linesGeom = new osg::Geometry();
-    linesGeom->setUseDisplayList(false);
-    linesGeom->setUseVertexBufferObjects(true);
-    linesGeom->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);
-    linesGeom->setVertexArray(_vertices);
-    linesGeom->setColorArray(_colors, osg::Array::BIND_OVERALL);
-    linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, 2));
-    _lineWidth = new osg::LineWidth(2.0);
-    linesGeom->getOrCreateStateSet()->setAttribute(_lineWidth);
+    _colors->push_back(_defaultColor);
+    _geom = new osg::Geometry();
+    _geom->setUseDisplayList(false);
+    _geom->setUseVertexBufferObjects(true);
+    _geom->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);
+    _geom->setVertexArray(_vertices);
+    _geom->setColorArray(_colors, osg::Array::BIND_OVERALL);
+    _geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, 2));
+    _lineWidth = new osg::LineWidth(_defaultWidth);
+    _geom->getOrCreateStateSet()->setAttribute(_lineWidth);
     osg::Geode* controllerLaser = new osg::Geode;
-    controllerLaser->addDrawable(linesGeom);
+    controllerLaser->addDrawable(_geom);
 
     _laserTransform = new osg::MatrixTransform;
     _laserTransform->setName("Laser");
     _laserTransform->addChild(controllerLaser);
     _laserTransform->setNodeMask(0x0); // Hide laser by default
+    _laserTransform->setUpdateCallback(new LaserUpdateCallback(this));
   }
 
   OpenVRDevice::LaserModel::~LaserModel() {}
@@ -247,24 +278,45 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRDevice::LaserModel::setColor(const osg::Vec4& color)
   {
-    _colors->back() = color;
-    _colors->dirty();
+    // Only update color if it changed
+    if (color != getColor())
+    {
+      _colors->back() = color;
+      _colors->dirty();
+      _lastUpdateTime = osg::Timer::instance()->tick();
+    }
   }
 
   /*************************************************************/
   void OpenVRDevice::LaserModel::setLength(const double& length)
   {
-    if (length < 0.0) return;
-    (*_vertices)[1].z() = -length;
-    _vertices->dirty();
-    _laserTransform->getChild(0)->asGeode()->getDrawable(0)->dirtyBound(); // Guaranteed that child 0 is Geode
+    // Only update length if it changed and the new length >= 0
+    if ((length >= 0.0) && (length != getLength()))
+    {
+      (*_vertices)[1].z() = -length;
+      _vertices->dirty();
+      _geom->dirtyBound();
+      _lastUpdateTime = osg::Timer::instance()->tick();
+    }
   }
 
   /*************************************************************/
   void OpenVRDevice::LaserModel::setWidth(const float& width)
   {
-    if (width <= 0.0) return;
-    _lineWidth->setWidth(width);
+    // Only update width if it changed and the new width >= 0
+    if ((width > 0.0) && (width != getWidth()))
+    {
+      _lineWidth->setWidth(width);
+      _lastUpdateTime = osg::Timer::instance()->tick();
+    }
+  }
+
+  /*************************************************************/
+  void OpenVRDevice::LaserModel::restoreDefaults()
+  {
+    setColor(_defaultColor);
+    setLength(_defaultLength);
+    setWidth(_defaultWidth);
   }
 
   /*************************************************************/
@@ -625,8 +677,7 @@ namespace OpenFrames{
       // Get transform from laser space to controller space
       // This may be non-identity for VR controllers whose ideal pointing direction
       // is not parallel to the controller's x/y/z axes (e.g. Oculus Touch)
-      osg::MatrixTransform *laserXform = device1Model->_laser->getTransform();
-      const osg::Matrixd &matLaserToController = laserXform->getMatrix();
+      const osg::Matrixd &matLaserToController = device1Model->_laser->getMatrix();
 
       // Get transform from controller space to room space
       const osg::Matrixd &matControllerToRoom = device1Model->_rawDeviceToWorld;
@@ -724,13 +775,15 @@ namespace OpenFrames{
     _ovrDevice(ovrDevice)
   {
     _pickData.mode = NONE;
+    _laserSelectedColor = osg::Vec4(1, 1, 1, 1);
+    _laserSelectedWidth = 4.0;
   }
 
   /*************************************************************
   * Determine the image location at which a VR controller is pointing,
   * and send a mouse event to the image for further processing.
   *************************************************************/
-  void OpenVRImageHandler::processImagePick()
+  void OpenVRImageHandler::processImagePick(double refTime)
   {
     // Check if image pick processing is needed
     if (_pickData.mode == NONE) return;
@@ -744,8 +797,7 @@ namespace OpenFrames{
     // Get transform from laser space to controller space
     // This may be non-identity for VR controllers whose ideal pointing direction
     // is not parallel to the controller's x/y/z axes (e.g. Oculus Touch)
-    osg::MatrixTransform *laserXform = deviceModel->_laser->getTransform();
-    const osg::Matrixd &matLaserToController = laserXform->getMatrix();
+    const osg::Matrixd &matLaserToController = deviceModel->_laser->getMatrix();
 
     // Get transform from controller space to room space
     const osg::Matrixd &matControllerToRoom = _ovrDevice->getDeviceModel(_pickData.deviceID)->_rawDeviceToWorld;
@@ -853,7 +905,9 @@ namespace OpenFrames{
             x = int(float(_image->s()) * tc.x());
             y = int(float(_image->t()) * tc.y());
 
-            deviceModel->_laser->setLength(intersection.distance); // Set laser length
+            deviceModel->_laser->setLength(intersection.distance*ratioMetersPerLaserDistance); // Set laser length
+            deviceModel->_laser->setWidth(_laserSelectedWidth);
+            deviceModel->_laser->setColor(_laserSelectedColor);
 
             validPick = true;
           }

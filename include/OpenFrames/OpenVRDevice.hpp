@@ -116,24 +116,43 @@ namespace OpenFrames {
       LaserModel();
 
       osg::MatrixTransform* getTransform() const { return _laserTransform; }
+      const osg::Matrixd& getMatrix() const { return _laserTransform->getMatrix(); }
+
+      /// Get Local->World matrix (transforms points in Laser frame to Controller frame)
+      void showLaser(bool show) { show ? _laserTransform->setNodeMask(~0x0) : _laserTransform->setNodeMask(0x0); }
 
       void setColor(const osg::Vec4& color);
       const osg::Vec4& getColor() const { return _colors->back(); }
+      void setDefaultColor(const osg::Vec4& color) { _defaultColor = color; }
+      const osg::Vec4& getDefaultColor() const { return _defaultColor; }
 
       void setLength(const double& length);
       double getLength() const { return -(*_vertices)[1].z(); }
+      void setDefaultLength(const double& length) { _defaultLength = (length >= 0.0) ? length : _defaultLength; }
+      double getDefaultLength() const { return _defaultLength; }
 
       void setWidth(const float& width);
       float getWidth() const { return _lineWidth->getWidth(); }
+      void setDefaultWidth(const float& width) { _defaultWidth = (width > 0.0) ? width : _defaultWidth; }
+      float getDefaultWidth() const { return _defaultWidth; }
+
+      const osg::Timer_t& getUpdateTime() const { return _lastUpdateTime; }
+
+      // Set all laser parameters to their defaults
+      void restoreDefaults();
 
     protected:
       virtual ~LaserModel();
 
       osg::ref_ptr<osg::MatrixTransform> _laserTransform;
-      osg::ref_ptr<osg::FrameStamp> _lastUpdate;
+      osg::Timer_t _lastUpdateTime; // Time (in seconds since osg::Timer epoch) of last laser update
+      osg::ref_ptr<osg::Geometry> _geom;
       osg::ref_ptr<osg::Vec3Array> _vertices;
       osg::ref_ptr<osg::Vec4Array> _colors;
       osg::ref_ptr<osg::LineWidth> _lineWidth;
+      double _defaultLength;
+      osg::Vec4 _defaultColor;
+      float _defaultWidth;
     };
 
     /** Encapsulates an OpenVR device's model */
@@ -406,6 +425,13 @@ namespace OpenFrames {
     // Translate an OpenVR controller event to a Qt widget click
     virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa, osg::Object* obj, osg::NodeVisitor* nv);
 
+    // Set properties of laser when it is pointed at an image
+    void setSelectedWidth(const float& width) { _laserSelectedWidth = (width > 0) ? width : _laserSelectedWidth; }
+    float getSelectedWidth() { return _laserSelectedWidth; }
+
+    void setSelectedColor(const osg::Vec4& color) { _laserSelectedColor = color; }
+    const osg::Vec4& getSelectedColor() const { return _laserSelectedColor; }
+
   protected:
     virtual ~OpenVRImageHandler() {}
 
@@ -417,7 +443,7 @@ namespace OpenFrames {
       osgViewer::InteractiveImageHandler(ovrih, copyop)
     {}
 
-    void processImagePick();
+    void processImagePick(double refTime);
 
     /** Type of image pick action currently being handled */
     enum PickMode
@@ -438,6 +464,9 @@ namespace OpenFrames {
     void saveCurrentPickData(PickMode mode, osgViewer::View* view, osg::NodeVisitor* nv, uint32_t device1ID);
 
     osg::observer_ptr<const OpenVRDevice> _ovrDevice;
+
+    float _laserSelectedWidth;
+    osg::Vec4 _laserSelectedColor;
   };
   
 } // !namespace OpenFrames

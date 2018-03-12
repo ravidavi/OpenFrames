@@ -642,8 +642,7 @@ namespace OpenFrames{
         // If trigger is touched, then show the controller's laser
         if (state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
         {
-          osg::MatrixTransform* laserXform = deviceModel->_laser->getTransform();
-          if (laserXform) laserXform->setNodeMask(0xffffffff);
+          deviceModel->_laser->showLaser(true);
         }
         break;
       }
@@ -653,8 +652,7 @@ namespace OpenFrames{
         // If trigger is untouched, then hide the controller's laser
         if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) == 0x0)
         {
-          osg::MatrixTransform* laserXform = deviceModel->_laser->getTransform();
-          if (laserXform) laserXform->setNodeMask(0x0);
+          deviceModel->_laser->showLaser(false);
         }
         break;
       }
@@ -751,7 +749,7 @@ namespace OpenFrames{
       // Dispatch new image pick event at each frame
       if (ea.getEventType() == osgGA::GUIEventAdapter::FRAME)
       {
-        processImagePick();
+        processImagePick(nv->getFrameStamp()->getReferenceTime());
         return false;
       }
 

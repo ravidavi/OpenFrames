@@ -103,6 +103,22 @@ OFControls::OFControls(bool useVR)
   // Set VR scale
   if (useVR) _windowProxy->setWorldUnitsPerMeter(1.0);
 
+  // Set default VR laser properties
+  // These are used if the laser is not pointing at anything
+  if (useVR)
+  {
+    const OpenFrames::OpenVRDevice* ovrDevice = _windowProxy->getOpenVRDevice();
+    for (unsigned int i = 0; i < ovrDevice->getNumDeviceModels(); ++i)
+    {
+      if (ovrDevice->getDeviceModel(i)->_laser)
+      {
+        ovrDevice->getDeviceModel(i)->_laser->setDefaultColor(osg::Vec4(0.8, 0.8, 0.8, 1));
+        ovrDevice->getDeviceModel(i)->_laser->setDefaultWidth(2.0);
+        ovrDevice->getDeviceModel(i)->_laser->setDefaultLength(10.0);
+      }
+    }
+  }
+
   _root = new OpenFrames::ReferenceFrame("root");
   _root->showNameLabel(false);
   _root->showAxes(0U);
@@ -206,7 +222,13 @@ OFControls::OFControls(bool useVR)
   //editorParentWidget->setMinimumSize(QSize(400, 300));
   editorPanel->setWidget(editorParentWidget);
   editorPanel->setIgnoreWidget(editorParentWidget, true);
-  if(useVR) editorPanel->setImageHandler(new OpenFrames::OpenVRImageHandler(_windowProxy->getOpenVRDevice(), editorPanel->getImage()));
+  if (useVR)
+  {
+    OpenFrames::OpenVRImageHandler* ih = new OpenFrames::OpenVRImageHandler(_windowProxy->getOpenVRDevice(), editorPanel->getImage());
+    ih->setSelectedColor(osg::Vec4(0.0, 0.5, 0.9, 1.0));
+    ih->setSelectedWidth(4.0);
+    editorPanel->setImageHandler(ih);
+  }
 
   // Create the sphere options widget, built at compile time from the ui file
   QWidget *sphereOptionsWidget = new QWidget;
@@ -217,7 +239,13 @@ OFControls::OFControls(bool useVR)
   QCheckBox *moveSphereCheckBox = sphereOptionsWidget->findChild<QCheckBox*>("moveSphereUI");
   sphereOptionsPanel->setWidget(sphereOptionsWidget);
   sphereOptionsPanel->setIgnoreWidget(sphereOptionsWidget, true);
-  if(useVR) sphereOptionsPanel->setImageHandler(new OpenFrames::OpenVRImageHandler(_windowProxy->getOpenVRDevice(), sphereOptionsPanel->getImage()));
+  if (useVR)
+  {
+    OpenFrames::OpenVRImageHandler* ih = new OpenFrames::OpenVRImageHandler(_windowProxy->getOpenVRDevice(), sphereOptionsPanel->getImage());
+    ih->setSelectedColor(osg::Vec4(0.0, 0.5, 0.9, 1.0));
+    ih->setSelectedWidth(4.0);
+    sphereOptionsPanel->setImageHandler(ih);
+  }
 
   // Create the example list view
   _list = new QListWidget();
@@ -241,7 +269,13 @@ OFControls::OFControls(bool useVR)
     _list->setCurrentItem(matchingItems[0]);
   }
   colorPanel->setWidget(_list);
-  if(useVR) colorPanel->setImageHandler(new OpenFrames::OpenVRImageHandler(_windowProxy->getOpenVRDevice(), colorPanel->getImage()));
+  if (useVR)
+  {
+    OpenFrames::OpenVRImageHandler* ih = new OpenFrames::OpenVRImageHandler(_windowProxy->getOpenVRDevice(), colorPanel->getImage());
+    ih->setSelectedColor(osg::Vec4(0.0, 0.5, 0.9, 1.0));
+    ih->setSelectedWidth(4.0);
+    colorPanel->setImageHandler(ih);
+  }
 
   // Create the example slider controls widget, loaded from ui file in resources at runtime
   QFile file(":/forms/movesphereform.ui");
@@ -253,7 +287,13 @@ OFControls::OFControls(bool useVR)
   QSlider *zSlider = moveSphereWidget->findChild<QSlider*>("zSliderUI");
   _hiddenPanel->setWidget(moveSphereWidget);
   _hiddenPanel->setIgnoreWidget(moveSphereWidget, true);
-  if(useVR) _hiddenPanel->setImageHandler(new OpenFrames::OpenVRImageHandler(_windowProxy->getOpenVRDevice(), _hiddenPanel->getImage()));
+  if (useVR)
+  {
+    OpenFrames::OpenVRImageHandler* ih = new OpenFrames::OpenVRImageHandler(_windowProxy->getOpenVRDevice(), _hiddenPanel->getImage());
+    ih->setSelectedColor(osg::Vec4(0.0, 0.5, 0.9, 1.0));
+    ih->setSelectedWidth(4.0);
+    _hiddenPanel->setImageHandler(ih);
+  }
 
   // Connect QObject signals to our slots
   QObject::connect(moveSphereCheckBox, &QCheckBox::clicked, this, &OFControls::setHiddenPanel);
