@@ -22,6 +22,7 @@
 #include <osg/ref_ptr>
 #include <osg/Referenced>
 #include <osg/Quat>
+#include <osg/LineWidth>
 #include <osg/MatrixTransform>
 #include <osg/Texture>
 #include <osg/Vec3d>
@@ -108,9 +109,31 @@ namespace OpenFrames {
       CONTROLLER = 3
     };
     
-    struct LaserModel : public osg::Referenced
+    /** Encapsulates the laser attached to OpenVR devices (usually controllers) */
+    class LaserModel : public osg::Referenced
     {
+    public:
+      LaserModel();
+
+      osg::MatrixTransform* getTransform() const { return _laserTransform; }
+
+      void setColor(const osg::Vec4& color);
+      const osg::Vec4& getColor() const { return _colors->back(); }
+
+      void setLength(const double& length);
+      double getLength() const { return -(*_vertices)[1].z(); }
+
+      void setWidth(const float& width);
+      float getWidth() const { return _lineWidth->getWidth(); }
+
+    protected:
+      virtual ~LaserModel();
+
       osg::ref_ptr<osg::MatrixTransform> _laserTransform;
+      osg::ref_ptr<osg::FrameStamp> _lastUpdate;
+      osg::ref_ptr<osg::Vec3Array> _vertices;
+      osg::ref_ptr<osg::Vec4Array> _colors;
+      osg::ref_ptr<osg::LineWidth> _lineWidth;
     };
 
     /** Encapsulates an OpenVR device's model */
@@ -202,9 +225,6 @@ namespace OpenFrames {
 
     /** Load a device's render model by its OpenVR ID */
     void setupRenderModelForTrackedDevice(uint32_t deviceID);
-
-    /** Add laser to controller */
-    osg::MatrixTransform* createAndAddLaserToController(uint32_t deviceID);
     
     double _worldUnitsPerMeter; // Distance units per real-world meter
     double _minWorldUnitsPerMeter, _maxWorldUnitsPerMeter;

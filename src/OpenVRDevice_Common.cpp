@@ -216,6 +216,58 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
+  OpenVRDevice::LaserModel::LaserModel()
+  {
+    // Create the laser that will be used for VR controller picking
+    _vertices = new osg::Vec3Array(2);
+    (*_vertices)[0].set(0, 0, 0);
+    (*_vertices)[1].set(0, 0, -10); // Laser along -Z axis in room units (meters)
+    _colors = new osg::Vec4Array;
+    _colors->push_back(osg::Vec4(1, 1, 1, 1));
+    osg::Geometry* linesGeom = new osg::Geometry();
+    linesGeom->setUseDisplayList(false);
+    linesGeom->setUseVertexBufferObjects(true);
+    linesGeom->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);
+    linesGeom->setVertexArray(_vertices);
+    linesGeom->setColorArray(_colors, osg::Array::BIND_OVERALL);
+    linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, 2));
+    _lineWidth = new osg::LineWidth(2.0);
+    linesGeom->getOrCreateStateSet()->setAttribute(_lineWidth);
+    osg::Geode* controllerLaser = new osg::Geode;
+    controllerLaser->addDrawable(linesGeom);
+
+    _laserTransform = new osg::MatrixTransform;
+    _laserTransform->setName("Laser");
+    _laserTransform->addChild(controllerLaser);
+    _laserTransform->setNodeMask(0x0); // Hide laser by default
+  }
+
+  OpenVRDevice::LaserModel::~LaserModel() {}
+
+  /*************************************************************/
+  void OpenVRDevice::LaserModel::setColor(const osg::Vec4& color)
+  {
+    _colors->back() = color;
+    _colors->dirty();
+  }
+
+  /*************************************************************/
+  void OpenVRDevice::LaserModel::setLength(const double& length)
+  {
+    if (length < 0.0) return;
+    (*_vertices)[1].z() = -length;
+    _vertices->dirty();
+    _laserTransform->getChild(0)->asGeode()->getDrawable(0)->dirtyBound(); // Guaranteed that child 0 is Geode
+  }
+
+  /*************************************************************/
+  void OpenVRDevice::LaserModel::setWidth(const float& width)
+  {
+    if (width <= 0.0) return;
+    _lineWidth->setWidth(width);
+  }
+
+  /*************************************************************/
   void OpenVRDevice::computeDeviceTransforms()
   {
     osg::Matrixd matDeviceToWorld; // Device to World transform
@@ -341,50 +393,6 @@ namespace OpenFrames{
         return;
       }
     }
-  }
-
-  /*************************************************************/
-  osg::MatrixTransform* OpenVRDevice::createAndAddLaserToController(uint32_t deviceID)
-  {
-    if (deviceID >= _deviceIDToModel.size())
-    {
-      osg::notify(osg::WARN) << "OpenVRDevice WARNING: Controller deviceID out of range, can't add laser." << std::endl;
-      return nullptr;
-    }
-
-    if (_deviceIDToModel[deviceID]._class != CONTROLLER)
-    {
-      osg::notify(osg::WARN) << "OpenVRDevice WARNING: Laser can only be added to a CONTROLLER device." << std::endl;
-      return nullptr;
-    }
-
-    // Create the laser that will be used for VR controller picking
-    osg::Vec3Array* vertices = new osg::Vec3Array(2);
-    (*vertices)[0].set(0, 0, 0);
-    (*vertices)[1].set(0, 0, -2); // Laser along -Z axis
-    osg::Vec4Array* colors = new osg::Vec4Array;
-    colors->push_back(osg::Vec4(1, 1, 1, 1));
-    osg::Geometry* linesGeom = new osg::Geometry();
-    linesGeom->setUseDisplayList(false);
-    linesGeom->setUseVertexBufferObjects(true);
-    linesGeom->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);
-    linesGeom->setVertexArray(vertices);
-    linesGeom->setColorArray(colors, osg::Array::BIND_OVERALL);
-    linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, 2));
-    osg::Geode* controllerLaser = new osg::Geode;
-    controllerLaser->addDrawable(linesGeom);
-
-    // Create a transform to hold the laser so that it can be enabled/disabled per-controller
-    LaserModel* laser = new LaserModel;
-    laser->_laserTransform = new osg::MatrixTransform;
-    laser->_laserTransform->setName("Laser");
-    laser->_laserTransform->addChild(controllerLaser);
-    laser->_laserTransform->setNodeMask(0x0); // Disable by default
-
-    // Add laser transform to controller transform
-    _deviceIDToModel[deviceID]._laser = laser;
-    _deviceIDToModel[deviceID]._modelTransform->addChild(laser->_laserTransform);
-    return laser->_laserTransform;
   }
 
   /*************************************************************/
@@ -617,7 +625,7 @@ namespace OpenFrames{
       // Get transform from laser space to controller space
       // This may be non-identity for VR controllers whose ideal pointing direction
       // is not parallel to the controller's x/y/z axes (e.g. Oculus Touch)
-      osg::MatrixTransform *laserXform = device1Model->_laser->_laserTransform;
+      osg::MatrixTransform *laserXform = device1Model->_laser->getTransform();
       const osg::Matrixd &matLaserToController = laserXform->getMatrix();
 
       // Get transform from controller space to room space
@@ -736,7 +744,7 @@ namespace OpenFrames{
     // Get transform from laser space to controller space
     // This may be non-identity for VR controllers whose ideal pointing direction
     // is not parallel to the controller's x/y/z axes (e.g. Oculus Touch)
-    osg::MatrixTransform *laserXform = deviceModel->_laser->_laserTransform;
+    osg::MatrixTransform *laserXform = deviceModel->_laser->getTransform();
     const osg::Matrixd &matLaserToController = laserXform->getMatrix();
 
     // Get transform from controller space to room space
@@ -845,17 +853,7 @@ namespace OpenFrames{
             x = int(float(_image->s()) * tc.x());
             y = int(float(_image->t()) * tc.y());
 
-            // Get controller laser
-            osg::Geode* laserGeode = (laserXform != nullptr) ? dynamic_cast<osg::Geode*>(laserXform->getChild(0)) : nullptr;
-            osg::Geometry* laserGeom = (laserGeode != nullptr) ? dynamic_cast<osg::Geometry*>(laserGeode->getDrawable(0)) : nullptr;
-            osg::Vec3Array* laserPoints = (laserGeom != nullptr) ? dynamic_cast<osg::Vec3Array*>(laserGeom->getVertexArray()) : nullptr;
-
-            if ((laserPoints != nullptr) && (intersection.distance > 0.0))
-            {
-              (*laserPoints)[1].set(0, 0, -intersection.distance*ratioMetersPerLaserDistance); // Laser is in meters
-              laserPoints->dirty();
-              laserGeom->dirtyBound();
-            }
+            deviceModel->_laser->setLength(intersection.distance); // Set laser length
 
             validPick = true;
           }

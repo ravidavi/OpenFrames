@@ -357,19 +357,20 @@ namespace OpenFrames{
       {
         _deviceIDToModel[deviceID]._class = CONTROLLER;
 
-        // Add pick laser to controller, and set its transform appropriately
-        osg::MatrixTransform *laserXform = createAndAddLaserToController(deviceID);
-        if (laserXform != nullptr)
-        {
-          vr::VRControllerState_t controllerState;
-          vr::RenderModel_ControllerMode_State_t controllerMode;
-          vr::RenderModel_ComponentState_t componentState;
-          vr::VRRenderModels()->GetComponentState(deviceName.c_str(), vr::k_pch_Controller_Component_Tip,
-            &controllerState, &controllerMode, &componentState);
-          osg::Matrixd tipWorldToLocal;
-          convertMatrix34(tipWorldToLocal, componentState.mTrackingToComponentLocal);
-          laserXform->setMatrix(tipWorldToLocal);
-        }
+        // Create and add pick laser to controller, and set its transform appropriately
+        LaserModel* laser = new LaserModel;
+        _deviceIDToModel[deviceID]._laser = laser;
+        _deviceIDToModel[deviceID]._modelTransform->addChild(laser->getTransform());
+
+        // Set pick laser's transform using OpenVR definition of controller "tip"
+        vr::VRControllerState_t controllerState;
+        vr::RenderModel_ControllerMode_State_t controllerMode;
+        vr::RenderModel_ComponentState_t componentState;
+        vr::VRRenderModels()->GetComponentState(deviceName.c_str(), vr::k_pch_Controller_Component_Tip,
+          &controllerState, &controllerMode, &componentState);
+        osg::Matrixd tipWorldToLocal;
+        convertMatrix34(tipWorldToLocal, componentState.mTrackingToComponentLocal);
+        laser->getTransform()->setMatrix(tipWorldToLocal);
         break;
       }
       case vr::TrackedDeviceClass_TrackingReference:
@@ -641,7 +642,7 @@ namespace OpenFrames{
         // If trigger is touched, then show the controller's laser
         if (state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
         {
-          osg::MatrixTransform* laserXform = deviceModel->_laser ? deviceModel->_laser->_laserTransform : nullptr;
+          osg::MatrixTransform* laserXform = deviceModel->_laser->getTransform();
           if (laserXform) laserXform->setNodeMask(0xffffffff);
         }
         break;
@@ -652,7 +653,7 @@ namespace OpenFrames{
         // If trigger is untouched, then hide the controller's laser
         if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) == 0x0)
         {
-          osg::MatrixTransform* laserXform = deviceModel->_laser ? deviceModel->_laser->_laserTransform : nullptr;
+          osg::MatrixTransform* laserXform = deviceModel->_laser->getTransform();
           if (laserXform) laserXform->setNodeMask(0x0);
         }
         break;
