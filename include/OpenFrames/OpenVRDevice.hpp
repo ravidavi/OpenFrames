@@ -108,6 +108,11 @@ namespace OpenFrames {
       CONTROLLER = 3
     };
     
+    struct LaserModel : public osg::Referenced
+    {
+      osg::ref_ptr<osg::MatrixTransform> _laserTransform;
+    };
+
     /** Encapsulates an OpenVR device's model */
     struct DeviceModel
     {
@@ -118,8 +123,9 @@ namespace OpenFrames {
       }
       osg::ref_ptr<osg::MatrixTransform> _modelTransform; // In world units
       osg::Matrixd _rawDeviceToWorld; // In OpenVR units [meters]
-      bool _valid;
+      bool _valid; // Whether device is actively being tracked by OpenVR
       DeviceClass _class;
+      osg::ref_ptr<LaserModel> _laser; // NULL if device doesn't have a laser
     };
     
     /** Get device models */
@@ -172,9 +178,6 @@ namespace OpenFrames {
     /** Get/set the user height in meters */
     void setUserHeight(double userHeight) { _userHeight = userHeight; }
     double getUserHeight() const { return _userHeight; }
-
-    /** Get the controller laser */
-    osg::MatrixTransform* getControllerLaser(uint32_t deviceID) const;
 
     /** Get the ground plane */
     osg::MatrixTransform* getGroundPlane() { return _roomGround; }
@@ -229,9 +232,6 @@ namespace OpenFrames {
 
     // Transform that contains local ground plane
     osg::ref_ptr<osg::MatrixTransform> _roomGround;
-
-    // Name of picking laser attached to each controller
-    const std::string _controllerLaserName = "ControllerLaser";
 
     // Per-eye asymmetric projection matrices
     osg::Matrixd _rightEyeProj, _leftEyeProj, _centerProj;

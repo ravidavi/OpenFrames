@@ -375,33 +375,16 @@ namespace OpenFrames{
     controllerLaser->addDrawable(linesGeom);
 
     // Create a transform to hold the laser so that it can be enabled/disabled per-controller
-    osg::MatrixTransform *controllerLaserTransform = new osg::MatrixTransform;
-    controllerLaserTransform->setName(_controllerLaserName);
-    controllerLaserTransform->addChild(controllerLaser);
-    controllerLaserTransform->setNodeMask(0x0); // Disable by default
+    LaserModel* laser = new LaserModel;
+    laser->_laserTransform = new osg::MatrixTransform;
+    laser->_laserTransform->setName("Laser");
+    laser->_laserTransform->addChild(controllerLaser);
+    laser->_laserTransform->setNodeMask(0x0); // Disable by default
 
     // Add laser transform to controller transform
-    _deviceIDToModel[deviceID]._modelTransform->addChild(controllerLaserTransform);
-    return controllerLaserTransform;
-  }
-
-  /*************************************************************/
-  osg::MatrixTransform* OpenVRDevice::getControllerLaser(uint32_t deviceID) const
-  {
-    if (deviceID >= _deviceIDToModel.size()) return NULL;
-    if (_deviceIDToModel[deviceID]._class != CONTROLLER) return NULL;
-
-    // Search for controller laser transform
-    osg::MatrixTransform* controllerXform = _deviceIDToModel[deviceID]._modelTransform;
-    for (unsigned int i = 0; i < controllerXform->getNumChildren(); ++i)
-    {
-      osg::MatrixTransform* childXform = dynamic_cast<osg::MatrixTransform*>(controllerXform->getChild(i));
-      if (childXform && (childXform->getName() == _controllerLaserName)) return childXform;
-    }
-
-    // No laser transform found, which should never happen so warn user
-    osg::notify(osg::WARN) << "OpenVRDevice WARNING: No laser attached to controller! This should never happen!" << std::endl;
-    return NULL;
+    _deviceIDToModel[deviceID]._laser = laser;
+    _deviceIDToModel[deviceID]._modelTransform->addChild(laser->_laserTransform);
+    return laser->_laserTransform;
   }
 
   /*************************************************************/
@@ -498,6 +481,9 @@ namespace OpenFrames{
     double armLength = (_ovrDevice->getUserHeight()*0.7) / 2.0; // [meters]
     double fastMotionThreshold = 1.0 - armLength / 4.0;
 
+    const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
+    const OpenVRDevice::DeviceModel *device2Model = _ovrDevice->getDeviceModel(_motionData._device2ID);
+
     // Handle world transformations based on current motion mode
     switch (_motionData._mode)
     {
@@ -511,7 +497,6 @@ namespace OpenFrames{
       osg::Vec3d origPosWorld = origPos * _motionData._origTrackball;
 
       // Next get the current controller location relative to trackball center
-      const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
       osg::Matrixd device1CurrPoseRaw = device1Model->_rawDeviceToWorld;
       osg::Vec3d currPos = device1CurrPoseRaw.getTrans()*_motionData._origWorldUnitsPerMeter;
       osg::Vec3d currPosWorld = currPos * _motionData._origTrackball;
@@ -541,7 +526,6 @@ namespace OpenFrames{
       osg::Vec3d origPos = _motionData._device1OrigPoseRaw.getTrans();
 
       // Next get the current controller location
-      const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
       osg::Vec3d currPos = device1Model->_rawDeviceToWorld.getTrans();
 
       // Move room in the opposite direction as controller motion.
@@ -571,8 +555,6 @@ namespace OpenFrames{
       osg::Vec3d origCenter = (device1TransOrig + device2TransOrig) * 0.5;
 
       // Get the current controller distance
-      const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
-      const OpenVRDevice::DeviceModel *device2Model = _ovrDevice->getDeviceModel(_motionData._device2ID);
       osg::Vec3d device1TransCurr = device1Model->_rawDeviceToWorld.getTrans();
       osg::Vec3d device2TransCurr = device2Model->_rawDeviceToWorld.getTrans();
       osg::Vec3d currCenter = (device1TransCurr + device2TransCurr) * 0.5; // Center point between controllers
@@ -635,11 +617,11 @@ namespace OpenFrames{
       // Get transform from laser space to controller space
       // This may be non-identity for VR controllers whose ideal pointing direction
       // is not parallel to the controller's x/y/z axes (e.g. Oculus Touch)
-      osg::MatrixTransform *laserXform = _ovrDevice->getControllerLaser(_motionData._device1ID);
+      osg::MatrixTransform *laserXform = device1Model->_laser->_laserTransform;
       const osg::Matrixd &matLaserToController = laserXform->getMatrix();
 
       // Get transform from controller space to room space
-      const osg::Matrixd &matControllerToRoom = _ovrDevice->getDeviceModel(_motionData._device1ID)->_rawDeviceToWorld;
+      const osg::Matrixd &matControllerToRoom = device1Model->_rawDeviceToWorld;
 
       // Compute full transform from laser to room space
       osg::Matrixd matLaserToRoom = matLaserToController * matControllerToRoom;
@@ -749,10 +731,12 @@ namespace OpenFrames{
     bool validPick = false;
     int x = 0, y = 0;
 
+    const OpenVRDevice::DeviceModel *deviceModel = _ovrDevice->getDeviceModel(_pickData.deviceID);
+
     // Get transform from laser space to controller space
     // This may be non-identity for VR controllers whose ideal pointing direction
     // is not parallel to the controller's x/y/z axes (e.g. Oculus Touch)
-    osg::MatrixTransform *laserXform = _ovrDevice->getControllerLaser(_pickData.deviceID);
+    osg::MatrixTransform *laserXform = deviceModel->_laser->_laserTransform;
     const osg::Matrixd &matLaserToController = laserXform->getMatrix();
 
     // Get transform from controller space to room space

@@ -539,8 +539,8 @@ namespace OpenFrames{
       const vr::VRControllerState_t *state = event->_vrEventData._controllerState;
       
       // Only process event if it's from a controller
-      if (deviceID >= _ovrDevice->getNumDeviceModels()) return false;
-      if (_ovrDevice->getDeviceModel(deviceID)->_class != OpenVRDevice::CONTROLLER) return false;
+      const OpenVRDevice::DeviceModel* deviceModel = _ovrDevice->getDeviceModel(deviceID);
+      if ((deviceModel != nullptr) && (deviceModel->_class != OpenVRDevice::CONTROLLER)) return false;
       
       // Convert controller event types to view changes in VR space
       switch (ovrEvent->eventType)
@@ -641,7 +641,7 @@ namespace OpenFrames{
         // If trigger is touched, then show the controller's laser
         if (state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
         {
-          osg::MatrixTransform* laserXform = _ovrDevice->getControllerLaser(deviceID);
+          osg::MatrixTransform* laserXform = deviceModel->_laser ? deviceModel->_laser->_laserTransform : nullptr;
           if (laserXform) laserXform->setNodeMask(0xffffffff);
         }
         break;
@@ -652,7 +652,7 @@ namespace OpenFrames{
         // If trigger is untouched, then hide the controller's laser
         if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) == 0x0)
         {
-          osg::MatrixTransform* laserXform = _ovrDevice->getControllerLaser(deviceID);
+          osg::MatrixTransform* laserXform = deviceModel->_laser ? deviceModel->_laser->_laserTransform : nullptr;
           if (laserXform) laserXform->setNodeMask(0x0);
         }
         break;
