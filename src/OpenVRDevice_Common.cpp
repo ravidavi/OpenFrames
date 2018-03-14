@@ -930,6 +930,10 @@ namespace OpenFrames{
       _image->sendPointerEvent(x, y, osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON);
       break;
     }
+    default:
+    {
+      break;
+    }
     }
   }
 

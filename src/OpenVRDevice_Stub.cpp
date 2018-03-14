@@ -144,14 +144,6 @@ namespace OpenFrames{
     _centerViewOffsetRaw = (_rightEyeViewOffsetRaw + _leftEyeViewOffsetRaw)*0.5;
     _rightEyeViewOffsetRaw -= _centerViewOffsetRaw;
     _leftEyeViewOffsetRaw -= _centerViewOffsetRaw;
-    
-    // Print new IPD value if needed
-    double ipd = (_rightEyeViewOffsetRaw - _leftEyeViewOffsetRaw).length();
-    if (ipd != _ipd)
-    {
-      osg::notify(osg::ALWAYS) << "VR Interpupillary Distance: " << ipd * 1000.0f << "mm" << std::endl;
-      _ipd = ipd;
-    }
   }
 
   /*************************************************************/
@@ -225,6 +217,17 @@ namespace OpenFrames{
     
     // Just call parent trackball handler
     return FollowingTrackball::handle(ea, us);
+  }
+  
+  /*************************************************************/
+  bool OpenVRImageHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa, osg::Object* obj, osg::NodeVisitor* nv)
+  {
+    // Compute new motion-based view at each frame
+    if (ea.getEventType() == osgGA::GUIEventAdapter::FRAME)
+      processImagePick(nv->getFrameStamp()->getReferenceTime());
+    
+    // Just call parent trackball handler
+    return osgViewer::InteractiveImageHandler::handle(ea, aa, obj, nv);
   }
   
 } // !namespace OpenFrames
