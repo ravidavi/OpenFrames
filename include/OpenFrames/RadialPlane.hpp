@@ -35,6 +35,11 @@ class OF_EXPORT RadialPlane : public ReferenceFrame
 	RadialPlane( const std::string &name );
 	RadialPlane( const std::string &name, float r, float g, float b, float a = 1.0 );
 
+	// Show/hide this frame's contents, e.g. everything a frame shows (excluding axes, labels, and children)
+	// Inherited from ReferenceFrame
+	virtual void showContents(bool showContents);
+	virtual bool getContentsShown() const;
+
 	/** Set/get the spacing between radial circles. */
 	void setParameters(const double &radius, const double &radSpace, const double &lonSpace);
 	void getParameters(double &radius, double &radSpace, double &lonSpace) const;

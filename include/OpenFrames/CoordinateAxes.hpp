@@ -37,6 +37,11 @@ class OF_EXPORT CoordinateAxes : public ReferenceFrame
 	CoordinateAxes( const std::string &name );
 	CoordinateAxes( const std::string &name, float r, float g, float b, float a = 1.0 );
 
+	// Show/hide this frame's contents, e.g. everything a frame shows (excluding axes, labels, and children)
+	// Inherited from ReferenceFrame
+	virtual void showContents(bool showContents);
+	virtual bool getContentsShown() const;
+
 	/** Set/get axis length */
 	void setAxisLength(double len);
 	inline double getAxisLength() { return _axisLength; }

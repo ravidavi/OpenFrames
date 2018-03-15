@@ -37,6 +37,11 @@ class OF_EXPORT DrawableTrajectory : public ReferenceFrame
 	DrawableTrajectory( const std::string &name );
 	DrawableTrajectory( const std::string &name, float r, float g, float b, float a  = 1.0);
 
+	// Show/hide this frame's contents, e.g. everything a frame shows (excluding axes, labels, and children)
+	// Inherited from ReferenceFrame
+	virtual void showContents(bool showContents);
+	virtual bool getContentsShown() const;
+
 	/** Manage internal list of TrajectoryArtists. */
 	void addArtist(TrajectoryArtist *artist);
 	void removeArtist(TrajectoryArtist *artist);

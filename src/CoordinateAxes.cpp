@@ -94,6 +94,25 @@ CoordinateAxes::CoordinateAxes(const std::string &name, float r, float g,
 
 CoordinateAxes::~CoordinateAxes() {}
 
+void CoordinateAxes::showContents(bool showContents)
+{
+	if (showContents)
+	{
+	  _axesGeode->setNodeMask(0xffffffff);
+	  _tickGeode->setNodeMask(0xffffffff);
+	}
+	else
+	{
+	  _axesGeode->setNodeMask(0x0);
+	  _tickGeode->setNodeMask(0x0);
+	}
+}
+
+bool CoordinateAxes::getContentsShown() const
+{
+	return (_axesGeode->getNodeMask() != 0x0 || _tickGeode->getNodeMask() != 0x0);
+}
+
 void CoordinateAxes::setAxisLength(double len)
 {
 	if((len != _axisLength) && (len >= 0.0))

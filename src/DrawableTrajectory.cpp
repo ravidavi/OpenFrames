@@ -99,6 +99,17 @@ DrawableTrajectory::~DrawableTrajectory()
 #endif
 }
 
+void DrawableTrajectory::showContents(bool showContents)
+{
+	if (showContents) _geode->setNodeMask(0xffffffff);
+	else _geode->setNodeMask(0x0);
+}
+
+bool DrawableTrajectory::getContentsShown() const
+{
+	return (_geode->getNodeMask() != 0x0);
+}
+
 void DrawableTrajectory::_init()
 {
         // Geode will contain all trajectory artists

@@ -37,6 +37,11 @@ class OF_EXPORT LatLonGrid : public ReferenceFrame
 	LatLonGrid( const std::string &name );
 	LatLonGrid( const std::string &name, float r, float g, float b, float a = 1.0 );
 
+	// Show/hide this frame's contents, e.g. everything a frame shows (excluding axes, labels, and children)
+	// Inherited from ReferenceFrame
+	virtual void showContents(bool showContents);
+	virtual bool getContentsShown() const;
+
 	/** Set/get latitude and longitude spacing, in radians.
 	    Enter zero to disable latitude or longitude lines, or any value above 2*PI to
 	    draw only the equator or prime meridian. */

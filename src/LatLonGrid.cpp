@@ -36,6 +36,17 @@ LatLonGrid::LatLonGrid(const std::string &name, float r, float g,
 
 LatLonGrid::~LatLonGrid() {}
 
+void LatLonGrid::showContents(bool showContents)
+{
+	if (showContents) _geode->setNodeMask(0xffffffff);
+	else _geode->setNodeMask(0x0);
+}
+
+bool LatLonGrid::getContentsShown() const
+{
+	return (_geode->getNodeMask() != 0x0);
+}
+
 void LatLonGrid::setParameters(const double &radius, const double &latSpace, const double &lonSpace)
 {
   	bool recreateGrid = false;

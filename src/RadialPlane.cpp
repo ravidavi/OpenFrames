@@ -41,6 +41,25 @@ RadialPlane::RadialPlane(const std::string &name, float r, float g,
 
 RadialPlane::~RadialPlane() {}
 
+void RadialPlane::showContents(bool showContents)
+{
+	if (showContents)
+	{
+	  _planeGeode->setNodeMask(0xffffffff);
+	  _linesGeode->setNodeMask(0xffffffff);
+	}
+	else
+	{
+	  _planeGeode->setNodeMask(0x0);
+	  _linesGeode->setNodeMask(0x0);
+	}
+}
+
+bool RadialPlane::getContentsShown() const
+{
+	return (_planeGeode->getNodeMask() != 0x0 || _linesGeode->getNodeMask() != 0x0);
+}
+
 void RadialPlane::init()
 {
 	// Create geode to hold the plane geometries
