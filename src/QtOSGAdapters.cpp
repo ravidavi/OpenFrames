@@ -25,7 +25,7 @@
 #include <QPainter>
 #include <QtEvents>
 #include <QGraphicsItem>
-#include <QScrollbar>
+#include <QScrollBar>
 #include <QGraphicsProxyWidget>
 
 #define MYQKEYEVENT 2000
