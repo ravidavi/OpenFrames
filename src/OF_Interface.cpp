@@ -412,21 +412,27 @@ OF_EXPORT void OF_FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG))
 **/
 void OF_FCN(ofwin_start)()
 {
-	if(_objs->_currWinProxy) 
-	{
-	  FramerateLimiter waitLimiter;
-	  waitLimiter.setDesiredFramerate(5.0); // FPS at which to check
-
-	  // Tell WindowProxy to start animating, then wait until it actually starts
-	  _objs->_intVal = _objs->_currWinProxy->startThread();
-	  while(!_objs->_currWinProxy->isAnimating()) 
-	  {
-	    waitLimiter.frame();
-	  }
+  if(_objs->_currWinProxy)
+  {
+    FramerateLimiter waitLimiter(5.0); // Framerate at which to check for animation
+    
+    // Tell WindowProxy to start animating, then wait until it actually starts
+    _objs->_intVal = _objs->_currWinProxy->startThread();
+    if(_objs->_intVal != 0) return;
+    
+    while(!_objs->_currWinProxy->isAnimating() &&
+          !_objs->_currWinProxy->doneAnimating())
+    {
+      waitLimiter.frame();
     }
-    else {
-      _objs->_intVal = -2;
-    }
+    
+    // Check for animation error
+    if(_objs->_currWinProxy->getAnimationState() == WindowProxy::ERROR)
+      _objs->_intVal = -1;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
 }
 
 /**
@@ -436,22 +442,21 @@ void OF_FCN(ofwin_start)()
 **/
 void OF_FCN(ofwin_stop)()
 {
-	if(_objs->_currWinProxy) 
-	{
-	  FramerateLimiter waitLimiter;
-	  waitLimiter.setDesiredFramerate(5.0); // FPS at which to check
-
-	  // Tell WindowProxy to stop animating, then wait until it actually stops
-	  _objs->_currWinProxy->shutdown();
-	  while(_objs->_currWinProxy->isRunning()) 
-	  {
-	    waitLimiter.frame();
-	  }
-      _objs->_intVal = 0;
+  if(_objs->_currWinProxy)
+  {
+    FramerateLimiter waitLimiter(5.0); // Framerate at which to check for animation
+    
+    // Tell WindowProxy to stop animating, then wait until it actually stops
+    _objs->_currWinProxy->shutdown();
+    while(_objs->_currWinProxy->isRunning())
+    {
+      waitLimiter.frame();
     }
-    else {
-      _objs->_intVal = -2;
-    }
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
 }
 
 /**

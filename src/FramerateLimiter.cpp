@@ -31,11 +31,11 @@
   
 namespace OpenFrames{
 
-/** Constructor, defaults to 30fps */
-FramerateLimiter::FramerateLimiter()
+/** Constructor */
+FramerateLimiter::FramerateLimiter(double fps)
   	: _timer(*osg::Timer::instance())
 {
-	setDesiredFramerate(30.0);
+	setDesiredFramerate(fps);
 }
 
 void FramerateLimiter::setDesiredFramerate(double fps)

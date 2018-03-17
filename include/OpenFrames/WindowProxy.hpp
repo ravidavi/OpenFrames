@@ -229,10 +229,35 @@ namespace OpenFrames
     bool synchronizeTime(WindowProxy *winproxy);
     WindowProxy* getTimeSyncWindow() const { return _timeSyncWinProxy.get(); }
     
-    /** Animation loop control (event/update/render) */
+    /** The state of this WindowProxy's animation loop */
+    enum AnimationState
+    {
+      IDLE = 0,      // Waiting to initiate animation
+      INITIALIZING,  // Initializing animation
+      ANIMATING,     // Inside animation loop, and actively rendering
+      PAUSED,        // Inside animation loop, but rendering is paused
+      ERROR,         // Error during initialization
+      SUCCESS        // Successfully finished animating
+    };
+    
+    /// Animation loop control (animation means process events, update objects, and render scene)
+    /// Set the desired animation pause state. If currently animating, then return after actual
+    /// animation state matches the desired animation state. Otherwise return immediately.
+    /// NOTE: pauseAnimation should never be called from the render thread, which includes
+    /// user-defined callback functions.
     void pauseAnimation(bool pause);
-    bool isAnimationPaused() const { return _animPaused; }
-    bool isAnimating() const { return _isAnimating; }
+    
+    /// Get the current animation state
+    AnimationState getAnimationState() const { return _animationState; }
+    
+    /// Determine whether WindowProxy is in its animation loop
+    bool isAnimating() const { return ((_animationState == ANIMATING) || (_animationState == PAUSED)); }
+    
+    /// Determine whether WindowProxy is done animating
+    bool doneAnimating() const { return ((_animationState == ERROR) || (_animationState == SUCCESS)); }
+    
+    /// If animation is done, then reset the animation state
+    void resetAnimationState() { if(doneAnimating()) _animationState = IDLE; }
     
     /** Set the desired framerate at which animation should occur. */
     inline void setDesiredFramerate(const double &fps)
@@ -364,7 +389,8 @@ namespace OpenFrames
     FramerateLimiter _frameThrottle; // Controls animation framerate
     
     /** Time control variables */
-    bool _animPaused, _isAnimating;
+    AnimationState _animationState; // Current animation state
+    bool _pauseAnimation;           // Indicate that animation should be paused
     bool _timePaused;
     osg::Timer_t _Tref;
     double _currTime, _offsetTime, _timeScale;

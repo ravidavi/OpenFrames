@@ -30,7 +30,7 @@ namespace OpenFrames{
   class OF_EXPORT FramerateLimiter
   {
   public:
-    FramerateLimiter();
+    FramerateLimiter(double fps = 30.0);
     
     // Set/get the desired framerate in frames/second
     void setDesiredFramerate(double fps);

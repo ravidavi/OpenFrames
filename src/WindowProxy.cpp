@@ -471,7 +471,8 @@ namespace OpenFrames
   WindowProxy::WindowProxy( int x, int y, unsigned int width, unsigned int height,
                            unsigned int nrow, unsigned int ncol, bool embedded, bool useVR )
   : _winID(0), _nRow(0), _nCol(0), _isEmbedded(embedded),
-  _animPaused(false), _isAnimating(false), _timePaused(false), _useVR(useVR)
+  _animationState(IDLE), _pauseAnimation(false),
+  _timePaused(false), _useVR(useVR)
   {
     // Input value checks
     if(x < 0) x = 0;
@@ -840,10 +841,15 @@ namespace OpenFrames
   /** Pause the window's animation */
   void WindowProxy::pauseAnimation(bool pause)
   {
-    _animPaused = pause;
+    if(pause == _pauseAnimation) return;
     
-    // Reset the framerate limiter so it doesn't stutter on resume
-    if(!_animPaused) _frameThrottle.reset();
+    // Reset framerate limiter before resuming animation (to avoid stutter on resume)
+    if(!pause) _frameThrottle.reset();
+    _pauseAnimation = pause;
+    
+    // As long as animation is active, wait until animation state matches the desired state
+    FramerateLimiter pauseCheck(10.0);
+    while(isAnimating() && ((_animationState == PAUSED) != _pauseAnimation)) pauseCheck.frame();
   }
   
   /** Add or remove RenderRectangles to the grid to make it the right size. */
@@ -941,8 +947,14 @@ namespace OpenFrames
   
   void WindowProxy::run()
   {
+    _animationState = INITIALIZING;
+    
     // Create the window
-    if(!setupWindow()) return;
+    if(!setupWindow())
+    {
+      _animationState = ERROR;
+      return;
+    }
 
     // Set up processor affinity for render and database threads
     // First let OSG configure affinity
@@ -957,28 +969,32 @@ namespace OpenFrames
     _viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
     
     // Controls the framerate while graphics are paused
-    FramerateLimiter _pauseLimiter;
-    _pauseLimiter.setDesiredFramerate(5.0); // 5fps while paused
-    
-    _isAnimating = true; // Indicate that we've started animating
+    FramerateLimiter pauseLimiter(10.0);
     
     // Set the reference time
     _Tref = osg::Timer::instance()->tick();
     
+    // Initialize animation state
+    _animationState = _pauseAnimation ? PAUSED : ANIMATING;
+
     // Loop until the user asks us to quit
     while(!_viewer->done())
     {
-      if(_animPaused)
+      if(_pauseAnimation)
       {
-        _pauseLimiter.frame();
-        continue;
+        _animationState = PAUSED;
+        pauseLimiter.frame();
       }
-      
-      // Pause to achieve desired framerate
-      _frameThrottle.frame();
-      
-      // Do one frame: check events, update objects, render scene
-      frame();
+      else
+      {
+        _animationState = ANIMATING;
+
+        // Pause to achieve desired framerate
+        _frameThrottle.frame();
+        
+        // Do one frame: check events, update objects, render scene
+        frame();
+      }
     }
     
     // Close the graphics context before exiting this thread. If this is
@@ -987,9 +1003,10 @@ namespace OpenFrames
     // the context is already destroyed before OSG can release it.
     _window->close();
     
-    _isAnimating = false; // Indicate that animation has stopped
-
+    // Shutdown OpenVR if needed
     if (_useVR) _ovrDevice->shutdownVR();
+    
+    _animationState = SUCCESS; // Indicate that animation is complete
   }
   
   /** Handle one frame of animation, including event handling */
