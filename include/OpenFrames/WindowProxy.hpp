@@ -236,7 +236,7 @@ namespace OpenFrames
       INITIALIZING,  // Initializing animation
       ANIMATING,     // Inside animation loop, and actively rendering
       PAUSED,        // Inside animation loop, but rendering is paused
-      ERROR,         // Error during initialization
+      FAILED,        // Error during initialization
       SUCCESS        // Successfully finished animating
     };
     
@@ -254,7 +254,7 @@ namespace OpenFrames
     bool isAnimating() const { return ((_animationState == ANIMATING) || (_animationState == PAUSED)); }
     
     /// Determine whether WindowProxy is done animating
-    bool doneAnimating() const { return ((_animationState == ERROR) || (_animationState == SUCCESS)); }
+    bool doneAnimating() const { return ((_animationState == FAILED) || (_animationState == SUCCESS)); }
     
     /// If animation is done, then reset the animation state
     void resetAnimationState() { if(doneAnimating()) _animationState = IDLE; }

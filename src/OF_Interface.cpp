@@ -427,7 +427,7 @@ void OF_FCN(ofwin_start)()
     }
     
     // Check for animation error
-    if(_objs->_currWinProxy->getAnimationState() == WindowProxy::ERROR)
+    if(_objs->_currWinProxy->getAnimationState() == WindowProxy::FAILED)
       _objs->_intVal = -1;
   }
   else {

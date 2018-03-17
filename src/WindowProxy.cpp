@@ -952,7 +952,7 @@ namespace OpenFrames
     // Create the window
     if(!setupWindow())
     {
-      _animationState = ERROR;
+      _animationState = FAILED;
       return;
     }
 
