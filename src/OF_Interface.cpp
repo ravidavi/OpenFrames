@@ -1272,7 +1272,7 @@ void OF_FCN(offm_setframe)()
 void OF_FCN(offm_lock)()
 {
 	if (_objs->_currFM) {
-	  _objs->_intVal = _objs->_currFM->lock();
+    _objs->_intVal = _objs->_currFM->lock(FrameManager::HIGH_PRIORITY);
       _objs->_intVal = 0;
     }
 	else 
@@ -1290,7 +1290,7 @@ void OF_FCN(offm_lock)()
 void OF_FCN(offm_unlock)()
 {
     if (_objs->_currFM) {
-	  _objs->_intVal = _objs->_currFM->unlock();
+      _objs->_intVal = _objs->_currFM->unlock(FrameManager::HIGH_PRIORITY);
       _objs->_intVal = 0;
     }
 	else 

@@ -372,7 +372,8 @@ namespace OpenFrames
     
     RenderList _renderList;  // List of subwindows to be rendered
     
-    std::set<FrameManager*> _scenes; // Set of all unique scenes
+    typedef std::set<FrameManager*> SceneSet;
+    SceneSet _scenes; // Set of all unique scenes
     
     /** The CompositeViewer handles drawing several scenes onto a single drawing surface (a window) */
     osg::ref_ptr<osgViewer::CompositeViewer> _viewer;

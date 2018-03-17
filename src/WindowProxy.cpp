@@ -1012,15 +1012,6 @@ namespace OpenFrames
   /** Handle one frame of animation, including event handling */
   void WindowProxy::frame()
   {
-    // Iterator to loop through all unique scenes
-    std::set<FrameManager*>::iterator sceneIter;
-    
-    // Lock all scenes so that they aren't modified while being drawn
-    for(sceneIter = _scenes.begin(); sceneIter != _scenes.end(); ++sceneIter)
-    {
-      (*sceneIter)->lock();
-    }
-    
     // Use simulation time from synchonized WindowProxy
     if(_timeSyncWinProxy.valid())
     {
@@ -1036,13 +1027,19 @@ namespace OpenFrames
       else if(_currTime > _maxTime) _currTime = _maxTime;
     }
     
-    // Update, cull, and draw the scene, and process queued events
+    // Lock all scenes so that they aren't modified while being drawn
+    for(SceneSet::iterator sceneIter = _scenes.begin(); sceneIter != _scenes.end(); ++sceneIter)
+    {
+      (*sceneIter)->lock(FrameManager::LOW_PRIORITY);
+    }
+    
+    // Process events, then update, cull, and draw all scenes
     _viewer->frame(_currTime);
     
     // Unlock all scenes so that they can be modified
-    for(sceneIter = _scenes.begin(); sceneIter != _scenes.end(); ++sceneIter)
+    for(SceneSet::iterator sceneIter = _scenes.begin(); sceneIter != _scenes.end(); ++sceneIter)
     {
-      (*sceneIter)->unlock();
+      (*sceneIter)->unlock(FrameManager::LOW_PRIORITY);
     }
   }
   
