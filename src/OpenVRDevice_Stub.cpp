@@ -26,12 +26,14 @@ const unsigned int numTrackedDevices = 3;
 namespace OpenFrames{
 
   /*************************************************************/
-  OpenVREvent::VREvent::VREvent()
-  : _ovrEvent(NULL), _controllerState(NULL)
-  {}
+  OpenVREvent::OpenVREvent()
+  : _ovrEvent(NULL)
+  {
+    setEventType(osgGA::GUIEventAdapter::USER);
+  }
   
   /*************************************************************/
-  OpenVREvent::VREvent::~VREvent()
+  OpenVREvent::~OpenVREvent()
   {}
   
   /*************************************************************/
@@ -66,6 +68,12 @@ namespace OpenFrames{
     _deviceModels->removeChildren(0, _deviceModels->getNumChildren());
     _isInitialized = false;
   }
+  
+  /*************************************************************/
+  OpenVRDevice::DeviceModel::~DeviceModel() { }
+  
+  /*************************************************************/
+  void OpenVRDevice::updateDeviceModels() { }
   
   /*************************************************************/
   void OpenVRDevice::createDeviceRenderModels()
@@ -224,10 +232,16 @@ namespace OpenFrames{
   {
     // Compute new motion-based view at each frame
     if (ea.getEventType() == osgGA::GUIEventAdapter::FRAME)
-      processImagePick(nv->getFrameStamp()->getReferenceTime());
+      processImagePick();
     
     // Just call parent trackball handler
     return osgViewer::InteractiveImageHandler::handle(ea, aa, obj, nv);
+  }
+  
+  /*************************************************************/
+  float OpenVRImageHandler::getTriggerValue(const vr::VRControllerState_t *controllerState) const
+  {
+    return 0.0;
   }
   
 } // !namespace OpenFrames
