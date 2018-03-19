@@ -52,21 +52,12 @@ namespace OpenFrames {
   class OpenVREvent : public osgGA::GUIEventAdapter
   {
   public:
-    OpenVREvent()
-    {
-      setEventType(osgGA::GUIEventAdapter::USER);
-    }
+    OpenVREvent();
+    ~OpenVREvent();
 
-    struct VREvent
-    {
-      VREvent();
-      ~VREvent();
+    void operator=(const OpenVREvent &other);
 
-      void operator=(const VREvent &other);
-
-      vr::VREvent_t *_ovrEvent;
-      vr::VRControllerState_t *_controllerState;
-    } _vrEventData;
+    vr::VREvent_t *_ovrEvent; // The actual OpenVR event
   };
 
   /******************************************

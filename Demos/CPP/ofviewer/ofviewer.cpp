@@ -60,15 +60,15 @@ void VREventCallback(unsigned int *winID, unsigned int *row, unsigned int *col, 
   vr::IVRSystem* vrSystem = ovrDevice->getVRSystem();
 
   // Get OpenVR event data; see openvr.h and online documentation/examples for details
-  const vr::VREvent_t *ovrEvent = vrEvent->_vrEventData._ovrEvent;  // OpenVR data type
+  const vr::VREvent_t *ovrEvent = vrEvent->_ovrEvent;  // OpenVR data type
   vr::TrackedDeviceIndex_t deviceID = ovrEvent->trackedDeviceIndex; // Device index that generated event
-  const vr::VRControllerState_t *state = vrEvent->_vrEventData._controllerState; // Current device state
+  const OpenVRDevice::DeviceModel* deviceModel = ovrDevice->getDeviceModel(deviceID);
 
-  // OpenVR will sometimes send a dummy event with an invalid device ID; ignore those
-  if (deviceID >= ovrDevice->getNumDeviceModels()) return;
+  // OpenVR will sometimes send a dummy event with an invalid device ID; ignore those, as well as
+  // any other events that don't come from a controller
+  if ((deviceModel == nullptr) || (deviceModel->_class != OpenVRDevice::CONTROLLER)) return;
 
-  // Ignore event if it came from device that's not a controller (e.g. headset or tracking events)
-  if (ovrDevice->getDeviceModel(deviceID)->_class != OpenFrames::OpenVRDevice::CONTROLLER) return;
+  const vr::VRControllerState_t *state = ovrDevice->getDeviceModel(deviceID)->_controllerState; // Current device state
 
   // Process OpenVR controller event
   // Note that events are sent ONCE when they happen. e.g. if the grip button is held down, then

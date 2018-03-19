@@ -89,24 +89,22 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
-  OpenVREvent::VREvent::VREvent()
+  OpenVREvent::OpenVREvent()
   {
+    setEventType(osgGA::GUIEventAdapter::USER);
     _ovrEvent = new vr::VREvent_t;
-    _controllerState = new vr::VRControllerState_t;
   }
 
   /*************************************************************/
-  OpenVREvent::VREvent::~VREvent()
+  OpenVREvent::~OpenVREvent()
   {
     delete _ovrEvent;
-    delete _controllerState;
   }
 
   /*************************************************************/
-  void OpenVREvent::VREvent::operator=(const OpenVREvent::VREvent &other)
+  void OpenVREvent::operator=(const OpenVREvent &other)
   {
     *_ovrEvent = *(other._ovrEvent);
-    *_controllerState = *(other._controllerState);
   }
   
   /*************************************************************/
@@ -514,7 +512,7 @@ namespace OpenFrames{
   bool OpenVRDevice::pollNextEvent(OpenVREvent *event)
   {
     // Get one OpenVR event
-    vr::VREvent_t *pEvent = event->_vrEventData._ovrEvent;
+    vr::VREvent_t *pEvent = event->_ovrEvent;
     bool hasEvent = _vrSystem->PollNextEvent(pEvent, sizeof(vr::VREvent_t));
     if (hasEvent)
     {
@@ -525,10 +523,6 @@ namespace OpenFrames{
         setupRenderModelForTrackedDevice(pEvent->trackedDeviceIndex);
         break;
       }
-
-      // Get the controller state for the event
-      vr::VRControllerState_t *state = event->_vrEventData._controllerState;
-      _vrSystem->GetControllerState(pEvent->trackedDeviceIndex, state, sizeof(vr::VRControllerState_t));
     }
     return hasEvent;
   }
@@ -565,14 +559,14 @@ namespace OpenFrames{
     const OpenVREvent *event = dynamic_cast<const OpenVREvent*>(&ea);
     if (event)
     {
-      // Get OpenVR event data
-      const vr::VREvent_t *ovrEvent = event->_vrEventData._ovrEvent;
-      vr::TrackedDeviceIndex_t deviceID = ovrEvent->trackedDeviceIndex;
-      const vr::VRControllerState_t *state = event->_vrEventData._controllerState;
-      
       // Only process event if it's from a controller
+      const vr::VREvent_t *ovrEvent = event->_ovrEvent;
+      vr::TrackedDeviceIndex_t deviceID = ovrEvent->trackedDeviceIndex;
       const OpenVRDevice::DeviceModel* deviceModel = _ovrDevice->getDeviceModel(deviceID);
-      if ((deviceModel != nullptr) && (deviceModel->_class != OpenVRDevice::CONTROLLER)) return false;
+      if ((deviceModel == nullptr) || (deviceModel->_class != OpenVRDevice::CONTROLLER)) return false;
+
+      // Get controller state
+      const vr::VRControllerState_t *state = deviceModel->_controllerState;
       
       // Convert controller event types to view changes in VR space
       switch (ovrEvent->eventType)
@@ -717,17 +711,17 @@ namespace OpenFrames{
     osgViewer::View *view = dynamic_cast<osgViewer::View*>(&aa);
     if (event && view)
     {
-      // Get OpenVR event data
-      const vr::VREvent_t *ovrEvent = event->_vrEventData._ovrEvent;
-      vr::TrackedDeviceIndex_t deviceID = ovrEvent->trackedDeviceIndex;
-      const vr::VRControllerState_t *state = event->_vrEventData._controllerState;
-
       // Only process event if it's from a controller
-      if (deviceID >= _ovrDevice->getNumDeviceModels()) return false;
-      if (_ovrDevice->getDeviceModel(deviceID)->_class != OpenVRDevice::CONTROLLER) return false;
+      const vr::VREvent_t *ovrEvent = event->_ovrEvent;
+      vr::TrackedDeviceIndex_t deviceID = ovrEvent->trackedDeviceIndex;
+      const OpenVRDevice::DeviceModel* deviceModel = _ovrDevice->getDeviceModel(deviceID);
+      if ((deviceModel == nullptr) || (deviceModel->_class != OpenVRDevice::CONTROLLER)) return false;
 
       // Don't process event if another controller is already being used for pick events
       if ((_pickData.mode != NONE) && (deviceID != _pickData.deviceID)) return false;
+
+      // Get controller state
+      const vr::VRControllerState_t *state = deviceModel->_controllerState;
 
       // Convert controller event types to view changes in VR space
       switch (ovrEvent->eventType)
