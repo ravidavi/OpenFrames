@@ -100,17 +100,8 @@ namespace OpenFrames {
     /** Get render models for devices */
     osg::MatrixTransform* getDeviceRenderModels() const { return _deviceModels; }
     
-    /** An OpenVR device's class */
-    enum DeviceClass
-    {
-      NONE = 0,
-      HMD = 1,
-      BASESTATION = 2,
-      CONTROLLER = 3
-    };
-    
     /** Encapsulates the laser attached to OpenVR devices (usually controllers) */
-    class LaserModel : public osg::Referenced
+    class OF_EXPORT LaserModel : public osg::Referenced
     {
     public:
       LaserModel();
@@ -155,19 +146,34 @@ namespace OpenFrames {
       float _defaultWidth;
     };
 
-    /** Encapsulates an OpenVR device's model */
-    struct DeviceModel
+    /** An OpenVR device's class */
+    enum DeviceClass
     {
-      DeviceModel() : _valid(false), _class(NONE)
+      NONE = 0,
+      HMD = 1,
+      BASESTATION = 2,
+      CONTROLLER = 3
+    };
+
+    /** Encapsulates an OpenVR device's model */
+    struct OF_EXPORT DeviceModel
+    {
+      DeviceModel() : _valid(false), _class(NONE), _controllerState(nullptr)
       {
         _modelTransform = new osg::MatrixTransform;
         _modelTransform->setNodeMask(0x0);
       }
+      ~DeviceModel();
+
       osg::ref_ptr<osg::MatrixTransform> _modelTransform; // In world units
       osg::Matrixd _rawDeviceToWorld; // In OpenVR units [meters]
       bool _valid; // Whether device is actively being tracked by OpenVR
       DeviceClass _class;
-      osg::ref_ptr<LaserModel> _laser; // NULL if device doesn't have a laser
+
+      // These variables only apply if the device class is CONTROLLER, otherwise they are NULL
+      // TODO: subclass DeviceModel with appropriate device classes 
+      osg::ref_ptr<LaserModel> _laser; // The controller laser
+      vr::VRControllerState_t *_controllerState; // Most recent controller state (buttons, axes, etc.)
     };
     
     /** Get device models */
@@ -177,6 +183,9 @@ namespace OpenFrames {
       if(id < _deviceIDToModel.size()) return &(_deviceIDToModel[id]);
       else return NULL;
     }
+
+    /** Update all device models, e.g. controller states */
+    void updateDeviceModels();
     
     /** Get the HMD pose matrix, in world units */
     const osg::Matrixd& getHMDPoseMatrix() const
@@ -260,6 +269,7 @@ namespace OpenFrames {
     DeviceGeodeMap _deviceNameToGeode;
 
     /** Vector of each device's rendering data indexed by its OpenVR id */
+    /// TODO: Make this a vector of pointers, then DeviceModel can be subclassed
     typedef std::vector<DeviceModel> DeviceModelVector;
     DeviceModelVector _deviceIDToModel;
     

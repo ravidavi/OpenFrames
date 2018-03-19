@@ -70,7 +70,7 @@ namespace OpenFrames{
   /*************************************************************/
   /** Get the specified OpenVR device property string */
   /*************************************************************/
-  std::string GetTrackedDeviceString(vr::IVRSystem* vrSystem, vr::TrackedDeviceIndex_t deviceID, vr::TrackedDeviceProperty prop)
+  std::string GetTrackedDeviceString(vr::IVRSystem* vrSystem, vr::TrackedDeviceIndex_t deviceID, vr::ETrackedDeviceProperty prop)
   { 
     // Allocate and populate the property string
     char buffer[vr::k_unMaxPropertyStringSize];
@@ -192,6 +192,27 @@ namespace OpenFrames{
     }
   }
   
+  /*************************************************************/
+  OpenVRDevice::DeviceModel::~DeviceModel()
+  {
+    delete _controllerState;
+  }
+
+  /*************************************************************/
+  void OpenVRDevice::updateDeviceModels()
+  {
+    // Loop over all device models
+    for (vr::TrackedDeviceIndex_t i = 0; i < _deviceIDToModel.size(); ++i)
+    {
+      // Update controller state
+      if (_deviceIDToModel[i]._class == CONTROLLER)
+      {
+        vr::VRControllerState_t *state = _deviceIDToModel[i]._controllerState;
+        _vrSystem->GetControllerState(i, state, sizeof(vr::VRControllerState_t));
+      }
+    }
+  }
+
   /*************************************************************/
   void OpenVRDevice::createDeviceRenderModels()
   {
@@ -362,12 +383,15 @@ namespace OpenFrames{
         _deviceIDToModel[deviceID]._laser = laser;
         _deviceIDToModel[deviceID]._modelTransform->addChild(laser->getTransform());
 
+        // Initialize controller state variables
+        _deviceIDToModel[deviceID]._controllerState = new vr::VRControllerState_t;
+
         // Set pick laser's transform using OpenVR definition of controller "tip"
-        vr::VRControllerState_t controllerState;
+        vr::VRControllerState_t* controllerState = _deviceIDToModel[deviceID]._controllerState;
         vr::RenderModel_ControllerMode_State_t controllerMode;
         vr::RenderModel_ComponentState_t componentState;
         vr::VRRenderModels()->GetComponentState(deviceName.c_str(), vr::k_pch_Controller_Component_Tip,
-          &controllerState, &controllerMode, &componentState);
+          controllerState, &controllerMode, &componentState);
         osg::Matrixd tipWorldToLocal;
         convertMatrix34(tipWorldToLocal, componentState.mTrackingToComponentLocal);
         laser->getTransform()->setMatrix(tipWorldToLocal);
@@ -516,14 +540,21 @@ namespace OpenFrames{
     bool hasEvents = false;
 
     // Loop while OpenVR events are available
-    event->setTime(osg::Timer::instance()->delta_s(_eventQueue->getStartTick(), osg::Timer::instance()->tick()));
+    event->setTime(_eventQueue->getTime());
     while (_ovrDevice->pollNextEvent(event))
     {
+      // Add event to queue
       hasEvents = true;
       _eventQueue->addEvent(event);
+
+      // Prepare for new event
       event = new OpenVREvent;
-      event->setTime(osg::Timer::instance()->delta_s(_eventQueue->getStartTick(), osg::Timer::instance()->tick()));
+      event->setTime(_eventQueue->getTime());
     }
+
+    // Update all controllers' states
+    _ovrDevice->updateDeviceModels();
+
     return hasEvents;
   }
 
