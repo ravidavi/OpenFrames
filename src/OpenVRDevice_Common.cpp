@@ -783,7 +783,7 @@ namespace OpenFrames{
   * Determine the image location at which a VR controller is pointing,
   * and send a mouse event to the image for further processing.
   *************************************************************/
-  void OpenVRImageHandler::processImagePick(double refTime)
+  void OpenVRImageHandler::processImagePick()
   {
     // Check if image pick processing is needed
     if (_pickData.mode == NONE) return;
@@ -917,23 +917,16 @@ namespace OpenFrames{
 
     if (!validPick) return;
 
-    // Dispatch the appropriate mouse event to the Image
-    switch (_pickData.mode)
-    {
-    case(MOUSEOVER):
+    // Dispatch the appropriate mouse event to the Image based on the trigger state
+    float triggerValue = getTriggerValue(deviceModel->_controllerState);
+    if (triggerValue < 0.99) // Trigger partially pressed: mouse move
     {
       _image->sendPointerEvent(x, y, 0);
-      break;
     }
-    case(LEFTCLICK):
+    else // Trigger fully pressed: left-click
     {
       _image->sendPointerEvent(x, y, osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON);
-      break;
-    }
-    default:
-    {
-      break;
-    }
+
     }
   }
 

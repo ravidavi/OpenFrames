@@ -726,39 +726,19 @@ namespace OpenFrames{
       // Convert controller event types to view changes in VR space
       switch (ovrEvent->eventType)
       {
-      case(vr::VREvent_ButtonPress):
-      {
-        // If trigger is pressed, then mouseclick on the image
-        if (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
-        {
-          saveCurrentPickData(PickMode::LEFTCLICK, view, nv, deviceID);
-        }
-        break;
-      }
-
-      case(vr::VREvent_ButtonUnpress):
-      {
-        // If trigger is unpressed, then revert to mouseover on the image
-        if ((state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) == 0x0)
-        {
-          saveCurrentPickData(PickMode::MOUSEOVER, view, nv, deviceID);
-        }
-        break;
-      }
-
       case(vr::VREvent_ButtonTouch):
       {
-        // If trigger is touched, then start mouseover on the image
+        // If trigger is touched, then start mouse action processing on the image
         if (state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
         {
-          saveCurrentPickData(PickMode::MOUSEOVER, view, nv, deviceID);
+          saveCurrentPickData(PickMode::MOUSEACTION, view, nv, deviceID);
         }
         break;
       }
 
       case(vr::VREvent_ButtonUntouch):
       {
-        // If trigger is untouched, then stop mouseover on the image
+        // If trigger is untouched, then stop mouse action processing on the image
         if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) == 0x0)
         {
           _pickData.mode = PickMode::NONE;
@@ -774,13 +754,21 @@ namespace OpenFrames{
       // Dispatch new image pick event at each frame
       if (ea.getEventType() == osgGA::GUIEventAdapter::FRAME)
       {
-        processImagePick(nv->getFrameStamp()->getReferenceTime());
+        processImagePick();
         return false;
       }
 
       // Fallback to mouse-based image handler as needed
       else return osgViewer::InteractiveImageHandler::handle(ea, aa, obj, nv);
     }
+  }
+
+  /*************************************************************/
+  float OpenVRImageHandler::getTriggerValue(const vr::VRControllerState_t *controllerState) const
+  {
+    // According to openvr.h the trigger is defined as an axis, so get its axis index
+    unsigned int triggerAxisIndex = vr::k_EButton_SteamVR_Trigger - vr::k_EButton_Axis0;
+    return controllerState->rAxis[triggerAxisIndex].x;
   }
 
 } // !namespace OpenFrames

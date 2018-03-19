@@ -444,14 +444,17 @@ namespace OpenFrames {
       osgViewer::InteractiveImageHandler(ovrih, copyop)
     {}
 
-    void processImagePick(double refTime);
+    /// Process the image pick operatoin at each frame
+    void processImagePick();
+
+    /// Get the value of the controller's trigger button
+    float getTriggerValue(const vr::VRControllerState_t *controllerState) const;
 
     /** Type of image pick action currently being handled */
     enum PickMode
     {
       NONE = 0,
-      MOUSEOVER,
-      LEFTCLICK
+      MOUSEACTION // Mouse move or click
     };
 
     /** Data used when computing world transformations during user events */
