@@ -42,9 +42,11 @@ Trajectory::~Trajectory()
   
 void Trajectory::reserveMemory(unsigned int numPoints, bool usePos, bool useAtt)
 {
+  _readWriteMutex.writeLock();
   _time.reserve(numPoints);                    // 1 element per time
   if(usePos) _posopt.reserve(_base*numPoints); // _base elements per position
   if(useAtt) _att.reserve(4*numPoints);        // 4 elements per attitude
+  _readWriteMutex.writeUnlock();
 }
 
 void Trajectory::setNumOptionals(unsigned int nopt)
