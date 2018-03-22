@@ -20,9 +20,6 @@
 namespace OpenFrames
 {
 
-// Vertex shader object used by all Trajectory Artists
-static osg::ref_ptr<osg::Shader> OFTA_VertShader;
-
 // Implement vertex shader for Rendering Relative to Eye using GPU
 static const char *OFTA_VertSource = {
   "#version 120\n"
@@ -61,25 +58,20 @@ static const char *OFTA_VertSource = {
 
 TrajectoryArtist::TrajectoryArtist() 
 {
-        // Create vertex shader if it doesn't already exist
-        if(OFTA_VertShader == NULL)
-        {
-          OFTA_VertShader = new osg::Shader(osg::Shader::VERTEX, OFTA_VertSource);
-        }
+  // Create vertex shader
+  osg::Shader *vertShader = new osg::Shader(osg::Shader::VERTEX, OFTA_VertSource);
 
-        // Create vertex program
-        _program = new osg::Program;
-        _program->setName("OFTrajectoryArtist_ShaderProgram");
+  // Create vertex program
+  _program = new osg::Program;
+  _program->setName("OFTrajectoryArtist_ShaderProgram");
+  _program->addShader(vertShader);
 
-        // Add the vertex shader
-        _program->addShader(OFTA_VertShader);
+  // Create vertex attribute that stores low part of vertex
+  // Used by Artists to implement Rendering RTE in GPU
+  _program->addBindAttribLocation("of_VertexLow", 1);
 
-        // Create vertex attribute that stores low part of vertex
-        // Used by Artists to implement Rendering RTE in GPU
-        _program->addBindAttribLocation("of_VertexLow", 1);
-
-        // Set the shader program for this Artist
-        getOrCreateStateSet()->setAttribute(_program);
+  // Set the shader program for this Artist
+  getOrCreateStateSet()->setAttribute(_program);
 }
 
 // Not using the copy constructor
