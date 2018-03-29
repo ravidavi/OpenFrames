@@ -446,9 +446,9 @@ bool TrajectoryFollower::run(osg::Object* object, osg::Object* data)
   if(nv) simTime = nv->getFrameStamp()->getSimulationTime();
   
   // Make sure time has changed
-  if((_latestTime != simTime) || _needsUpdate)
+  if((_lastSimTime != simTime) || _needsUpdate)
   {
-    _latestTime = simTime; // Save the current simulation time
+    _lastSimTime = simTime; // Save the current simulation time
     
     // Don't allow followed trajectory list to be modified
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
@@ -458,7 +458,7 @@ bool TrajectoryFollower::run(osg::Object* object, osg::Object* data)
     {
       // Get current time, either constant-time or offset-simulation-time
       double time;
-      if(_followTime) time = _latestTime + _timeVal;
+      if(_followTime) time = _lastSimTime + _timeVal;
       else time = _timeVal;
       
       // Prevent trajectories from being modified while reading them
@@ -468,10 +468,10 @@ bool TrajectoryFollower::run(osg::Object* object, osg::Object* data)
       }
       
       // Compute adjusted time based on follow mode
-      double tNew = _computeTime(time);
+      _lastAdjustedTime = _computeTime(time);
       
       // Choose trajectory based on adjusted time
-      _follow = _chooseTrajectory(tNew);
+      _follow = _chooseTrajectory(_lastAdjustedTime);
       
       // Unlock all trajectories except the one being followed
       for(auto traj : _trajList)
@@ -485,14 +485,14 @@ bool TrajectoryFollower::run(osg::Object* object, osg::Object* data)
       if(_dataValid && (_data & POSITION))
       {
         // Apply new position if it can be computed
-        if(_updateState(tNew, POSITION))
+        if(_updateState(_lastAdjustedTime, POSITION))
           ft->setPosition(_v1[0], _v1[1], _v1[2]);
       }
       
       if(_data & ATTITUDE)
       {
         // Apply new attitude if it can be computed
-        if(_updateState(tNew, ATTITUDE))
+        if(_updateState(_lastAdjustedTime, ATTITUDE))
           ft->setAttitude(_a1[0], _a1[1], _a1[2], _a1[3]);
       }
       

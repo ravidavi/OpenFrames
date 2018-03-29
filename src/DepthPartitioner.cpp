@@ -26,6 +26,23 @@ static const std::string dpMainCamName(dpCamNamePrefix+"Main");
 
 namespace OpenFrames
 {
+  /** Callback that prevents a NodeVisitor from traversing the node's subgraph.
+   This is used by the DepthPartitioner main slave camera to ignore the cull
+   visitor while still allowing intersection visitors. It's needed because the
+   main DP slave camera receives events (e.g. pick) but does not handle the
+   cull traversal itself.
+   TODO: The real solution here is to eliminate the main DP slave camera, and just
+   use the osgViewer::View's main camera to partition the scene. But this is not
+   straightforward, since depth partitioning needs to happen from the slave camera
+   and not the main camera (see DepthPartitioner.hpp for details).
+   */
+  class DPCameraCallback : public osg::NodeCallback
+  {
+    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+    {
+      return;
+    }
+  };
 
   /**********************************************/
   DepthPartitioner::DepthPartitioner()
@@ -37,8 +54,10 @@ namespace OpenFrames
     _dpMainSlaveCamera = new osg::Camera();
     _dpMainSlaveCamera->setName(dpMainCamName);
     
-    // Disable main slave camera's scene traversal
-    _dpMainSlaveCamera->setNodeMask(0x0);
+    // Disable main slave camera's cull traversal, while still allowing
+    // intersection visitors to traverse the scene
+    DPCameraCallback* camCB = new DPCameraCallback();
+    _dpMainSlaveCamera->setCullCallback(camCB);
     
     // Allow main slave camera to recieve events. Needed since master camera won't
     // recieve events after its graphics context is detached
@@ -99,8 +118,9 @@ namespace OpenFrames
     // Enable depth partitioning for new View
     if(_view != NULL)
     {
-      // Add main slave camera, don't use master scene data
-      _view->addSlave(_dpMainSlaveCamera, false);
+      // Add main slave camera, and use master scene data to
+      // enable intersection visitor traversal
+      _view->addSlave(_dpMainSlaveCamera, true);
       
       // Add DepthPartitionCallback as a slave update callback
       osg::View::Slave *slave = _view->findSlaveForCamera(_dpMainSlaveCamera);
