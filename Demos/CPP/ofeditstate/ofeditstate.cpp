@@ -48,7 +48,7 @@ public:
   virtual bool receive(const osgManipulator::Rotate3DCommand& cmd)
   {
     // Only compute new trajectory when rotation is finished
-    if(cmd.getStage() != osgManipulator::MotionCommand::FINISH) return false;
+    //if(cmd.getStage() != osgManipulator::MotionCommand::FINISH) return false;
     
     // Get spacecraft's currently followed trajectory
     double lastTime = _tf->getLastTime();
@@ -106,7 +106,7 @@ public:
     // Get the current transformation (a MatrixTransform) that applies to the spacecraft model
     // Note that this MatrixTransform is ONLY affected by the dragger, so the rotation of its Y-axis
     // is equal to the rotation of the spacecraft's velocity vector
-    const osg::Matrixd& matDraggerToSC = _xform->getInverseMatrix();
+    const osg::Matrixd& matDraggerToSC = _xform->getMatrix();
     
     // Compute the matrix that converts from the dragger to the world frame
     // This will be used to compute the new position and velocity
@@ -125,7 +125,6 @@ public:
     osg::Vec4 vel_local(0, vmag, 0, 0); // Last value is 0 to indicate vector instead of point
     osg::Vec4 vel_new = vel_local * matDraggerToWorld;
     vel.set(vel_new[0], vel_new[1], vel_new[2]);
-    OSG_NOTICE << "vel_new = " << vel_new << std::endl;
     
     // Now populate the second trajectory using the new state
     fillTrajectory(pos, vel, _trajOut);
@@ -184,9 +183,9 @@ int main(int argc, char **argv)
   
   // Create a Sphere to represent the Earth
   Sphere* earth = new Sphere("Earth", 1, 1, 1, 0.9);
-  earth->showAxes(ReferenceFrame::NO_AXES);
-  earth->showAxesLabels(ReferenceFrame::NO_AXES);
-  earth->showNameLabel(false);
+  //earth->showAxes(ReferenceFrame::NO_AXES);
+  //earth->showAxesLabels(ReferenceFrame::NO_AXES);
+  //earth->showNameLabel(false);
   earth->setRadius(6371.0);
   earth->setTextureMap("Images/EarthTexture.bmp");
   
@@ -276,26 +275,13 @@ int main(int argc, char **argv)
   myWindow->getGridPosition(0, 0)->setSkySphereStarData("Stars/Stars_HYGv3.txt", -2.0, 6.0, 40000);
   myWindow->getGridPosition(0, 0)->addView(view);
   
-  // Add the actual positions and attitudes for the trajectory.
-  osg::Quat att; // Quaternion for attitude transformations
-  double t, pos[3], vel[3];
-  pos[2] = vel[2] = 0.0;
-  const double rmag = 7000.0;
-  const int numPoints = 360;
-  for(int i = 0; i <= numPoints; ++i)
-  {
-    t = ((double)i)*2.0*osg::PI/((double)numPoints);
-    pos[0] = rmag*std::cos(t);
-    pos[1] = rmag*std::sin(t);
-    vel[0] = -pos[1];
-    vel[1] = pos[0];
-    att.makeRotate(t, 0, 0, 1);
-    
-    traj->addTime(10*t);
-    traj->addPosition(pos);
-    traj->setOptional(0, vel);
-    traj->addAttitude(att[0], att[1], att[2], att[3]);
-  }
+  // Fill the trajectory with points
+  double a = 7000.0; // [km] Semimajor axis
+  double e = 0.0;    // Eccentricity
+  double i = 0.0;    // [rad] Inclination
+  double w = 0.0;    // [rad] Argument of periapsis
+  double RAAN = 0.0; // [rad] Right ascension of ascending node
+  fillTrajectory(a, e, i, w, RAAN, traj);
 
   // Create a second window to show the same scene, but looking at the Earth
   osg::ref_ptr<WindowProxy> myWindow2 = new WindowProxy(100, 100, 1024, 768, 1, 1, false);
