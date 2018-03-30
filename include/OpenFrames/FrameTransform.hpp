@@ -172,6 +172,7 @@ public:
 	bool setXData(const Trajectory::DataSource &src);
 	bool setYData(const Trajectory::DataSource &src);
 	bool setZData(const Trajectory::DataSource &src);
+  const Trajectory::DataSource* getDataSource() const { return _dataSource; }
   
   // Set default sources for all position components
   // This means standard X/Y/Z components for position

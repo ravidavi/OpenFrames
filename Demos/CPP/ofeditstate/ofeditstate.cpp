@@ -24,6 +24,7 @@
 #include <OpenFrames/WindowProxy.hpp>
 #include <iostream>
 #include <cmath>
+#include <osg/io_utils>
 #include <osg/Math>
 #include <osg/MatrixTransform>
 #include <osgManipulator/TrackballDragger>
@@ -37,8 +38,8 @@ Trajectory *traj2;
 class MyDraggerCallback : public osgManipulator::DraggerCallback
 {
 public:
-  MyDraggerCallback(TrajectoryFollower* tf, Trajectory* trajOut)
-  : _tf(tf), _trajOut(trajOut)
+  MyDraggerCallback(TrajectoryFollower* tf, Trajectory* trajOut, osg::MatrixTransform *xform)
+  : _tf(tf), _trajOut(trajOut), _xform(xform)
   {}
   
   MyDraggerCallback(const MyDraggerCallback& org, const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY)
@@ -49,13 +50,93 @@ public:
     // Only compute new trajectory when rotation is finished
     if(cmd.getStage() != osgManipulator::MotionCommand::FINISH) return false;
     
-    OSG_NOTICE << "Dragger FINISH" << std::endl;
+    // Get spacecraft's currently followed trajectory
+    double lastTime = _tf->getLastTime();
+    Trajectory* lastTraj = _tf->getLastTrajectory();
+    const Trajectory::DataSource* posDataSource = _tf->getDataSource();
+    unsigned int numPoints = lastTraj->getNumPoints(posDataSource);
+    if(lastTraj == nullptr)
+    {
+      OSG_NOTICE << "MyDraggerCallback ERROR: Missing Trajectory" << std::endl;
+      return false;
+    }
+    
+    // Get location of spacecraft's current position within its trajectory
+    int index;
+    int val = lastTraj->getTimeIndex(lastTime, index);
+    if(val < 0)
+    {
+      OSG_NOTICE << "MyDraggerCallback ERROR: Time out of range" << std::endl;
+      return false;
+    }
+    else if(index == numPoints)
+    {
+      OSG_NOTICE << "MyDraggerCallback ERROR: Time at end of Trajectory" << std::endl;
+      return false;
+    }
+    
+    // Interpolate spacecraft position from trajectory position
+    // Note that we could also obtain this from the spacecraft's ReferenceFrame
+    // if it was made available to this callback
+    osg::Vec3d pos, pos1, pos2;
+    lastTraj->getPosition(index  , pos1[0], pos1[1], pos1[2]);
+    lastTraj->getPosition(index+1, pos2[0], pos2[1], pos2[2]);
+    const Trajectory::DataArray& times = lastTraj->getTimeList();
+    double frac = (lastTime - times[index])/(times[index+1] - times[index]);
+    pos = pos1 + (pos2 - pos1)*frac; // Linear interpolation for position
+    
+    // Interpolate spacecraft velocity from trajectory optional 0
+    osg::Vec3d vel, vel1, vel2;
+    lastTraj->getOptional(index  , 0, vel1[0], vel1[1], vel1[2]);
+    lastTraj->getOptional(index+1, 0, vel2[0], vel2[1], vel2[2]);
+    vel = vel1 + (vel2 - vel1)*frac; // Linear interpolation for velocity
+    
+    // Interpolate spacecraft attitude from trajectory attitude
+    // Note that we could also obtain this from the spacecraft's ReferenceFrame
+    // if it was made available to this callback
+    osg::Quat att, att1, att2;
+    lastTraj->getAttitude(index  , att1[0], att1[1], att1[2], att1[3]);
+    lastTraj->getAttitude(index+1, att2[0], att2[1], att2[2], att2[3]);
+    att.slerp(frac, att1, att2); // Spherical linear interpolation for attitude
+    
+    // Construct the spacecraft's local to world matrix from its position and attitude
+    osg::Matrixd matSCToWorld(att);
+    matSCToWorld.setTrans(pos);
+
+    // Get the current transformation (a MatrixTransform) that applies to the spacecraft model
+    // Note that this MatrixTransform is ONLY affected by the dragger, so the rotation of its Y-axis
+    // is equal to the rotation of the spacecraft's velocity vector
+    const osg::Matrixd& matDraggerToSC = _xform->getInverseMatrix();
+    
+    // Compute the matrix that converts from the dragger to the world frame
+    // This will be used to compute the new position and velocity
+    osg::Matrixd matDraggerToWorld = matDraggerToSC*matSCToWorld;
+    
+    // The new spacecraft position is the origin of where the dragger moved the spacecraft
+    // Note that for a TrackballDragger, this will be equal to the spacecraft's original position
+    // since that dragger does not change the position.
+    pos = matDraggerToWorld.getTrans();
+    
+    // The new velocity vector has the same magnitude as the old one, but is in the y-axis
+    // direction of the dragger's transformation matrix
+    // So convert a vector in the y-axis direction (with magnitude same as velocity) back
+    // to the world frame, which gives the new velocity vector
+    double vmag = vel.length();
+    osg::Vec4 vel_local(0, vmag, 0, 0); // Last value is 0 to indicate vector instead of point
+    osg::Vec4 vel_new = vel_local * matDraggerToWorld;
+    vel.set(vel_new[0], vel_new[1], vel_new[2]);
+    OSG_NOTICE << "vel_new = " << vel_new << std::endl;
+    
+    // Now populate the second trajectory using the new state
+    fillTrajectory(pos, vel, _trajOut);
+    
     return false;
   }
   
 private:
   TrajectoryFollower* _tf;
   Trajectory* _trajOut;
+  osg::MatrixTransform* _xform;
 };
 
 /** The function called when the user presses a key */
@@ -179,7 +260,7 @@ int main(int argc, char **argv)
   drawtraj->addArtist(ca2);
   
   // Add a callback to the dragger that will modify the second trajectory
-  dragger->addDraggerCallback(new MyDraggerCallback(tf, traj2));
+  dragger->addDraggerCallback(new MyDraggerCallback(tf, traj2, mt));
   
   // Create views
   View *view = new View(earth, scRoot);
@@ -212,6 +293,7 @@ int main(int argc, char **argv)
     
     traj->addTime(10*t);
     traj->addPosition(pos);
+    traj->setOptional(0, vel);
     traj->addAttitude(att[0], att[1], att[2], att[3]);
   }
 
