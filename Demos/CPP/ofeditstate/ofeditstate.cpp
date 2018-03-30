@@ -22,17 +22,27 @@
 #include <OpenFrames/Model.hpp>
 #include <OpenFrames/Sphere.hpp>
 #include <OpenFrames/WindowProxy.hpp>
-#include <iostream>
-#include <cmath>
+#include <sstream>
 #include <osg/io_utils>
 #include <osg/Math>
-#include <osg/MatrixTransform>
 #include <osgManipulator/TrackballDragger>
 #include "orbitcalcs.hpp"
 
 using namespace OpenFrames;
 WindowProxy *theWindow;
-Trajectory *traj2;
+osgText::Text *hudText;
+
+void showTrajData(const double& a, const double& e,
+                  const double& i, const double& w, const double& RAAN)
+{
+  std::stringstream ss;
+  ss << "Semimajor Axis: " << a << " km\n"
+  << "Eccentricity: " << e << "\n"
+  << "Inclination: " << i*180.0/osg::PI << " deg\n"
+  << "Argument of Perigee: " << w*180.0/osg::PI << " deg\n"
+  << "RAAN: " << RAAN*180.0/osg::PI << " deg";
+  hudText->setText(ss.str());
+}
 
 /** Callback that computes a new trajectory when the dragger is rotated */
 class MyDraggerCallback : public osgManipulator::DraggerCallback
@@ -126,8 +136,13 @@ public:
     osg::Vec4 vel_new = vel_local * matDraggerToWorld;
     vel.set(vel_new[0], vel_new[1], vel_new[2]);
     
+    // Convert cartesian state to Keplerian elements
+    double ta, a, e, i, w, RAAN;
+    CartToKep(pos, vel, ta, a, e, i, w, RAAN);
+    
     // Now populate the second trajectory using the new state
-    fillTrajectory(pos, vel, _trajOut);
+    fillTrajectory(a, e, i, w, RAAN, _trajOut);
+    showTrajData(a, e, i, w, RAAN);
     
     return false;
   }
@@ -252,7 +267,7 @@ int main(int argc, char **argv)
   drawtraj->addArtist(ca);
   
   // Create the second trajectory that gets modified when the spacecraft is rotated
-  traj2 = new Trajectory(3, 1);
+  Trajectory* traj2 = new Trajectory(3, 1);
   CurveArtist *ca2 = new CurveArtist(traj2);
   ca2->setWidth(1.0); // Line width for the trajectory
   ca2->setColor(1, 1, 0);
@@ -291,6 +306,37 @@ int main(int argc, char **argv)
   myWindow2->synchronizeTime(myWindow);
   View *view2 = new View(earth, earth);
   myWindow2->getGridPosition(0, 0)->addView(view2);
+  
+  // Create text to go in HUD of second window
+  osg::ref_ptr<osgText::Text> hudText_BottomLeft = new osgText::Text;
+  hudText = hudText_BottomLeft;
+  hudText_BottomLeft->setFont("arial.ttf");
+  hudText_BottomLeft->setColor(osg::Vec4(1, 1, 0, 1));
+  hudText_BottomLeft->setCharacterSizeMode(osgText::Text::SCREEN_COORDS);
+  hudText_BottomLeft->setCharacterSize(20.0);    // In screen coordinates (pixels)
+  hudText_BottomLeft->setFontResolution(40, 40); // In texels (texture pixels)
+  hudText_BottomLeft->setLineSpacing(0.25);
+  
+  // Position HUD text
+  // Screen coordinates go from (0,0) bottom-left to (1,1) top-right
+  hudText_BottomLeft->setAlignment(osgText::Text::LEFT_BOTTOM);
+  hudText_BottomLeft->setPosition(osg::Vec3(0.0, 0.0, 0.0));
+  
+  // Some graphics drivers have a bug where text can't be properly changed.
+  // Get around this by initializing text using all likely characters.
+  std::string dummyText("the quick brown fox jumps over the lazy dog");
+  dummyText += "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG";
+  dummyText += "1234567890";
+  dummyText += "[]{}()<>,.;:+-*/_";
+  hudText_BottomLeft->setText(dummyText);
+  
+  // Attach HUD text
+  osg::Geode* geode = new osg::Geode;
+  geode->addDrawable(hudText_BottomLeft);
+  myWindow2->getGridPosition(0, 0)->getHUD()->addChild(geode);
+  
+  // Set text to current orbit info
+  showTrajData(a, e, i, w, RAAN);
 
   myWindow->startThread(); // Start window animation
   while(!myWindow->isAnimating()) OpenThreads::Thread::YieldCurrentThread();

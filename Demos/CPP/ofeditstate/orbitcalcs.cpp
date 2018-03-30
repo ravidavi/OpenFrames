@@ -20,27 +20,6 @@
 #include <cmath>
 #include "orbitcalcs.hpp"
 
-void fillTrajectory(const osg::Vec3d& r, const osg::Vec3d& v, OpenFrames::Trajectory *traj)
-{
-  // Convert provided cartesian state to Keplerian elements
-  double rmag = r.length();
-  double vmag = v.length();
-  osg::Vec3d h = r ^ v;
-  double hmag = h.length();
-  double energy = v*v/2.0 - mu_earth/rmag;
-  double a = -mu_earth/(2.0*energy);
-  double e = std::sqrt(1.0 - h*h/(a*mu_earth));
-  double i = std::acos(h[2]/hmag);
-  double RAAN = std::atan2(h[0], -h[1]);
-  double wta = std::atan2(r[2]/std::sin(i), r[0]*std::cos(RAAN) + r[1]*std::sin(RAAN));
-  double ta = std::acos((a*(1.0-e*e) - rmag)/(e*rmag));
-  if(r*v < 0.0) ta = 2.0*osg::PI - ta;
-  double w = wta - ta;
-  
-  // Fill trajectory
-  fillTrajectory(a, e, i, w, RAAN, traj);
-}
-
 void fillTrajectory(const double& a, const double& e,
                     const double& i, const double& w, const double& RAAN,
                     OpenFrames::Trajectory *traj)
@@ -107,4 +86,24 @@ void KepToCart(const double& ta, const double& a, const double& e,
   v[0] = r[0]*C1 - C2*(cRAAN*swta + sRAAN*cwta*ci);
   v[1] = r[1]*C1 - C2*(sRAAN*swta - cRAAN*cwta*ci);
   v[2] = r[2]*C1 + C2*cwta*si;
+}
+
+void CartToKep(const osg::Vec3d& r, const osg::Vec3d& v,
+               double& ta, double& a, double& e,
+               double& i, double& w, double& RAAN)
+{
+  // Convert provided cartesian state to Keplerian elements
+  double rmag = r.length();
+  double vmag = v.length();
+  osg::Vec3d h = r ^ v;
+  double hmag = h.length();
+  double energy = v*v/2.0 - mu_earth/rmag;
+  a = -mu_earth/(2.0*energy);
+  e = std::sqrt(1.0 - h*h/(a*mu_earth));
+  i = std::acos(h[2]/hmag);
+  RAAN = std::atan2(h[0], -h[1]);
+  double wta = std::atan2(r[2]/std::sin(i), r[0]*std::cos(RAAN) + r[1]*std::sin(RAAN));
+  ta = std::acos((a*(1.0-e*e) - rmag)/(e*rmag));
+  if(r*v < 0.0) ta = 2.0*osg::PI - ta;
+  w = wta - ta;
 }

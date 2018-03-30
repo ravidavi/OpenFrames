@@ -26,11 +26,6 @@ namespace OpenFrames
   class Trajectory;
 }
 
-// Fill a trajectory with points for the provided elliptical orbital cartesian state
-// Assumes units are [km] and [s]
-// Assumes trajectory has at least 1 optional (for velocity)
-void fillTrajectory(const osg::Vec3d& r, const osg::Vec3d& v, OpenFrames::Trajectory *traj);
-
 // Fill a trajectory with points for the provided elliptical orbital keplerian state
 // Assumes units are [km] and [rad]
 // Assumes trajectory has at least 1 optional (for velocity)
@@ -42,5 +37,10 @@ void fillTrajectory(const double& a, const double& e,
 void KepToCart(const double& ta, const double& a, const double& e,
                const double& i, const double& w, const double& RAAN,
                osg::Vec3d& r, osg::Vec3d& v);
+
+// Convert Cartesian to Keplerian orbital elements
+void CartToKep(const osg::Vec3d& r, const osg::Vec3d& v,
+               double& ta, double& a, double& e,
+               double& i, double& w, double& RAAN);
 
 #endif /* orbitcalcs_hpp */
