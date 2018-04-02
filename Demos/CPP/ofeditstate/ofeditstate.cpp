@@ -23,9 +23,7 @@
 #include <OpenFrames/Sphere.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <sstream>
-#include <osg/io_utils>
 #include <osg/Math>
-#include <osgManipulator/TrackballDragger>
 #include "orbitcalcs.hpp"
 
 using namespace OpenFrames;
@@ -48,8 +46,8 @@ void showTrajData(const double& a, const double& e,
 class MyDraggerCallback : public osgManipulator::DraggerCallback
 {
 public:
-  MyDraggerCallback(TrajectoryFollower* tf, Trajectory* trajOut, osg::MatrixTransform *xform)
-  : _tf(tf), _trajOut(trajOut), _xform(xform)
+  MyDraggerCallback(TrajectoryFollower* tf, Trajectory* trajOut, const FrameTransform* modelXform)
+  : _tf(tf), _trajOut(trajOut), _modelXform(modelXform)
   {}
   
   MyDraggerCallback(const MyDraggerCallback& org, const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY)
@@ -57,9 +55,6 @@ public:
   
   virtual bool receive(const osgManipulator::Rotate3DCommand& cmd)
   {
-    // Only compute new trajectory when rotation is finished
-    //if(cmd.getStage() != osgManipulator::MotionCommand::FINISH) return false;
-    
     // Get spacecraft's currently followed trajectory
     double lastTime = _tf->getLastTime();
     Trajectory* lastTraj = _tf->getLastTrajectory();
@@ -109,18 +104,14 @@ public:
     lastTraj->getAttitude(index+1, att2[0], att2[1], att2[2], att2[3]);
     att.slerp(frac, att1, att2); // Spherical linear interpolation for attitude
     
-    // Construct the spacecraft's local to world matrix from its position and attitude
-    osg::Matrixd matSCToWorld(att);
-    matSCToWorld.setTrans(pos);
-
-    // Get the current transformation (a MatrixTransform) that applies to the spacecraft model
-    // Note that this MatrixTransform is ONLY affected by the dragger, so the rotation of its Y-axis
-    // is equal to the rotation of the spacecraft's velocity vector
-    const osg::Matrixd& matDraggerToSC = _xform->getMatrix();
-    
     // Compute the matrix that converts from the dragger to the world frame
     // This will be used to compute the new position and velocity
-    osg::Matrixd matDraggerToWorld = matDraggerToSC*matSCToWorld;
+    // Start with the the spacecraft's local to world matrix using its position and attitude
+    osg::Matrixd matDraggerToWorld(att);
+    matDraggerToWorld.setTrans(pos);
+    
+    // Then prepend the dragger's local to world matrix
+    _modelXform->computeLocalToWorldMatrix(matDraggerToWorld, NULL);
     
     // The new spacecraft position is the origin of where the dragger moved the spacecraft
     // Note that for a TrackballDragger, this will be equal to the spacecraft's original position
@@ -150,7 +141,7 @@ public:
 private:
   TrajectoryFollower* _tf;
   Trajectory* _trajOut;
-  osg::MatrixTransform* _xform;
+  const FrameTransform* _modelXform;
 };
 
 /** The function called when the user presses a key */
@@ -212,9 +203,6 @@ int main(int argc, char **argv)
   sc->setYLabel("V");
   earth->addChild(sc);
   
-  // Enable spacecraft dragger
-  sc->enableDragger();
-  
   // Create the trajectory using
   // Trajectory(DOF, number of optionals)
   Trajectory *traj = new Trajectory(3, 1);
@@ -246,9 +234,9 @@ int main(int argc, char **argv)
   ca2->setColor(1, 1, 0);
   drawtraj->addArtist(ca2);
   
-  // Add a callback to the dragger that will modify the second trajectory
-  osg::MatrixTransform* draggerXform = sc->getDraggerTransform();
-  sc->addDraggerCallback(new MyDraggerCallback(tf, traj2, draggerXform));
+  // Add a callback that will modify the second trajectory when the spacecraft
+  // is dragged. For now this is limited to a TrackballDragger.
+  sc->addDraggerCallback(new MyDraggerCallback(tf, traj2, sc->getModelTransform()));
   
   // Create views
   View *view = new View(earth, sc);
@@ -265,9 +253,9 @@ int main(int argc, char **argv)
   myWindow->getGridPosition(0, 0)->addView(view);
   
   // Fill the trajectory with points
-  double a = 7000.0; // [km] Semimajor axis
-  double e = 0.0;    // Eccentricity
-  double i = 0.0;    // [rad] Inclination
+  double a = 8000.0; // [km] Semimajor axis
+  double e = 0.1;    // Eccentricity
+  double i = 45.0*osg::PI/180.0;    // [rad] Inclination
   double w = 0.0;    // [rad] Argument of periapsis
   double RAAN = 0.0; // [rad] Right ascension of ascending node
   fillTrajectory(a, e, i, w, RAAN, traj);

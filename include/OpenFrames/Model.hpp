@@ -94,10 +94,12 @@ namespace OpenFrames
       _modelXform->getPivot(px, py, pz);
     }
     
-    /** Enable model dragging */
-    void enableDragger();
+    /** Get the transformation that applies to the model */
+    const FrameTransform* getModelTransform() const { return _modelXform; }
+    
+    /** Enable model dragging. Call with NULL to set up dragger without
+        installing a callback */
     void addDraggerCallback(osgManipulator::DraggerCallback* callback);
-    osg::MatrixTransform* getDraggerTransform() const { return _draggerXform; }
     
     /** Inherited function to compute the bounds of the model */
     virtual const osg::BoundingSphere& getBound() const;
@@ -136,7 +138,7 @@ namespace OpenFrames
   class OF_EXPORT ModelDraggerTransformCallback : public osgManipulator::DraggerTransformCallback
   {
   public:
-    ModelDraggerTransformCallback(FrameTransform* modelxform, osg::MatrixTransform* xform);
+    ModelDraggerTransformCallback(FrameTransform* modelxform, osg::MatrixTransform* draggerxform);
     
     virtual bool receive(const osgManipulator::MotionCommand& command);
     
