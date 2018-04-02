@@ -198,19 +198,11 @@ int main(int argc, char **argv)
   
   // Create a Sphere to represent the Earth
   Sphere* earth = new Sphere("Earth", 1, 1, 1, 0.9);
-  //earth->showAxes(ReferenceFrame::NO_AXES);
-  //earth->showAxesLabels(ReferenceFrame::NO_AXES);
-  //earth->showNameLabel(false);
+  earth->showAxes(ReferenceFrame::NO_AXES);
+  earth->showAxesLabels(ReferenceFrame::NO_AXES);
+  earth->showNameLabel(false);
   earth->setRadius(6371.0);
   earth->setTextureMap("Images/EarthTexture.bmp");
-  
-  // Create a dummy ReferenceFrame to hold the spacecraft. This is needed to allow
-  // a View to track the spacecraft even though it is not directly added to the Earth
-  ReferenceFrame *scRoot  = new ReferenceFrame("SCRoot");
-  scRoot->showAxes(ReferenceFrame::NO_AXES);
-  scRoot->showAxesLabels(ReferenceFrame::NO_AXES);
-  scRoot->showNameLabel(false);
-  earth->addChild(scRoot);
   
   // Create the spacecraft
   Model *sc = new Model("Spacecraft", 1, 0, 0, 0.9);
@@ -218,29 +210,10 @@ int main(int argc, char **argv)
   sc->showAxes(ReferenceFrame::Y_AXIS);
   sc->showAxesLabels(ReferenceFrame::Y_AXIS);
   sc->setYLabel("V");
+  earth->addChild(sc);
   
-  // Create a dragger to rotate the spacecraft
-  osgManipulator::TrackballDragger* dragger = new osgManipulator::TrackballDragger();
-  dragger->setupDefaultGeometry();
-  dragger->setAxisLineWidth(5.0);
-  
-  // Draggers require a MatrixTransform, but OpenFrames uses its own type of transform
-  // to position/orient objects. So create an intermediate MatrixTransform to hold the
-  // spacecraft, which will go between the Earth and the Spacecraft
-  osg::MatrixTransform *mt = new osg::MatrixTransform;
-  mt->addChild(sc->getGroup());
-  scRoot->getGroup()->addChild(dragger);
-  scRoot->getGroup()->addChild(mt);
-  dragger->addTransformUpdating(mt);
-  
-  // Size the dragger to encompass the spacecraft
-  float scale = sc->getBound().radius();
-  dragger->setMatrix(osg::Matrix::scale(scale, scale, scale) *
-                     osg::Matrix::translate(-(sc->getBound().center())));
-  
-  // Tell dragger to handle its own events, and activate using the CTRL key
-  dragger->setHandleEvents(true);
-  dragger->setActivationModKeyMask(osgGA::GUIEventAdapter::MODKEY_CTRL);
+  // Enable spacecraft dragger
+  sc->enableDragger();
   
   // Create the trajectory using
   // Trajectory(DOF, number of optionals)
@@ -249,7 +222,7 @@ int main(int argc, char **argv)
   // Tell spacecraft to follow trajectory (by default in LOOP mode)
   TrajectoryFollower *tf = new TrajectoryFollower(traj);
   tf->setFollowType(TrajectoryFollower::POSITION + TrajectoryFollower::ATTITUDE, TrajectoryFollower::LOOP);
-  scRoot->getTransform()->setUpdateCallback(tf);
+  sc->getTransform()->setUpdateCallback(tf);
   
   // Create a drawable trajectory for the spacecraft window using
   // DrawableTrajectory(name, color(r,g,b,a))
@@ -274,10 +247,11 @@ int main(int argc, char **argv)
   drawtraj->addArtist(ca2);
   
   // Add a callback to the dragger that will modify the second trajectory
-  dragger->addDraggerCallback(new MyDraggerCallback(tf, traj2, mt));
+  osg::MatrixTransform* draggerXform = sc->getDraggerTransform();
+  sc->addDraggerCallback(new MyDraggerCallback(tf, traj2, draggerXform));
   
   // Create views
-  View *view = new View(earth, scRoot);
+  View *view = new View(earth, sc);
   view->setDefaultViewDistance(40.0);
   
   // Create a manager to handle the spatial scene

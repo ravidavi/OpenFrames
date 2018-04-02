@@ -222,6 +222,33 @@ namespace OpenFrames
     repositionAxes(); // Reset the x/y/z axes
   }
   
+  /** Enable model dragging */
+  void Model::enableDragger()
+  {
+    _draggerXform = new osg::MatrixTransform;
+    _xform->addChild(_draggerXform);
+    
+    _dragger = new osgManipulator::TrackballDragger();
+    _dragger->setupDefaultGeometry();
+    _dragger->setAxisLineWidth(5.0);
+    _xform->addChild(_dragger);
+    const osg::BoundingSphere& bound = getBound();
+    float scale = bound.radius();
+    _dragger->setMatrix(osg::Matrix::scale(scale, scale, scale) *
+                        osg::Matrix::translate(-(bound.center())));
+    _dragger->setHandleEvents(true);
+    _dragger->setActivationModKeyMask(osgGA::GUIEventAdapter::MODKEY_CTRL);
+    
+    ModelDraggerTransformCallback* draggerCallback = new ModelDraggerTransformCallback(_modelXform.get(), _draggerXform.get());
+    _dragger->addDraggerCallback(draggerCallback);
+  }
+  
+  void Model::addDraggerCallback(osgManipulator::DraggerCallback* callback)
+  {
+    if(!_dragger.valid()) enableDragger();
+    _dragger->addDraggerCallback(callback);
+  }
+  
   /** Move the model's x/y/z axes to default positions. */
   void Model::repositionAxes()
   {
@@ -257,6 +284,18 @@ namespace OpenFrames
     }
     
     return _bound;
+  }
+  
+  /*****************************************************************/
+  ModelDraggerTransformCallback::ModelDraggerTransformCallback(FrameTransform* modelxform, osg::MatrixTransform* xform)
+  : osgManipulator::DraggerTransformCallback(xform), _modelXform(modelxform)
+  {
+    
+  }
+  
+  bool ModelDraggerTransformCallback::receive(const osgManipulator::MotionCommand& command)
+  {
+    return osgManipulator::DraggerTransformCallback::receive(command);
   }
   
 } // !namespace OpenFrames

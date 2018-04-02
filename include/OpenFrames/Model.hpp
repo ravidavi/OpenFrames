@@ -21,6 +21,7 @@
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Node>
 #include <osg/ref_ptr>
+#include <osgManipulator/TrackballDragger>
 #include <string>
 
 namespace OpenFrames
@@ -93,6 +94,11 @@ namespace OpenFrames
       _modelXform->getPivot(px, py, pz);
     }
     
+    /** Enable model dragging */
+    void enableDragger();
+    void addDraggerCallback(osgManipulator::DraggerCallback* callback);
+    osg::MatrixTransform* getDraggerTransform() const { return _draggerXform; }
+    
     /** Inherited function to compute the bounds of the model */
     virtual const osg::BoundingSphere& getBound() const;
     
@@ -114,6 +120,28 @@ namespace OpenFrames
     /** Any extra drawables which are not contained in the transform,
 	    but are still part of this frame. eg. ParticleSystems, etc... */
     osg::ref_ptr<osg::Geode> _extras;
+    
+    osg::ref_ptr<osgManipulator::TrackballDragger> _dragger;
+    osg::ref_ptr<osg::MatrixTransform> _draggerXform;
+  };
+  
+  /******************************************
+   * OpenFrames API, class ModelDraggerTransformCallback
+   * Enables dragging of a Model using an osgManipulator::Dragger. This is needed because the
+   * default DraggerTransformCallback only operates on a osg::MatrixTransform, but OpenFrames
+   * objects use a FrameTransform (custom osg::Transform).
+   * TODO: Derive from osgManipulator::DraggerCallback and compute transforms directly instead
+   *       of depending on the DraggerTransformCallback and a dummy MatrixTransform.
+   *****************************************/
+  class OF_EXPORT ModelDraggerTransformCallback : public osgManipulator::DraggerTransformCallback
+  {
+  public:
+    ModelDraggerTransformCallback(FrameTransform* modelxform, osg::MatrixTransform* xform);
+    
+    virtual bool receive(const osgManipulator::MotionCommand& command);
+    
+  protected:
+    osg::observer_ptr<FrameTransform> _modelXform;
   };
   
 } // !namespace OpenFrames
