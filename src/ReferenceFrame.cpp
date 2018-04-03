@@ -257,7 +257,7 @@ void ReferenceFrame::getColor(float &r, float &g, float &b, float &a) const
 *
 * \return The FrameTransform
 **/
-osg::Group* ReferenceFrame::getGroup()
+osg::Group* ReferenceFrame::getGroup() const
 {
 	return (osg::Group*)_xform.get();
 }

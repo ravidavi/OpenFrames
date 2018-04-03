@@ -45,7 +45,7 @@ namespace OpenFrames
      ParticleSystems or other things which need to reside in world space.
 	    Therefore, our group will contain the ReferenceFrame's transform as
 	    well as any ParticleSystems and other such things. */
-    virtual osg::Group* getGroup();
+    virtual osg::Group* getGroup() const;
     
     /** Set the model that should be displayed */
     bool setModel( const std::string& filename, bool force_reload = false );

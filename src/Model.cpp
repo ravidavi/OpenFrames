@@ -60,7 +60,7 @@ namespace OpenFrames
     _modelXform = new FrameTransform;
   }
   
-  osg::Group* Model::getGroup()
+  osg::Group* Model::getGroup() const
   {
     return _group.get();
   }
