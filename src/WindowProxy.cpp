@@ -685,6 +685,12 @@ namespace OpenFrames
     _window->getEventQueue()->keyPress(key);
   }
   
+  /** Create a key released event */
+  void WindowProxy::keyRelease(int key)
+  {
+    _window->getEventQueue()->keyRelease(key);
+  }
+  
   /** Create a mouse moved event */
   void WindowProxy::mouseMotion(float x, float y)
   {

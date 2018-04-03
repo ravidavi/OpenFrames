@@ -1015,6 +1015,24 @@ void OF_FCN(ofwin_keypress)(unsigned int *key)
 }
 
 /**
+ * \brief Create a key released event
+ *
+ * This applies to the current active WindowProxy.
+ *
+ * \param key Key released (see osg::GUIEventAdapter::KeySymbol enum)
+ **/
+  void OF_FCN(ofwin_keyrelease)(unsigned int *key)
+{
+  if (_objs->_currWinProxy) {
+    _objs->_currWinProxy->keyRelease(*key);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
+/**
 * \brief Create a mouse button pressed event
 *
 * This applies to the current active WindowProxy.
