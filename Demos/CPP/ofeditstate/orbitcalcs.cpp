@@ -106,7 +106,13 @@ void CartToKep(const osg::Vec3d& r, const osg::Vec3d& v,
   if(std::abs(i) < 1.0e-6) wta = 0.0;
   else wta = std::atan2(r[2]/std::sin(i), r[0]*std::cos(RAAN) + r[1]*std::sin(RAAN));
   if(std::abs(e) < 1.0e-6) ta = 0.0;
-  else ta = std::acos((a*(1.0-e*e) - rmag)/(e*rmag));
+  else
+  {
+    double arg = (a*(1.0-e*e) - rmag)/(e*rmag);
+    if(arg > 1.0) arg = 1.0;
+    else if(arg < -1.0) arg = -1.0;
+    ta = std::acos(arg);
+  }
   if(r*v < 0.0) ta = 2.0*osg::PI - ta;
   w = wta - ta;
 }

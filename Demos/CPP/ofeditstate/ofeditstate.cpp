@@ -46,7 +46,7 @@ void showTrajData(const double& a, const double& e,
 class MyDraggerCallback : public osgManipulator::DraggerCallback
 {
 public:
-  MyDraggerCallback(TrajectoryFollower* tf, Trajectory* trajOut, const FrameTransform* modelXform)
+  MyDraggerCallback(const TrajectoryFollower* tf, Trajectory* trajOut, const FrameTransform* modelXform)
   : _tf(tf), _trajOut(trajOut), _modelXform(modelXform)
   {}
   
@@ -55,18 +55,19 @@ public:
   
   virtual bool receive(const osgManipulator::Rotate3DCommand& cmd)
   {
+    if(!_tf.valid()) return false;
+    
     // Get spacecraft's currently followed trajectory
     double lastTime = _tf->getLastTime();
     Trajectory* lastTraj = _tf->getLastTrajectory();
-    const Trajectory::DataSource* posDataSource = _tf->getDataSource();
-    unsigned int numPoints = lastTraj->getNumPoints(posDataSource);
-    if(lastTraj == nullptr)
-    {
-      OSG_NOTICE << "MyDraggerCallback ERROR: Missing Trajectory" << std::endl;
-      return false;
-    }
+    if(lastTraj == nullptr) return false;
+    
+    // Lock the trajectory so it's not modified while we read it
+    lastTraj->lockData();
     
     // Get location of spacecraft's current position within its trajectory
+    const Trajectory::DataSource* posDataSource = _tf->getDataSource();
+    unsigned int numPoints = lastTraj->getNumPoints(posDataSource);
     int index;
     int val = lastTraj->getTimeIndex(lastTime, index);
     if(val < 0)
@@ -99,49 +100,47 @@ public:
     // Interpolate spacecraft attitude from trajectory attitude
     // Note that we could also obtain this from the spacecraft's ReferenceFrame
     // if it was made available to this callback
-    osg::Quat att, att1, att2;
+    osg::Quat quatSCToWorld, att1, att2;
     lastTraj->getAttitude(index  , att1[0], att1[1], att1[2], att1[3]);
     lastTraj->getAttitude(index+1, att2[0], att2[1], att2[2], att2[3]);
-    att.slerp(frac, att1, att2); // Spherical linear interpolation for attitude
+    quatSCToWorld.slerp(frac, att1, att2); // Spherical linear interpolation for attitude
     
-    // Compute the matrix that converts from the dragger to the world frame
-    // This will be used to compute the new position and velocity
-    // Start with the the spacecraft's local to world matrix using its position and attitude
-    osg::Matrixd matDraggerToWorld(att);
-    matDraggerToWorld.setTrans(pos);
+    // Unlock the trajectory so it can be modified again
+    lastTraj->unlockData();
     
-    // Then prepend the dragger's local to world matrix
-    _modelXform->computeLocalToWorldMatrix(matDraggerToWorld, NULL);
+    // Get the dragger's rotation, which is stored in the Model's transform
+    osg::Quat quatDragger;
+    _modelXform->getAttitude(quatDragger);
     
-    // The new spacecraft position is the origin of where the dragger moved the spacecraft
-    // Note that for a TrackballDragger, this will be equal to the spacecraft's original position
-    // since that dragger does not change the position.
-    pos = matDraggerToWorld.getTrans();
+    // Compute a Delta-V based on how the dragger changed the inertial velocity vector
+    // First rotate velocity from inertial to SC coordinates
+    osg::Vec3d velSC = quatSCToWorld.inverse() * vel;
     
-    // The new velocity vector has the same magnitude as the old one, but is in the y-axis
-    // direction of the dragger's transformation matrix
-    // So convert a vector in the y-axis direction (with magnitude same as velocity) back
-    // to the world frame, which gives the new velocity vector
-    double vmag = vel.length();
-    osg::Vec4 vel_local(0, vmag, 0, 0); // Last value is 0 to indicate vector instead of point
-    osg::Vec4 vel_new = vel_local * matDraggerToWorld;
-    vel.set(vel_new[0], vel_new[1], vel_new[2]);
+    // Next apply dragger rotation to velocity
+    osg::Vec3d velDragger = quatDragger * velSC;
+    
+    // Subtract to get Delta-V
+    osg::Vec3d dvSC = velDragger - velSC;
+    
+    // Rotate Delta-V back to inertial frame and apply it to the velocity
+    osg::Vec3d dvInertial = quatSCToWorld * dvSC;
+    vel += dvInertial;
     
     // Convert cartesian state to Keplerian elements
     double ta, a, e, i, w, RAAN;
     CartToKep(pos, vel, ta, a, e, i, w, RAAN);
     
     // Now populate the second trajectory using the new state
-    fillTrajectory(a, e, i, w, RAAN, _trajOut);
+    fillTrajectory(a, e, i, w, RAAN, _trajOut.get());
     showTrajData(a, e, i, w, RAAN);
     
     return false;
   }
   
 private:
-  TrajectoryFollower* _tf;
-  Trajectory* _trajOut;
-  const FrameTransform* _modelXform;
+  osg::observer_ptr<const TrajectoryFollower> _tf;
+  osg::observer_ptr<Trajectory> _trajOut;
+  osg::observer_ptr<const FrameTransform> _modelXform;
 };
 
 /** The function called when the user presses a key */

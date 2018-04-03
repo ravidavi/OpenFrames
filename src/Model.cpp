@@ -298,7 +298,7 @@ namespace OpenFrames
     
     // For a MOVE command, decompose the transformation matrix
     // TODO: Directly compute transformation components without using intermediate MatrixTransform
-    if(command.getStage() == osgManipulator::MotionCommand::MOVE)
+    if((command.getStage() == osgManipulator::MotionCommand::MOVE) && _modelXform.valid())
     {
       osg::Vec3d trans, scale;
       osg::Quat rot, rotSO;
