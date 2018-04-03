@@ -8,7 +8,7 @@ SET( curr_demo ofqt )
 set(CMAKE_AUTOMOC ON)
 
 # Find Qt
-IF(NOT OF_USE_QT)
+IF(NOT Qt5_FOUND)
   RETURN()
 ENDIF()
 

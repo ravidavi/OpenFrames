@@ -8,7 +8,7 @@ SET(OF_HEADER_PATH ${OpenFrames_SOURCE_DIR}/include)
 FILE(GLOB OF_HEADER_FILES "${OF_HEADER_PATH}/OpenFrames/*.hpp")
 
 # Define all the source files needed to compile
-IF(OF_USE_QT)
+IF(Qt5_FOUND)
   set(CMAKE_AUTOMOC ON)
 ENDIF()
 ADD_LIBRARY(${LIB_NAME} SHARED
@@ -44,12 +44,12 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     VRUtils.cpp
     WindowProxy.cpp
 )
-IF(OF_USE_QT)
+IF(Qt5_FOUND)
   set(CMAKE_AUTOMOC OFF)
 ENDIF()
 
 # Include Qt widget panel if Qt was found
-IF(OF_USE_QT)
+IF(Qt5_FOUND)
   TARGET_SOURCES(${LIB_NAME} PRIVATE QWidgetPanel.cpp QtOSGAdapters.cpp)
 ENDIF()
 
@@ -84,7 +84,7 @@ SET_PROPERTY(TARGET ${FORTINTERFACE_NAME}
 
 # Specify dependencies for linking
 TARGET_LINK_LIBRARIES(${LIB_NAME} PUBLIC ${OPENSCENEGRAPH_LIBRARIES} PRIVATE ${OPENGL_LIBRARIES} ${OSGEARTH_LIBRARY})
-IF(OF_USE_QT)
+IF(Qt5_FOUND)
   TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE Qt5::Core Qt5::Widgets Qt5::OpenGL)
 ENDIF()
 IF(${OF_VR_TYPE} MATCHES ${VR_OpenVR})
