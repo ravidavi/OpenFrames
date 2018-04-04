@@ -11,7 +11,7 @@ SET( curr_demo ofcontrols )
 # See: https://doc.qt.io/qt-5/designer-using-a-ui-file.html
 # See: https://cmake.org/cmake/help/v3.0/manual/cmake-qt.7.html
 
-IF( NOT OF_USE_QT )
+IF( NOT Qt5_FOUND )
   RETURN()
 ENDIF()
 

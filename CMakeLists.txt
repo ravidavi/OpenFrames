@@ -11,6 +11,7 @@ SET(CMAKE_MODULE_PATH "{CMAKE_MODULE_PATH}" ${CMAKE_CURRENT_SOURCE_DIR}/CMakeMod
 OPTION( OF_BUILD_DEMOS "Build Demo Programs" ON )
 OPTION( OF_FORTRAN_MODULE "Compile Fortran Module" OFF )
 OPTION( OF_PYTHON_MODULE "Compile Python Module" OFF )
+OPTION( OF_QT_SUPPORT "Compile with Qt support" OFF )
 #OPTION( OF_USE_OSGEARTH "Enable osgEarth" OFF )
 
 # Options for VR support
@@ -140,12 +141,11 @@ ELSEIF( ${OF_VR_TYPE} MATCHES ${VR_OpenVR} )
 ENDIF()
 
 # Find Qt
-FIND_PACKAGE(Qt5 COMPONENTS Core Widgets OpenGL)
-IF( Qt5_FOUND )
-  SET(OF_USE_QT TRUE)
-ELSE()
-  SET(OF_USE_QT FALSE)
-  MESSAGE("Qt5 not found: will not build Qt widget panel or Qt demos.")
+IF( OF_QT_SUPPORT )
+  FIND_PACKAGE(Qt5 COMPONENTS Core Widgets OpenGL)
+  IF( NOT Qt5_FOUND )
+    MESSAGE("Qt5 not found: will not build Qt support or demos.")
+  ENDIF()
 ENDIF()
 
 # Go to the src directory and look for CMake instructions there
