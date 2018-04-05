@@ -240,6 +240,36 @@
 	CHARACTER(LEN=*), INTENT(IN) :: fname
 	END SUBROUTINE
 
+  SUBROUTINE ofwin_enablehudtext(row, col, enable)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_enablehudtext
+  INTEGER, INTENT(IN) :: row, col
+  LOGICAL, INTENT(IN) :: enable
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_sethudtextfont(row, col, fname)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_sethudtextfont
+  INTEGER, INTENT(IN) :: row, col
+  CHARACTER(LEN=*), INTENT(IN) :: fname
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_sethudtextparameters(row, col, r, g, b, charSize)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_sethudtextparameters
+  INTEGER, INTENT(IN) :: row, col
+  REAL, INTENT(IN) :: r, g, b, charSize
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_sethudtextposition(row, col, x, y, alignment)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_sethudtextposition
+  INTEGER, INTENT(IN) :: row, col, alignment
+  REAL, INTENT(IN) :: x, y
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_sethudtext(row, col, text)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_sethudtext
+  INTEGER, INTENT(IN) :: row, col
+  CHARACTER(LEN=*), INTENT(IN) :: text
+  END SUBROUTINE
+
 	SUBROUTINE ofwin_setdesiredframerate(fps)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setdesiredframerate
 	REAL(8), INTENT(IN) :: fps
@@ -1004,6 +1034,16 @@
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_setdefaultviewdistance
 	REAL(8), INTENT(IN) :: distance
 	END SUBROUTINE
+
+  SUBROUTINE ofview_gettrackball(eye, center, up)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_gettrackball
+  REAL(8), INTENT(IN) :: eye(3), center(3), up(3)
+  END SUBROUTINE
+
+  SUBROUTINE ofview_settrackball(eye, center, up)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_settrackball
+  REAL(8), INTENT(IN) :: eye(3), center(3), up(3)
+  END SUBROUTINE
 
 	SUBROUTINE ofview_isvalid(valid)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_isvalid

@@ -919,6 +919,185 @@ void OF_FCN(ofwin_setbackgroundstardata)(unsigned int *row, unsigned int *col, f
     }
 }
 
+/** Internal function to find the osg::Geode for the HUD text */
+osg::Geode* getOrCreateHUDTextGeode(unsigned int row, unsigned int col)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(row, col);
+    if(rr)
+    {
+      const std::string hudGeodeName = "HUDTextGeode";
+      
+      // Search all HUD children
+      int numChildren = rr->getHUD()->getNumChildren();
+      for(int i = 0; i < numChildren; ++i)
+      {
+        // If child is a HUD text Geode, then return it
+        osg::Geode* geode = rr->getHUD()->getChild(i)->asGeode();
+        if(geode && (geode->getName() == hudGeodeName))
+        {
+          _objs->_intVal = 0;
+          return geode;
+        }
+      }
+      
+      // HUD text doesn't exist, so create and initialize it with defaults
+      osg::ref_ptr<osgText::Text> hudText_BottomLeft = new osgText::Text;
+      hudText_BottomLeft->setFont("arial.ttf");
+      hudText_BottomLeft->setColor(osg::Vec4(1, 1, 0, 1));
+      hudText_BottomLeft->setCharacterSizeMode(osgText::Text::SCREEN_COORDS);
+      hudText_BottomLeft->setCharacterSize(20.0);    // In screen coordinates (pixels)
+      hudText_BottomLeft->setFontResolution(40, 40); // In texels (texture pixels)
+      hudText_BottomLeft->setLineSpacing(0.25);
+      
+      // Position HUD text
+      // Screen coordinates go from (0,0) bottom-left to (1,1) top-right
+      hudText_BottomLeft->setAlignment(osgText::Text::LEFT_BOTTOM);
+      hudText_BottomLeft->setPosition(osg::Vec3(0.0, 0.0, 0.0));
+      
+      // Some graphics drivers have a bug where text can't be properly changed.
+      // Get around this by initializing text using all likely characters.
+      std::string dummyText("the quick brown fox jumps over the lazy dog");
+      dummyText += "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG";
+      dummyText += "1234567890";
+      dummyText += "[]{}()<>,.;:+-*/_";
+      hudText_BottomLeft->setText(dummyText);
+      
+      // Attach HUD text
+      osg::Geode* geode = new osg::Geode;
+      geode->setName(hudGeodeName);
+      geode->addDrawable(hudText_BottomLeft);
+      rr->getHUD()->addChild(geode);
+      
+      _objs->_intVal = 0;
+      return geode;
+    }
+    else {
+      _objs->_intVal = -1;
+      return NULL;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+    return NULL;
+  }
+}
+    
+/**
+* \brief Enable/disable the HUD text for the specified grid position. Create placeholder
+*        HUD text if it does not yet exist.
+*
+* This applies to the current active WindowProxy.
+*
+* \param row    Row in the grid to set
+* \param col    Column in the grid to set
+* \param enable Whether to enable or disable the HUD text
+**/
+OF_EXPORT void OF_FCN(ofwin_enablehudtext)(unsigned int *row, unsigned int *col, bool *enable)
+{
+  // Get the HUD text osg::Geode
+  osg::Geode* hudTextGeode = getOrCreateHUDTextGeode(*row, *col);
+  if(!hudTextGeode) return; // Error creating HUD text
+  
+  // Set HUD text visibility
+  if(*enable) hudTextGeode->setNodeMask(0xffffffff);
+  else hudTextGeode->setNodeMask(0x0);
+}
+   
+/**
+* \brief Set HUD font. Create placeholder HUD text if it does not yet exist.
+*
+* This applies to the current active WindowProxy.
+*
+* \param row    Row in the grid to set
+* \param col    Column in the grid to set
+* \param fname  Name of font to use, e.g. "arial.ttf"
+**/
+OF_EXPORT void OF_FCN(ofwin_sethudtextfont)(unsigned int *row, unsigned int *col, OF_CHARARG(fname))
+{
+  // Get the HUD text osg::Geode
+  osg::Geode* hudTextGeode = getOrCreateHUDTextGeode(*row, *col);
+  if(!hudTextGeode) return; // Error creating HUD text
+  
+  // Convert given character string and length to a proper C string
+  std::string temp(OF_STRING(fname));
+  
+  // First child of hud geode will be an osgText::Text by design
+  osgText::Text* hudText = static_cast<osgText::Text*>(hudTextGeode->getDrawable(0));
+  hudText->setFont(temp);
+}
+  
+/**
+* \brief Set HUD color and size. Create placeholder HUD text if it does not yet exist.
+*
+* This applies to the current active WindowProxy.
+*
+* \param row    Row in the grid to set
+* \param col    Column in the grid to set
+* \param r      Red color component
+* \param g      Green color component
+* \param b      Blue color component
+* \param charSize Character size in pixels
+**/
+OF_EXPORT void OF_FCN(ofwin_sethudtextparameters)(unsigned int *row, unsigned int *col, float *r, float *g, float *b, float *charSize)
+{
+  // Get the HUD text osg::Geode
+  osg::Geode* hudTextGeode = getOrCreateHUDTextGeode(*row, *col);
+  if(!hudTextGeode) return; // Error creating HUD text
+  
+  // First child of hud geode will be an osgText::Text by design
+  osgText::Text* hudText = static_cast<osgText::Text*>(hudTextGeode->getDrawable(0));
+  hudText->setColor(osg::Vec4(*r, *g, *b, 1.0));
+  hudText->setCharacterSize(*charSize);
+}
+  
+/**
+* \brief Set HUD text position and alignment. Create placeholder HUD text if it does not yet exist.
+*
+* This applies to the current active WindowProxy.
+*
+* \param row    Row in the grid to set
+* \param col    Column in the grid to set
+* \param x      Text origin x position, in range [0,1] from left to right
+* \param y      Text origin y position, in range [0,1] from bottom to top
+* \param alignment Alignment location of text origin, see osgText::AlignmentType enum
+**/
+OF_EXPORT void OF_FCN(ofwin_sethudtextposition)(unsigned int *row, unsigned int *col, float *x, float *y, unsigned int *alignment)
+{
+  // Get the HUD text osg::Geode
+  osg::Geode* hudTextGeode = getOrCreateHUDTextGeode(*row, *col);
+  if(!hudTextGeode) return; // Error creating HUD text
+  
+  // First child of hud geode will be an osgText::Text by design
+  osgText::Text* hudText = static_cast<osgText::Text*>(hudTextGeode->getDrawable(0));
+  hudText->setPosition(osg::Vec3(*x, *y, 0.0));
+  hudText->setAlignment((osgText::Text::AlignmentType)*alignment);
+}
+    
+/**
+* \brief Set HUD text. Create placeholder HUD text if it does not yet exist.
+*
+* This applies to the current active WindowProxy.
+*
+* \param row    Row in the grid to set
+* \param col    Column in the grid to set
+* \param text   The new HUD text
+**/
+OF_EXPORT void OF_FCN(ofwin_sethudtext)(unsigned int *row, unsigned int *col, OF_CHARARG(text))
+{
+  // Get the HUD text osg::Geode
+  osg::Geode* hudTextGeode = getOrCreateHUDTextGeode(*row, *col);
+  if(!hudTextGeode) return; // Error creating HUD text
+  
+  // Convert given character string and length to a proper C string
+  std::string temp(OF_STRING(text));
+  
+  // First child of hud geode will be an osgText::Text by design
+  osgText::Text* hudText = static_cast<osgText::Text*>(hudTextGeode->getDrawable(0));
+  hudText->setText(temp);
+}
+    
 /**
 * \brief Set a callback function for swapping the front/back buffers
 *
@@ -4265,6 +4444,53 @@ void OF_FCN(ofview_setdefaultviewdistance)(double *distance)
     else {
       _objs->_intVal = -2;
     }
+}
+
+/**
+* \brief Get the trackball view matrix
+*
+* This applies to the current active View.
+*
+* \param eye    3-vector eye position
+* \param center 3-vector look-at position
+* \param up     3-vector up vector
+**/
+void OF_FCN(ofview_gettrackball)(double eye[], double center[], double up[])
+{
+  if (_objs->_currView) {
+    osg::Vec3d vEye, vCenter, vUp;
+    _objs->_currView->getTrackball()->getTransformation(vEye, vCenter, vUp);
+    eye[0] = vEye[0]; eye[1] = vEye[1]; eye[2] = vEye[2];
+    center[0] = vCenter[0]; center[1] = vCenter[1]; center[2] = vCenter[2];
+    up[0] = vUp[0]; up[1] = vUp[1]; up[2] = vUp[2];
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+/**
+* \brief Set the trackball view matrix
+*
+* This applies to the current active View.
+*
+* \param eye    3-vector eye position
+* \param center 3-vector look-at position
+* \param up     3-vector up vector
+**/
+void OF_FCN(ofview_settrackball)(double eye[], double center[], double up[])
+{
+  if (_objs->_currView) {
+    osg::Vec3d vEye(eye[0], eye[1], eye[2]);
+    osg::Vec3d vCenter(center[0], center[1], center[2]);
+    osg::Vec3d vUp(up[0], up[1], up[2]);
+    _objs->_currView->getTrackball()->setTransformation(vEye, vCenter, vUp);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
 }
 
 /**

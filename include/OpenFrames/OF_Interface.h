@@ -165,6 +165,13 @@ OF_EXPORT void OF_FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned in
 
 // Set the background star field of the specified grid position
 OF_EXPORT void OF_FCN(ofwin_setbackgroundstardata)(unsigned int *row, unsigned int *col, float *minMag, float *maxMag, OF_CHARARG(fname));
+  
+// Enable/disable HUD text
+OF_EXPORT void OF_FCN(ofwin_enablehudtext)(unsigned int *row, unsigned int *col, bool *enable);
+OF_EXPORT void OF_FCN(ofwin_sethudtextfont)(unsigned int *row, unsigned int *col, OF_CHARARG(fname));
+OF_EXPORT void OF_FCN(ofwin_sethudtextparameters)(unsigned int *row, unsigned int *col, float *r, float *g, float *b, float *charSize);
+OF_EXPORT void OF_FCN(ofwin_sethudtextposition)(unsigned int *row, unsigned int *col, float *x, float *y, unsigned int *alignment);
+OF_EXPORT void OF_FCN(ofwin_sethudtext)(unsigned int *row, unsigned int *col, OF_CHARARG(text));
                                                
 // Set the callback functions for swapping buffers and making a context current
 OF_EXPORT void OF_FCN(ofwin_setswapbuffersfunction)(void (*fcn)(unsigned int *winID));
@@ -684,6 +691,10 @@ OF_EXPORT void OF_FCN(ofview_setviewbetweenframes)(OF_CHARARG(root), OF_CHARARG(
 
 // Set the default view distance. A value <= 0.0 means the distance should be auto-computed
 OF_EXPORT void OF_FCN(ofview_setdefaultviewdistance)(double *distance);
+  
+// Set/get the view's trackball matrix using eye, center, up vectors
+OF_EXPORT void OF_FCN(ofview_gettrackball)(double eye[], double center[], double up[]);
+OF_EXPORT void OF_FCN(ofview_settrackball)(double eye[], double center[], double up[]);
 
 // Check if the view frame for the current View is valid. One reason for an
 // invalid view is if the frame to be viewed is not a child of the specified

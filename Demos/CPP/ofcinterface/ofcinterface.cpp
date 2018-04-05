@@ -78,6 +78,9 @@ int main()
 	ofwin_setscene(&id, &id);
 	ofwin_addview(&id, &id);
 
+  // Set up the HUD text
+  ofwin_sethudtext(&id, &id, "Test HUD Text");
+
 	// Create the actual window, start event handling and animations
 	std::string winName = "Simple ReferenceFrame";
 	ofwin_start();
