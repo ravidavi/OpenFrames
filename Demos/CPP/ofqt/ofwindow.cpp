@@ -17,6 +17,7 @@
 #include "ofrenderpool.h"
 #include "ofwindow.h"
 #include <QMouseEvent>
+#include <QDebug>
 
 const bool OFWindow::VERBOSE_CONSOLE = false;
 

@@ -52,7 +52,7 @@
 #define OFWINDOW_H
 
 #include <QWindow>
-#include "renderthread.h"
+//#include "renderthread.h"
 
 class OFRendererIF;
 
