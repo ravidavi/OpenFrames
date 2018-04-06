@@ -32,7 +32,11 @@ set(CMAKE_AUTOUIC ON)
 # Specify headers for Qt example
 FILE(GLOB osgqtcube_HEADERS *.hpp)
 LIST(APPEND osgqtcube_SOURCES
-  ofcontrols.cpp)
+  ofcontrols.cpp
+  ofrenderpool.cpp
+  ofwindow.cpp
+  renderthread.cpp
+  )
 
 # Attach the ui files as a resource using (1)
 ADD_EXECUTABLE(${curr_demo} ${osgqtcube_SOURCES} ${osgqtcube_HEADERS} resources.qrc)

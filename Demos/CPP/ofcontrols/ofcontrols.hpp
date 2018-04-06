@@ -21,6 +21,7 @@ limitations under the License.
 #include <map>
 
 #include <QObject>
+#include <QSharedPointer>
 
 #include <osg/ref_ptr>
 #include <osg/Vec3d>
@@ -33,11 +34,12 @@ QT_FORWARD_DECLARE_CLASS(QListWidgetItem);
 
 namespace OpenFrames
 {
-  class WindowProxy;
   class ReferenceFrame;
   class QWidgetPanel;
   class Sphere;
 }
+class RenderThread;
+class OFWindow;
 
 /*******************************************************************
  * Matthew Ruschmann
@@ -54,9 +56,6 @@ public:
   // Reserve copy and assignment constructors
   OFControls(OFControls&) = delete;
   OFControls& operator=(OFControls&) = delete;
-
-  /// The applications main loop
-  int main(int argc, char **argv);
 
 public slots:
   /// Slot for toggling visibility
@@ -90,7 +89,8 @@ private:
   /// Sphere origin
   osg::Vec3d _sphereOrigin;
 
-  osg::ref_ptr<OpenFrames::WindowProxy> _windowProxy;
+  RenderThread *_renderer;
+  OFWindow *_window;
   osg::ref_ptr<OpenFrames::ReferenceFrame> _root;
   osg::ref_ptr<OpenFrames::QWidgetPanel> _hiddenPanel;
   osg::ref_ptr<OpenFrames::Sphere> _sphere;
