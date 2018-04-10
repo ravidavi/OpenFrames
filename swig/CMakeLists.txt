@@ -20,12 +20,12 @@ IF(OF_PYTHON_MODULE)
     ENDIF()
   ENDIF()
 
-  ADD_CUSTOM_TARGET(PyOFInterface SOURCES PyOFInterface.i)
+  ADD_CUSTOM_TARGET(PyOFInterface SOURCES PyOFInterface.i configure_PyOFInterface.cmake.in)
 
   SET(SWIG_MODULE_NAME PyOFInterfaceC)
-  CONFIGURE_FILE(PyOFInterface.i PyOFInterfaceC.i)
+  CONFIGURE_FILE(configure_PyOFInterface.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/configure_PyOFInterfaceC.cmake @ONLY)
   # Work around for Visual Studio where swig header dependencies are not properly detected
-  ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i DEPENDS ${OpenFrames_SOURCE_DIR}/include/OpenFrames/OF_Interface.h)
+  ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_PyOFInterfaceC.cmake DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/PyOFInterface.i ${OpenFrames_SOURCE_DIR}/include/OpenFrames/OF_Interface.h)
   SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i PROPERTY CPLUSPLUS ON)
   # On windows the _WIN64 is autodefined by the compiler cl.exe when using the Win64 toolchain
   IF(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
@@ -42,9 +42,9 @@ IF(OF_PYTHON_MODULE)
 
   IF( OF_FORTRAN_MODULE )
     SET(SWIG_MODULE_NAME PyOFInterfaceIFORT)
-    CONFIGURE_FILE(PyOFInterface.i PyOFInterfaceIFORT.i)
+    CONFIGURE_FILE(configure_PyOFInterface.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/configure_PyOFInterfaceIFORT.cmake @ONLY)
     # Work around for Visual Studio where swig header dependencies are not properly detected
-    ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i DEPENDS ${OpenFrames_SOURCE_DIR}/include/OpenFrames/OF_Interface.h)
+    ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_PyOFInterfaceIFORT.cmake DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/PyOFInterface.i ${OpenFrames_SOURCE_DIR}/include/OpenFrames/OF_Interface.h)
     SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i PROPERTY CPLUSPLUS ON)
     # On windows the _WIN64 is autodefined by the compiler cl.exe when using the Win64 toolchain
     IF(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
