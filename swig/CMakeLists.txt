@@ -21,10 +21,11 @@ IF(OF_PYTHON_MODULE)
   ENDIF()
 
   ADD_CUSTOM_TARGET(PyOFInterface SOURCES PyOFInterface.i)
-  #SOURCE_GROUP("" PyOFInterface.i)
 
   SET(SWIG_MODULE_NAME PyOFInterfaceC)
   CONFIGURE_FILE(PyOFInterface.i PyOFInterfaceC.i)
+  # Work around for Visual Studio where swig header dependencies are not properly detected
+  ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i DEPENDS ${OpenFrames_SOURCE_DIR}/include/OpenFrames/OF_Interface.h)
   SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i PROPERTY CPLUSPLUS ON)
   # On windows the _WIN64 is autodefined by the compiler cl.exe when using the Win64 toolchain
   IF(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
@@ -37,11 +38,13 @@ IF(OF_PYTHON_MODULE)
   # define Python bindings target
   SWIG_ADD_LIBRARY(PyOFInterfaceC LANGUAGE python SOURCES ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i)
   SWIG_LINK_LIBRARIES(PyOFInterfaceC ${PYTHON_LIBRARY} OpenFrames_Interface_C)
-  SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOFInterfaceC_REAL_NAME} PROPERTIES DEBUG_POSTFIX  "")
+  SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOFInterfaceC_REAL_NAME} PROPERTIES DEBUG_POSTFIX "")
 
   IF( OF_FORTRAN_MODULE )
     SET(SWIG_MODULE_NAME PyOFInterfaceIFORT)
     CONFIGURE_FILE(PyOFInterface.i PyOFInterfaceIFORT.i)
+    # Work around for Visual Studio where swig header dependencies are not properly detected
+    ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i DEPENDS ${OpenFrames_SOURCE_DIR}/include/OpenFrames/OF_Interface.h)
     SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i PROPERTY CPLUSPLUS ON)
     # On windows the _WIN64 is autodefined by the compiler cl.exe when using the Win64 toolchain
     IF(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
@@ -54,7 +57,7 @@ IF(OF_PYTHON_MODULE)
     # define Python bindings target
     SWIG_ADD_LIBRARY(PyOFInterfaceIFORT LANGUAGE python SOURCES ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i)
     SWIG_LINK_LIBRARIES(PyOFInterfaceIFORT ${PYTHON_LIBRARY} OpenFrames_Interface_IFORT)
-	SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOFInterfaceIFORT_REAL_NAME} PROPERTIES DEBUG_POSTFIX  "")
+    SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOFInterfaceIFORT_REAL_NAME} PROPERTIES DEBUG_POSTFIX  "")
   ENDIF( OF_FORTRAN_MODULE )
 
   # Set RPATH to find shared libraries in default locations on Mac/Linux
