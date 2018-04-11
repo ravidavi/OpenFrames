@@ -327,20 +327,25 @@ namespace OpenFrames
 
     QPoint pos(_previousQtMouseX, _previousQtMouseY);
 
-    QWidget* targetWidget = getWidgetAt(pos);
-    OSG_INFO << "Get " << (targetWidget ? targetWidget->metaObject()->className() : std::string("NULL"))
-      << " at global pos " << x << ", " << y << std::endl;
-
-    for (auto widget = _ignoredWidgets.begin(); widget < _ignoredWidgets.end(); widget++)
+    QWidget* targetWidget = nullptr;
+    bool checkIgnored = _ignoredWidgets.size() > 0;
+    if (checkIgnored)
     {
-      if (*widget == targetWidget)
-      {
-        // Mouse is at background widget, so ignore such events
-        return false;
-      }
+       targetWidget = getWidgetAt(pos);
+       OSG_INFO << "Get " << (targetWidget ? targetWidget->metaObject()->className() : std::string("NULL"))
+         << " at global pos " << x << ", " << y << std::endl;
+
+       for (auto widget = _ignoredWidgets.begin(); widget < _ignoredWidgets.end(); widget++)
+       {
+         if (*widget == targetWidget)
+         {
+           // Mouse is at background widget, so ignore such events
+           return false;
+         }
+       }
     }
 
-    if (targetWidget != NULL || (_previousSentEvent && buttonMask != 0))
+    if (!checkIgnored || ( targetWidget != nullptr || (_previousSentEvent && buttonMask != 0) ))
     {
       QCoreApplication::postEvent(this, new MyQPointerEvent(x, y, buttonMask));
       OSG_INFO << "sendPointerEvent(" << x << ", " << y << ") sent" << std::endl;
@@ -434,17 +439,22 @@ namespace OpenFrames
   bool QGraphicsViewAdapter::sendKeyEvent(int key, bool keyDown)
   {
     QPoint pos(_previousQtMouseX, _previousQtMouseY);
-    QWidget* targetWidget = getWidgetAt(pos);
-    for (auto widget = _ignoredWidgets.begin(); widget < _ignoredWidgets.end(); widget++)
+    QWidget* targetWidget = nullptr;
+    bool checkIgnored = _ignoredWidgets.size() > 0;
+    if (checkIgnored)
     {
-      if (*widget == targetWidget)
+       targetWidget = getWidgetAt(pos);
+       for (auto widget = _ignoredWidgets.begin(); widget < _ignoredWidgets.end(); widget++)
        {
-         // Mouse is at background widget, so ignore such events
-         return false;
+         if (*widget == targetWidget)
+          {
+            // Mouse is at background widget, so ignore such events
+            return false;
+          }
        }
     }
 
-    if (targetWidget != NULL)
+    if (!checkIgnored || targetWidget != nullptr)
     {
       QCoreApplication::postEvent(this, new MyQKeyEvent(key, keyDown));
       return true;

@@ -226,7 +226,7 @@ OFControls::OFControls(bool useVR)
   // If Qt's autocomputed preferred size is poor, then you can override it
   //editorParentWidget->setMinimumSize(QSize(400, 300));
   editorPanel->setWidget(editorParentWidget);
-  editorPanel->setIgnoreWidget(editorParentWidget, true);
+  //editorPanel->setIgnoreWidget(editorParentWidget, true); // Causes GUI calls on render thread
   if (useVR)
   {
     OpenFrames::OpenVRImageHandler* ih = new OpenFrames::OpenVRImageHandler(_renderer->winproxy()->getOpenVRDevice(), editorPanel->getImage());
@@ -243,7 +243,7 @@ OFControls::OFControls(bool useVR)
   _showCheckBox->setChecked(true);
   QCheckBox *moveSphereCheckBox = sphereOptionsWidget->findChild<QCheckBox*>("moveSphereUI");
   sphereOptionsPanel->setWidget(sphereOptionsWidget);
-  sphereOptionsPanel->setIgnoreWidget(sphereOptionsWidget, true);
+  //sphereOptionsPanel->setIgnoreWidget(sphereOptionsWidget, true); // Causes GUI calls on render thread
   if (useVR)
   {
     OpenFrames::OpenVRImageHandler* ih = new OpenFrames::OpenVRImageHandler(_renderer->winproxy()->getOpenVRDevice(), sphereOptionsPanel->getImage());
@@ -291,7 +291,7 @@ OFControls::OFControls(bool useVR)
   QSlider *ySlider = moveSphereWidget->findChild<QSlider*>("ySliderUI");
   QSlider *zSlider = moveSphereWidget->findChild<QSlider*>("zSliderUI");
   _hiddenPanel->setWidget(moveSphereWidget);
-  _hiddenPanel->setIgnoreWidget(moveSphereWidget, true);
+  //_hiddenPanel->setIgnoreWidget(moveSphereWidget, true); // Causes GUI calls on render thread
   if (useVR)
   {
     OpenFrames::OpenVRImageHandler* ih = new OpenFrames::OpenVRImageHandler(_renderer->winproxy()->getOpenVRDevice(), _hiddenPanel->getImage());
