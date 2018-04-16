@@ -78,7 +78,6 @@ namespace OpenFrames
     _previousQtMouseX(-1),
     _previousQtMouseY(-1),
     _previousSentEvent(false),
-    _requiresRendering(false),
     _qtKeyModifiers(Qt::NoModifier),
     _backgroundColor(255, 255, 255),
     _widget(widget)
@@ -127,14 +126,12 @@ namespace OpenFrames
   void QGraphicsViewAdapter::repaintRequestedSlot(const QList<QRectF>&)
   {
     //OSG_NOTICE<<"QGraphicsViewAdapter::repaintRequestedSlot"<<std::endl;
-    _requiresRendering = true;
     render();
   }
 
   void QGraphicsViewAdapter::repaintRequestedSlot(const QRectF&)
   {
     //OSG_NOTICE<<"QGraphicsViewAdapter::repaintRequestedSlot"<<std::endl;
-    _requiresRendering = true;
     render();
   }
 
@@ -545,7 +542,6 @@ namespace OpenFrames
   {
     OSG_INFO << "Current write = " << _currentWrite << std::endl;
     QImage& image = _qimages[_currentWrite];
-    _requiresRendering = false;
 
     // If we got a resize, act on it, first by resizing the view, then the current image
 
@@ -640,10 +636,7 @@ namespace OpenFrames
 
   void QWidgetImage::render()
   {
-    if (_adapter->requiresRendering())
-    {
-      _adapter->render();
-    }
+    // Rendering is done on the Main (Qt GUI) thread
   }
 
   void QWidgetImage::scaleImage(int s, int t, int /*r*/, GLenum /*newDataType*/)

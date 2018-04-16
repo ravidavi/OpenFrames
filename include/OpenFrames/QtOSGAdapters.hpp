@@ -51,7 +51,6 @@ namespace OpenFrames
 
       void setFrameLastRendered(const osg::FrameStamp* frameStamp);
       void clearWriteBuffer();
-      bool requiresRendering() const { return _requiresRendering; }
       void render();
       void assignImage(unsigned int i);
 
@@ -81,7 +80,6 @@ namespace OpenFrames
       int                             _previousQtMouseX;
       int                             _previousQtMouseY;
       bool                            _previousSentEvent;
-      bool                            _requiresRendering;
 
       int _width;
       int _height;
