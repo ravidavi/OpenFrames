@@ -135,6 +135,8 @@ namespace OpenFrames
   // ea is the event, and aa is the osgViewer::View in which the event occured
   bool WindowEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
   {
+    bool handled = false;
+    
     // Check for different event types
     switch(ea.getEventType())
     {
@@ -211,23 +213,21 @@ namespace OpenFrames
         if(key == 'v')
         {
           _window->getGridPosition(_currentRow, _currentCol)->nextView();
+          handled = true;
         }
         
         // 'V' switches to previous view
         else if(key == 'V')
         {
           _window->getGridPosition(_currentRow, _currentCol)->previousView();
-        }
-        
-        else if(key == 's')
-        {
-          std::cout<< "Framerate: " << _window->getDesiredFramerate() << "fps desired, " << _window->getFramerate() << "fps actual" << std::endl;
+          handled = true;
         }
         
         // Spacebar resets current view
         else if (key == osgGA::GUIEventAdapter::KEY_Space)
         {
           _window->getGridPosition(_currentRow, _currentCol)->getCurrentView()->resetTrackball();
+          handled = true;
         }
 
         // Scale world if VR is used
@@ -238,6 +238,7 @@ namespace OpenFrames
             float scale = _window->getWorldUnitsPerMeter();
             scale /= 2.0; // Make world bigger
             _window->setWorldUnitsPerMeter(scale);
+            handled = true;
           }
         }
 
@@ -248,6 +249,7 @@ namespace OpenFrames
             float scale = _window->getWorldUnitsPerMeter();
             scale *= 2.0; // Make world smaller
             _window->setWorldUnitsPerMeter(scale);
+            handled = true;
           }
         }
         
@@ -255,7 +257,6 @@ namespace OpenFrames
         unsigned int id = _window->getID();
         if(_keyPressCallback) _keyPressCallback(&id, &_currentRow, &_currentCol, &key);
         
-        return true; // Indicate that we've handled the event
         break;
       }
         
@@ -303,7 +304,7 @@ namespace OpenFrames
         break;
     }
     
-    return false;  // Indicate that the event still needs further processing
+    return handled;
   }
   
   void WindowEventHandler::windowModified()

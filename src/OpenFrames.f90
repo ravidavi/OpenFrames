@@ -337,6 +337,17 @@
 	REAL, INTENT(IN) :: x, y
 	END SUBROUTINE
 
+  SUBROUTINE ofwin_setwindowcapturefile(row, col, fname, fext)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setwindowcapturefile
+  INTEGER, INTENT(IN) :: row, col
+  CHARACTER(LEN=*), INTENT(IN) :: fname, fext
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_capturewindow(row, col)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_capturewindow
+  INTEGER, INTENT(IN) :: row, col
+  END SUBROUTINE
+
 ! FrameManager functions
 
 	SUBROUTINE offm_activate(id)

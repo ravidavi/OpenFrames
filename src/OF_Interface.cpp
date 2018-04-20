@@ -1386,6 +1386,73 @@ void OF_FCN(ofwin_selectview)(unsigned int *row, unsigned int *col)
     }
 }
 
+/**
+* \brief Set the file name and type that will be used for window captures
+*
+* This applies to a particular grid location of the currently active WindowProxy.
+*
+* \param row Grid row
+* \param col Grid column
+**/
+#if defined(IFORT_CALLS)
+OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(unsigned int *row, unsigned int *col,
+                                                  const char *fname,
+                                                  const char *fext,
+                                                  unsigned int fnamelen,
+                                                  unsigned int fextlen)
+#else
+OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(unsigned int *row, unsigned int *col,
+                                                  OF_CHARARG(fname),
+                                                  OF_CHARARG(fext))
+#endif
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if(rr)
+    {
+      // Convert given character string and length to a proper C string
+      std::string fnamestr(OF_STRING(fname));
+      std::string fextstr(OF_STRING(fext));
+      rr->setWindowCaptureFile(fname, fext);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
+/**
+* \brief Capture the next rendered frame
+*
+* This applies to a particular grid location of the currently active WindowProxy.
+*
+* \param row Grid row
+* \param col Grid column
+**/
+OF_EXPORT void OF_FCN(ofwin_capturewindow)(unsigned int *row, unsigned int *col)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if(rr)
+    {
+      rr->captureWindow();
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
 /*******************************************
 	FrameManager Functions
 *******************************************/
