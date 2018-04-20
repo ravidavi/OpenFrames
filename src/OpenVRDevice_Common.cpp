@@ -491,6 +491,9 @@ namespace OpenFrames{
   {
     // Save data for parent trackball
     FollowingTrackball::saveTrackballData();
+    
+    // Save room pose
+    _savedRoomPose = _roomPose;
 
     // Save WorldUnits/Meter ratio
     _savedWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
@@ -501,6 +504,9 @@ namespace OpenFrames{
   {
     // Restore data for parent trackball
     FollowingTrackball::restoreTrackballData();
+    
+    // Restore room pose
+    _roomPose = _savedRoomPose;
 
     // Restore WorldUnits/Meter ratio
     _ovrDevice->setWorldUnitsPerMeter(_savedWorldUnitsPerMeter);

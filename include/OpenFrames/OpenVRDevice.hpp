@@ -359,7 +359,7 @@ namespace OpenFrames {
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
     
     // Transformation from room space to trackball space
-    osg::Matrixd _roomPose;
+    osg::Matrixd _roomPose, _savedRoomPose;
 
     // Last saved WorldUnits/Meter ratio
     double _savedWorldUnitsPerMeter;
