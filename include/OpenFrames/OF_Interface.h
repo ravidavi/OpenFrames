@@ -196,9 +196,9 @@ OF_EXPORT void OF_FCN(ofwin_selectview)(unsigned int *row, unsigned int *col);
   
 // Window capture functions
 // Intel Fortran passes string lengths after all arguments
+OF_EXPORT void OF_FCN(ofwin_capturewindow)();
 #if defined(IFORT_CALLS)
-OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(unsigned int *row, unsigned int *col,
-                                                  const char *fname,
+OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(const char *fname,
                                                   const char *fext,
                                                   unsigned int fnamelen,
                                                   unsigned int fextlen);
@@ -207,11 +207,10 @@ OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(unsigned int *row, unsigned in
 // C doesn't need string lengths
 // Both these cases are handled by the OF_CHARARG() macro
 #else
-OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(unsigned int *row, unsigned int *col,
-                                                  OF_CHARARG(fname),
+OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(OF_CHARARG(fname),
                                                   OF_CHARARG(fext));
 #endif
-OF_EXPORT void OF_FCN(ofwin_capturewindow)(unsigned int *row, unsigned int *col);
+OF_EXPORT void OF_FCN(ofwin_setwindowcapturekey)(int *key);
   
 /******************************************************************
 	FrameManger Functions

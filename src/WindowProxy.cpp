@@ -486,6 +486,9 @@ namespace OpenFrames
     _viewer = new osgViewer::CompositeViewer;
     _embeddedGraphics = new EmbeddedGraphics(x, y, width, height, this);
     _eventHandler = new WindowEventHandler(this);
+    _statsHandler = new osgViewer::StatsHandler;
+    _screenCaptureHandler = new osgViewer::ScreenCaptureHandler;
+    _screenCaptureHandler->setKeyEventToggleContinuousCapture(0); // Disable continuous capture
     
     setWindowName("OpenFrames Window");
     
@@ -880,6 +883,12 @@ namespace OpenFrames
       
       // Set the event handler for this RenderRectangle
       currView->addEventHandler(_eventHandler.get());
+
+      // Add the stats handler to this RenderRectangle
+      currView->addEventHandler(_statsHandler);
+      
+      // Add the screen capture handler to this RenderRectangle
+      currView->addEventHandler(_screenCaptureHandler);
       
       // Add the RenderRectangle's camera to the viewer
       _viewer->addView(currView);
@@ -1069,6 +1078,19 @@ namespace OpenFrames
         std::cout<< "\tRenderRectangle " << i << " has FrameManager " << fm << std::endl;
       }
     }
+  }
+  
+  /** Take a screenshot of this window */
+  void WindowProxy::captureWindow()
+  {
+    _screenCaptureHandler->setFramesToCapture(1);
+    _screenCaptureHandler->startCapture();
+  }
+  
+  /** Set the window capture filename and type */
+  void WindowProxy::setWindowCaptureFile(const std::string& fname, const std::string& fext)
+  {
+    _screenCaptureHandler->setCaptureOperation(new osgViewer::ScreenCaptureHandler::WriteToFile(fname, fext));
   }
   
 }

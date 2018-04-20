@@ -354,6 +354,19 @@ namespace OpenFrames
     
     /** Print info about this window to std::cout. */
     void printInfo();
+
+    /** Capture a screenshot of this window. */
+    void captureWindow();
+
+    /** Set the screenshot filename and image type.
+        The filename will be sequentially numbered with each successive screenshot. 
+        Image types can be anything supported by OSG: jpg, png, bmp, tiff, etc. */
+    void setWindowCaptureFile(const std::string& fname, const std::string& fext);
+    
+    /** Set the key that triggers a screenshot.
+        Set key to 0 (zero) to disable keypress-based screenshots */
+    void setWindowCaptureKey(int key)
+    { _screenCaptureHandler->setKeyEventTakeScreenShot(key); }
     
   protected:
     virtual ~WindowProxy();
@@ -386,6 +399,12 @@ namespace OpenFrames
     
     /** The WindowEventHandler handles user events that occur in the window */
     osg::ref_ptr<WindowEventHandler> _eventHandler;
+    
+    /** The StatsHandler displays fps and other rendering statistics */
+    osg::ref_ptr<osgViewer::StatsHandler> _statsHandler;
+    
+    /** The ScreenCaptureHandler takes a screenshot of this window */
+    osg::ref_ptr<osgViewer::ScreenCaptureHandler> _screenCaptureHandler;
     
     FramerateLimiter _frameThrottle; // Controls animation framerate
     

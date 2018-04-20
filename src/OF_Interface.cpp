@@ -1389,37 +1389,28 @@ void OF_FCN(ofwin_selectview)(unsigned int *row, unsigned int *col)
 /**
 * \brief Set the file name and type that will be used for window captures
 *
-* This applies to a particular grid location of the currently active WindowProxy.
+* This applies to the currently active WindowProxy.
 *
-* \param row Grid row
-* \param col Grid column
+* \param fname File name (without extension)
+* \param fext  File extension (determines image type)
 **/
 #if defined(IFORT_CALLS)
-OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(unsigned int *row, unsigned int *col,
-                                                  const char *fname,
+OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(const char *fname,
                                                   const char *fext,
                                                   unsigned int fnamelen,
                                                   unsigned int fextlen)
 #else
-OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(unsigned int *row, unsigned int *col,
-                                                  OF_CHARARG(fname),
+OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(OF_CHARARG(fname),
                                                   OF_CHARARG(fext))
 #endif
 {
   if(_objs->_currWinProxy)
   {
-    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
-    if(rr)
-    {
-      // Convert given character string and length to a proper C string
-      std::string fnamestr(OF_STRING(fname));
-      std::string fextstr(OF_STRING(fext));
-      rr->setWindowCaptureFile(fname, fext);
-      _objs->_intVal = 0;
-    }
-    else {
-      _objs->_intVal = 1;
-    }
+    // Convert given character string and length to a proper C string
+    std::string fnamestr(OF_STRING(fname));
+    std::string fextstr(OF_STRING(fext));
+    _objs->_currWinProxy->setWindowCaptureFile(fname, fext);
+    _objs->_intVal = 0;
   }
   else {
     _objs->_intVal = -2;
@@ -1429,30 +1420,39 @@ OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(unsigned int *row, unsigned in
 /**
 * \brief Capture the next rendered frame
 *
-* This applies to a particular grid location of the currently active WindowProxy.
-*
-* \param row Grid row
-* \param col Grid column
+* This applies to the currently active WindowProxy.
 **/
-OF_EXPORT void OF_FCN(ofwin_capturewindow)(unsigned int *row, unsigned int *col)
+OF_EXPORT void OF_FCN(ofwin_capturewindow)()
 {
   if(_objs->_currWinProxy)
   {
-    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
-    if(rr)
-    {
-      rr->captureWindow();
-      _objs->_intVal = 0;
-    }
-    else {
-      _objs->_intVal = 1;
-    }
+    _objs->_currWinProxy->captureWindow();
+    _objs->_intVal = 0;
   }
   else {
     _objs->_intVal = -2;
   }
 }
 
+/**
+* \brief Set the key that activates a window capture
+*
+* This applies to the currently active WindowProxy.
+*
+* \param key Integer representation of key char. Set to 0 (zero) to disable key-based window capture.
+**/
+OF_EXPORT void OF_FCN(ofwin_setwindowcapturekey)(int *key)
+{
+  if(_objs->_currWinProxy)
+  {
+    _objs->_currWinProxy->setWindowCaptureKey(*key);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
 /*******************************************
 	FrameManager Functions
 *******************************************/

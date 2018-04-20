@@ -337,15 +337,18 @@
 	REAL, INTENT(IN) :: x, y
 	END SUBROUTINE
 
-  SUBROUTINE ofwin_setwindowcapturefile(row, col, fname, fext)
+  SUBROUTINE ofwin_capturewindow()
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_capturewindow
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_setwindowcapturefile(fname, fext)
   !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setwindowcapturefile
-  INTEGER, INTENT(IN) :: row, col
   CHARACTER(LEN=*), INTENT(IN) :: fname, fext
   END SUBROUTINE
 
-  SUBROUTINE ofwin_capturewindow(row, col)
-  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_capturewindow
-  INTEGER, INTENT(IN) :: row, col
+  SUBROUTINE ofwin_setwindowcapturekey(key)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setwindowcapturekey
+  INTEGER, INTENT(IN) :: key
   END SUBROUTINE
 
 ! FrameManager functions

@@ -109,11 +109,6 @@ namespace OpenFrames
     /** Apply the current View's projection matrix to the SceneView. */
     void applyCurrentViewProjection();
     
-    /** Capture a screenshot of this RenderRectangle's window with the given filename.
-        The filename will be sequentially numbered with each successive screenshot. */
-    void setWindowCaptureFile(const std::string& fname, const std::string& fext);
-    void captureWindow();
-    
     /** Enable VR mode. Currently it cannot be disabled after being enabled. */
     //void enableVR();
     
@@ -156,9 +151,6 @@ namespace OpenFrames
     
     // Manager for access to the ReferenceFrame scene
     osg::ref_ptr<FrameManager> _frameManager;
-    
-    osg::ref_ptr<osgViewer::StatsHandler> _statsHandler;
-    osg::ref_ptr<osgViewer::ScreenCaptureHandler> _screenCaptureHandler;
   };
   
 }

@@ -119,14 +119,6 @@ namespace OpenFrames
     // Add an event generating device to the View to check for OpenVR events
     if (_useVR)
       _sceneView->addDevice(new OpenVREventDevice(_ovrDevice.get()));
-    
-    // Install handler to show statistics (fps, render timing, etc.)
-    _statsHandler = new osgViewer::StatsHandler;
-    _sceneView->addEventHandler(_statsHandler);
-    
-    // Install handler to perform screen capture
-    _screenCaptureHandler = new osgViewer::ScreenCaptureHandler;
-    _sceneView->addEventHandler(_screenCaptureHandler);
 
     // Initialize parameters
     _init();
@@ -637,17 +629,6 @@ namespace OpenFrames
     // Apply the projection matrix
     _sceneView->getCamera()->setProjectionMatrix(view->getProjectionMatrix());
     _depthPartitioner->getDPCamera()->setProjectionMatrix(view->getProjectionMatrix());
-  }
-
-  void RenderRectangle::setWindowCaptureFile(const std::string& fname, const std::string& fext)
-  {
-    _screenCaptureHandler->setCaptureOperation(new osgViewer::ScreenCaptureHandler::WriteToFile(fname, fext));
-  }
-
-  void RenderRectangle::captureWindow()
-  {
-    _screenCaptureHandler->setFramesToCapture(1);
-    _screenCaptureHandler->startCapture();
   }
   
 }
