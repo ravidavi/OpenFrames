@@ -140,12 +140,18 @@ namespace OpenFrames
     FollowingTrackball* getTrackball() const { return _trackball.get(); }
     void setTrackball(FollowingTrackball *trackball);
     
-    /** Reset the Trackball's home position to the default. */
-    void resetTrackball();
+    /** Reset the View's home position to the default. 
+        NOTE: This overrides any previously saved view. */
+    void resetView();
     
-    /** Save the current trackball view as the home view */
-    void saveTrackball();
-    void restoreTrackball();
+    /** Save the current view as the home view 
+        NOTE: This is used by RenderRectangle to save/restore a View when switching
+        Views, so it is not safe for end users. Instead, end users should directly
+        call the trackball's get/setTransformation functions (inherited from
+        osgGA::StandardManipulator) and and OpenVRTrackball's get/setRoomToTrackballMatrix
+        functions with custom view parameters. */
+    void saveView();
+    void restoreView();
     
     /** Set the frame to be viewed and the root frame that it should be
 	    viewed with respect to. Generally the root frame should be
@@ -213,10 +219,6 @@ namespace OpenFrames
     // Set the frame transform sources
     void setTransformSources(TransformAccumulator *xform, TransformAccumulator *xform_lookat, View::ViewFrameType frameType, View::ViewRotationType rotationType);
 
-    // Save and restore trackball data
-    virtual void saveTrackballData();
-    virtual void restoreTrackballData() {};
-
     // Inherited from TrackballManipulator
     virtual osg::Matrixd getMatrix() const; // Get local to world matrix
     virtual osg::Matrixd getInverseMatrix() const; // Get world to local matrix
@@ -224,6 +226,12 @@ namespace OpenFrames
 
   protected:
     virtual ~FollowingTrackball();
+    
+    // Save, restore, and reset trackball state
+    friend class View;
+    virtual void saveState();
+    virtual void restoreState();
+    virtual void resetState();
     
     // Compute matrix that incorporates custom view transformations
     void computeWorldToViewMatrix(osg::Matrixd &matrix) const;

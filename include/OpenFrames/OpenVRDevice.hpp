@@ -338,10 +338,6 @@ namespace OpenFrames {
     
     virtual const char* className() const { return "OpenVRTrackball"; }
 
-    // Save and restore VR-related trackball data
-    virtual void saveTrackballData();
-    virtual void restoreTrackballData();
-
     // Inherited from FollowingTrackball
     virtual osg::Matrixd getMatrix() const; // HMD (Center) to World matrix
     virtual osg::Matrixd getInverseMatrix() const; // World to HMD (Center) matrix
@@ -351,6 +347,11 @@ namespace OpenFrames {
     // Room -> ViewFrame: tb->getRoomToTrackballMatrix() * tb->osgGA::TrackballManipulator::getMatrix()
     // Room -> World:     tb->getRoomToTrackballMatrix() * tb->FollowingTrackball::getMatrix()
     const osg::Matrixd& getRoomToTrackballMatrix() const { return _roomPose; }
+    void setRoomToTrackballMatrix(const osg::Matrixd& roomPose) { _roomPose = roomPose; }
+    
+    // Get/set default WorldUnits/Meter ratio
+    double getDefaultWorldUnitsPerMeterRatio() const { return _defaultWorldUnitsPerMeter; }
+    void setDefaultWorldUnitsPerMeterRatio(const double& wum) { _defaultWorldUnitsPerMeter = wum; }
     
     // Handle event
     virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us);
@@ -361,10 +362,15 @@ namespace OpenFrames {
     // Transformation from room space to trackball space
     osg::Matrixd _roomPose, _savedRoomPose;
 
-    // Last saved WorldUnits/Meter ratio
-    double _savedWorldUnitsPerMeter;
+    double _savedWorldUnitsPerMeter;    // Last saved WorldUnits/Meter ratio
+    double _defaultWorldUnitsPerMeter;  // Default WorldUnits/Meter ratio
 
     void processMotion();
+    
+    // Save, restore, and reset VR-related trackball state
+    virtual void saveState();
+    virtual void restoreState();
+    virtual void resetState();
     
     /** Type of user motion currently being handled */
     enum MotionMode

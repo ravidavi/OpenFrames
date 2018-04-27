@@ -110,7 +110,7 @@ namespace OpenFrames
       _ovrDevice->getCenterProjectionMatrix().getPerspective(fovy, ratio, zNear, zFar);
       _defaultView->setTrackball(vrTrackball);
       _defaultView->setPerspective(fovy, ratio);
-      _defaultView->resetTrackball();
+      _defaultView->resetView();
     }
     
     // Enable the view's trackball
@@ -316,13 +316,13 @@ namespace OpenFrames
     if(fm == NULL)
     {
       _defaultView->setViewFrame(NULL, NULL);
-      _defaultView->resetTrackball();
+      _defaultView->resetView();
     }
     else
     {
       _scene->addChild(fm->getData());
       _defaultView->setViewFrame(fm->getFrame(), fm->getFrame());
-      _defaultView->resetTrackball();
+      _defaultView->resetView();
     }
     
     _frameManager = fm; // Set the new FrameManager
@@ -450,7 +450,7 @@ namespace OpenFrames
 
       // Update the View's projection matrix
       updateViewProjection(view);
-      view->resetTrackball();
+      view->resetView();
       
       // Add view to the view list
       _views.push_back(view);
@@ -458,7 +458,7 @@ namespace OpenFrames
       // Added first view, so make sure that it is selected
       if(_views.size() == 1)
       {
-        _defaultView->saveTrackball(); // Save default trackball's data
+        _defaultView->saveView(); // Save default trackball's data
         _currView = 0;
         selectCurrentView();
       }
@@ -477,7 +477,7 @@ namespace OpenFrames
       while(i != _views.end())
       {
         // Save this view's trackball then erase it from the list
-        (*i)->saveTrackball();
+        (*i)->saveView();
         _views.erase(i);
         
         i = std::find(_views.begin(), _views.end(), view); // Find next instance of view
@@ -498,7 +498,7 @@ namespace OpenFrames
     // Save each view's trackball
     for(ViewList::iterator i = _views.begin(); i != _views.end(); ++i)
     {
-      (*i)->saveTrackball();
+      (*i)->saveView();
     }
     
     _views.clear();
@@ -508,7 +508,7 @@ namespace OpenFrames
   void RenderRectangle::nextView()
   {
     // Save the current View's trackball
-    getCurrentView()->saveTrackball();
+    getCurrentView()->saveView();
     
     // Cycle to next View
     if(!_views.empty())
@@ -524,7 +524,7 @@ namespace OpenFrames
   void RenderRectangle::previousView()
   {
     // Save the current View's trackball
-    getCurrentView()->saveTrackball();
+    getCurrentView()->saveView();
     
     // Cycle to previous View
     if(!_views.empty())
@@ -546,7 +546,7 @@ namespace OpenFrames
       if(_views[i] == view)
       {
         // Save the previous View's trackball
-        getCurrentView()->saveTrackball();
+        getCurrentView()->saveView();
         
         _currView = i; // Select the new View
         
@@ -562,7 +562,7 @@ namespace OpenFrames
     if(_views.empty() || (newView >= _views.size())) return;
     
     // Save the previous View's trackball
-    getCurrentView()->saveTrackball();
+    getCurrentView()->saveView();
     
     _currView = newView; // Select the new View
     
@@ -572,7 +572,7 @@ namespace OpenFrames
   
   void RenderRectangle::selectCurrentView()
   {
-    getCurrentView()->restoreTrackball();
+    getCurrentView()->restoreView();
     _sceneView->setCameraManipulator(getCurrentView()->getTrackball());
     applyCurrentViewProjection();
   }

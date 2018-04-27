@@ -478,6 +478,7 @@ namespace OpenFrames{
   : _ovrDevice(ovrDevice)
   {
     _savedWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
+    _defaultWorldUnitsPerMeter = _savedWorldUnitsPerMeter;
 
     // The motion mode defines how controllers change the scene in response
     // to user inputs. Start with no motion.
@@ -487,10 +488,10 @@ namespace OpenFrames{
   }
 
   /*******************************************************/
-  void OpenVRTrackball::saveTrackballData()
+  void OpenVRTrackball::saveState()
   {
-    // Save data for parent trackball
-    FollowingTrackball::saveTrackballData();
+    // Save state for parent trackball
+    FollowingTrackball::saveState();
     
     // Save room pose
     _savedRoomPose = _roomPose;
@@ -500,16 +501,31 @@ namespace OpenFrames{
   }
 
   /*******************************************************/
-  void OpenVRTrackball::restoreTrackballData()
+  void OpenVRTrackball::restoreState()
   {
-    // Restore data for parent trackball
-    FollowingTrackball::restoreTrackballData();
+    // Restore state for parent trackball
+    FollowingTrackball::restoreState();
     
     // Restore room pose
     _roomPose = _savedRoomPose;
 
     // Restore WorldUnits/Meter ratio
     _ovrDevice->setWorldUnitsPerMeter(_savedWorldUnitsPerMeter);
+  }
+  
+  /*******************************************************/
+  void OpenVRTrackball::resetState()
+  {
+    // Reset state for parent trackball
+    FollowingTrackball::resetState();
+    
+    // Reset room pose
+    _roomPose.makeIdentity();
+    _savedRoomPose.makeIdentity();
+    
+    // Restore WorldUnits/Meter ratio
+    _ovrDevice->setWorldUnitsPerMeter(_defaultWorldUnitsPerMeter);
+    _savedWorldUnitsPerMeter = _defaultWorldUnitsPerMeter;
   }
   
   /*******************************************************/

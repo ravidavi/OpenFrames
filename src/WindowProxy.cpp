@@ -226,7 +226,7 @@ namespace OpenFrames
         // Spacebar resets current view
         else if (key == osgGA::GUIEventAdapter::KEY_Space)
         {
-          _window->getGridPosition(_currentRow, _currentCol)->getCurrentView()->resetTrackball();
+          _window->getGridPosition(_currentRow, _currentCol)->getCurrentView()->resetView();
           handled = true;
         }
 

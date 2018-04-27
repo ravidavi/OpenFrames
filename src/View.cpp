@@ -48,16 +48,31 @@ namespace OpenFrames
   }
 
   /*******************************************************/
-  void FollowingTrackball::saveTrackballData()
+  void FollowingTrackball::saveState()
   {
     // Save data for parent trackball (from osgGA)
     osg::Vec3d eye, center, up;
 
     // Get the look vectors for the current view
-    osgGA::TrackballManipulator::getInverseMatrix().getLookAt(eye, center, up, getDistance());
+    getTransformation(eye, center, up);
 
     // Save the current view as the home position
     setHomePosition(eye, center, up);
+  }
+  
+  /*******************************************************/
+  void FollowingTrackball::restoreState()
+  {
+    home(0.0);
+  }
+  
+  /*******************************************************/
+  void FollowingTrackball::resetState()
+  {
+    _homeEye.set(0.0, -1.0, 0.0);
+    _homeCenter.set(0.0, 0.0, 0.0);
+    _homeUp.set(0.0, 0.0, 1.0);
+    home(0.0);
   }
 
   /*******************************************************/
@@ -175,7 +190,7 @@ namespace OpenFrames
   View::View()
   {
     _init();
-    resetTrackball();
+    resetView();
   }
   
   /*******************************************************/
@@ -183,7 +198,7 @@ namespace OpenFrames
   {
     _init();
     setViewFrame(root, viewFrame, frameType);
-    resetTrackball();
+    resetView();
   }
   
   /*******************************************************/
@@ -191,7 +206,7 @@ namespace OpenFrames
   {
     _init();
     setViewBetweenFrames(root, viewFrame, lookatFrame, frameType, rotationType);
-    resetTrackball();
+    resetView();
   }
   
   /*******************************************************/
@@ -235,8 +250,11 @@ namespace OpenFrames
   
   /*******************************************************/
   /** Reset the trackball to look at the origin frame */
-  void View::resetTrackball()
+  void View::resetView()
   {
+    // First let trackball reset its internal state
+    _trackball->resetState();
+    
     // Get the bounding sphere of the frame we're looking at.
     osg::BoundingSphere bs;
     if(_xform->isValid())
@@ -251,11 +269,12 @@ namespace OpenFrames
     if (_projType == PERSPECTIVE)
     {
       double fovy, ratio;
-      getPerspective(fovy, ratio); // Get projection vertical field of view and width/height aspect ratio
-      double fovx = fovy*ratio; // Compute projection horizontal field of view
+      getPerspective(fovy, ratio); // Get projection vertical fov and aspect ratio (width/height)
+      fovy = (fovy/2.0) * (osg::PI/180.0); // Trig calculations require radians and half-angle
       
       // Trig time! Compute camera distance such that fov is tangent to bounding sphere
-      dist = bs._radius / std::sin((std::min(fovy, fovx)/2.0)*(osg::PI/180.0));
+      double fovx = std::atan(ratio*std::tan(fovy)); // Compute horizontal fov
+      dist = bs._radius / std::sin(std::min(fovy, fovx));
     }
     
     // Set the trackball's home position
@@ -265,15 +284,15 @@ namespace OpenFrames
   }
   
   /*******************************************************/
-  void View::saveTrackball()
+  void View::saveView()
   {
-    _trackball->saveTrackballData();
+    _trackball->saveState();
   }
 
   /*******************************************************/
-  void View::restoreTrackball()
+  void View::restoreView()
   {
-    _trackball->restoreTrackballData();
+    _trackball->restoreState();
   }
   
   /*******************************************************/

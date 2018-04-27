@@ -4591,7 +4591,7 @@ void OF_FCN(ofview_isvalid)(bool *valid)
 void OF_FCN(ofview_reset)()
 {
 	if (_objs->_currView) {
-      _objs->_currView->resetTrackball();
+      _objs->_currView->resetView();
       _objs->_intVal = 0;
     }
     else {
