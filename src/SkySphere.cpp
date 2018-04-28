@@ -115,6 +115,13 @@ void SkySphere::_init()
   fn->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE);
   ss->setAttributeAndModes(fn);
 
+  // Create the geode that will contain all star bins, and add it directly to
+  // this frame's transform. This allows the stars to be drawn in this reference
+  // frame, while the textured sphere has its own sub-transform (see Sphere::_sphereXform)
+  _starGeode = new osg::Geode;
+  _starGeode->setName(_name + "_StarBins");
+  _xform->addChild(_starGeode);
+  
   // Create star bins (osg::Geometries) that will hold sets of stars
   for(unsigned int i = 0; i < _starBinCount; ++i)
   {
@@ -128,7 +135,7 @@ void SkySphere::_init()
     osg::Vec4Array *colors = new osg::Vec4Array;
     colors->setBinding(osg::Array::BIND_PER_VERTEX);
     _starBinGeoms[i]->setColorArray(colors);
-    _geode->addDrawable(_starBinGeoms[i]);
+    _starGeode->addDrawable(_starBinGeoms[i]);
   }
 
   // By default draw both texture and starfield
@@ -137,35 +144,30 @@ void SkySphere::_init()
 
 void SkySphere::setDrawMode(unsigned int drawMode)
 {
-  // Enable/disable drawable containing textured sphere
+  // Enable/disable transform containing textured sphere
   osg::Node::NodeMask sphereMask;
   if(drawMode & TEXTURE) sphereMask = 0xffffffff;
   else sphereMask = 0x0;
-  _sphereSD->setNodeMask(sphereMask);
+  _geode->setNodeMask(sphereMask);
 
-  // Enable/disable drawable containing starfield
+  // Enable/disable geode containing starfield
   osg::Node::NodeMask starMask;
   if(drawMode & STARFIELD) starMask = 0xffffffff;
   else starMask = 0x0;
-  for(int i = 0; i < _starBinGeoms.size(); ++i)
-  {
-    _starBinGeoms[i]->setNodeMask(starMask);
-  }
+  _starGeode->setNodeMask(starMask);
 }
 
 unsigned int SkySphere::getDrawMode()
 {
   // Check if textured Sphere is drawn
-  unsigned int useTexture = _sphereSD->getNodeMask() & TEXTURE;
+  unsigned int useTexture = _geode->getNodeMask() & TEXTURE;
 
   // Check if starfield is drawn
-  // We can just check the first bin since all of them have the same mask
-  unsigned int useStarfield = _starBinGeoms[0]->getNodeMask() & STARFIELD;
+  unsigned int useStarfield = _starGeode->getNodeMask() & STARFIELD;
 
   // Return draw mode
   return (useTexture + useStarfield);
 }
-
 
 bool SkySphere::setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int maxNumStars,
                             float minPixSize, float maxPixSize, float minDimRatio)

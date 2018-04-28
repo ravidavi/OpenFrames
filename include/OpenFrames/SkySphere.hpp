@@ -104,6 +104,7 @@ class OF_EXPORT SkySphere : public OpenFrames::Sphere {
     // Star bins containing each set of stars
     typedef std::array<osg::ref_ptr<osg::Geometry>, _starBinCount> StarBins;
     StarBins _starBinGeoms;
+    osg::ref_ptr<osg::Geode> _starGeode; // Contains all StarBins
 
   private:
     void _init();
