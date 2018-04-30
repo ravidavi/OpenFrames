@@ -107,7 +107,28 @@ int main()
   
   // Add the scene to the window
   myWindow->setScene(fm, 0, 0);
+  
+  // Set up sky background using the Gaia DR2 galactic disk texture and HYGv3 star database
   myWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0); // Black background
+  myWindow->getGridPosition(0, 0)->setSkySphereTexture("Images/ESA_Gaia_DR2_2048.jpg");
+  myWindow->getGridPosition(0, 0)->setSkySphereStarData("Stars/Stars_HYGv3.txt", -2.0, 6.0, 40000); // At most 40000 stars of magnitude range [-2.0, 6.0] from the HYGv3 database
+  
+  // The Gaia image is in Galactic coordinates, so transform it to J2000 Equatorial coordinates
+  // to match the HYGv3 coordinate system
+  // Matrix that transforms ICRS (J2000 Equatorial) to Galactic coordinates
+  // Source: https://gea.esac.esa.int/archive/documentation/GDR1/Data_processing/chap_cu3ast/sec_cu3ast_intro.html
+  osg::Matrixd eq_to_gal_mat(-0.0548755604162154, +0.4941094278755837, -0.8676661490190047, 0.0,
+                             -0.8734370902348850, -0.4448296299600112, -0.1980763734312015, 0.0,
+                             -0.4838350155487132, +0.7469822444972189, +0.4559837761750669, 0.0,
+                             0.0                , 0.0                , 0.0                , 1.0);
+  osg::Quat eq_to_gal = eq_to_gal_mat.getRotate();
+  
+  // Quaternion that transforms Galactic to J2000 Equatorial coordinates
+  osg::Quat gal_to_eq = eq_to_gal.inverse();
+
+  // Gaia image is offset by 180 degrees as compared to the OpenFrames::Sphere texture wrapping
+  // convention, so rotate it by 180 degrees before performing the Galatic->J2000 transformation
+  myWindow->getGridPosition(0, 0)->getSkySphere()->setSphereAttitude(osg::Quat(osg::PI, osg::Vec3d(0, 0, 1))*gal_to_eq);
   
   // Create views of the Earth and Moon
   View *viewEarth = new View(root, earth);
