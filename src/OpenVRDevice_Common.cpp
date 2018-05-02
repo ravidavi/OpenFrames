@@ -219,22 +219,30 @@ namespace OpenFrames{
   struct LaserUpdateCallback : public osg::Callback
   {
     LaserUpdateCallback(OpenVRDevice::LaserModel* laser)
-      : _laser(laser)
+      : _laser(laser), _doDelayedHide(false)
     {}
 
     virtual bool run(osg::Object* object, osg::Object* data)
     {
       // Restore laser to default if enough time has passed since it was last updated
-      osg::Timer_t lastUpdateTime = _laser->getUpdateTime();
-      osg::Timer_t currTime = osg::Timer::instance()->tick();
+      const osg::Timer_t& lastUpdateTime = _laser->getUpdateTime();
+      const osg::Timer_t& currTime = osg::Timer::instance()->tick();
       double dt = osg::Timer::instance()->delta_s(lastUpdateTime, currTime);
       if (dt > 0.1) _laser->restoreDefaults();
+      
+      // Hide laser if it is unchanged for enough time
+      if(_doDelayedHide && (dt >= _laser->getLaserHideDelay()))
+      {
+        _laser->getTransform()->setNodeMask(0x0);
+        _doDelayedHide = false;
+      }
 
       // Continue with other callbacks
       return osg::Callback::traverse(object, data);
     }
 
     osg::observer_ptr<OpenVRDevice::LaserModel> _laser;
+    bool _doDelayedHide;
   };
 
   /*************************************************************/
@@ -275,6 +283,23 @@ namespace OpenFrames{
 
   OpenVRDevice::LaserModel::~LaserModel() {}
 
+  /*************************************************************/
+  void OpenVRDevice::LaserModel::showLaser(bool show)
+  {
+    LaserUpdateCallback* luc = static_cast<LaserUpdateCallback*>(_laserTransform->getUpdateCallback());
+
+    if(show) // Immediately show laser
+    {
+      luc->_doDelayedHide = false;
+      _laserTransform->setNodeMask(~0x0);
+      _lastUpdateTime = osg::Timer::instance()->tick();
+    }
+    else // Hide laser after idle delay
+    {
+      luc->_doDelayedHide = true;
+    }
+  }
+  
   /*************************************************************/
   void OpenVRDevice::LaserModel::setColor(const osg::Vec4& color)
   {
@@ -699,7 +724,7 @@ namespace OpenFrames{
       // Get transform from laser space to controller space
       // This may be non-identity for VR controllers whose ideal pointing direction
       // is not parallel to the controller's x/y/z axes (e.g. Oculus Touch)
-      const osg::Matrixd &matLaserToController = device1Model->_laser->getMatrix();
+      const osg::Matrixd &matLaserToController = device1Model->_laser->getTransform()->getMatrix();
 
       // Get transform from controller space to room space
       const osg::Matrixd &matControllerToRoom = device1Model->_rawDeviceToWorld;
@@ -819,7 +844,7 @@ namespace OpenFrames{
     // Get transform from laser space to controller space
     // This may be non-identity for VR controllers whose ideal pointing direction
     // is not parallel to the controller's x/y/z axes (e.g. Oculus Touch)
-    const osg::Matrixd &matLaserToController = deviceModel->_laser->getMatrix();
+    const osg::Matrixd &matLaserToController = deviceModel->_laser->getTransform()->getMatrix();
 
     // Get transform from controller space to room space
     const osg::Matrixd &matControllerToRoom = _ovrDevice->getDeviceModel(_pickData.deviceID)->_rawDeviceToWorld;
@@ -948,7 +973,6 @@ namespace OpenFrames{
     else // Trigger fully pressed: left-click
     {
       _image->sendPointerEvent(x, y, osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON);
-
     }
   }
 

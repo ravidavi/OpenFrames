@@ -97,27 +97,40 @@ namespace OpenFrames {
     public:
       LaserModel();
 
-      osg::MatrixTransform* getTransform() const { return _laserTransform; }
-      const osg::Matrixd& getMatrix() const { return _laserTransform->getMatrix(); }
-
       /// Get Local->World matrix (transforms points in Laser frame to Controller frame)
-      void showLaser(bool show) { show ? _laserTransform->setNodeMask(~0x0) : _laserTransform->setNodeMask(0x0); }
+      osg::MatrixTransform* getTransform() const { return _laserTransform; }
 
+      /// Show/hide the laser
+      /// Note that delay-hiding the laser can be overridden by showing the laser
+      void showLaser(bool show);
+      bool isLaserShown() const { return (_laserTransform->getNodeMask() == ~0x0); }
+      
+      /// Set a delay for hiding the laser, in seconds
+      /// If delay > 0 then any request to hide the laser will be applied only after its
+      /// parameters have not changed for the specified amount of time.
+      /// Disabled if delay <= 0 (laser hides immediately on request)
+      void setLaserHideDelay(const double& delay) { _hideDelay = delay; }
+      double getLaserHideDelay() const { return _hideDelay; }
+
+      /// Laser color
       void setColor(const osg::Vec4& color);
       const osg::Vec4& getColor() const { return _colors->back(); }
       void setDefaultColor(const osg::Vec4& color) { _defaultColor = color; }
       const osg::Vec4& getDefaultColor() const { return _defaultColor; }
 
+      /// Laser length (meters)
       void setLength(const double& length);
       double getLength() const { return -(*_vertices)[1].z(); }
       void setDefaultLength(const double& length) { _defaultLength = (length >= 0.0) ? length : _defaultLength; }
       double getDefaultLength() const { return _defaultLength; }
 
+      /// Laser width (pixels)
       void setWidth(const float& width);
       float getWidth() const { return _lineWidth->getWidth(); }
       void setDefaultWidth(const float& width) { _defaultWidth = (width > 0.0) ? width : _defaultWidth; }
       float getDefaultWidth() const { return _defaultWidth; }
 
+      /// Last time any laser property was updated
       const osg::Timer_t& getUpdateTime() const { return _lastUpdateTime; }
 
       // Set all laser parameters to their defaults
@@ -132,6 +145,7 @@ namespace OpenFrames {
       osg::ref_ptr<osg::Vec3Array> _vertices;
       osg::ref_ptr<osg::Vec4Array> _colors;
       osg::ref_ptr<osg::LineWidth> _lineWidth;
+      double _hideDelay;
       double _defaultLength;
       osg::Vec4 _defaultColor;
       float _defaultWidth;
