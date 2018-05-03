@@ -108,7 +108,8 @@ namespace OpenFrames {
       /// Set a delay for hiding the laser, in seconds
       /// If delay > 0 then any request to hide the laser will be applied only after its
       /// parameters have not changed for the specified amount of time.
-      /// Disabled if delay <= 0 (laser hides immediately on request)
+      /// Laser hides immediately if delay <= 0
+      /// Laser stays on indefinitely if delay = DBL_MAX
       void setLaserHideDelay(const double& delay) { _hideDelay = delay; }
       double getLaserHideDelay() const { return _hideDelay; }
 

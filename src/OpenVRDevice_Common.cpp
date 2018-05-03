@@ -249,6 +249,7 @@ namespace OpenFrames{
   OpenVRDevice::LaserModel::LaserModel()
   {
     // Set laser defaults
+    _hideDelay = 0.0;
     _defaultLength = 10.0;
     _defaultColor = osg::Vec4(1, 1, 1, 1);
     _defaultWidth = 2.0;
@@ -287,12 +288,17 @@ namespace OpenFrames{
   void OpenVRDevice::LaserModel::showLaser(bool show)
   {
     LaserUpdateCallback* luc = static_cast<LaserUpdateCallback*>(_laserTransform->getUpdateCallback());
+    _lastUpdateTime = osg::Timer::instance()->tick();
 
     if(show) // Immediately show laser
     {
       luc->_doDelayedHide = false;
       _laserTransform->setNodeMask(~0x0);
-      _lastUpdateTime = osg::Timer::instance()->tick();
+    }
+    else if (_hideDelay <= 0.0) // Immediately hide laser
+    {
+      luc->_doDelayedHide = false;
+      _laserTransform->setNodeMask(0x0);
     }
     else // Hide laser after idle delay
     {
