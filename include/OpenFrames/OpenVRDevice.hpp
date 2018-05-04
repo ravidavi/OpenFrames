@@ -393,8 +393,7 @@ namespace OpenFrames {
       NONE = 0,
       TRANSLATE,
       ROTATE,
-      SCALE,
-      PICK
+      SCALE
     };
 
     /** Data used when computing world transformations during user events */
@@ -454,6 +453,13 @@ namespace OpenFrames {
     void setSelectedColor(const osg::Vec4& color) { _laserSelectedColor = color; }
     const osg::Vec4& getSelectedColor() const { return _laserSelectedColor; }
 
+    // Set how far the trigger must be pulled to signal a mousedown event, in range [0, 1]
+    void setTriggerThreshold(const float& threshold)
+    {
+      if ((threshold >= 0.0) && (threshold <= 1.0)) _triggerThreshold = threshold;
+    }
+    float getTriggerThreshold() const { return _triggerThreshold; }
+
   protected:
     virtual ~OpenVRImageHandler() {}
 
@@ -492,6 +498,7 @@ namespace OpenFrames {
 
     float _laserSelectedWidth;
     osg::Vec4 _laserSelectedColor;
+    float _triggerThreshold;
   };
   
 } // !namespace OpenFrames

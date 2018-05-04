@@ -725,54 +725,6 @@ namespace OpenFrames{
       break;
     }
 
-    case(PICK) :
-    {
-      // Get transform from laser space to controller space
-      // This may be non-identity for VR controllers whose ideal pointing direction
-      // is not parallel to the controller's x/y/z axes (e.g. Oculus Touch)
-      const osg::Matrixd &matLaserToController = device1Model->_laser->getTransform()->getMatrix();
-
-      // Get transform from controller space to room space
-      const osg::Matrixd &matControllerToRoom = device1Model->_rawDeviceToWorld;
-
-      // Compute full transform from laser to room space
-      osg::Matrixd matLaserToRoom = matLaserToController * matControllerToRoom;
-
-      // Start by getting the controller origin in room space
-      // Note that we need this in world units (not meters) since the ground plane is scaled to world units
-      osg::Vec3d startPoint = matLaserToRoom.getTrans()*_motionData._origWorldUnitsPerMeter;
-
-      // Compute the line segment along the controller's -Z axis in room space
-      osg::Vec3d endPoint = osg::Vec3d(0, 0, -1)*matLaserToRoom*_motionData._origWorldUnitsPerMeter;
-      osg::Vec3d rayDir = endPoint - startPoint;
-
-      // Perform the pick operation on the ground plane, which is already in room-space coordinates
-      //osgUtil::LineSegmentIntersector* intersector = new osgUtil::LineSegmentIntersector(startPoint, endPoint);
-      osgUtil::RayIntersector* intersector = new osgUtil::RayIntersector(startPoint, rayDir);
-      osgUtil::IntersectionVisitor iv(intersector);
-      _ovrDevice->getGroundPlane()->accept(iv);
-      if (intersector->containsIntersections())
-      {
-        auto intersections = intersector->getIntersections();
-        osg::notify(osg::NOTICE) << "Got " << intersections.size() << " intersections:\n";
-        for (auto&& intersection : intersections)
-        {
-          osg::notify(osg::NOTICE) << "  - Local intersection point = " << intersection.localIntersectionPoint << std::endl;
-          osg::Vec3d viewPoint = intersection.getWorldIntersectPoint()*_roomPose*osgGA::TrackballManipulator::getMatrix();
-          osg::notify(osg::NOTICE) << "  - View  intersection point = " << viewPoint << std::endl;
-          osg::Vec3d worldPoint = intersection.getWorldIntersectPoint()*_roomPose*FollowingTrackball::getMatrix();
-          osg::notify(osg::NOTICE) << "  - World intersection point = " << worldPoint << std::endl;
-        }
-      }
-      else
-      {
-        osg::notify(osg::NOTICE) << "No intersections!" << std::endl;
-      }
-
-      _motionData._mode = NONE; // Revert to no motion
-      break;
-    }
-
     default:
       break;
     }
@@ -830,6 +782,7 @@ namespace OpenFrames{
     _pickData.mode = NONE;
     _laserSelectedColor = osg::Vec4(1, 1, 1, 1);
     _laserSelectedWidth = 4.0;
+    _triggerThreshold = 0.99;
   }
 
   /*************************************************************
@@ -972,7 +925,7 @@ namespace OpenFrames{
 
     // Dispatch the appropriate mouse event to the Image based on the trigger state
     float triggerValue = getTriggerValue(deviceModel->_controllerState);
-    if (triggerValue < 0.99) // Trigger partially pressed: mouse move
+    if (triggerValue < _triggerThreshold) // Trigger partially pressed: mouse move
     {
       _image->sendPointerEvent(x, y, 0);
     }

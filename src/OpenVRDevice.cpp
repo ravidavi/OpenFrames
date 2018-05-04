@@ -598,20 +598,6 @@ namespace OpenFrames{
           }
         }
 
-        // If trigger is pressed, then pick a point on the ground grid
-        else if (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
-        {
-          // Go from No Motion -> Pick when a controller's trigger is pressed
-          if (_motionData._mode == NONE)
-          {
-            // Pick using Device 1
-            //_motionData._mode = PICK;
-            _motionData._device1ID = deviceID;
-            _motionData._device2ID = UINT_MAX; // Ignore device 2
-            saveCurrentMotionData();
-          }
-        }
-
         break;
       }
 
