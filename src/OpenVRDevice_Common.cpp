@@ -102,6 +102,7 @@ namespace OpenFrames{
     // include the HMD transform.
     _deviceModels = new osg::MatrixTransform();
     _deviceModels->setCullCallback(new OpenVRDeviceTransformCallback(this));
+    _deviceModels->setEventCallback(new OpenVRDevice::DeviceModelEventCallback(this));
     _deviceModels->setReferenceFrame(osg::Transform::ABSOLUTE_RF); // Override view matrix
     _deviceModels->setName("OpenVR Device Models");
 

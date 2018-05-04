@@ -528,6 +528,54 @@ namespace OpenFrames{
   }
 
   /*************************************************************/
+  bool OpenVRDevice::DeviceModelEventCallback::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa, osg::Object* obj, osg::NodeVisitor* nv)
+  {
+    // Only process OpenVR events
+    const OpenVREvent *event = dynamic_cast<const OpenVREvent*>(&ea);
+    if (event)
+    {
+      // Only process event if it's from a controller
+      const vr::VREvent_t *ovrEvent = event->_ovrEvent;
+      vr::TrackedDeviceIndex_t deviceID = ovrEvent->trackedDeviceIndex;
+      const OpenVRDevice::DeviceModel* deviceModel = _ovrDevice->getDeviceModel(deviceID);
+      if ((deviceModel == nullptr) || (deviceModel->_class != OpenVRDevice::CONTROLLER)) return false;
+
+      // Get controller state
+      const vr::VRControllerState_t *state = deviceModel->_controllerState;
+
+      // Show/hide controller laser if trigger is touched
+      switch (ovrEvent->eventType)
+      {
+      case(vr::VREvent_ButtonTouch) :
+      {
+        // Show controller laser if trigger is touched
+        if (state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
+        {
+          deviceModel->_laser->showLaser(true);
+        }
+        break;
+      }
+
+      case(vr::VREvent_ButtonUntouch) :
+      {
+        // Hide controller laser if trigger is untouched
+        if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) == 0x0)
+        {
+          deviceModel->_laser->showLaser(false);
+        }
+        break;
+      }
+      }
+
+      return false;
+    }
+    else // Otherwise continue with other callbacks
+    {
+      return osgGA::GUIEventHandler::handle(ea, aa, obj, nv);
+    }
+  }
+
+  /*************************************************************/
   bool OpenVREventDevice::checkEvents()
   {
     osg::ref_ptr<OpenVREvent> event = new OpenVREvent;
@@ -644,26 +692,6 @@ namespace OpenFrames{
             _motionData._device2ID = UINT_MAX; // Ignore device 2
             saveCurrentMotionData();
           }
-        }
-        break;
-      }
-
-      case(vr::VREvent_ButtonTouch) :
-      {
-        // If trigger is touched, then show the controller's laser
-        if (state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
-        {
-          deviceModel->_laser->showLaser(true);
-        }
-        break;
-      }
-
-      case(vr::VREvent_ButtonUntouch) :
-      {
-        // If trigger is untouched, then hide the controller's laser
-        if ((state->ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) == 0x0)
-        {
-          deviceModel->_laser->showLaser(false);
         }
         break;
       }

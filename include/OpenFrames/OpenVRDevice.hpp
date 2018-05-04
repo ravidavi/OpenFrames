@@ -279,6 +279,20 @@ namespace OpenFrames {
     typedef std::vector<DeviceModel> DeviceModelVector;
     DeviceModelVector _deviceIDToModel;
     
+    /*************************************************************/
+    // Event callback that shows/hides a VR controller's laser when its trigger is pressed
+    struct DeviceModelEventCallback : public osgGA::GUIEventHandler
+    {
+      DeviceModelEventCallback(OpenVRDevice* ovrDevice)
+        : _ovrDevice(ovrDevice)
+      {}
+
+      // Handle the OpenVR event
+      virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa, osg::Object* obj, osg::NodeVisitor* nv);
+
+      osg::observer_ptr<OpenVRDevice> _ovrDevice;
+    };
+
     // Group that contains all device models
     osg::ref_ptr<osg::MatrixTransform> _deviceModels;
 
