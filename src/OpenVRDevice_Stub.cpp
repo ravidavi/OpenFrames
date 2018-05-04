@@ -210,6 +210,12 @@ namespace OpenFrames{
   }
   
   /*************************************************************/
+  bool OpenVRDevice::DeviceModelEventCallback::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa, osg::Object* obj, osg::NodeVisitor* nv)
+  {
+    return osgGA::GUIEventHandler::handle(ea, aa, obj, nv);
+  }
+  
+  /*************************************************************/
   bool OpenVREventDevice::checkEvents()
   {
     // Nothing to do here
