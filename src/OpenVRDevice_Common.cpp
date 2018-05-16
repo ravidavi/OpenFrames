@@ -515,8 +515,8 @@ namespace OpenFrames{
     // The motion mode defines how controllers change the scene in response
     // to user inputs. Start with no motion.
     _motionData._mode = NONE;
-    _motionData._prevMode = TRANSLATE; // Initial button press will go to this mode
-    _motionData._prevTime = 0.0;
+    _oneButtonMode = TRANSLATE;
+    _twoButtonMode = SCALE;
   }
 
   /*******************************************************/

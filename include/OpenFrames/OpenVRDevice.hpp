@@ -401,7 +401,7 @@ namespace OpenFrames {
     virtual void restoreState();
     virtual void resetState();
     
-    /** Type of user motion currently being handled */
+    /** Type of user motion when one or two buttons are pressed */
     enum MotionMode
     {
       NONE = 0,
@@ -409,13 +409,12 @@ namespace OpenFrames {
       ROTATE,
       SCALE
     };
+    MotionMode _oneButtonMode, _twoButtonMode;
 
     /** Data used when computing world transformations during user events */
     struct MotionData
     {
       MotionMode _mode;
-      MotionMode _prevMode;
-      double _prevTime;
       uint32_t _device1ID;
       uint32_t _device2ID;
       osg::Matrixd _device1OrigPoseRaw;

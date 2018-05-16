@@ -624,23 +624,21 @@ namespace OpenFrames{
         // Grip button pressed state transitions: No Motion -> Translate/Rotate -> Scale
         if (state->ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_Grip))
         {
-          // Go from No Motion -> Translate/Rotate when a controller's grip button is pressed
+          // Go from No Motion -> One Button Mode when a controller's grip button is pressed
           if (_motionData._mode == NONE)
           {
             // Translate/Rotate uses Device 1 to control the view
-            _motionData._mode = _motionData._prevMode;
+            _motionData._mode = _oneButtonMode;
             _motionData._device1ID = deviceID;
             _motionData._device2ID = UINT_MAX; // Ignore device 2
             saveCurrentMotionData();
           }
 
-          // Go from Translate/Rotate -> Scale when the "other" controller's grip button is pressed
+          // Go from One Button Mode -> Two Button Mode when the "other" controller's grip button is pressed
           else if (((_motionData._mode == TRANSLATE) || (_motionData._mode == ROTATE)) && (_motionData._device1ID != deviceID))
           {
             // Scale uses Device 1 & 2 to change the WorldUnits/Meter ratio
-            _motionData._prevMode = _motionData._mode; // Save current mode
-            _motionData._prevTime = event->getTime(); // Save event time
-            _motionData._mode = SCALE;
+            _motionData._mode = _twoButtonMode;
             _motionData._device2ID = deviceID;
             saveCurrentMotionData();
           }
@@ -654,40 +652,19 @@ namespace OpenFrames{
         // Button unpressed state transitions: Scale -> Translate/Rotate -> No Motion
         if (state->ulButtonPressed == 0)
         {
-          // Go from Translate/Rotate -> No Motion when controller's grip is unpressed
+          // Go from One Button Mode -> No Motion when controller's grip is unpressed
           if (((_motionData._mode == TRANSLATE) || (_motionData._mode == ROTATE)) && (_motionData._device1ID == deviceID))
           {
-            // Save current mode for when button is pressed again
-            _motionData._prevMode = _motionData._mode;
             _motionData._mode = NONE;
           }
 
-          // Go from Scale -> Translate/Rotate when either controller's grip is unpressed
+          // Go from Two Button Mode -> One Button Mode when either controller's grip is unpressed
           else if ((_motionData._mode == SCALE) &&
             ((_motionData._device1ID == deviceID) || (_motionData._device2ID == deviceID)))
           {
-            // If the second grip button was just tapped, then switch translate/rotate modes
-            // Otherwise it was actually pressed so keep the previous translate/rotate mode
-            // Alternatively, if the WorldUnits/Meter scale was actually changed, then keep
-            // the previous translate/rotate mode even if the grip button was just tapped.
-            const double tapDuration = 0.25;
-            const double maxScaleChange = 0.01;
-            double pressDuration = event->getTime() - _motionData._prevTime;
-            double scaleChange = std::abs(_motionData._origWorldUnitsPerMeter / _ovrDevice->getWorldUnitsPerMeter() - 1.0);
-            if ((pressDuration >= tapDuration) || (scaleChange > maxScaleChange))
-            {
-              _motionData._mode = _motionData._prevMode;
-            }
-            else if (_motionData._prevMode == TRANSLATE) _motionData._mode = ROTATE;
-            else if (_motionData._prevMode == ROTATE) _motionData._mode = TRANSLATE;
-            else
-            {
-              osg::notify(osg::WARN) << "OpenFrames::OpenVRTrackball WARNING: previous mode invalid. Defaulting to TRANSLATE." << std::endl;
-              _motionData._mode = TRANSLATE;
-            }
-
             // Translate/Rotate uses Device 1 to control the view, so indicate that the
             // controller with grip button still pressed should be used for view changes
+            _motionData._mode = _oneButtonMode;
             _motionData._device1ID = _motionData._device1ID + _motionData._device2ID - deviceID;
             _motionData._device2ID = UINT_MAX; // Ignore device 2
             saveCurrentMotionData();
