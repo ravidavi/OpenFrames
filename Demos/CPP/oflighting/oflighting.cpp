@@ -14,6 +14,7 @@
  limitations under the License.
  ***********************************/
 
+#include <OpenFrames/Model.hpp>
 #include <OpenFrames/Sphere.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 
@@ -101,6 +102,21 @@ int main()
   sunLight->setDiffuse(osg::Vec4(2.0, 2.0, 2.0, 1.0)); // Bright sun!
   sunLight->setSpecular(osg::Vec4(0.8, 0.8, 0.8, 1.0));
   
+  // Create a Model for the Comet
+  Model* cg = new Model("67P_CG");
+  cg->showAxes(ReferenceFrame::NO_AXES);
+  cg->showAxesLabels(ReferenceFrame::NO_AXES);
+  cg->showNameLabel(false);
+  cg->setModel("Models/Comet67P_CG.3ds");
+  cg->setPosition(100, 100, 100);
+  mat = new osg::Material;
+  mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0.0, 0.0, 0.0, 1.0));
+  mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(0.25, 0.25, 0.25, 1.0));
+  mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(0.1, 0.1, 0.2, 1.0));
+  mat->setShininess(osg::Material::FRONT_AND_BACK, 100);
+  cg->getModel()->getOrCreateStateSet()->setAttributeAndModes(mat);
+  earth->addChild(cg);
+  
   // Create a manager to handle access to the scene
   FrameManager* fm = new FrameManager;
   fm->setFrame(root);
@@ -134,9 +150,11 @@ int main()
   View *viewEarth = new View(root, earth);
   View *viewMoon = new View(root, moon);
   View *viewSun = new View(root, sun);
+  View *viewCG = new View(root, cg);
   myWindow->getGridPosition(0, 0)->addView(viewEarth);
   myWindow->getGridPosition(0, 0)->addView(viewMoon);
   myWindow->getGridPosition(0, 0)->addView(viewSun);
+  myWindow->getGridPosition(0, 0)->addView(viewCG);
   
   myWindow->startThread(); // Start window animation
   myWindow->join(); // Wait for window animation to finish
