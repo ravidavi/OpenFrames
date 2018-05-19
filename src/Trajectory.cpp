@@ -20,6 +20,7 @@
 #include <cfloat>
 #include <cstring>
 #include <algorithm>
+#include <iostream>
 
 namespace OpenFrames {
 
@@ -42,11 +43,11 @@ Trajectory::~Trajectory()
   
 void Trajectory::reserveMemory(unsigned int numPoints, bool usePos, bool useAtt)
 {
-  _readWriteMutex.writeLock();
+  lockData(WRITE_LOCK);
   _time.reserve(numPoints);                    // 1 element per time
   if(usePos) _posopt.reserve(_base*numPoints); // _base elements per position
   if(useAtt) _att.reserve(4*numPoints);        // 4 elements per attitude
-  _readWriteMutex.writeUnlock();
+  unlockData(WRITE_LOCK);
 }
 
 void Trajectory::setNumOptionals(unsigned int nopt)
@@ -178,9 +179,9 @@ bool Trajectory::addTime( const DataType &t )
   // will resize and reallocate its memory. To prevent readers
   // from potentially accessing old memory, lock the mutex.
   const bool shouldLock = (_time.size() == _time.capacity());
-  if(shouldLock) _readWriteMutex.writeLock();
+  if(shouldLock) lockData(WRITE_LOCK);
 	_time.emplace_back(t); // Add the time
-  if(shouldLock) _readWriteMutex.writeUnlock();
+  if(shouldLock) unlockData(WRITE_LOCK);
 
   if(_autoInformSubscribers) informSubscribers();
 
@@ -198,7 +199,7 @@ bool Trajectory::addPosition( const DataType &x, const DataType &y,
   // will resize and reallocate its memory. To prevent readers
   // from potentially accessing old memory, lock the mutex.
   const bool shouldLock = (loc+_base > _posopt.capacity());
-  if(shouldLock) _readWriteMutex.writeLock();
+  if(shouldLock) lockData(WRITE_LOCK);
 
 	  // Add the position and create dummy optionals to go with it
   _posopt.resize(loc + _base);
@@ -207,7 +208,7 @@ bool Trajectory::addPosition( const DataType &x, const DataType &y,
   if(_dof == 3) _posopt[++loc] = z;
   ++_numPos;
   
-  if(shouldLock) _readWriteMutex.writeUnlock();
+  if(shouldLock) unlockData(WRITE_LOCK);
 
   if(_autoInformSubscribers) informSubscribers();
 
@@ -224,14 +225,14 @@ bool Trajectory::addPosition( const DataType* const pos )
   // will resize and reallocate its memory. To prevent readers
   // from potentially accessing old memory, lock the mutex.
   const bool shouldLock = (loc+_base > _posopt.capacity());
-  if(shouldLock) _readWriteMutex.writeLock();
+  if(shouldLock) lockData(WRITE_LOCK);
   
 	  // Add the position and create dummy optionals to go with it
 	_posopt.resize(loc + _base);
 	std::memcpy(&_posopt[loc], pos, _dof*sizeof(DataType));
 	++_numPos;
 
-  if(shouldLock) _readWriteMutex.writeUnlock();
+  if(shouldLock) unlockData(WRITE_LOCK);
 
   if(_autoInformSubscribers) informSubscribers();
 
@@ -276,7 +277,7 @@ bool Trajectory::addAttitude( const DataType &x, const DataType &y,
   // will resize and reallocate its memory. To prevent readers
   // from potentially accessing old memory, lock the mutex.
   const bool shouldLock = (loc+4 > _att.capacity());
-  if(shouldLock) _readWriteMutex.writeLock();
+  if(shouldLock) lockData(WRITE_LOCK);
   
 	  // Add the attitude
   _att.resize(loc + 4);
@@ -286,7 +287,7 @@ bool Trajectory::addAttitude( const DataType &x, const DataType &y,
   _att[++loc] = w;
 	++_numAtt;
 
-  if(shouldLock) _readWriteMutex.writeUnlock();
+  if(shouldLock) unlockData(WRITE_LOCK);
 
   if(_autoInformSubscribers) informSubscribers();
 
@@ -306,14 +307,14 @@ bool Trajectory::addAttitude( const DataType* const att )
   // will resize and reallocate its memory. To prevent readers
   // from potentially accessing old memory, lock the mutex.
   const bool shouldLock = (loc+4 > _att.capacity());
-  if(shouldLock) _readWriteMutex.writeLock();
+  if(shouldLock) lockData(WRITE_LOCK);
   
 	  // Add the attitude
 	_att.resize(loc + 4);
 	std::memcpy(&_att[_att.size()-4], att, 4*sizeof(DataType));
 	++_numAtt;
 
-	if(shouldLock) _readWriteMutex.writeUnlock();
+	if(shouldLock) unlockData(WRITE_LOCK);
 
   if(_autoInformSubscribers) informSubscribers();
 
@@ -394,14 +395,14 @@ bool Trajectory::getOptional( unsigned int n, unsigned int index,
 void Trajectory::clear()
 {
   // Always lock when clearing data
-	_readWriteMutex.writeLock();
+  lockData(WRITE_LOCK);
 
 	_time.clear();
 	_posopt.clear();
 	_att.clear();
 	_numPos = _numAtt = 0;
 
-	_readWriteMutex.writeUnlock();
+	unlockData(WRITE_LOCK);
 
 	  // Inform subscribers
   if(_autoInformSubscribers) informSubscribers();
@@ -503,14 +504,18 @@ void Trajectory::informSubscribers()
   }
 }
   
-void Trajectory::lockData() const
+void Trajectory::lockData(DataLockType lockType) const
 {
-	_readWriteMutex.readLock();
+  if(lockType == READ_LOCK) _readWriteMutex.readLock();
+  else _readWriteMutex.writeLock();
+  //_mutex.lock();
 }
 
-void Trajectory::unlockData() const
+void Trajectory::unlockData(DataLockType lockType) const
 {
-	_readWriteMutex.readUnlock();
+  if(lockType == READ_LOCK) _readWriteMutex.readUnlock();
+  else _readWriteMutex.writeUnlock();
+  //_mutex.unlock();
 }
 
 } // !namespace OpenFrames

@@ -204,10 +204,16 @@ class OF_EXPORT Trajectory : public osg::Referenced
   virtual void informSubscribers();
   inline void autoInformSubscribers(bool autoinform) { _autoInformSubscribers = autoinform; }
   
+  enum DataLockType
+  {
+    READ_LOCK,
+    WRITE_LOCK
+  };
+  
 	/** Synchronization routines which prevent Trajectory's data from being
 	    moved around in memory while the data is being read. */
-	virtual void lockData() const;   // Block the data from being changed
-	virtual void unlockData() const; // Allow the data to be changed
+	virtual void lockData(DataLockType lockType = READ_LOCK) const;   // Block the data from being changed
+	virtual void unlockData(DataLockType lockType = READ_LOCK) const; // Allow the data to be changed
 
   protected:
 	virtual ~Trajectory();
@@ -230,7 +236,8 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	unsigned int _dof; // Degrees of freedom for position and optionals
 
 	// Synchronization variables
-	mutable OpenThreads::ReadWriteMutex _readWriteMutex;
+  mutable OpenThreads::ReadWriteMutex _readWriteMutex;
+  //mutable OpenThreads::Mutex _mutex;
 };
 
 /************************************
