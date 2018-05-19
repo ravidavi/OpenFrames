@@ -119,6 +119,7 @@ int Trajectory::getTimeIndex(const DataType &t, int &index) const
 
 	// Determine if times are increasing or decreasing
 	int direction = (_time[0] <= _time.back())?1:-1;
+  const DataType tDir = direction*t;
 
 	// Check if requested time is within [t0, tf] range
 	double val = getTimeDistance(t);
@@ -142,32 +143,31 @@ int Trajectory::getTimeIndex(const DataType &t, int &index) const
 	}
 
 	// Requested time is in the trajectory, so search for it using a
-	// modified interval bisection method where we linearly approximate
-	// an intermediate index (as opposed to just talking the halfway
-	// index for a normal interval bisection method).
+	// standard interval bisection method. This assumes that the entire
+  // trajectory is either monotonically increasing or decreasing.
 	int low = 0;
 	int high = numTimes - 1;
-	for(int iter = 1; iter < 100; ++iter)
+  int mid;
+	for(int iter = 1; iter < 40; ++iter)
 	{
-	  // Compute estimated index for the requested time
-	  index = low + (int)((t - _time[low])/(_time[high] - _time[low])*(high - low));
+    // Compute midpoint index
+    mid = low + (high - low) / 2; // Less likely to overflow for very large trajectories, compared to (low+high)/2
 
-	  // In rare instances where t ~= _time[high], precision issues may 
-	  // cause the computed index to equal the high bounding index. In
-	  // such a case, the actual computed index should be just below
-	  // the high index, so we decrement it.
-	  if(index == high) --index;
+    // Requested time is at or after the midpoint, so bracket the low index
+    if (tDir >= direction*_time[mid])
+    {
+      low = mid;
 
-	  // Requested time is between current index and next index.
-	  if((t-_time[index])*(t-_time[index+1]) <= 0.0) return iter;
+      // Requested time is in index range [low, low+1)
+      if (tDir < direction*_time[low + 1])
+      {
+        index = low;
+        return iter;
+      }
+    }
 
-	  // Requested time is before current index, so reset the high bound.
-	  if(direction*t < direction*_time[index]) high = index;
-
-	  // Requested time is after current index, so reset the low bound.
-	  // Note here that t must also be after the next index, since it
-	  // didn't pass the stop condition above.
-	  else low = index + 1;
+    // Otherwise requested time is before the midpoint, so bracket the high index
+    else high = mid;
 	}
 
 	return -2; // Max iterations reached
