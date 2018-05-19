@@ -236,8 +236,13 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	unsigned int _dof; // Degrees of freedom for position and optionals
 
 	// Synchronization variables
+#define USERWMUTEX
+
+#ifdef USERWMUTEX
   mutable OpenThreads::ReadWriteMutex _readWriteMutex;
-  //mutable OpenThreads::Mutex _mutex;
+#else
+  mutable OpenThreads::Mutex _mutex;
+#endif
 };
 
 /************************************
