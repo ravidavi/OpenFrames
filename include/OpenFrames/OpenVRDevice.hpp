@@ -382,6 +382,25 @@ namespace OpenFrames {
     double getDefaultWorldUnitsPerMeterRatio() const { return _defaultWorldUnitsPerMeter; }
     void setDefaultWorldUnitsPerMeterRatio(const double& wum) { _defaultWorldUnitsPerMeter = wum; }
     
+    // Specify action when user presses one grip button on the VR controller
+    enum OneButtonMode
+    {
+      ONEBUTTON_TRANSLATE,
+      ONEBUTTON_ROTATE,
+      ONEBUTTON_DISABLE
+    };
+    void setOneButtonMode(OneButtonMode mode) { _oneButtonMode = mode; }
+    OneButtonMode getOneButtonMode() const { return _oneButtonMode; }
+
+    // Specify action when user presses grip buttons on both VR controllers
+    enum TwoButtonMode
+    {
+      TWOBUTTON_ROTATESCALE,
+      TWOBUTTON_DISABLE
+    };
+    void setTwoButtonMode(TwoButtonMode mode) { _twoButtonMode = mode; }
+    TwoButtonMode getTwoButtonMode() const { return _twoButtonMode; }
+
     // Handle event
     virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us);
 
@@ -393,29 +412,33 @@ namespace OpenFrames {
 
     double _savedWorldUnitsPerMeter;    // Last saved WorldUnits/Meter ratio
     double _defaultWorldUnitsPerMeter;  // Default WorldUnits/Meter ratio
-
+    
+    // Process user's controller motion into view changes
     void processMotion();
+    void processOneButtonMotion();
+    void processTwoButtonMotion();
     
     // Save, restore, and reset VR-related trackball state
     virtual void saveState();
     virtual void restoreState();
     virtual void resetState();
     
-    /** Type of user motion currently being handled */
+    /** Type of user motion when one or two buttons are pressed */
     enum MotionMode
     {
       NONE = 0,
-      TRANSLATE,
-      ROTATE,
-      SCALE
+      ONEBUTTON,
+      TWOBUTTON
     };
+    MotionMode _motionMode;
+    
+    OneButtonMode _oneButtonMode;
+    TwoButtonMode _twoButtonMode;
 
     /** Data used when computing world transformations during user events */
     struct MotionData
     {
       MotionMode _mode;
-      MotionMode _prevMode;
-      double _prevTime;
       uint32_t _device1ID;
       uint32_t _device2ID;
       osg::Matrixd _device1OrigPoseRaw;

@@ -512,11 +512,10 @@ namespace OpenFrames{
     _savedWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
     _defaultWorldUnitsPerMeter = _savedWorldUnitsPerMeter;
 
-    // The motion mode defines how controllers change the scene in response
-    // to user inputs. Start with no motion.
+    // Motion mode defines how controllers change the view in response to user inputs
     _motionData._mode = NONE;
-    _motionData._prevMode = TRANSLATE; // Initial button press will go to this mode
-    _motionData._prevTime = 0.0;
+    _oneButtonMode = ONEBUTTON_TRANSLATE;
+    _twoButtonMode = TWOBUTTON_ROTATESCALE;
   }
 
   /*******************************************************/
@@ -588,150 +587,188 @@ namespace OpenFrames{
   /*************************************************************/
   void OpenVRTrackball::processMotion()
   {
+    
+    switch (_motionData._mode)
+    {
+      case(ONEBUTTON):
+      {
+        processOneButtonMotion();
+        break;
+      }
+      case(TWOBUTTON):
+      {
+        processTwoButtonMotion();
+        break;
+      }
+      default:
+        break;
+    }
+    
+    // Compute Local <-> World transforms for HMD and other VR devices
+    _ovrDevice->computeDeviceTransforms();
+  }
+  
+  /*************************************************************/
+  void OpenVRTrackball::processOneButtonMotion()
+  {
     // Exaggerate controller motion beyond a predetermined distance threshold so that
     // the view can be moved faster with larger controller motions.
     // Note that threshold distance depends on arm length, which depends on height.
     // Height/Armspan = 1.0 and ShoulderWidth/Height = 0.3 (see Golden Ratio)
     double armLength = (_ovrDevice->getUserHeight()*0.7) / 2.0; // [meters]
     double fastMotionThreshold = 1.0 - armLength / 4.0;
-
+    
+    const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
+    
+    // Handle view transformations based on current motion mode
+    switch (_oneButtonMode)
+    {
+      case(ONEBUTTON_TRANSLATE):
+      {
+        // Set the device pose offset based on controller location
+        // Start by getting the controller location when the button was pressed
+        osg::Vec3d origPos = _motionData._device1OrigPoseRaw.getTrans();
+        
+        // Next get the current controller location
+        osg::Vec3d currPos = device1Model->_rawDeviceToWorld.getTrans();
+        
+        // Move room in the opposite direction as controller motion.
+        osg::Vec3d deltaPos = origPos - currPos;
+        double deltaLen = deltaPos.length() + fastMotionThreshold;
+        if (deltaLen > 1.0)
+        {
+          deltaPos *= deltaLen*deltaLen;
+        }
+        
+        // Compute new room position based on controller motion
+        _roomPose = _motionData._origRoomPose;
+        _roomPose.preMultTranslate(deltaPos*_motionData._origWorldUnitsPerMeter);
+        
+        break;
+      }
+      case(ONEBUTTON_ROTATE):
+      {
+        // Set the trackball rotation based on controller motion
+        // Start by getting the controller location when the button was pressed
+        osg::Vec3d origPos = _motionData._device1OrigPoseRaw.getTrans()*_motionData._origWorldUnitsPerMeter;
+        
+        // Convert to position relative to trackball's world space
+        osg::Vec3d origPosWorld = origPos * _motionData._origTrackball;
+        
+        // Next get the current controller location relative to trackball center
+        osg::Matrixd device1CurrPoseRaw = device1Model->_rawDeviceToWorld;
+        osg::Vec3d currPos = device1CurrPoseRaw.getTrans()*_motionData._origWorldUnitsPerMeter;
+        osg::Vec3d currPosWorld = currPos * _motionData._origTrackball;
+        
+        // Compute the rotation from current -> original controller positions
+        osg::Quat deltaRotation;
+        deltaRotation.makeRotate(currPosWorld, origPosWorld);
+        osg::Quat newRotation(_motionData._origRotation);
+        newRotation *= deltaRotation;
+        osgGA::TrackballManipulator::setRotation(newRotation);
+        
+        // If we keep the original state constant, then it's likely that the user will try to do
+        // a 180-degree rotation which is singular (no Quat::makeRotate solution). Therefore we save
+        // the new pose state at each frame, which results in incremental rotations instead of one
+        // big rotation from the initial to final controller positions.
+        _motionData._device1OrigPoseRaw = device1CurrPoseRaw;
+        _motionData._origTrackball = _roomPose * osgGA::TrackballManipulator::getMatrix();
+        _motionData._origRotation = newRotation;
+        
+        break;
+      }
+      default:
+        break;
+    }
+  }
+  
+  /*************************************************************/
+  void OpenVRTrackball::processTwoButtonMotion()
+  {
+    // Exaggerate controller motion beyond a predetermined distance threshold so that
+    // the view can be moved faster with larger controller motions.
+    // Note that threshold distance depends on arm length, which depends on height.
+    // Height/Armspan = 1.0 and ShoulderWidth/Height = 0.3 (see Golden Ratio)
+    double armLength = (_ovrDevice->getUserHeight()*0.7) / 2.0; // [meters]
+    double fastMotionThreshold = 1.0 - armLength / 4.0;
+    
     const OpenVRDevice::DeviceModel *device1Model = _ovrDevice->getDeviceModel(_motionData._device1ID);
     const OpenVRDevice::DeviceModel *device2Model = _ovrDevice->getDeviceModel(_motionData._device2ID);
-
-    // Handle world transformations based on current motion mode
-    switch (_motionData._mode)
+    
+    // Handle view transformations based on current motion mode
+    switch (_twoButtonMode)
     {
-    case(ROTATE) :
-    {
-      // Set the trackball rotation based on controller motion
-      // Start by getting the controller location when the button was pressed
-      osg::Vec3d origPos = _motionData._device1OrigPoseRaw.getTrans()*_motionData._origWorldUnitsPerMeter;
-
-      // Convert to position relative to trackball's world space
-      osg::Vec3d origPosWorld = origPos * _motionData._origTrackball;
-
-      // Next get the current controller location relative to trackball center
-      osg::Matrixd device1CurrPoseRaw = device1Model->_rawDeviceToWorld;
-      osg::Vec3d currPos = device1CurrPoseRaw.getTrans()*_motionData._origWorldUnitsPerMeter;
-      osg::Vec3d currPosWorld = currPos * _motionData._origTrackball;
-
-      // Compute the rotation from current -> original controller positions
-      osg::Quat deltaRotation;
-      deltaRotation.makeRotate(currPosWorld, origPosWorld);
-      osg::Quat newRotation(_motionData._origRotation);
-      newRotation *= deltaRotation;
-      osgGA::TrackballManipulator::setRotation(newRotation);
-
-      // If we keep the original state constant, then it's likely that the user will try to do
-      // a 180-degree rotation which is singular (no Quat::makeRotate solution). Therefore we save
-      // the new pose state at each frame, which results in incremental rotations instead of one
-      // big rotation from the initial to final controller positions.
-      _motionData._device1OrigPoseRaw = device1CurrPoseRaw;
-      _motionData._origTrackball = _roomPose * osgGA::TrackballManipulator::getMatrix();
-      _motionData._origRotation = newRotation;
-
-      break;
-    }
-
-    case(TRANSLATE) :
-    {
-      // Set the device pose offset based on controller location
-      // Start by getting the controller location when the button was pressed
-      osg::Vec3d origPos = _motionData._device1OrigPoseRaw.getTrans();
-
-      // Next get the current controller location
-      osg::Vec3d currPos = device1Model->_rawDeviceToWorld.getTrans();
-
-      // Move room in the opposite direction as controller motion.
-      osg::Vec3d deltaPos = origPos - currPos;
-      double deltaLen = deltaPos.length() + fastMotionThreshold;
-      if (deltaLen > 1.0)
+      case(TWOBUTTON_ROTATESCALE):
       {
-        deltaPos *= deltaLen*deltaLen;
+        // Set the WorldUnits/Meter ratio based on how the controllers are moved together/apart
+        // Start by getting the controller distance when the action was started
+        osg::Vec3d device1TransOrig = _motionData._device1OrigPoseRaw.getTrans();
+        osg::Vec3d device2TransOrig = _motionData._device2OrigPoseRaw.getTrans();
+        double origDist = (device1TransOrig - device2TransOrig).length();
+        
+        // Get the center point between controllers
+        osg::Vec3d origCenter = (device1TransOrig + device2TransOrig) * 0.5;
+        
+        // Get the current controller distance
+        osg::Vec3d device1TransCurr = device1Model->_rawDeviceToWorld.getTrans();
+        osg::Vec3d device2TransCurr = device2Model->_rawDeviceToWorld.getTrans();
+        osg::Vec3d currCenter = (device1TransCurr + device2TransCurr) * 0.5; // Center point between controllers
+        double currDist = (device1TransCurr - device2TransCurr).length();
+        double distRatio = origDist / currDist; // controllers apart -> 0, controllers together -> inf
+        
+        // Exaggerate large controller motions
+        double deltaLen = std::abs(currDist - origDist); // Change in controller distance
+        if (deltaLen > 1.0 - fastMotionThreshold)
+        {
+          distRatio = std::pow(distRatio, deltaLen + fastMotionThreshold);
+        }
+        distRatio = std::pow(distRatio - 1.0, 3.0) + 1.0;
+        
+        // Compute new WorldUnits/Meter ratio based on scaled ratio of controller distances
+        double newWorldUnitsPerMeter = _motionData._origWorldUnitsPerMeter * distRatio;
+        _ovrDevice->setWorldUnitsPerMeter(newWorldUnitsPerMeter);
+        
+        // Account for WorldUnits/Meter ratio hitting limits
+        newWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
+        distRatio = newWorldUnitsPerMeter / _motionData._origWorldUnitsPerMeter;
+        
+        // Compute new pose offset location that keeps the central point at the same world
+        // location both before and after the scale.
+        // - Expand universe from original center point between controllers
+        // - Shrink universe to current center point between controllers
+        osg::Vec3d centerPoint;
+        if (distRatio < 1.0) centerPoint = origCenter; // Expand universe
+        else centerPoint = currCenter; // Shrink universe
+        _roomPose = _motionData._origRoomPose;
+        _roomPose.preMultTranslate(centerPoint*_motionData._origWorldUnitsPerMeter*(1.0 - distRatio));
+        
+        // Rotating the controllers about each other rotates the scene about the controller midpoint
+        // This is done by moving the controller midpoint to the origin, then performing the rotation,
+        // then moving the controller midpoint back to its original position.
+        // Since _roomPose is the Room->Trackball transform, these steps are applied in reverse
+        // order using premultiplication
+        
+        // Step 3: Move controller midpoint back to its original location
+        osg::Vec3d origCenterWU = origCenter * newWorldUnitsPerMeter;
+        _roomPose.preMultTranslate(origCenterWU);
+        
+        // Step 2: Rotate room about new origin (controller center) based on controller motion
+        // Note that the room should rotate in the opposite direction as controllers, since the
+        // goal is to make the scene appear to rotate in the same direction as controllers.
+        osg::Vec3d origDeviceLine = device2TransOrig - device1TransOrig;
+        osg::Vec3d currDeviceLine = device2TransCurr - device1TransCurr;
+        osg::Quat q;
+        q.makeRotate(currDeviceLine, origDeviceLine);
+        _roomPose.preMultRotate(q);
+        
+        // Step 1: Move controller midpoint to the room center
+        _roomPose.preMultTranslate(-origCenterWU);
+        
+        break;
       }
-
-      // Compute new room position based on controller motion
-      _roomPose = _motionData._origRoomPose;
-      _roomPose.preMultTranslate(deltaPos*_motionData._origWorldUnitsPerMeter);
-
-      break;
+      default:
+        break;
     }
-
-    case(SCALE) :
-    {
-      // Set the WorldUnits/Meter ratio based on how the controllers are moved together/apart
-      // Start by getting the controller distance when the action was started
-      osg::Vec3d device1TransOrig = _motionData._device1OrigPoseRaw.getTrans();
-      osg::Vec3d device2TransOrig = _motionData._device2OrigPoseRaw.getTrans();
-      double origDist = (device1TransOrig - device2TransOrig).length();
-
-      // Get the center point between controllers
-      osg::Vec3d origCenter = (device1TransOrig + device2TransOrig) * 0.5;
-
-      // Get the current controller distance
-      osg::Vec3d device1TransCurr = device1Model->_rawDeviceToWorld.getTrans();
-      osg::Vec3d device2TransCurr = device2Model->_rawDeviceToWorld.getTrans();
-      osg::Vec3d currCenter = (device1TransCurr + device2TransCurr) * 0.5; // Center point between controllers
-      double currDist = (device1TransCurr - device2TransCurr).length();
-      double distRatio = origDist / currDist; // controllers apart -> 0, controllers together -> inf
-
-      // Exaggerate large controller motions
-      double deltaLen = std::abs(currDist - origDist); // Change in controller distance
-      if (deltaLen > 1.0 - fastMotionThreshold)
-      {
-        distRatio = std::pow(distRatio, deltaLen + fastMotionThreshold);
-      }
-      distRatio = std::pow(distRatio - 1.0, 3.0) + 1.0;
-
-      // Compute new WorldUnits/Meter ratio based on scaled ratio of controller distances
-      double newWorldUnitsPerMeter = _motionData._origWorldUnitsPerMeter * distRatio;
-      _ovrDevice->setWorldUnitsPerMeter(newWorldUnitsPerMeter);
-
-      // Account for WorldUnits/Meter ratio hitting limits
-      newWorldUnitsPerMeter = _ovrDevice->getWorldUnitsPerMeter();
-      distRatio = newWorldUnitsPerMeter / _motionData._origWorldUnitsPerMeter;
-
-      // Compute new pose offset location that keeps the central point at the same world
-      // location both before and after the scale.
-      // - Expand universe from original center point between controllers
-      // - Shrink universe to current center point between controllers
-      osg::Vec3d centerPoint;
-      if (distRatio < 1.0) centerPoint = origCenter; // Expand universe
-      else centerPoint = currCenter; // Shrink universe
-      _roomPose = _motionData._origRoomPose;
-      _roomPose.preMultTranslate(centerPoint*_motionData._origWorldUnitsPerMeter*(1.0 - distRatio));
-
-      // Rotating the controllers about each other rotates the scene about the controller midpoint
-      // This is done by moving the controller midpoint to the origin, then performing the rotation,
-      // then moving the controller midpoint back to its original position.
-      // Since _roomPose is the Room->Trackball transform, these steps are applied in reverse
-      // order using premultiplication
-
-      // Step 3: Move controller midpoint back to its original location
-      osg::Vec3d origCenterWU = origCenter * newWorldUnitsPerMeter;
-      _roomPose.preMultTranslate(origCenterWU);
-
-      // Step 2: Rotate room about new origin (controller center) based on controller motion
-      // Note that the room should rotate in the opposite direction as controllers, since the
-      // goal is to make the scene appear to rotate in the same direction as controllers.
-      osg::Vec3d origDeviceLine = device2TransOrig - device1TransOrig;
-      osg::Vec3d currDeviceLine = device2TransCurr - device1TransCurr;
-      osg::Quat q;
-      q.makeRotate(currDeviceLine, origDeviceLine);
-      _roomPose.preMultRotate(q);
-
-      // Step 1: Move controller midpoint to the room center
-      _roomPose.preMultTranslate(-origCenterWU);
-
-      break;
-    }
-
-    default:
-      break;
-    }
-
-    // Compute Local <-> World transforms for HMD and other VR devices
-    _ovrDevice->computeDeviceTransforms();
   }
   
   /*************************************************************/
