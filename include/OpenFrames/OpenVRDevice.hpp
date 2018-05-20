@@ -393,8 +393,11 @@ namespace OpenFrames {
 
     double _savedWorldUnitsPerMeter;    // Last saved WorldUnits/Meter ratio
     double _defaultWorldUnitsPerMeter;  // Default WorldUnits/Meter ratio
-
+    
+    // Process user's controller motion into view changes
     void processMotion();
+    void processOneButtonMotion();
+    void processTwoButtonMotion();
     
     // Save, restore, and reset VR-related trackball state
     virtual void saveState();
@@ -405,11 +408,25 @@ namespace OpenFrames {
     enum MotionMode
     {
       NONE = 0,
-      TRANSLATE,
-      ROTATE,
-      SCALE
+      ONEBUTTON,
+      TWOBUTTON
     };
-    MotionMode _oneButtonMode, _twoButtonMode;
+    MotionMode _motionMode;
+    
+    enum OneButtonMode
+    {
+      ONEBUTTON_TRANSLATE,
+      ONEBUTTON_ROTATE,
+      ONEBUTTON_DISABLE
+    };
+    OneButtonMode _oneButtonMode;
+    
+    enum TwoButtonMode
+    {
+      TWOBUTTON_ROTATESCALE,
+      TWOBUTTON_DISABLE
+    };
+    TwoButtonMode _twoButtonMode;
 
     /** Data used when computing world transformations during user events */
     struct MotionData
