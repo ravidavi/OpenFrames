@@ -382,6 +382,25 @@ namespace OpenFrames {
     double getDefaultWorldUnitsPerMeterRatio() const { return _defaultWorldUnitsPerMeter; }
     void setDefaultWorldUnitsPerMeterRatio(const double& wum) { _defaultWorldUnitsPerMeter = wum; }
     
+    // Specify action when user presses one grip button on the VR controller
+    enum OneButtonMode
+    {
+      ONEBUTTON_TRANSLATE,
+      ONEBUTTON_ROTATE,
+      ONEBUTTON_DISABLE
+    };
+    void setOneButtonMode(OneButtonMode mode) { _oneButtonMode = mode; }
+    OneButtonMode getOneButtonMode() const { return _oneButtonMode; }
+
+    // Specify action when user presses grip buttons on both VR controllers
+    enum TwoButtonMode
+    {
+      TWOBUTTON_ROTATESCALE,
+      TWOBUTTON_DISABLE
+    };
+    void setTwoButtonMode(TwoButtonMode mode) { _twoButtonMode = mode; }
+    TwoButtonMode getTwoButtonMode() const { return _twoButtonMode; }
+
     // Handle event
     virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& us);
 
@@ -413,19 +432,7 @@ namespace OpenFrames {
     };
     MotionMode _motionMode;
     
-    enum OneButtonMode
-    {
-      ONEBUTTON_TRANSLATE,
-      ONEBUTTON_ROTATE,
-      ONEBUTTON_DISABLE
-    };
     OneButtonMode _oneButtonMode;
-    
-    enum TwoButtonMode
-    {
-      TWOBUTTON_ROTATESCALE,
-      TWOBUTTON_DISABLE
-    };
     TwoButtonMode _twoButtonMode;
 
     /** Data used when computing world transformations during user events */
