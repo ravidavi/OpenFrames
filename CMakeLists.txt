@@ -76,7 +76,7 @@ IF(UNIX AND NOT APPLE)
 ENDIF()
 
 # Find OpenSceneGraph
-FIND_PACKAGE(OpenSceneGraph 3.5.6 COMPONENTS osg osgText osgGA osgDB osgUtil osgViewer osgParticle)
+FIND_PACKAGE(OpenSceneGraph 3.5.6 COMPONENTS osg osgText osgGA osgDB osgUtil osgViewer osgParticle osgManipulator)
 
 # Give user a hint if OSG was not found
 IF(NOT OPENSCENEGRAPH_FOUND)

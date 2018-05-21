@@ -172,6 +172,7 @@ public:
 	bool setXData(const Trajectory::DataSource &src);
 	bool setYData(const Trajectory::DataSource &src);
 	bool setZData(const Trajectory::DataSource &src);
+  const Trajectory::DataSource* getDataSource() const { return _dataSource; }
   
   // Set default sources for all position components
   // This means standard X/Y/Z components for position
@@ -187,6 +188,9 @@ public:
   void setOffsetTime(double offsetTime); // Offset from global simulation time
   inline bool isFollowingTime() const
   { return _followTime; } // True for global sim time, false for custom sim time
+  
+  double getLastTime() const { return _lastAdjustedTime; }
+  Trajectory* getLastTrajectory() const { return _follow.get(); }
 	
   /** Inherited from osg::Callback, implements the callback. */
   virtual bool run(osg::Object* object, osg::Object* data);
@@ -234,7 +238,8 @@ protected:
   // Time control variables
   bool _needsUpdate, _followTime;
   double _timeVal;  // Time value to use (offset if following time, constant otherwise)
-  double _latestTime; // Time at most recent update
+  double _lastSimTime; // Simulation time at most recent update
+  double _lastAdjustedTime;
   
   OpenThreads::Mutex _mutex; // For adding/removing followed trajectories
 

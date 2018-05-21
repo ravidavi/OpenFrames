@@ -320,6 +320,11 @@
 	INTEGER, INTENT(IN) :: key
 	END SUBROUTINE
 
+   SUBROUTINE ofwin_keyrelease(key)
+   !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_keyrelease
+   INTEGER, INTENT(IN) :: key
+   END SUBROUTINE
+
 	SUBROUTINE ofwin_buttonpress(x, y, button)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_buttonpress
 	REAL, INTENT(IN) :: x, y

@@ -60,7 +60,7 @@ namespace OpenFrames
     _modelXform = new FrameTransform;
   }
   
-  osg::Group* Model::getGroup()
+  osg::Group* Model::getGroup() const
   {
     return _group.get();
   }
@@ -222,6 +222,34 @@ namespace OpenFrames
     repositionAxes(); // Reset the x/y/z axes
   }
   
+  /** Enable model dragging */
+  void Model::addDraggerCallback(osgManipulator::DraggerCallback* callback)
+  {
+    // Create dragger if needed
+    if(!_dragger.valid())
+    {
+      _draggerXform = new osg::MatrixTransform;
+      _xform->addChild(_draggerXform);
+      
+      _dragger = new osgManipulator::TrackballDragger();
+      _dragger->setupDefaultGeometry();
+      _dragger->setAxisLineWidth(5.0);
+      _xform->addChild(_dragger);
+      const osg::BoundingSphere& bound = getBound();
+      float scale = bound.radius();
+      _dragger->setMatrix(osg::Matrix::scale(scale, scale, scale) *
+                          osg::Matrix::translate(-(bound.center())));
+      _dragger->setHandleEvents(true);
+      _dragger->setActivationModKeyMask(osgGA::GUIEventAdapter::MODKEY_CTRL);
+      
+      ModelDraggerTransformCallback* draggerCallback = new ModelDraggerTransformCallback(_modelXform.get(), _draggerXform.get());
+      _dragger->addDraggerCallback(draggerCallback);
+    }
+    
+    // Add given callback to dragger
+    if(callback != nullptr) _dragger->addDraggerCallback(callback);
+  }
+  
   /** Move the model's x/y/z axes to default positions. */
   void Model::repositionAxes()
   {
@@ -257,6 +285,30 @@ namespace OpenFrames
     }
     
     return _bound;
+  }
+  
+  /*****************************************************************/
+  ModelDraggerTransformCallback::ModelDraggerTransformCallback(FrameTransform* modelxform, osg::MatrixTransform* draggerxform)
+  : osgManipulator::DraggerTransformCallback(draggerxform), _modelXform(modelxform)
+  { }
+  
+  bool ModelDraggerTransformCallback::receive(const osgManipulator::MotionCommand& command)
+  {
+    if(!osgManipulator::DraggerTransformCallback::receive(command)) return false;
+    
+    // For a MOVE command, decompose the transformation matrix
+    // TODO: Directly compute transformation components without using intermediate MatrixTransform
+    if((command.getStage() == osgManipulator::MotionCommand::MOVE) && _modelXform.valid())
+    {
+      osg::Vec3d trans, scale;
+      osg::Quat rot, rotSO;
+      _transform->getMatrix().decompose(trans, rot, scale, rotSO);
+      _modelXform->setPosition(trans);
+      _modelXform->setAttitude(rot);
+      _modelXform->setScale(scale[0], scale[1], scale[2]);
+    }
+    
+    return true;
   }
   
 } // !namespace OpenFrames

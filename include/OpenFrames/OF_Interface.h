@@ -181,6 +181,7 @@ OF_EXPORT void OF_FCN(ofwin_setupdatecontextfunction)(void (*fcn)(unsigned int *
 // Inform the WindowProxy that an event occured
 OF_EXPORT void OF_FCN(ofwin_resizewindow)(int *x, int *y, unsigned int *width, unsigned int *height);
 OF_EXPORT void OF_FCN(ofwin_keypress)(unsigned int *key);
+OF_EXPORT void OF_FCN(ofwin_keyrelease)(unsigned int *key);
 OF_EXPORT void OF_FCN(ofwin_buttonpress)(float *x, float *y, unsigned int *button);
 OF_EXPORT void OF_FCN(ofwin_buttonrelease)(float *x, float *y, unsigned int *button);
 OF_EXPORT void OF_FCN(ofwin_mousemotion)(float *x, float *y);

@@ -116,13 +116,13 @@ class OF_EXPORT ReferenceFrame : public osg::Referenced {
     *
     * \return The transform
     **/
-	inline FrameTransform* getTransform() {return _xform.get();}
+	inline FrameTransform* getTransform() const {return _xform.get();}
 
 	/* Get the group corresponding to this ReferenceFrame. By default, the
 	    frame's group is the same as its transform.  However, subclasses
 	    can define a separate group if they wish to. A child frame's group is
 	    what is added to a parent frame's transform in addChild(). */
-	virtual osg::Group* getGroup();
+	virtual osg::Group* getGroup() const;
 
     /**
     * \brief Set the position of this frame

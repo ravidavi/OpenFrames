@@ -181,6 +181,7 @@ namespace OpenFrames
 	    Note that x and y coordinates should be in the range
 	    [0, width] and [0, height] respectively, representing the extents of the window. */
     void keyPress(int key);
+    void keyRelease(int key);
     void mouseMotion(float x, float y);
     void buttonPress(float x, float y, unsigned int button);
     void buttonRelease(float x, float y, unsigned int button);
