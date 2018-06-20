@@ -25,6 +25,7 @@
 #include <OpenFrames/SegmentArtist.hpp>
 #include <OpenFrames/Sphere.hpp>
 #include <OpenFrames/Trajectory.hpp>
+#include <OpenFrames/TrajectoryFollower.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <iostream>
 #include <cmath>

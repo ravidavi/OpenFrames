@@ -21,6 +21,7 @@
 #include <OpenFrames/MarkerArtist.hpp>
 #include <OpenFrames/Model.hpp>
 #include <OpenFrames/Sphere.hpp>
+#include <OpenFrames/TrajectoryFollower.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <sstream>
 #include <osg/Math>

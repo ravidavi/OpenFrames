@@ -28,6 +28,7 @@
 #include <OpenFrames/SegmentArtist.hpp>
 #include <OpenFrames/Sphere.hpp>
 #include <OpenFrames/TrajectoryArtist.hpp>
+#include <OpenFrames/TrajectoryFollower.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <OpenThreads/Thread>
 #include <osg/Notify>

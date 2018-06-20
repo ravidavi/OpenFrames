@@ -20,6 +20,7 @@
 #include <OpenFrames/FrameTransform.hpp>
 #include <OpenFrames/MarkerArtist.hpp>
 #include <OpenFrames/Trajectory.hpp>
+#include <OpenFrames/TrajectoryFollower.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <osg/Math>
 

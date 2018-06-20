@@ -37,6 +37,7 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     SubtreeTracker.cpp
     Trajectory.cpp
     TrajectoryArtist.cpp
+    TrajectoryFollower.cpp
     TransformAccumulator.cpp
     Utilities.cpp
     Vector.cpp
