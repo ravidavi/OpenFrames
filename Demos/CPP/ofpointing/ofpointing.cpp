@@ -65,7 +65,7 @@ int main()
   limiter.setDesiredFramerate(30.0); // In frames per second
   
   // Compute and update destination's position
-  double tstep = 2.0*M_PI/(60.0*limiter.getDesiredFramerate());
+  double tstep = 2.0*osg::PI/(60.0*limiter.getDesiredFramerate());
   for(double t = 0.0; myWindow->isRunning(); t += tstep)
   {
     limiter.frame();
