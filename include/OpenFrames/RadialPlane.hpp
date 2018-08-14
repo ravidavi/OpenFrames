@@ -57,6 +57,9 @@ class OF_EXPORT RadialPlane : public ReferenceFrame
         /** Inherited from ReferenceFrame. */
 	virtual const osg::BoundingSphere& getBound() const;
 
+  /// Inherited
+  virtual std::string frameInfo() const { return "RadialPlane"; }
+
   protected:
 	virtual ~RadialPlane();
 

@@ -30,14 +30,19 @@ int main()
   ReferenceFrame* root = new ReferenceFrame("Root");
   root->setPosition(10.0, 10.0, 10.0);
 
+  // Create a ReferenceFrame to hold the pointing vector
+  ReferenceFrame* parent = new ReferenceFrame("Parent");
+  parent->setPosition(-5.0, -5.0, -5.0);
+  root->addChild(parent);
+
   // Create a ReferenceFrame that will point towards another frame
-  Sphere* current = new Sphere("Pointing");
+  Sphere* pointingVec = new Sphere("Pointing");
   const double radius = 0.1;
-  current->setRadius(radius);
-  current->showAxes(ReferenceFrame::X_AXIS);
-  current->showAxesLabels(ReferenceFrame::NO_AXES);
-  current->moveXAxis(osg::Vec3d(radius, 0.0, 0.0), 1.0);
-  root->addChild(current);
+  pointingVec->setRadius(radius);
+  pointingVec->showAxes(ReferenceFrame::X_AXIS);
+  pointingVec->showAxesLabels(ReferenceFrame::NO_AXES);
+  pointingVec->moveXAxis(osg::Vec3d(radius, 0.0, 0.0), 1.0);
+  parent->addChild(pointingVec);
   
   // Create a ReferenceFrame for the destination
   Sphere* dest = new Sphere("Destination");
@@ -48,8 +53,8 @@ int main()
   
   // Tell the pointing frame to point towards the destination
   FramePointer* fp = new FramePointer();
-  fp->setPointingFrames(root, current, dest);
-  current->getTransform()->setUpdateCallback(fp);
+  fp->setPointingFrames(root, pointingVec, dest);
+  pointingVec->getTransform()->setUpdateCallback(fp);
   
   // Create a manager to handle access to the scene
   FrameManager* fm = new FrameManager;
@@ -69,8 +74,8 @@ int main()
   for(double t = 0.0; myWindow->isRunning(); t += tstep)
   {
     limiter.frame();
-    dest->setPosition(cos(t), sin(t), 0.0);
-    current->setPosition(2.0*cos(t), -2.0*sin(t), cos(t));
+    dest->setPosition(10.0*cos(t), 10.0*sin(t), 0.0);
+    pointingVec->setPosition(2.0*cos(t), -2.0*sin(t), cos(t));
   }
   
   myWindow->join(); // Wait for window animation to finish

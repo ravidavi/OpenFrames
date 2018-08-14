@@ -55,6 +55,9 @@ class OF_EXPORT LatLonGrid : public ReferenceFrame
 	virtual void setColor( const osg::Vec4 &color );
 	using ReferenceFrame::setColor; // Unhide inherited setColor
 
+  /// Inherited
+  virtual std::string frameInfo() const { return "LatLonGrid"; }
+
   protected:
 	virtual ~LatLonGrid();
 

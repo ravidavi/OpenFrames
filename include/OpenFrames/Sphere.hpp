@@ -115,6 +115,9 @@ namespace OpenFrames
      
     /** Inherited from ReferenceFrame. */
     virtual const osg::BoundingSphere& getBound() const;
+
+    /// Inherited
+    virtual std::string frameInfo() const { return "Sphere"; }
     
   protected:
     virtual ~Sphere();
