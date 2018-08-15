@@ -34,7 +34,11 @@
 #include <vector>
 #include <string>
 
-namespace OpenFrames {
+/** \namespace OpenFrames
+ * This namespace contains all OpenFrames code / functionality.
+ */
+namespace OpenFrames
+{
 
 class FrameTracker;
 class Trajectory;

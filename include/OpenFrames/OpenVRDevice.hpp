@@ -38,7 +38,8 @@
 Classes declared in OpenVR header. We don't include the OpenVR header here because
 the user might want to use the Stub version of the OpenVR device.
 */
-namespace vr {
+namespace vr
+{
   class IVRSystem;
   class IVRRenderModels;
   struct VREvent_t;

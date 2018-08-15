@@ -33,7 +33,8 @@
 #include <unistd.h>
 #endif
 
-namespace OpenFrames{
+namespace OpenFrames
+{
   
   /** Sleep for specified number of milliseconds */
   void ThreadSleep( unsigned long nMilliseconds )

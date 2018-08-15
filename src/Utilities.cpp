@@ -20,8 +20,8 @@
 
 #include <OpenFrames/Utilities.hpp>
 
-namespace OpenFrames{
-  
+namespace OpenFrames
+{
   /**********************************************/
   void updateProjectionMatrix(osg::Matrix& proj, const double &zNear, const double &zFar)
   {
@@ -49,7 +49,7 @@ namespace OpenFrames{
       proj.makeFrustum(left*nz, right*nz, bottom*nz, top*nz, zNear, zFar);
     }
   }
-  
+
   /*******************************************************/
   osg::Viewport* getMainViewport(osg::View *view)
   {
