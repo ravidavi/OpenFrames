@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file SegmentArtist.hpp
+ * Declaration of SegmentArtist class.
+ */
+
 #ifndef _OF_SEGMENTARTIST_
 #define _OF_SEGMENTARTIST_
 
@@ -24,11 +28,9 @@
 
 namespace OpenFrames
 {
-
-/**********************************************************
- * Ravi Mathur
- * OpenFrames API, class SegmentArtist
-**********************************************************/
+  /**
+   * \class SegmentArtist
+   */
 class OF_EXPORT SegmentArtist : public TrajectoryArtist
 {
   public:
@@ -94,7 +96,7 @@ class OF_EXPORT SegmentArtist : public TrajectoryArtist
 	mutable bool _dataValid; // If trajectory supports required data
 	mutable bool _startDataZero;
 	mutable bool _endDataZero;
-};
+  };
 
 }
 

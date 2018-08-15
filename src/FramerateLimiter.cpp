@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file FramerateLimiter.cpp
+ * Definitions for the FramerateLimiter class.
+ */
+
 #include <OpenFrames/FramerateLimiter.hpp>
 #include <math.h>
 

@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file CurveArtist.cpp
+ * Definitions for the CurveArtist class.
+ */
+
 #include <OpenFrames/CurveArtist.hpp>
 #include <climits>
 

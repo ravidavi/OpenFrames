@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file FramePathVerifier.hpp
+ * Declaration of FramePathVerifier class.
+ */
+
 #ifndef _OF_FRAMEPATHVERIFIER_
 #define _OF_FRAMEPATHVERIFIER_
 
@@ -27,20 +31,22 @@ namespace OpenFrames
 class ReferenceFrame;
 typedef std::vector<ReferenceFrame*> FramePath;
 
-/*************************************************************
- * Ravi Mathur
- * OpenFrames API, class FramePathVerifier
- * This class keeps track of whether a given FramePath is valid, meaning that all the
- * frames in the FramePath occur in that order in the actual ReferenceFrame tree.
- * For example, if the FramePath is [A, B, C], then this class verifies that C is a
- * direct child of B, which is a direct child of A.
- * This class can be seen as a variation of the OpenFrames::DescendantTracker class,
- * the difference being that this class does not keep a ref_ptr to any root node
- * and does not try to reform the FramePath if it is broken.  This class simply
- * keeps track of whether the given FramePath is valid or not.
-************************************************************/
-class OF_EXPORT FramePathVerifier : public FrameTracker
-{
+  /**
+   * \class FramePathVerifier
+   *
+   * \brief This class determines whether a FramePath is valid.
+   *
+   * This class keeps track of whether a given FramePath is valid, meaning that all the
+   * frames in the FramePath occur in that order in the actual ReferenceFrame tree.
+   * For example, if the FramePath is [A, B, C], then this class verifies that C is a
+   * direct child of B, which is a direct child of A.
+   * This class can be seen as a variation of the OpenFrames::DescendantTracker class,
+   * the difference being that this class does not keep a ref_ptr to any root node
+   * and does not try to reform the FramePath if it is broken.  This class simply
+   * keeps track of whether the given FramePath is valid or not.
+   */
+  class OF_EXPORT FramePathVerifier : public FrameTracker
+  {
   public:
 	FramePathVerifier();
 
@@ -59,7 +65,7 @@ class OF_EXPORT FramePathVerifier : public FrameTracker
 
 	FramePath _framePath;
 	bool _valid;
-};
+  };
 
 } // !namespace OpenFrames
 

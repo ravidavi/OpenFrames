@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file OpenVRDevice.cpp
+ * Definitions for the OpenVRDevice class.
+ */
+
 #include <OpenFrames/OpenVRDevice.hpp>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Matrixd>

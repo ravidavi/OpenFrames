@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file SegmentArtist.cpp
+ * SegmentArtist-class function definitions.
+ */
+
 #include <OpenFrames/SegmentArtist.hpp>
 #include <climits>
 #include <algorithm>

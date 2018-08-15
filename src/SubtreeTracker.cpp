@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file SubtreeTracker.cpp
+ * SubtreeTracker-class function definitions.
+ */
+
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/SubtreeTracker.hpp>
 

@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file DescendantTracker.hpp
+ * Declaration of DescendantTracker class.
+ */
+
 #ifndef _OF_DESCENDANTTRACKER_
 #define _OF_DESCENDANTTRACKER_
 
@@ -26,13 +30,16 @@ namespace OpenFrames {
 class ReferenceFrame;
 typedef std::vector<ReferenceFrame*> FramePath;
 
-/*****************************************
- * Ravi Mathur
- * OpenFrames API, class DescendantTracker
- * Implements a FrameTracker that stores the path from the tracked frame to a particular descendant frame.
-****************************************/
-class OF_EXPORT DescendantTracker : public FrameTracker {
-
+  /**
+   * \class DescendantTracker
+   *
+   * \brief This class stores the path from the tracked frame.
+   *
+   * This class implements a FrameTracker that stores the path from the tracked frame
+   * to a particular descendant frame.
+   */
+  class OF_EXPORT DescendantTracker : public FrameTracker
+  {
   public:
 	DescendantTracker();
 	DescendantTracker( ReferenceFrame* frame );
@@ -68,7 +75,7 @@ class OF_EXPORT DescendantTracker : public FrameTracker {
 
 	FramePath _framePath;
 	bool _tracking;
-}; // !class DescendantTracker
+  }; // !class DescendantTracker
 
 } // !namespace OpenFrames
 #endif // !_OF_DESCENDANTTRACKER_

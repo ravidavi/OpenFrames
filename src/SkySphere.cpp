@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file SkySphere.cpp
+ * SkySphere-class function definitions.
+ */
+
 #include <OpenFrames/SkySphere.hpp>
 #include <osg/BlendFunc>
 #include <osg/PointSprite>

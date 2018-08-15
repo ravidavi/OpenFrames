@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file Vector.hpp
+ * Declaration of Vector class.
+ */
+
 #ifndef _OF_VECTOR_
 #define _OF_VECTOR_
 
@@ -23,14 +27,20 @@
 #include <osg/Referenced>
 #include <osg/ref_ptr>
 
-namespace OpenFrames{
-
-/*******************************************
- * Ravi Mathur
- * OpenFrames API, class Vector
- * This class defines an actual drawable Vector of variable geometry.
-******************************************/
-class OF_EXPORT Vector : public osg::Referenced {
+namespace OpenFrames
+{
+  /**
+   * \class Vector
+   *
+   * \brief This class defines an actual drawable Vector of variable geometry.
+   *
+   * This class computes the transformation of a ReferenceFrame with respect to any
+   * of its ancestor frames. To use, just specify the root frame and the target
+   * frame then call the getLocalToWorld() or getWorldToLocal() method. The
+   * accumulated transform between root & target frames is returned.
+   */
+  class OF_EXPORT Vector : public osg::Referenced
+  {
   public:
 	Vector( const osg::Vec3d& vec );
 
@@ -65,7 +75,7 @@ class OF_EXPORT Vector : public osg::Referenced {
 
 	osg::Vec3d _basepos; // Vector base position
 	osg::Vec3d _dir;     // Vector direction
-};
+  };
 
 } // ! namespace OpenFrames
 

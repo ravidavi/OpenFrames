@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file DescendantTracker.cpp
+ * Definitions for the DescendantTracker class.
+ */
+
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/DescendantTracker.hpp>
 
@@ -21,7 +25,8 @@
 #include <iostream>
 #endif
 
-namespace OpenFrames {
+namespace OpenFrames
+{
 
 DescendantTracker::DescendantTracker() 
 	: _tracking(false)

@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file Sphere.hpp
+ * Declaration of Sphere class.
+ */
+
 #ifndef _OF_SPHERE_
 #define _OF_SPHERE_
 
@@ -25,14 +29,15 @@
 
 namespace OpenFrames
 {
-  
-  /*******************************************************************
-   * Ravi Mathur
-   * OpenFrames API, class Sphere
-   * A Sphere is a ReferenceFrame with a 3D model of a sphere at its origin.
-   * The radius of the sphere is adjustable, and a texture can be mapped
-   * onto the sphere if desired.
-   ******************************************************************/
+  /**
+   * \class Sphere
+   *
+   * \brief A ReferenceFrame with a sphere at the origin.
+   *
+   * An OpenFrames Sphere is a ReferenceFrame with a 3D model of a sphere
+   * at its origin. The radius of the sphere is adjustable, and a texture
+   * can be mapped onto the sphere.
+   */
   class OF_EXPORT Sphere : public ReferenceFrame
   {
   public:

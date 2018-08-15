@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file FrameManager.hpp
+ * Declaration of FrameManager class.
+ */
+
 #ifndef _OF_FRAMEMANAGER_
 #define _OF_FRAMEMANAGER_
 
@@ -25,27 +29,28 @@
 
 namespace OpenFrames
 {
-
-/*******************************************************
- * Ravi Mathur
- * OpenFrames API, class FrameManager
- * This class allows multiple clients to synchronize access to a
- * ReferenceFrame heirarchy, but allows high-priority clients
- * access before low-priority clients. This avoids the case where
- * high-fps rendering threads can hog the lock on certain OS's,
- * and significantly delay the user trying to acquire the lock.
- * To use: threads that frequently acquire the lock (e.g.
- * rendering threads) should use low priority, and threads that
- * need to make one-off changes to the scene graph (e.g. the user)
- * should use high priority.
- * NOTE: Implements "triple mutex" approach documented in:
- * https://stackoverflow.com/questions/11666610/how-to-give-priority-to-privileged-thread-in-mutex-locking
- * Approach summary: Data mutex D, Next-access mutex N, low-priority mutex L
- *  Low-priority Thread: lock L -> lock N -> lock D -> unlock N -> (...work...) -> unlock D -> unlock L
- *  High-priority Thread: lock N -> lock D -> unlock N -> (...work...) -> unlock D
-*******************************************************/
-class OF_EXPORT FrameManager : public osg::Referenced
-{
+  /**
+   * \class FrameManager
+   *
+   * \brief This class allows priority access to a ReferenceFrame heirarchy.
+   *
+   * This class allows multiple clients to synchronize access to a
+   * ReferenceFrame heirarchy, but allows high-priority clients
+   * access before low-priority clients. This avoids the case where
+   * high-fps rendering threads can hog the lock on certain OS's,
+   * and significantly delay the user trying to acquire the lock.
+   * To use: threads that frequently acquire the lock (e.g.
+   * rendering threads) should use low priority, and threads that
+   * need to make one-off changes to the scene graph (e.g. the user)
+   * should use high priority.
+   * NOTE: Implements "triple mutex" approach documented in:
+   * https://stackoverflow.com/questions/11666610/how-to-give-priority-to-privileged-thread-in-mutex-locking
+   * Approach summary: Data mutex D, Next-access mutex N, low-priority mutex L
+   *  Low-priority Thread: lock L -> lock N -> lock D -> unlock N -> (...work...) -> unlock D -> unlock L
+   *  High-priority Thread: lock N -> lock D -> unlock N -> (...work...) -> unlock D.
+   */
+  class OF_EXPORT FrameManager : public osg::Referenced
+  {
   public:
 	FrameManager(ReferenceFrame *frame = NULL) : _frame(frame) {}
   
@@ -100,7 +105,7 @@ class OF_EXPORT FrameManager : public osg::Referenced
 
 	osg::ref_ptr<ReferenceFrame> _frame;
 	OpenThreads::Mutex _mutexData, _mutexNext, _mutexLP;
-};
+  };
 
 }
 

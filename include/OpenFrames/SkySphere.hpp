@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file SkySphere.hpp
+ * Declaration of SkySphere class.
+ */
+
 #ifndef _OF_SKYSPHERE_
 #define _OF_SKYSPHERE_
 
@@ -22,17 +26,20 @@
 
 #include <array>
 
-namespace OpenFrames {
-
-/*******************************************
- * Ravi Mathur
- * OpenFrames API, class SkySphere
- * Extends OpenFrames::Sphere by adding ability to show a texture
- * and/or stars from a star catalog.
- * Textures are widely available online.
- * Star Catalogs must be text files with the following format: (TBD)
-******************************************/
-class OF_EXPORT SkySphere : public OpenFrames::Sphere {
+namespace OpenFrames
+{
+  /**
+   * \class SkySphere
+   *
+   * \brief Extends OpenFrames::Sphere.
+   *
+   * Extends OpenFrames::Sphere by adding ability to show a texture
+   * and/or stars from a star catalog. Textures are widely
+   * available online. Star Catalogs must be text files with the
+   * following format: (TBD).
+   */
+  class OF_EXPORT SkySphere : public OpenFrames::Sphere
+  {
   public:
     /** Indicates what elements to draw */
     enum DrawMode
@@ -108,7 +115,7 @@ class OF_EXPORT SkySphere : public OpenFrames::Sphere {
 
   private:
     void _init();
-};
+  };
 
 }  // !namespace OpenFrames
 

@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file Trajectory.hpp
+ * Declaration of Trajectory class.
+ */
+
 #ifndef _OF_TRAJECTORY_
 #define _OF_TRAJECTORY_
 
@@ -22,17 +26,21 @@
 #include <OpenThreads/ReadWriteMutex>
 #include <vector>
 
-namespace OpenFrames {
-
-class TrajectorySubscriber; // Forward-declare trajectory subscriber
-
-/************************************
- * Ravi Mathur  
- * OpenFrames API, class Trajectory
- * A Trajectory holds a collection of times, positions, attitudes, and any number of optional data vectors.  Data is inserted at the end of the trajectory, and no sorting is done during insertion.  This is left to deriving classes.
-***********************************/
-class OF_EXPORT Trajectory : public osg::Referenced
+namespace OpenFrames
 {
+  class TrajectorySubscriber; // Forward-declare trajectory subscriber
+
+  /**
+   * \class Trajectory
+   *
+   * \brief Holds a collection of data vectors.
+   *
+   * A Trajectory holds a collection of times, positions, attitudes and any number of
+   * optional data vectors. Data is inserted at the end of the trajectory, and no
+   * sorting is done during insertion. This is left to deriving classes.
+   */
+  class OF_EXPORT Trajectory : public osg::Referenced
+  {
   public:
 	/** Type of each data element in the trajectory.  Make sure to change
 	    return value of getGLDataType() if you change this! */
@@ -243,24 +251,24 @@ class OF_EXPORT Trajectory : public osg::Referenced
 #else
   mutable OpenThreads::Mutex _mutex;
 #endif
-};
+  };
 
-/************************************
- * Ravi Mathur
- * OpenFrames API, class TrajectorySubscriber
- * Pure abstract base class that is informed of changes to Trajectory objects
- ***********************************/
-class TrajectorySubscriber
-{
-public:
-  /** Called by a trajectory when its data is cleared. Must be
-   implemented by derived classes. */
-  virtual void dataCleared(Trajectory *traj) = 0;
+  /**
+   * \class TrajectorySubscriber
+   *
+   * \brief Abstract base class that is informed of changes to Trajectory objects.
+   */
+  class TrajectorySubscriber
+  {
+  public:
+    /** Called by a trajectory when its data is cleared. Must be
+        implemented by derived classes. */
+    virtual void dataCleared(Trajectory *traj) = 0;
   
-  /** Called by a trajectory when data is added to it. Must be
-   implemented by derived classes. */
-  virtual void dataAdded(Trajectory *traj) = 0;
-};
+    /** Called by a trajectory when data is added to it. Must be
+        implemented by derived classes. */
+    virtual void dataAdded(Trajectory *traj) = 0;
+  };
   
 } // !namespace OpenFrames
 

@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file CurveArtist.hpp
+ * Declaration of CurveArtist class.
+ */
+
 #ifndef _OF_CURVEARTIST_
 #define _OF_CURVEARTIST_
 
@@ -24,16 +28,17 @@
 
 namespace OpenFrames
 {
-
-/**********************************************************
- * Ravi Mathur
- * OpenFrames API, class CurveArtist
- * Draws a series of Trajectory points connected by lines.  The x,y,z
- * components of the points can be independently specified to be any
- * elements of the Trajectory.
-**********************************************************/
-class OF_EXPORT CurveArtist : public TrajectoryArtist
-{
+  /**
+   * \class CurveArtist
+   *
+   * \brief This class draws Trajectory points connected by lines.
+   *
+   * This class draws a series of Trajectory points connected by lines.
+   * The x,y,z components of the points can be independently specified
+   * to be any elements of the Trajectory.
+   */
+  class OF_EXPORT CurveArtist : public TrajectoryArtist
+  {
   public:
 
 	CurveArtist( const Trajectory *traj = NULL );
@@ -88,7 +93,7 @@ class OF_EXPORT CurveArtist : public TrajectoryArtist
 
 	mutable bool _dataValid; // If trajectory supports required data
 	mutable bool _dataZero; // If we are just drawing at the origin
-};
+  };
 
 }
 

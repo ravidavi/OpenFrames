@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file OF_Interface.cpp
+ * Definitions for the OF_Interface class.
+ */
+
 #include <OpenFrames/OF_Interface.h>
 #include <OpenFrames/CoordinateAxes.hpp>
 #include <OpenFrames/CurveArtist.hpp>
@@ -55,9 +59,15 @@ typedef std::map<std::string, osg::ref_ptr<Trajectory> > TrajectoryMap;
 typedef std::map<std::string, osg::ref_ptr<TrajectoryArtist> > ArtistMap;
 typedef std::map<std::string, osg::ref_ptr<View> > ViewMap;
 
-/** This class keeps track of all OpenFrames objects created using this
+/**
+ * \class OF_Objects
+ *
+ * \brief This class tracks OpenFrames objects created with this interface.
+ *
+ * This class keeps track of all OpenFrames objects created using this
  * interface. It is implemented as a singleton becuase it handles ALL
- * OpenFrames objects and must not have multiple instances. */
+ * OpenFrames objects and must not have multiple instances.
+ */
 class OF_Objects : public osg::Referenced
 {
   public:

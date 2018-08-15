@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file SubtreeTracker.hpp
+ * Declaration of SubtreeTracker class.
+ */
+
 #ifndef _OF_SUBTREETRACKER_
 #define _OF_SUBTREETRACKER_
 
@@ -22,16 +26,23 @@
 #include <osg/ref_ptr>
 #include <map>
 
-namespace OpenFrames {
+namespace OpenFrames
+{
+  class ReferenceFrame;
 
-class ReferenceFrame;
-
-/******************************************
- * Ravi Mathur
- * OpenFrames API, class SubtreeTracker
- * Implements a simple FrameTracker that remembers each frame in the tracked frame's subtree by name.  This allows for quick lookups of frames by their names, without having to traverse the subtree.  Note that if there are multiple frames with the same name, then only the first encountered frame will be remembered.  All other frames with the same name (and their subtrees) will be ignored.
-*****************************************/
-class OF_EXPORT SubtreeTracker : public FrameTracker {
+  /**
+   * \class SubtreeTracker
+   *
+   * \brief Remembers each frame of a tracked frame.
+   *
+   * Implements a simple FrameTracker that remembers each frame in the tracked frame's subtree,
+   * by name. This allows for quick lookups of frames by their names without having to
+   * traverse the subtree. Note that if there are multiple frames with the same name,
+   * then only the first encountered frame will be remembered. All other frames with the
+   * same name (and their subtrees) will be ignored.
+   */
+  class OF_EXPORT SubtreeTracker : public FrameTracker
+  {
 	typedef std::map<std::string, ReferenceFrame* > FrameMap;
 
   public:
@@ -65,7 +76,7 @@ class OF_EXPORT SubtreeTracker : public FrameTracker {
 	void _removeAllChildren( ReferenceFrame* frame );
 
 	FrameMap _frames;  // All frames being tracked
-};
+  };
 
 } // !namespace OpenFrames
 

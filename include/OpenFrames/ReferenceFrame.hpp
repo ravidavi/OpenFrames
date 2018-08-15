@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file ReferenceFrame.hpp
+ * Declaration of ReferenceFrame class.
+ */
+
 #ifndef _OF_REFERENCEFRAME_
 #define _OF_REFERENCEFRAME_
 
@@ -35,18 +39,16 @@ namespace OpenFrames {
 class FrameTracker;
 class Trajectory;
 
-/*******************************************
- * Ravi Mathur
- * OpenFrames API, class ReferenceFrame
-******************************************/
-
-/**
-* \brief This class defines the standard functions of a classical reference frame. 
-* 
-* A reference frame can only contain other reference frames,
-* so all objects should be derived from this class.
-**/
-class OF_EXPORT ReferenceFrame : public osg::Referenced {
+  /**
+   * \class ReferenceFrame
+   *
+   * \brief Defines the standard functions of a classical reference frame.
+   *
+   * A reference frame can only contain other reference frames,
+   * so all objects should be derived from this class.
+   */
+  class OF_EXPORT ReferenceFrame : public osg::Referenced
+  {
   public:
     typedef std::vector<ReferenceFrame*> ParentList; /**< Defines a vector of all direct parents of this frame */
     typedef std::vector<osg::ref_ptr<ReferenceFrame> > ChildList; /**< Defines a vector of all direct children of this frame */
@@ -357,7 +359,7 @@ class OF_EXPORT ReferenceFrame : public osg::Referenced {
 	ParentList _parents;  ///< All direct parents of this frame
 	ChildList _children;  ///< All direct children of this frame
 	TrackerList _trackers; ///< All trackers of this frame
-};
+  };
 
 }  // !namespace OpenFrames
 

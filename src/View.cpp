@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file View.cpp
+ * FollowingTrackball- and View-class function definitions.
+ */
+
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/Utilities.hpp>
 #include <OpenFrames/View.hpp>

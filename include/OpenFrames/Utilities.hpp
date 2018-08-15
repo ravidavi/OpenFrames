@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file Utilities.hpp
+ * Declaration of Utilities class.
+ */
+
 #ifndef _OF_UTILITIES_
 #define _OF_UTILITIES_
 

@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file FramePathVerifier.cpp
+ * Definitions for the FramePathVerifier class.
+ */
+
 #include <OpenFrames/FramePathVerifier.hpp>
 #include <OpenFrames/ReferenceFrame.hpp>
 

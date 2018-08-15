@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file LatLonGrid.hpp
+ * Declaration of LatLonGrid class.
+ */
+
 #ifndef _OF_LATLONGRID_
 #define _OF_LATLONGRID_
 
@@ -24,15 +28,16 @@
 
 namespace OpenFrames
 {
-
-/**********************************************************
- * Ravi Mathur
- * OpenFrames API, class LatLonGrid
- * A type of ReferenceFrame that draws a spherical latitude/longitude grid
- * with adjustable spacings.
-**********************************************************/
-class OF_EXPORT LatLonGrid : public ReferenceFrame
-{
+  /**
+   * \class LatLonGrid
+   *
+   * \brief This class draws a spherical lat-lon grid.
+   *
+   * This class implements a type of ReferenceFrame that draws a spherical
+   * latitude/longitude grid with adjustable spacings.
+   */
+  class OF_EXPORT LatLonGrid : public ReferenceFrame
+  {
   public:
 	LatLonGrid( const std::string &name );
 	LatLonGrid( const std::string &name, float r, float g, float b, float a = 1.0 );
@@ -69,7 +74,7 @@ class OF_EXPORT LatLonGrid : public ReferenceFrame
 	osg::ref_ptr<osg::Geometry> _mainGeom; // For equator and prime meridian
 	osg::ref_ptr<osg::Vec3Array> _vertices; // Vertices that define the grid
 	osg::ref_ptr<osg::Vec4Array> _colors; // Colors
-};
+  };
 
 } // !namespace OpenFrames
 

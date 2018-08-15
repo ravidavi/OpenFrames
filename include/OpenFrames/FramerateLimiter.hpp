@@ -14,19 +14,29 @@
  limitations under the License.
  ***********************************/
 
+/** \file FramerateLimiter.hpp
+ * Declaration of FramerateLimiter class.
+ */
+
 #ifndef _OF_FRAMERATELIMITER_
 #define _OF_FRAMERATELIMITER_
 
 #include <OpenFrames/Export.h>
 #include <osg/Timer>
 
-namespace OpenFrames{
-  
-  /**************************************
-   * Ravi Mathur
-   * OpenFrames API, class FramerateLimiter
-   * This class implements a simple framerate limiting algorithm.  The method is to wait until a certain number of frames have elapsed then compute the average time per frame.  This is used to compute how much extra time each frame needs to take up in order to achieve the target framerate.  The limiter then applies this extra time to each frame in the next set, and the process is repeated.
-   *************************************/
+namespace OpenFrames
+{
+  /**
+   * \class FramerateLimiter
+   *
+   * \brief This class implements a framerate-limiting algorithm.
+   *
+   * This class implements a simple framerate limiting algorithm. The method is to wait until
+   * a certain number of frames have elapsed, then compute the average time per frame. This
+   * is used to compute how much extra time each frame needs to take up in order to achieve
+   * the target framerate. The limiter then applies this extra time to each frame in the next
+   * set, and the process is repeated.
+   */
   class OF_EXPORT FramerateLimiter
   {
   public:

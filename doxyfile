@@ -1,0 +1,10 @@
+# Adding a version number here would be helpful/useful.
+PROJECT_NAME = OpenFrames
+
+# Give doxygen the names of the dirs that contain files to be processed.
+# The dirs are relative to the location of the 'doxyfile' config file.
+INPUT        = src  include/OpenFrames
+
+# Change tabs to spaces. Four spaces is doxygen's default anyway,
+# this is just a reminder of the substitution.
+TAB_SIZE     = 4

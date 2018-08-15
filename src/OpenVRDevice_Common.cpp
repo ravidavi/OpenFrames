@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file OpenVRDevice_Common.cpp
+ * More OpenVRDevice function definitions.
+ */
+
 #include <OpenFrames/OpenVRDevice.hpp>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/VRUtils.hpp>
@@ -27,6 +31,16 @@ namespace OpenFrames{
   // Callback that overrides the current VR camera's World->Eye modelview
   // matrix with the appropriate Room->Eye modelview matrix. This is
   // needed since OpenVR devices exist in room space, not in world space.
+
+  /**
+   * \class OpenVRDeviceTransformCallback
+   *
+   * \brief Callback that overrides the current VR camera's modelview matrix.
+   *
+   * Callback that overrides the current VR camera's World->Eye modelview
+   * matrix with the appropriate Room->Eye modelview matrix. This is
+   * needed since OpenVR devices exist in room space, not in world space.
+   */
   class OpenVRDeviceTransformCallback : public osg::Callback
   {
   public:

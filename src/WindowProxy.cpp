@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file WindowProxy.cpp
+ * EmbeddedGraphics, WindowEventHandler and WindowProxy-class function definitions.
+ */
+
 #include <OpenFrames/WindowProxy.hpp>
 #include <OpenFrames/FramerateLimiter.hpp>
 #include <OpenFrames/Utilities.hpp>

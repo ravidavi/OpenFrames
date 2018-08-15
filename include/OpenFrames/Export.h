@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file Export.h
+ * Handling of dll export cases.
+ */
+
 #ifndef _OF_EXPORT_
 #define _OF_EXPORT_
 

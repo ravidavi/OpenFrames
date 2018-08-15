@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file Sphere.cpp
+ * Sphere-class function definitions.
+ */
+
 #include <OpenFrames/Sphere.hpp>
 #include <osg/Geode>
 #include <osg/PolygonOffset>
@@ -25,9 +29,14 @@
 
 namespace OpenFrames
 {
-
-  /** A cull callback that sets the detail level of a Sphere based on how far
-    away it is from the eye point. */
+  /**
+   * \class SphereLODCallback
+   *
+   * \brief Sets the detail level of a Sphere.
+   *
+   * A cull callback that sets the detail level of a Sphere based on how far
+   * away it is from the eye point.
+   */
   struct SphereLODCallback : public osg::DrawableCullCallback
   {
     SphereLODCallback(OpenFrames::Sphere& sphere)

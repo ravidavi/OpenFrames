@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file Model.cpp
+ * Definitions for the Model class.
+ */
+
 #include <OpenFrames/Model.hpp>
 #include <osg/Geode>
 #include <osg/Shape>

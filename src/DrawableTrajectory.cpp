@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file DrawableTrajectory.cpp
+ * Definitions for the DrawableTrajectory class.
+ */
+
 #include <OpenFrames/DrawableTrajectory.hpp>
 #include <OpenFrames/DoubleSingleUtils.hpp>
 #include <osgUtil/CullVisitor>
@@ -25,11 +29,17 @@
 
 namespace OpenFrames
 {
-
-/** A callback that sets the shader uniforms to allow rendering
-    relative to the eye using GPU. This method eliminates jittering
-    associated with very large OpenGL vertex positions.
-    Ref: Cozzi & Ring, "3D Engine Design for Virtual Globes" */
+/**
+ * \class DPCameraCallback
+ *
+ * \brief Callback that sets shader uniforms.
+ *
+ * This callback sets shader uniforms to allow rendering
+ * relative to the eye using GPU. This method eliminates
+ * jittering associated with very large OpenGL vertex
+ * positions.
+ * Ref: Cozzi & Ring, "3D Engine Design for Virtual Globes".
+ */
 class UniformCallback : public osg::NodeCallback
 {
   public:

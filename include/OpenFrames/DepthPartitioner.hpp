@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file DepthPartitioner.hpp
+ * Declaration of DepthPartitioner class.
+ */
+
 #ifndef _OF_DEPTHPARTITIONER_
 #define _OF_DEPTHPARTITIONER_
 
@@ -26,13 +30,15 @@ namespace OpenFrames
 {
   class DepthPartitionCallback;
 
-  /**********************************************************
-   * Ravi Mathur
-   * OpenFrames API, class DepthPartitioner
-   * Sets up depth partitioning on an osgViewer::View
-   * Note that an instance of this class can only be attached to one
-   * View at a time.
-   **********************************************************/
+  /**
+   * \class DepthPartitioner
+   *
+   * \brief This class sets up depth partitioning.
+   *
+   * This class sets up depth partitioning on an osgViewer::View.
+   * Note that an instance of this class can only be attached
+   * to one View at a time.
+   */
   class OF_EXPORT DepthPartitioner : public virtual osg::Referenced
   {
   public:
@@ -56,15 +62,17 @@ namespace OpenFrames
     osgViewer::View *_view;
   };
 
-  /**********************************************************
-   * Ravi Mathur
-   * OpenFrames API, class DepthPartitionCallback
-   * Analyzes a scene, then partitions it into several segments that can
-   * be rendered separately. Each segment is small enough in the
-   * z-direction to avoid depth buffer problems for very large scenes.
-   * Note this must be a slave update callback, since normal update callbacks
+  /**
+   * \class DepthPartitionCallback
+   *
+   * \brief This class analyzes and partitions a scene for rendering.
+   *
+   * This class analyzes a scene, then partitions it into several segments
+   * that can be rendered separately. Each segment is small enough in the
+   * z-direction to avoid depth-buffer problems for very large scenes.
+   * Note this must be a slave-update callback since normal update callbacks
    * are called before the camera manipulator (e.g. trackball) is applied.
-   **********************************************************/
+  */
   class OF_EXPORT DepthPartitionCallback : public osg::View::Slave::UpdateSlaveCallback
   {
   public:

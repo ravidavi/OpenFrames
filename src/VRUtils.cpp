@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file VRUtils.cpp
+ * Function definitions for the VRTextureBuffer, VRCamera and VRCameraManager classes.
+ */
+
 #include <OpenFrames/OpenVRDevice.hpp>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/Utilities.hpp>

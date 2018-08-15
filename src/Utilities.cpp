@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file Utilities.cpp
+ * Several utility function definitions.
+ */
+
 #include <OpenFrames/Utilities.hpp>
 
 namespace OpenFrames{

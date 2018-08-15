@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file MarkerArtist.hpp
+ * Declaration of MarkerArtist class.
+ */
+
 #ifndef _OF_MARKERARTIST_
 #define _OF_MARKERARTIST_
 
@@ -22,17 +26,18 @@
 
 namespace OpenFrames
 {
-
-/**********************************************************
- * Ravi Mathur
- * OpenFrames API, class MarkerArtist
- * The MarkerArtist is a type of TrajectoryArtist that draws markers at points
- * of a trajectory.  Markers can be standard OpenGL points, or point sprites
- * that use a specified image.  Markers can be drawn at the beginning or end of
- * a Trajectory, or at specified intermediate points in the trajectory.
-**********************************************************/
-class OF_EXPORT MarkerArtist : public TrajectoryArtist
-{
+  /**
+   * \class MarkerArtist
+   *
+   * \brief This class draws markers at trajectory points.
+   *
+   * The MarkerArtist is a type of TrajectoryArtist that draws markers at points
+   * of a trajectory. Markers can be standard OpenGL points or point sprites
+   * that use a specified image. Markers can be drawn at the beginning or end of
+   * a Trajectory, or at specified intermediate points.
+   */
+  class OF_EXPORT MarkerArtist : public TrajectoryArtist
+  {
   public:
 
 	/** Indicates which data points should be drawn as markers. */
@@ -139,7 +144,7 @@ class OF_EXPORT MarkerArtist : public TrajectoryArtist
 	mutable bool _shouldAttenuate; // Attenuation needs to be recomputed
 
         osg::ref_ptr<osg::Shader> _fragShader; // Marker fragment shader
-};
+  };
 
 }
 

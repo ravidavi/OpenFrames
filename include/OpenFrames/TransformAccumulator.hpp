@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file TransformAccumulator.hpp
+ * Declaration of TransformAccumulator class.
+ */
+
 #ifndef _OF_TRANSFORMACCUMULATOR_
 #define _OF_TRANSFORMACCUMULATOR_
 
@@ -25,18 +29,20 @@
 #include <osg/Referenced>
 #include <osg/ref_ptr>
 
-namespace OpenFrames {
-
-class ReferenceFrame;
-
-/***********************************************************
- * Ravi Mathur
- * OpenFrames API, class TransformVisitor
- * This NodeVisitor accumulates the transform along the given path
- * of ReferenceFrames.
-***********************************************************/
-class OF_EXPORT TransformVisitor : public osg::NodeVisitor
+namespace OpenFrames
 {
+  class ReferenceFrame;
+
+  /**
+   * \class TransformVisitor
+   *
+   * \brief Accumulates the transform along a path.
+   *
+   * This NodeVisitor accumulates the transform along a given path
+   * of ReferenceFrames.
+   */
+  class OF_EXPORT TransformVisitor : public osg::NodeVisitor
+  {
   public:
 	enum CoordMode
 	{
@@ -56,18 +62,20 @@ class OF_EXPORT TransformVisitor : public osg::NodeVisitor
 	virtual ~TransformVisitor();
 
 	FramePath::const_iterator _itr;
-};
+  };
 
-/***************************************
- * Ravi Mathur
- * OpenFrames API, Class TransformAccumulator
- * This class computes the transformation of a ReferenceFrame with respect to any
- * one of its ancestor frames.  To use, just specify the root frame and the target
- * frame.  Then call the getLocalToWorld() or getWorldToLocal() methods to return
- * the accumulated transform between root & target frames.
-***************************************/
-class OF_EXPORT TransformAccumulator : public osg::Referenced
-{
+  /**
+   * \class TransformAccumulator
+   *
+   * \brief Computes the transformation of a ReferenceFrame wrt an ancestor.
+   *
+   * This class computes the transformation of a ReferenceFrame with respect to any
+   * of its ancestor frames. To use, just specify the root frame and the target
+   * frame then call the getLocalToWorld() or getWorldToLocal() method. The
+   * accumulated transform between root & target frames is returned.
+   */
+  class OF_EXPORT TransformAccumulator : public osg::Referenced
+  {
   public:
 	TransformAccumulator();
 	TransformAccumulator( ReferenceFrame* root, ReferenceFrame* frame );
@@ -98,7 +106,7 @@ class OF_EXPORT TransformAccumulator : public osg::Referenced
 
 	  // NodeVisitor that computes the transform from root to origin
 	osg::ref_ptr<TransformVisitor> _transformVisitor;
-}; // !class TransformAccumulator
+  }; // !class TransformAccumulator
 
 }  // !namespace OpenFrames
 

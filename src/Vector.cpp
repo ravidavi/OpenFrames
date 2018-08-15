@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file Vector.cpp
+ * Vector-class function definitions.
+ */
+
 #include <OpenFrames/Vector.hpp>
 #include <osg/ShapeDrawable>
 #include <osg/BlendFunc>

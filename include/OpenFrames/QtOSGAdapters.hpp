@@ -11,6 +11,10 @@
  * OpenSceneGraph Public License for more details.
 */
 
+/** \file QtOSGAdapters.hpp
+ * Declaration of QtOSGAdapters class.
+ */
+
 #ifndef _OF_QTOSGADAPTERS_
 #define _OF_QTOSGADAPTERS_
 

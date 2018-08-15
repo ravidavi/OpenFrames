@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file FrameTransform.hpp
+ * Declaration of FrameTransform class.
+ */
+
 #ifndef _OF_FRAMETRANSFORM_
 #define _OF_FRAMETRANSFORM_
 
@@ -22,14 +26,16 @@
 
 namespace OpenFrames
 {
-
-/************************************
- * Ravi Mathur
- * OpenFrames API, class FrameTransform
- * This class implements a transformation from local to world coordinates and back.  It is a subclass of the OSG class osg::Transform.
-************************************/
-class OF_EXPORT FrameTransform : public osg::Transform
-{
+  /**
+   * \class FrameTransform
+   *
+   * \brief This class transforms from local to world coordinates or vice versa.
+   *
+   * This class implements a transformation from local to world coordinates and back.
+   * It is a subclass of the OSG class osg::Transform.
+   */
+  class OF_EXPORT FrameTransform : public osg::Transform
+  {
   public:
 
 	FrameTransform();
@@ -43,7 +49,7 @@ class OF_EXPORT FrameTransform : public osg::Transform
 	void reset();
 
 	// Set whether this frame should follow the viewer's eye point.
-	// This is used ie for a SkyBox.
+	// This is used, e.g., for a SkyBox.
 	inline void setFollowEye(bool f) { _followEye = f; }
 	inline bool getFollowEye() const { return _followEye; }
 
@@ -87,10 +93,10 @@ class OF_EXPORT FrameTransform : public osg::Transform
 	// If disabled, this transform will have no effect
 	bool _disabled;
 
-	// Allows frame to follow the current eye point.  Only effective if
-	// the reference frame is RELATIVE_RF
+	// Allows frame to follow the current eye point. Only effective
+	// if the reference frame is of type RELATIVE_RF.
 	bool _followEye;
-};
+  };
 
 } // !namespace OpenFrames
 

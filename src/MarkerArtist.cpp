@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file MarkerArtist.cpp
+ * Definitions for the MarkerArtist class.
+ */
+
 #include <OpenFrames/MarkerArtist.hpp>
 #include <osg/BlendFunc>
 #include <osg/Point>

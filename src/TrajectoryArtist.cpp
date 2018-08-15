@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file TrajectoryArtist.cpp
+ * TrajectoryArtist-class function definitions.
+ */
+
 #include <OpenFrames/TrajectoryArtist.hpp>
 #include <OpenFrames/DoubleSingleUtils.hpp>
 

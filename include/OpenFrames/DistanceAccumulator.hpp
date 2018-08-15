@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file DistanceAccumulator.hpp
+ * Declaration of DistanceAccumulator class.
+ */
+
 #ifndef _OF_DISTANCEACCUMULATOR_
 #define _OF_DISTANCEACCUMULATOR_
 
@@ -25,14 +29,15 @@
 
 namespace OpenFrames
 {
-  
-  /**********************************************************
-   * Ravi Mathur
-   * OpenFrames API, class DistanceAccumulator
-   * Class that traverses the scene and computes the distance to each
-   * visible drawable, and splits up the scene if the drawables are
+  /**
+   * \class DistanceAccumulator
+   *
+   * \brief This class computes distances to drawables and splits the scene if necessary.
+   *
+   * This class traverses the scene, computes the distance to each
+   * visible drawable and splits up the scene if the latter are
    * too far away (in the z direction) from each other.
-   **********************************************************/
+   */
   class OF_EXPORT DistanceAccumulator : public osg::NodeVisitor
   {
   public:

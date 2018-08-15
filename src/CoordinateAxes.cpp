@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file CoordinateAxes.cpp
+ * Implementation of CoordinateAxes' member functions.
+ */
+
 #include <OpenFrames/CoordinateAxes.hpp>
 #include <osg/BlendFunc>
 #include <osg/Point>

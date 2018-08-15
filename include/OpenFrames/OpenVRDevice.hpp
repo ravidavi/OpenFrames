@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file OpenVRDevice.hpp
+ * Declaration of OpenVRDevice class.
+ */
+
 #ifndef _OF_OPENVRDEVICE_
 #define _OF_OPENVRDEVICE_
 
@@ -42,13 +46,17 @@ namespace vr {
   typedef VRControllerState001_t VRControllerState_t;
 }
 
-namespace OpenFrames {
+namespace OpenFrames
+{
   struct VRTextureBuffer; // Used by OpenVRSwapBuffers below
-  
-  /******************************************
-  * OpenFrames API, class OpenVREvent
-  * Wrap OpenVR events in an OSG-compatible event adapter
-  ******************************************/
+
+  /**
+   * \class OpenVREvent
+   *
+   * \brief An OSG-compatible event adapter for OpenVR.
+   *
+   * This class wraps OpenVR events in an OSG-compatible event adapter.
+   */
   class OpenVREvent : public osgGA::GUIEventAdapter
   {
   public:
@@ -60,11 +68,12 @@ namespace OpenFrames {
     vr::VREvent_t *_ovrEvent; // The actual OpenVR event
   };
 
-  /******************************************
-   * Ravi Mathur
-   * OpenFrames API, class OpenVRDevice
-   * Represents data needed to use an OpenVR-supported HMD.
-   ******************************************/
+  /**
+   * \class OpenVRDevice
+   *
+   * \brief Represents data needed to use an OpenVR-supported HMD.
+   *
+   */
   class OF_EXPORT OpenVRDevice : public osg::Referenced
   {
   public:
@@ -87,11 +96,16 @@ namespace OpenFrames {
 
     /** Get whether OpenVR has been initialized */
     inline bool isInitialized() const { return _isInitialized; }
-    
+
     /** Get render models for devices */
     osg::MatrixTransform* getDeviceRenderModels() const { return _deviceModels; }
-    
-    /** Encapsulates the laser attached to OpenVR devices (usually controllers) */
+
+    /**
+     * \class LaserModel
+     *
+     * \brief Encapsulates the laser attached to OpenVR devices (usually controllers).
+     *
+     */
     class OF_EXPORT LaserModel : public osg::Referenced
     {
     public:
@@ -161,7 +175,12 @@ namespace OpenFrames {
       CONTROLLER = 3
     };
 
-    /** Encapsulates an OpenVR device's model */
+    /**
+     * \class DeviceModel
+     *
+     * \brief Encapsulates an OpenVR device's model.
+     *
+     */
     struct OF_EXPORT DeviceModel
     {
       DeviceModel() : _valid(false), _class(NONE), _controllerState(nullptr)
@@ -278,9 +297,13 @@ namespace OpenFrames {
     /// TODO: Make this a vector of pointers, then DeviceModel can be subclassed
     typedef std::vector<DeviceModel> DeviceModelVector;
     DeviceModelVector _deviceIDToModel;
-    
-    /*************************************************************/
-    // Event callback that shows/hides a VR controller's laser when its trigger is pressed
+
+    /**
+     * \class DeviceModelEventCallback
+     *
+     * \brief Event callback that shows/hides a VR controller's laser when its trigger is pressed.
+     *
+     */
     struct DeviceModelEventCallback : public osgGA::GUIEventHandler
     {
       DeviceModelEventCallback(OpenVRDevice* ovrDevice)
@@ -309,11 +332,13 @@ namespace OpenFrames {
     osg::Vec3d _rightEyeViewOffset, _leftEyeViewOffset, _centerViewOffset;
     osg::Vec3d _rightEyeViewOffsetRaw, _leftEyeViewOffsetRaw, _centerViewOffsetRaw;
   };
-  
-  /******************************************
-  * OpenFrames API, class OpenVREventDevice
-  * Polls for OpenVR events and stores them in its OSG event queue
-  ******************************************/
+
+  /**
+   * \class OpenVREventDevice
+   *
+   * \brief Polls for OpenVR events and stores them in its OSG event queue.
+   *
+   */
   class OpenVREventDevice : public osgGA::Device
   {
   public:
@@ -329,12 +354,15 @@ namespace OpenFrames {
   private:
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
   };
-  
-  /******************************************
-   * OpenFrames API, class OpenVRSlaveCallback
-   * Compute per-eye view matrix without changing projection matrix. This should
-   * be attached as a slave update callback to each VR camera.
-   ******************************************/
+
+  /**
+   * \class OpenVRSlaveCallback
+   *
+   * \brief This class computes per-eye view matrices.
+   *
+   * This struct-class computes per-eye view matrices without changing the projection matrix. This
+   * should be attached as a slave update callback to each VR camera.
+   */
   struct OpenVRSlaveCallback : public osg::View::Slave::UpdateSlaveCallback
   {
     enum CameraType
@@ -353,13 +381,16 @@ namespace OpenFrames {
     CameraType _cameraType;
     osg::observer_ptr<OpenVRDevice> _ovrDevice;
   };
-  
-  /******************************************
-   * OpenFrames API, class OpenVRTrackball
-   * Extends FollowingTrackball to include the OpenVR HMD transform.
-   * This results in the World->Head transform, which can be combined
-   * with the Head->Eye transform to create the per-eye view matrix.
-   ******************************************/
+
+  /**
+   * \class OpenVRTrackball
+   *
+   * \brief This class extends FollowingTrackball to include the OpenVR HMD transform.
+   *
+   * This class extends FollowingTrackball to include the OpenVR HMD transform,
+   * resulting in the World->Head transform. That can be combined with the
+   * Head->Eye transform to create the per-eye view matrices.
+   */
   class OF_EXPORT OpenVRTrackball : public FollowingTrackball
   {
   public:
@@ -431,11 +462,16 @@ namespace OpenFrames {
       TWOBUTTON
     };
     MotionMode _motionMode;
-    
+
     OneButtonMode _oneButtonMode;
     TwoButtonMode _twoButtonMode;
 
-    /** Data used when computing world transformations during user events */
+    /**
+     * \class MotionData
+     *
+     * \brief Data used when computing world transformations during user events.
+     *
+     */
     struct MotionData
     {
       MotionMode _mode;
@@ -450,12 +486,15 @@ namespace OpenFrames {
     } _motionData;
     void saveCurrentMotionData();
   };
-  
-  /******************************************
-   * OpenFrames API, class OpenVRSwapBuffers
-   * Submit eye textures to OpenVR. This should be attached as a swapbuffers
+
+  /**
+   * \class OpenVRSwapBuffers
+   *
+   * \brief This class submits eye textures to OpenVR.
+   *
+   * This class submit eye textures to OpenVR and should be attached as a swapbuffers
    * callback to a graphics context.
-   ******************************************/
+   */
   struct OpenVRSwapBuffers : public osg::GraphicsContext::SwapCallback
   {
   public:
@@ -468,10 +507,12 @@ namespace OpenFrames {
     osg::observer_ptr<VRTextureBuffer> _texBuffer;
   };
 
-  /******************************************
-  * OpenFrames API, class OpenVRImageHandler
-  * Event handler that enables clicking on an image using VR controllers.
-  ******************************************/
+  /**
+   * \class OpenVRImageHandler
+   *
+   * \brief Event handler that enables clicking on an image using VR controllers.
+   *
+   */
   class OF_EXPORT OpenVRImageHandler : public osgViewer::InteractiveImageHandler
   {
   public:
@@ -521,7 +562,12 @@ namespace OpenFrames {
       MOUSEACTION // Mouse move or click
     };
 
-    /** Data used when computing world transformations during user events */
+    /**
+     * \class PickData
+     *
+     * \brief Data used when computing world transformations during user events.
+     *
+     */
     struct PickData
     {
       PickMode mode;
@@ -537,7 +583,7 @@ namespace OpenFrames {
     osg::Vec4 _laserSelectedColor;
     float _triggerThreshold;
   };
-  
+
 } // !namespace OpenFrames
 
 #endif  // !define _OF_OPENVRDEVICE_

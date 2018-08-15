@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file TrajectoryFollower.hpp
+ * Declaration of TrajectoryFollower class.
+ */
+
 #ifndef _OF_TRAJECTORYFOLLOWER_
 #define _OF_TRAJECTORYFOLLOWER_
 
@@ -28,25 +32,26 @@
 
 namespace OpenFrames
 {
-
-/***************************************************************
- * Ravi Mathur
- * OpenFrames API, class TrajectoryFollower
- * This class updates a FrameTransform object with the position/attitude of a given
- * set of Trajectory objects. It should be added as an update callback
- * via frameTransformObject->setUpdateCallback(trajectoryFollowerObject).
- * Adjustable parameters are the time scale at which to follow the trajectories, and
- * what to do if the current time is not in the trajectory's time list.
- * If multiple trajectories are specified, then TrajectoryFollower chooses which
- * one to follow based on the current time and follow mode.
- * e.g.: Given trajectory T_i, set of trajectories {T}, and current time t
- *  If t not within time of {T}, then wrap t to time of {T} (based on follow mode)
- *  If t within time of {T} but not within any T_i, then follow closest T_i
- *  If t within time of T_i, then follow T_i
-***************************************************************/
-class OF_EXPORT TrajectoryFollower : public osg::Callback, public OpenFrames::TrajectorySubscriber
-{
-public:
+  /**
+   * \class TrajectoryFollower
+   *
+   * \brief Updates FrameTransform objects from Trajectory objects.
+   *
+   * This class updates a FrameTransform object with the position/attitude of
+   * a given set of Trajectory objects. It should be added as an update
+   * callback via frameTransformObject->setUpdateCallback(trajectoryFollowerObject).
+   * Adjustable parameters are the time scale at which to follow the trajectories,
+   * and what to do if the current time is not in the trajectory's time list.
+   * If multiple trajectories are specified, then TrajectoryFollower chooses
+   * which one to follow based on the current time and follow mode.
+   * e.g.: Given trajectory T_i, set of trajectories {T}, and current time t
+   *  If t not within time of {T}, then wrap t to time of {T} (based on follow mode)
+   *  If t within time of {T} but not within any T_i, then follow closest T_i
+   *  If t within time of T_i, then follow T_i.
+   */
+  class OF_EXPORT TrajectoryFollower : public osg::Callback, public OpenFrames::TrajectorySubscriber
+  {
+  public:
 	/** If a trajectory is being followed, the FollowMode specifies how the
 	    transform handles the current time being out of range of the followed
 	    trajectory's times.  If the current time is in the trajectory's time
@@ -129,7 +134,7 @@ public:
   virtual void dataCleared(Trajectory* traj) { _needsUpdate = true; }
   virtual void dataAdded(Trajectory* traj) { _needsUpdate = true; }
 
-protected:
+  protected:
 	virtual ~TrajectoryFollower();
 
   // Compute adjusted time based on follow mode
@@ -175,7 +180,7 @@ protected:
   private:
 	osg::Vec3d _v1, _v2; // Used for position interpolation
 	osg::Quat _a1, _a2; // Used for attitude interpolation
-};
+  };
 
 } // !namespace OpenFrames
 

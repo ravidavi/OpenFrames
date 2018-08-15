@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file RenderRectangle.cpp
+ * RenderRectangle-class function definitions.
+ */
+
 #include <OpenFrames/RenderRectangle.hpp>
 #include <OpenFrames/Utilities.hpp>
 #include <osg/Geometry>
@@ -26,7 +30,11 @@
 
 namespace OpenFrames
 {
-  // Print name of each camera that tries to cull-traverse a scene
+  /**
+   * \class VisitorNameNode
+   *
+   * \brief Print name of each camera that tries to cull-traverse a scene.
+   */
   class VisitorNameNode : public osg::Node
   {
   public:

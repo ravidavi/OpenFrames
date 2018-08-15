@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file LatLonGrid.cpp
+ * Definitions for the LatLonGrid class.
+ */
+
 #include <OpenFrames/LatLonGrid.hpp>
 #include <osg/LineWidth>
 #include <osg/Math>

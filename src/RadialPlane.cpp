@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file RadialPlane.cpp
+ * RadialPlane-class function definitions.
+ */
+
 #include <OpenFrames/RadialPlane.hpp>
 #include <osg/Geometry>
 #include <osg/LineWidth>

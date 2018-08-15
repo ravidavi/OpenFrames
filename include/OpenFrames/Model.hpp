@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file Model.hpp
+ * Declaration of Model class.
+ */
+
 #ifndef _OF_MODEL_
 #define _OF_MODEL_
 
@@ -26,13 +30,14 @@
 
 namespace OpenFrames
 {
-  
-  /******************************************
-   * Ravi Mathur
-   * OpenFrames API, class Model
-   * A Model is a Reference Frame that also contains a 3D model at the origin.
-   * Any model can be loaded as long as the model format is supported by the OSG.
-   *****************************************/
+  /**
+   * \class Model
+   *
+   * \brief A Reference Frame that contains a 3D model.
+   *
+   * A Model is a Reference Frame that also contains a 3D model at the origin. Any model
+   * can be loaded as long as the format is supported by OSG.
+   */
   class OF_EXPORT Model : public ReferenceFrame
   {
   public:
@@ -126,15 +131,19 @@ namespace OpenFrames
     osg::ref_ptr<osgManipulator::TrackballDragger> _dragger;
     osg::ref_ptr<osg::MatrixTransform> _draggerXform;
   };
-  
-  /******************************************
-   * OpenFrames API, class ModelDraggerTransformCallback
-   * Enables dragging of a Model using an osgManipulator::Dragger. This is needed because the
-   * default DraggerTransformCallback only operates on a osg::MatrixTransform, but OpenFrames
-   * objects use a FrameTransform (custom osg::Transform).
+
+
+  /**
+   * \class ModelDraggerTransformCallback
+   *
+   * \brief This class enables dragging of a model.
+   *
+   * Enables dragging of a Model using an osgManipulator::Dragger. This is needed because
+   * the default DraggerTransformCallback only operates on a osg::MatrixTransform while
+   * OpenFrames objects use a FrameTransform (custom osg::Transform).
    * TODO: Derive from osgManipulator::DraggerCallback and compute transforms directly instead
    *       of depending on the DraggerTransformCallback and a dummy MatrixTransform.
-   *****************************************/
+   */
   class OF_EXPORT ModelDraggerTransformCallback : public osgManipulator::DraggerTransformCallback
   {
   public:

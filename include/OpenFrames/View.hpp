@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file View.hpp
+ * Declaration of View class.
+ */
+
 #ifndef _OF_VIEW_
 #define _OF_VIEW_
 
@@ -27,15 +31,17 @@
 namespace OpenFrames
 {
   class FollowingTrackball;
-  
-  /******************************************************************
-   * Ravi Mathur
-   * OpenFrames API, class View
+  /**
+   * \class View
+   *
+   * \brief Encapsulates variables needed for a view.
+   *
    * This class encapsulates all the variables needed to describe a view
-   * of a scene, namely the modelview and projection matrices.  The modelview
-   * matrix is a combination of the viewed ReferenceFrame's transformation
-   * matrix and the user's point of view (controlled using the mouse/keyboard).
-   *****************************************************************/
+   * of a scene, namely the modelview and projection matrices. The
+   * modelview matrix is a combination of the viewed ReferenceFrame's
+   * transformation matrix and the user's point of view (controlled
+   * using the mouse/keyboard).
+   */
   class OF_EXPORT View : public osg::Referenced
   {
   public:
@@ -45,7 +51,7 @@ namespace OpenFrames
       ORTHOGRAPHIC=0, // Object size is independent of distance from viewer
       PERSPECTIVE, 	// Objects get smaller as they get farther away
     };
-    
+
     /** The base frame when viewing a ReferenceFrame.
      The camera is assumed to be fixed in this frame when computing
      its user-controlled transformations. */
@@ -57,14 +63,14 @@ namespace OpenFrames
       // If viewing in from-to mode, then the rotation starts in the
       // scene's global reference frame.
       ABSOLUTE_FRAME=0,
-      
+
       // View frame initialized to the frame being viewed. This is
       // equivalent to a "body-fixed" view.
       // If viewing in from-to mode, then the rotation starts in the
       // body-fixed reference frame.
       RELATIVE_FRAME
     };
-    
+
     /** The method used to rotate the view to look at the "to" frame.
      Since the camera by default looks down the Y-axis, this
      specifies how the Y-axis is rotated to match the vector that
@@ -75,26 +81,26 @@ namespace OpenFrames
       // This may result in upside-down view if the rotation angle
       // is greater than 90 degrees out-of-plane
       DIRECT=0,
-      
+
       // First rotate along X-Y (azimuth), then up Z (elevation)
       // This preserves "Z-up" for the view base frame
       AZEL
     };
-    
+
     View();
     View(ReferenceFrame *root, ReferenceFrame *viewFrame, ViewFrameType baseframe = RELATIVE_FRAME);
     View(ReferenceFrame *root, ReferenceFrame *viewFrame, ReferenceFrame *lookatFrame, ViewFrameType frameType = RELATIVE_FRAME, ViewRotationType rotationType = AZEL);
-    
+
     /** Get the projection type */
     inline ProjectionType getProjectionType() { return _projType; }
-    
+
     /** Set a symmetric perspective view. */
     inline void setPerspective(const double fovy, const double ratio)
     {
       _projType = PERSPECTIVE;
       _projection.makePerspective(fovy, ratio, 1, 10000);
     }
-    
+
     /** Get the parameters for a symmetric perspective view.  Only valid
 	    if a perspective view has been previously set. */
     inline void getPerspective(double &fovy, double &ratio) const
@@ -105,7 +111,7 @@ namespace OpenFrames
         _projection.getPerspective(fovy, ratio, zNear, zFar);
       }
     }
-    
+
     /** Set an orthographic projection with the given bounds. */
     inline void setOrthographic(const double left, const double right,
                                 const double bottom, const double top)
@@ -113,7 +119,7 @@ namespace OpenFrames
       _projType = ORTHOGRAPHIC;
       _projection.makeOrtho(left, right, bottom, top, 1, 10000);
     }
-    
+
     /** Get the parameters for an orthographic projection.  Only valid if
 	    an ortho projection was previously set. */
     inline void getOrthographic(double &left, double &right,
@@ -125,17 +131,17 @@ namespace OpenFrames
         _projection.getOrtho(left, right, bottom, top, zNear, zFar);
       }
     }
-    
+
     /** Get the projection and view matrices. */
     inline osg::Matrixd getProjectionMatrix() { return _projection; }
     osg::Matrixd getViewMatrix();
-    
+
     /** Set the Trackball's default view distance. This is applied when the trackball
 	    is reset. A default distance <= 0.0 means that the default distance should
      be auto-computed. */
     void setDefaultViewDistance(double distance) { _defaultViewDistance = distance; }
     double getDefaultViewDistance() const { return _defaultViewDistance; }
-    
+
     /** Get or set the trackball manipulator */
     FollowingTrackball* getTrackball() const { return _trackball.get(); }
     void setTrackball(FollowingTrackball *trackball);
@@ -143,7 +149,7 @@ namespace OpenFrames
     /** Reset the View's home position to the default. 
         NOTE: This overrides any previously saved view. */
     void resetView();
-    
+
     /** Save the current view as the home view 
         NOTE: This is used by RenderRectangle to save/restore a View when switching
         Views, so it is not safe for end users. Instead, end users should directly
@@ -152,7 +158,7 @@ namespace OpenFrames
         functions with custom view parameters. */
     void saveView();
     void restoreView();
-    
+
     /** Set the frame to be viewed and the root frame that it should be
 	    viewed with respect to. Generally the root frame should be
      the root of the ReferenceFrame heirarchy that the viewed frame
@@ -160,26 +166,26 @@ namespace OpenFrames
      Optionally, set the reference frame used when viewing the
      target frame. */
     void setViewFrame( ReferenceFrame* root, ReferenceFrame* viewFrame, ViewFrameType frameType = RELATIVE_FRAME );
-    
+
     /** View the lookat frame from the point of view of the base frame.
      Optionally, set the reference frame used when viewing the
      target frame and the rotation type that should be used to
      rotate from the target to the lookat frame. */
     void setViewBetweenFrames( ReferenceFrame* root, ReferenceFrame* viewFrame, ReferenceFrame* lookatFrame, ViewFrameType frameType = RELATIVE_FRAME, ViewRotationType rotationType = AZEL );
-    
+
     /** Get the root/origin frames associated with this View */
     ReferenceFrame* getViewRoot() { return _xform->getRoot(); }
     ReferenceFrame* getViewFrame() { return _xform->getOrigin(); }
     ReferenceFrame* getLookAtFrame() { return _xform_lookat->getOrigin(); }
     ViewFrameType getViewFrameType() { return _frameType; }
     ViewRotationType getViewRotationType() { return _rotationType; }
-    
+
     inline bool isValid() {return _xform->isValid();}
-    
+
   protected:
     virtual ~View();
     void _init();
-    
+
     /** The transform for the origin ReferenceFrame. */
     osg::ref_ptr<TransformAccumulator> _xform;
     ViewFrameType _frameType;
@@ -187,33 +193,35 @@ namespace OpenFrames
     /** The transform for the look-at ReferenceFrame. */
     osg::ref_ptr<TransformAccumulator> _xform_lookat;
     ViewRotationType _rotationType;
-    
+
     /** The projection type for this view. */
     ProjectionType _projType;
-    
+
     /** The projection matrix. */
     osg::Matrixd _projection;
-    
+
     /** Default distance at which to view the frame. */
     double _defaultViewDistance;
-    
+
     /** The transform for user interactivity. */
     osg::ref_ptr<FollowingTrackball> _trackball;
   };
-  
-  /******************************************************************
-   * Ravi Mathur
-   * OpenFrames API, class FollowingTrackball
+
+  /**
+   * \class FollowingTrackball
+   *
+   * \brief Defines transforms that can perform complex view transformations.
+   *
    * Defines a transform that can perform complex view transformations in addition
    * to applying the user's trackball inputs. Transforms include viewing a
-   * specified ReferenceFrame in body-fixed or absolute coordinates, or looking
+   * specified ReferenceFrame, in body-fixed or absolute coordinates, or looking
    * from one ReferenceFrame to another.
-   *****************************************************************/
+   */
   class OF_EXPORT FollowingTrackball : public osgGA::TrackballManipulator
   {
   public:
     FollowingTrackball();
-    
+
     virtual const char* className() const { return "FollowingTrackball"; }
     
     // Set the frame transform sources
@@ -226,22 +234,22 @@ namespace OpenFrames
 
   protected:
     virtual ~FollowingTrackball();
-    
+
     // Save, restore, and reset trackball state
     friend class View;
     virtual void saveState();
     virtual void restoreState();
     virtual void resetState();
-    
+
     // Compute matrix that incorporates custom view transformations
     void computeWorldToViewMatrix(osg::Matrixd &matrix) const;
-    
+
     // The ReferenceFrame being followed.
     osg::observer_ptr<TransformAccumulator> _xform, _xform_lookat;
     View::ViewFrameType _frameType;
     View::ViewRotationType _rotationType;
   };
-  
+
 } // !namespace OpenFrames
 
 #endif

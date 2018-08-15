@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file ReferenceFrame.cpp
+ * ReferenceFrame-class function definitions.
+ */
+
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/FrameTransform.hpp>
 #include <OpenFrames/DescendantTracker.hpp>

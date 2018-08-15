@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file QWidgetPanel.hpp
+ * Declaration of QWidgetPanel class.
+ */
+
 #ifndef _OF_QWIDGETPANEL_
 #define _OF_QWIDGETPANEL_
 
@@ -36,13 +40,14 @@ namespace OpenFrames
 
 namespace OpenFrames
 {
-
-  /*******************************************************************
-   * Matthew Ruschmann
-   * OpenFrames API, class QWidgetPanel
+  /**
+   * \class QWidgetPanel
+   *
+   * \brief ReferenceFrame with Qt control panel on plane.
+   *
    * A QWidgetPanel is a ReferenceFrame with a Qt control panel on a
    * plane. The size of the control panel is adjustable.
-   ******************************************************************/
+   */
   class OF_EXPORT QWidgetPanel : public ReferenceFrame
   {
     public:

@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file DistanceAccumulator.cpp
+ * Definitions for the DistanceAccumulator class.
+ */
+
 #include <OpenFrames/DistanceAccumulator.hpp>
 #include <osg/Geode>
 #include <osg/Transform>
@@ -23,7 +27,6 @@
 
 namespace OpenFrames
 {
-  
   /** Determine whether one DistancePair should come before another in
    a sorted list. Used to sort the vector of DistancePairs. */
   bool precedes(const DistanceAccumulator::DistancePair &a,

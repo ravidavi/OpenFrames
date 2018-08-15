@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file TransformAccumulator.cpp
+ * TransformVisitor- and TransformAccumulator-classes function definitions.
+ */
+
 #include <OpenFrames/TransformAccumulator.hpp>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/FrameTransform.hpp>

@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file DepthPartitioner.cpp
+ * Definitions for the DepthPartitioner class.
+ */
+
 #include <OpenFrames/DepthPartitioner.hpp>
 #include <OpenFrames/Utilities.hpp>
 #include <osgUtil/CullVisitor>
@@ -26,15 +30,19 @@ static const std::string dpMainCamName(dpCamNamePrefix+"Main");
 
 namespace OpenFrames
 {
-  /** Callback that prevents a NodeVisitor from traversing the node's subgraph.
-   This is used by the DepthPartitioner main slave camera to ignore the cull
-   visitor while still allowing intersection visitors. It's needed because the
-   main DP slave camera receives events (e.g. pick) but does not handle the
-   cull traversal itself.
-   TODO: The real solution here is to eliminate the main DP slave camera, and just
-   use the osgViewer::View's main camera to partition the scene. But this is not
-   straightforward, since depth partitioning needs to happen from the slave camera
-   and not the main camera (see DepthPartitioner.hpp for details).
+  /**
+   * \class DPCameraCallback
+   *
+   * \brief Callback that prevents a NodeVisitor from traversing the node's subgraph.
+   *
+   * This callback is used by the DepthPartitioner main slave camera to ignore
+   * the cull visitor while still allowing intersection visitors. It's needed
+   * because the main DP slave camera receives events (e.g. pick) but does not
+   * handle the cull traversal itself.
+   * TODO: The real solution here is to eliminate the main DP slave camera, and just
+   * use the osgViewer::View's main camera to partition the scene. But this is not
+   * straightforward, since depth partitioning needs to happen from the slave camera
+   * and not the main camera (see DepthPartitioner.hpp for details).
    */
   class DPCameraCallback : public osg::NodeCallback
   {

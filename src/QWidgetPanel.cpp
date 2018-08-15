@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file QWidgetPanel.cpp
+ * QWidgetPanel-class function definitions.
+ */
+
 #include <OpenFrames/QWidgetPanel.hpp>
 #include <OpenFrames/QtOSGAdapters.hpp>
 

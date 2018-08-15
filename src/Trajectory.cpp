@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file Trajectory.cpp
+ * Trajectory-class function definitions.
+ */
+
 #include <OpenFrames/Trajectory.hpp>
 #include <math.h>
 #include <climits>

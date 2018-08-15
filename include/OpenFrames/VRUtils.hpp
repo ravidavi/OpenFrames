@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file VRUtils.hpp
+ * Declaration of VRUtils class.
+ */
+
 #ifndef _OF_VRUTILS_
 #define _OF_VRUTILS_
 
@@ -25,15 +29,16 @@
 #include <osg/Camera>
 #include <osg/Texture2D>
 
-namespace OpenFrames {
-  
+namespace OpenFrames
+{
   class OpenVRDevice; // Used by VRCameraManager below
-  
-  /******************************************
-   * Ravi Mathur
-   * OpenFrames API, class VRTextureBuffer
-   * Encapsulates textures used for VR offscreen rendering.
-   ******************************************/
+
+  /**
+   * \class VRTextureBuffer
+   *
+   * \brief Encapsulates textures used for VR offscreen rendering.
+   *
+   */
   struct OF_EXPORT VRTextureBuffer : public osg::Referenced
   {
   public:
@@ -49,12 +54,13 @@ namespace OpenFrames {
     // in case MSAA is being used
     osg::ref_ptr<osg::Camera> _rightTexCamera, _leftTexCamera;
   };
-  
-  /******************************************
-   * Ravi Mathur
-   * OpenFrames API, class VRCamera
-   * Encapsulates cameras used for VR stereo rendering.
-   ******************************************/
+
+  /**
+   * \class VRCamera
+   *
+   * \brief Encapsulates cameras used for VR stereo rendering.
+   *
+   */
   class OF_EXPORT VRCamera : public osg::Referenced
   {
   public:
@@ -109,31 +115,36 @@ namespace OpenFrames {
     /** Whether to use multisample antialiasing */
     bool _useMSAA;
   };
-  
-  /** Creates and manages VR cameras for the depth partitioner */
+
+  /**
+   * \class VRCameraManager
+   *
+   * \brief Creates and manages VR cameras for the depth partitioner.
+   *
+   */
   struct OF_EXPORT VRCameraManager : public DepthPartitionCallback::CameraManager
   {
     VRCameraManager(VRTextureBuffer *texBuffer, OpenVRDevice *ovrDevice);
     virtual ~VRCameraManager();
-    
+
     virtual std::string getCameraName(unsigned int camNum);
-    
+
     virtual void enableCamera(unsigned int camNum,
                               osg::Camera* mainCam,
                               const double &zNear, const double &zFar);
     virtual void disableCameras(unsigned int start);
     virtual void reset();
     virtual double getMinZNear();
-    
+
     typedef std::vector< osg::ref_ptr<VRCamera> > VRCameraList;
     VRCameraList _vrCameraList;
-    
+
     // The VR eye texture buffers and related utilities
     osg::observer_ptr<VRTextureBuffer> _texBuffer;
-    
+
     osg::observer_ptr<OpenVRDevice> _ovrDevice; // OpenVR interface
   };
-  
+
 } // !namespace OpenFrames
 
 #endif  // !define _OF_VRUTILS_

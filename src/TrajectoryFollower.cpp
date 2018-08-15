@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file TrajectoryFollower.cpp
+ * TrajectoryFollower-class function definitions.
+ */
+
 #include <OpenFrames/FrameTransform.hpp>
 #include <OpenFrames/TrajectoryFollower.hpp>
 #include <OpenThreads/ScopedLock>

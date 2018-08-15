@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file CoordinateAxes.hpp
+ * Declaration of CoordinateAxes class.
+ */
+
 #ifndef _OF_COORDINATEAXES_
 #define _OF_COORDINATEAXES_
 
@@ -24,15 +28,16 @@
 
 namespace OpenFrames
 {
-
-/**********************************************************
- * Ravi Mathur
- * OpenFrames API, class CoordinateAxes
- * A type of ReferenceFrame that displays its X, Y, and Z axes with adjustable
- * tick marks and labels.
-**********************************************************/
-class OF_EXPORT CoordinateAxes : public ReferenceFrame
-{
+  /**
+   * \class CoordinateAxes
+   *
+   * \brief A type of ReferenceFrame that displays X, Y, and Z axes.
+   *
+   * This class is a type of ReferenceFrame that displays its X, Y, and Z axes
+   * with adjustable tick marks and labels.
+   */
+  class OF_EXPORT CoordinateAxes : public ReferenceFrame
+  {
   public:
 	CoordinateAxes( const std::string &name );
 	CoordinateAxes( const std::string &name, float r, float g, float b, float a = 1.0 );
@@ -92,7 +97,7 @@ class OF_EXPORT CoordinateAxes : public ReferenceFrame
 	osg::ref_ptr<osg::Vec4Array> _colors;   // Colors for each line
 
         osg::ref_ptr<osg::Shader> _fragShader; // Tick mark fragment shader
-};
+  };
 
 } // !namespace OpenFrames
 

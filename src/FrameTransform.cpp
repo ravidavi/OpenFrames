@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file FrameTransform.cpp
+ * Definitions for the FrameTransform class.
+ */
+
 #include <OpenFrames/FrameTransform.hpp>
 #include <osgUtil/CullVisitor>
 

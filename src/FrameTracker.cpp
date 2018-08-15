@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file FrameTracker.cpp
+ * Definitions for the FrameTracker class.
+ */
+
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/FrameTracker.hpp>
 

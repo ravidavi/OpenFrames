@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file DrawableTrajectory.hpp
+ * Declaration of DrawableTrajectory class.
+ */
+
 #ifndef _OF_DRAWABLETRAJECTORY_
 #define _OF_DRAWABLETRAJECTORY_
 
@@ -24,15 +28,16 @@
 
 namespace OpenFrames
 {
-
-/******************************************
- * Ravi Mathur
- * OpenFrames API, class DrawableTrajectory
- * This class provides a ReferenceFrame that a TrajectoryArtist can hook on to
- * in order to be able to draw its Trajectory.
-******************************************/
-class OF_EXPORT DrawableTrajectory : public ReferenceFrame
-{
+  /**
+   * \class DrawableTrajectory
+   *
+   * \brief This class provides a ReferenceFrame for TrajectoryArtists.
+   *
+   * This class provides a ReferenceFrame that a TrajectoryArtist can hook onto
+   * in order to be able to draw its Trajectory.
+   */
+  class OF_EXPORT DrawableTrajectory : public ReferenceFrame
+  {
   public:
 	DrawableTrajectory( const std::string &name );
 	DrawableTrajectory( const std::string &name, float r, float g, float b, float a  = 1.0);
@@ -59,7 +64,7 @@ class OF_EXPORT DrawableTrajectory : public ReferenceFrame
 	void _init();
 
 	osg::ref_ptr<osg::Geode> _geode; // Node to hold the artists
-};
+  };
 
 } //!namespace OpenFrames
 

@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file RenderRectangle.hpp
+ * Declaration of RenderRectangle class.
+ */
+
 #ifndef _OF_RENDERRECTANGLE_
 #define _OF_RENDERRECTANGLE_
 
@@ -32,15 +36,17 @@
 
 namespace OpenFrames
 {
-  /**********************************************************
-   * Ravi Mathur
-   * OpenFrames API, class RenderRectangle
-   * This class encapsulates a rectangle in which a scene can be
-   * rendered.  It provides decorations for the scene, such as a
-   * border around the rectangle.  It also automatically analyzes
-   * a scene and (if needed) renders it in multiple stages, in
-   * case there are large z distances involved.
-   **********************************************************/
+  /**
+   * \class RenderRectangle
+   *
+   * \brief Encapsulates a rectangle in which a scene can be rendered.
+   *
+   * This class encapsulates a rectangle in which a scene can be rendered.
+   * It provides decorations for the scene, such as a border around the
+   * rectangle. It also automatically analyzes a scene and (if needed)
+   * renders it in multiple stages in case there are large z distances
+   * involved.
+   */
   class OF_EXPORT RenderRectangle : public osg::Referenced
   {
   public:

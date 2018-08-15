@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file TrajectoryArtist.hpp
+ * Declaration of TrajectoryArtist class.
+ */
+
 #ifndef _OF_TRAJECTORYARTIST_
 #define _OF_TRAJECTORYARTIST_
 
@@ -25,17 +29,18 @@
 
 namespace OpenFrames
 {
-
-/***********************************************************
- * Ravi Mathur
- * OpenFrames API, class TrajectoryArtist
- * This abstract class provides the framework that is used to interpret
- * and draw a given Trajectory object.  What is actually drawn is left
- * to deriving classes; this class just stores the Trajectory and line
- * styles that should be used for drawing.
-***********************************************************/
-class OF_EXPORT TrajectoryArtist : public osg::Drawable, public OpenFrames::TrajectorySubscriber
-{
+  /**
+   * \class TrajectoryArtist
+   *
+   * \brief Abstract class for Trajectory objects.
+   *
+   * This abstract class provides the framework that is used to interpret
+   * and draw a given Trajectory object. What is actually drawn is left
+   * to deriving classes; this class just stores the Trajectory and line
+   * styles that should be used for drawing.
+   */
+  class OF_EXPORT TrajectoryArtist : public osg::Drawable, public OpenFrames::TrajectorySubscriber
+  {
   public:
 	TrajectoryArtist();
 
@@ -73,7 +78,7 @@ class OF_EXPORT TrajectoryArtist : public osg::Drawable, public OpenFrames::Traj
 	osg::ref_ptr<const Trajectory> _traj; // Trajectory to be drawn
 
         osg::ref_ptr<osg::Program> _program; // GLSL program
-};
+  };
 
 }
 

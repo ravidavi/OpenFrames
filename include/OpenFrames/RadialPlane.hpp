@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file RadialPlane.hpp
+ * Declaration of RadialPlane class.
+ */
+
 #ifndef _OF_RADIALPLANE_
 #define _OF_RADIALPLANE_
 
@@ -22,15 +26,16 @@
 
 namespace OpenFrames
 {
-
-/**********************************************************
- * Ravi Mathur
- * OpenFrames API, class RadialPlane
- * A type of ReferenceFrame that draws a radial x-y plane
- * with adjustable radial circles and longitude lines.
-**********************************************************/
-class OF_EXPORT RadialPlane : public ReferenceFrame
-{
+  /**
+   * \class RadialPlane
+   *
+   * \brief ReferenceFrame for drawing radial plane.
+   *
+   * A type of ReferenceFrame that draws a radial x-y plane with
+   * adjustable radial circles and longitude lines.
+   */
+  class OF_EXPORT RadialPlane : public ReferenceFrame
+  {
   public:
 	RadialPlane( const std::string &name );
 	RadialPlane( const std::string &name, float r, float g, float b, float a = 1.0 );
@@ -88,7 +93,7 @@ class OF_EXPORT RadialPlane : public ReferenceFrame
 
 	// Level of Detail for cells that make up the plane tesselation
 	unsigned int _planeLOD;
-};
+  };
 
 } // !namespace OpenFrames
 

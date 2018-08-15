@@ -14,6 +14,10 @@
  limitations under the License.
  ***********************************/
 
+/** \file WindowProxy.hpp
+ * Declaration of WindowProxy class.
+ */
+
 #ifndef _OF_WINDOWPROXY_
 #define _OF_WINDOWPROXY_
 
@@ -41,11 +45,17 @@
 
 namespace OpenFrames
 {
-  
   class FrameManager;
   class WindowProxy;
   
-  /** This is the GraphicsWindow that is used for embedded graphics (if the user provides their own OpenGL window) */
+  /**
+   * \class EmbeddedGraphics
+   *
+   * \brief The class of GraphicsWindow used for embedded graphics.
+   *
+   *  If a user provides their own OpenGL window, this is the GraphicsWindow that is used for embedded graphics.
+   *
+   */
   class EmbeddedGraphics : public osgViewer::GraphicsWindow
   {
   public:
@@ -97,8 +107,13 @@ namespace OpenFrames
     WindowProxy *_window; // Pointer to the WindowProxy that represents the window
     bool _realized; // Whether this context has been realized
   };
-  
-  /** The WindowEventHandler handles incoming events. */
+
+  /**
+   * \class WindowEventHandler
+   *
+   * \brief This class handles incoming events.
+   *
+   */
   class OF_EXPORT WindowEventHandler : public osgGA::GUIEventHandler
   {
   public:
@@ -142,16 +157,18 @@ namespace OpenFrames
     void (*_buttonReleaseCallback)(BUTTON_SIG);
     void (*_vrEventCallback)(VR_SIG);
   };
-  
-  /**********************************************************
-   * Ravi Mathur
-   * OpenFrames API, class WindowProxy
-   * This class defines an interface which can draw a scene onto any window,
-   * regardless of how that window is created or managed.  This allows the scene to
+
+  /**
+   * \class WindowProxy
+   *
+   * \brief Defines an interface that can draw a scene onto any window.
+   *
+   * This class defines an interface that can draw a scene onto any window,
+   * regardless of how that window is created or managed. This allows the scene to
    * be drawn on a window created by (for example) a GUI management API such as gtk
-   * or Winteracter.  Drawing is thread safe and special consideration is given for
-   * OpenGL implementations which only allow one current context for all threads.
-   **********************************************************/
+   * or Winteracter. Drawing is thread-safe and special consideration is given for
+   * OpenGL implementations that only allow one current context for all threads.
+   */
   class OF_EXPORT WindowProxy : public OpenThreads::Thread, public osg::Referenced
   {
   public:
@@ -406,9 +423,9 @@ namespace OpenFrames
     
     /** The ScreenCaptureHandler takes a screenshot of this window */
     osg::ref_ptr<osgViewer::ScreenCaptureHandler> _screenCaptureHandler;
-    
+
     FramerateLimiter _frameThrottle; // Controls animation framerate
-    
+
     /** Time control variables */
     AnimationState _animationState; // Current animation state
     bool _pauseAnimation;           // Indicate that animation should be paused
@@ -422,7 +439,7 @@ namespace OpenFrames
     osg::ref_ptr<OpenVRDevice> _ovrDevice; // OpenVR interface
     osg::ref_ptr<VRTextureBuffer> _vrTextureBuffer; // VR texture buffers
   };
-  
+
 }
 
 #endif
