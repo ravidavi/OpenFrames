@@ -32,7 +32,8 @@
 #include <iostream>
 #endif
 
-namespace OpenFrames{
+namespace OpenFrames
+{
 
   // Convenience constants for enabling/disabling nodes 
   const osg::Node::NodeMask enabled = 0xffffffff;
@@ -173,27 +174,15 @@ void ReferenceFrame::_init( const std::string &n, const osg::Vec4& c )
     _labels->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 }
 
-/**
-* \brief Set the name of the frame that will be displayed
-*
-* \param name Name of the frame
-**/
-void ReferenceFrame::setName( const std::string& name )
-{
-	_name = name;
-	_nameLabel->setText(name);
-	_axes->setName(_name + " axes");
+  void ReferenceFrame::setName( const std::string& name )
+  {
+    _name = name;
+    _nameLabel->setText(name);
+    _axes->setName(_name + " axes");
     _labels->setName(_name + " labels");
-	_xform->setName(_name + " transform");
-}
+    _xform->setName(_name + " transform");
+  }
 
-/**
-* \brief Set the color of the frame's decorations (axes, name, ...)
-*
-* This method can be overridden by derived classes.
-*
-* \param color Vector of color components [0-1] [red, green, blue, alpha]
-**/
 void ReferenceFrame::setColor( const osg::Vec4 &color )
 {
 	_xAxis->getVector()->setColor(color);
@@ -205,74 +194,30 @@ void ReferenceFrame::setColor( const osg::Vec4 &color )
 	_nameLabel->setColor(color);
 }
 
-/**
-* \brief Set the color of the frame's decorations (axes, name, ...)
-*
-* This method can be overridden by derived classes.
-*
-* \param r Red color component [0-1]
-* \param g Green color component [0-1]
-* \param b Blue color component [0-1]
-* \param a Alpha (transparancy) component [0-1]
-**/
-void ReferenceFrame::setColor( float r, float g, float b, float a )
-{
-	setColor(osg::Vec4(r, g, b, a));
-}
+  void ReferenceFrame::setColor( float r, float g, float b, float a )
+  {
+    setColor(osg::Vec4(r, g, b, a));
+  }
 
-/**
-* \brief Get the color of the frame's decorations (axes, name, ...)
-*
-* This method can be overridden by derived classes.
-*
-* \return Vector of the colors [red, green, blue, alpha]
-**/
-const osg::Vec4& ReferenceFrame::getColor() const
-{
-	return _xAxis->getVector()->getColor();
-}
+  const osg::Vec4& ReferenceFrame::getColor() const
+  {
+    return _xAxis->getVector()->getColor();
+  }
 
-/**
-* \brief Get the color of the frame's decorations (axes, name, ...)
-*
-* This method can be overridden by derived classes.
-*
-* \param r Returned red color component [0-1]
-* \param g Returned green color component [0-1]
-* \param b Returned blue color component [0-1]
-* \param a Returned alpha (transparancy) component [0-1]
-**/
-void ReferenceFrame::getColor(float &r, float &g, float &b, float &a) const
-{
-	const osg::Vec4& c = getColor();
-	r = c[0];
-	g = c[1];
-	b = c[2];
-	a = c[3];
-}
+  void ReferenceFrame::getColor(float &r, float &g, float &b, float &a) const
+ {
+     const osg::Vec4& c = getColor();
+     r = c[0];
+     g = c[1];
+     b = c[2];
+     a = c[3];
+  }
 
-/**
-* \brief Get the group corresponding to this ReferenceFrame
-*
-* By default, the frame's group is the same as its transform.
-* However, subclasses can define a separate group if they wish to.
-* A child frame's group is what is added to a parent frame's
-* transform in addChild().
-*
-* \return The FrameTransform
-**/
-osg::Group* ReferenceFrame::getGroup() const
-{
-	return (osg::Group*)_xform.get();
-}
+  osg::Group* ReferenceFrame::getGroup() const
+  {
+    return (osg::Group*)_xform.get();
+  }
 
-/**
-* \brief Get the BoundingSphere encompassing this frame plus all of its decorations
-*
-* Derived classes should override this method and compute their own local BoundingSphere.
-*
-* \return The BoundingSphere
-**/
 const osg::BoundingSphere& ReferenceFrame::getBound() const
 {
 	_bound.init();
@@ -286,43 +231,33 @@ const osg::BoundingSphere& ReferenceFrame::getBound() const
 	return _bound;
 }
 
-/**
-* \brief Show/hide the x, y, z axes vectors
-*
-* \param axes AxesType indicating which axes are to be shown
-*/
-void ReferenceFrame::showAxes(unsigned int axes)
-{ 
-  // Disable entire axes geode if there's nothing to show
-  if (axes == NO_AXES) _axes->setNodeMask(disabled);
-  else _axes->setNodeMask(enabled);
+  void ReferenceFrame::showAxes(unsigned int axes)
+  { 
+    // Disable entire axes geode if there's nothing to show
+    if (axes == NO_AXES) _axes->setNodeMask(disabled);
+    else _axes->setNodeMask(enabled);
 
-  if(axes & X_AXIS) // Need to enable x-axis
-    _xAxis->getVector()->setNodeMask(enabled);
-  else
-    _xAxis->getVector()->setNodeMask(disabled);
+    if (axes & X_AXIS) // Need to enable x-axis
+      _xAxis->getVector()->setNodeMask(enabled);
+    else
+      _xAxis->getVector()->setNodeMask(disabled);
 
-  if (axes & Y_AXIS) // Need to enable y-axis
-    _yAxis->getVector()->setNodeMask(enabled);
-  else
-    _yAxis->getVector()->setNodeMask(disabled);
+    if (axes & Y_AXIS) // Need to enable y-axis
+      _yAxis->getVector()->setNodeMask(enabled);
+    else
+      _yAxis->getVector()->setNodeMask(disabled);
 
-  if (axes & Z_AXIS) // Need to enable z-axis
-    _zAxis->getVector()->setNodeMask(enabled);
-  else
-    _zAxis->getVector()->setNodeMask(disabled);
+    if (axes & Z_AXIS) // Need to enable z-axis
+      _zAxis->getVector()->setNodeMask(enabled);
+    else
+      _zAxis->getVector()->setNodeMask(disabled);
 	
-  // Reposition axes labels
-  moveXAxis(_xAxis->getBasePosition(), _xAxis->getTotalLength());
-  moveYAxis(_yAxis->getBasePosition(), _yAxis->getTotalLength());
-  moveZAxis(_zAxis->getBasePosition(), _zAxis->getTotalLength());
-}
+    // Reposition axes labels
+    moveXAxis(_xAxis->getBasePosition(), _xAxis->getTotalLength());
+    moveYAxis(_yAxis->getBasePosition(), _yAxis->getTotalLength());
+    moveZAxis(_zAxis->getBasePosition(), _zAxis->getTotalLength());
+  }
 
-/**
-* \brief Select which axis labels are to be displayed
-*
-* \param labels AxesType indicating which axes labels are to be shown
-*/
 void ReferenceFrame::showAxesLabels(unsigned int labels)
 {
   // Disable entire label geode if there's nothing to show
@@ -349,139 +284,98 @@ void ReferenceFrame::showAxesLabels(unsigned int labels)
   moveZAxis(_zAxis->getBasePosition(), totalLen, headLen/totalLen, bodyRadius, headRadius);
 }
 
-/**
-* \brief Show/hide axis name labels
-*
-* \param show True if labels are to be shown
-*/
-void ReferenceFrame::showNameLabel(bool show)
-{
-  // Disable entire label geode if there's nothing to show
-  if (!show && ((_xLabel->getNodeMask() | _yLabel->getNodeMask() | _zLabel->getNodeMask()) == disabled))
-    _labels->setNodeMask(disabled);
-  else
-    _labels->setNodeMask(enabled);
+  void ReferenceFrame::showNameLabel(bool show)
+  {
+    // Disable entire label geode if there's nothing to show
+    if (!show && ((_xLabel->getNodeMask() | _yLabel->getNodeMask() | _zLabel->getNodeMask()) == disabled))
+        _labels->setNodeMask(disabled);
+    else
+        _labels->setNodeMask(enabled);
 
-  // Enable name label
-  if (show) _nameLabel->setNodeMask(enabled);
-  else _nameLabel->setNodeMask(disabled);
-}
+    // Enable name label
+    if (show) _nameLabel->setNodeMask(enabled);
+    else _nameLabel->setNodeMask(disabled);
+  }
 
-/**
-* \brief Place x axis vectors at the given location with given length
-*
-* \param base Position of the base of the axis vector
-* \param len Length of the drawn axis vector
-* \param headRatio Ratio of the size of the axis vector head compared to the base
-* \param bodyRadius Radius of the body of the drawn axis
-* \param headRadius Radius of the head of the drawn axis
-*/
-void ReferenceFrame::moveXAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
-{
-  bool xexists = (_xAxis->getVector()->getNodeMask() == enabled);
+  void ReferenceFrame::moveXAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
+  {
+    bool xexists = (_xAxis->getVector()->getNodeMask() == enabled);
 
-  if(headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
-  if(bodyRadius <= 0.0) bodyRadius = 0.05*len;
-  if(headRadius <= 0.0) headRadius = 0.1*len;
+    if (headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
+    if (bodyRadius <= 0.0) bodyRadius = 0.05*len;
+    if (headRadius <= 0.0) headRadius = 0.1*len;
 
-  _xAxis->setBasePosition(base);
-  _xAxis->setLength((1.0-headRatio)*len, headRatio*len);
-  _xAxis->setRadius(bodyRadius, headRadius);
+    _xAxis->setBasePosition(base);
+    _xAxis->setLength((1.0-headRatio)*len, headRatio*len);
+    _xAxis->setRadius(bodyRadius, headRadius);
 
-  _xLabel->setCharacterSize(0.4*len);
-  if(xexists) _xLabel->setPosition(base + osg::Vec3d(len, 0, 0));
-  else _xLabel->setPosition(base);
-}
+    _xLabel->setCharacterSize(0.4*len);
+    if (xexists) _xLabel->setPosition(base + osg::Vec3d(len, 0, 0));
+    else _xLabel->setPosition(base);
+  }
 
-/**
-* Place y axis vectors at the given location with given length
-*
-* \param base Position of the base of the axis vector
-* \param len Length of the drawn axis vector
-* \param headRatio Ratio of the size of the axis vector head compared to the base
-* \param bodyRadius Radius of the body of the drawn axis
-* \param headRadius Radius of the head of the drawn axis
-*/
-void ReferenceFrame::moveYAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
-{
-  bool yexists = (_yAxis->getVector()->getNodeMask() == enabled);
+  void ReferenceFrame::moveYAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
+  {
+    bool yexists = (_yAxis->getVector()->getNodeMask() == enabled);
 
-  if(headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
-  if(bodyRadius <= 0.0) bodyRadius = 0.05*len;
-  if(headRadius <= 0.0) headRadius = 0.1*len;
+    if (headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
+    if (bodyRadius <= 0.0) bodyRadius = 0.05*len;
+    if (headRadius <= 0.0) headRadius = 0.1*len;
 
-  _yAxis->setBasePosition(base);
-  _yAxis->setLength((1.0-headRatio)*len, headRatio*len);
-  _yAxis->setRadius(bodyRadius, headRadius);
+    _yAxis->setBasePosition(base);
+    _yAxis->setLength((1.0-headRatio)*len, headRatio*len);
+    _yAxis->setRadius(bodyRadius, headRadius);
 
-  _yLabel->setCharacterSize(0.4*len);
-  if(yexists) _yLabel->setPosition(base + osg::Vec3d(0, len, 0));
-  else _yLabel->setPosition(base);
-}
+    _yLabel->setCharacterSize(0.4*len);
+    if (yexists) _yLabel->setPosition(base + osg::Vec3d(0, len, 0));
+    else _yLabel->setPosition(base);
+  }
 
-/**
-* Place z axis vectors at the given location with given length
-*
-* \param base Position of the base of the axis vector
-* \param len Length of the drawn axis vector
-* \param headRatio Ratio of the size of the axis vector head compared to the base
-* \param bodyRadius Radius of the body of the drawn axis
-* \param headRadius Radius of the head of the drawn axis
-*/
-void ReferenceFrame::moveZAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
-{
-	bool zaxisexists = (_zAxis->getVector()->getNodeMask() == enabled);
-	bool zlabelexists = (_zLabel->getNodeMask() == enabled);
+  void ReferenceFrame::moveZAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
+  {
+    bool zaxisexists = (_zAxis->getVector()->getNodeMask() == enabled);
+    bool zlabelexists = (_zLabel->getNodeMask() == enabled);
 
-	if(headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
-	if(bodyRadius <= 0.0) bodyRadius = 0.05*len;
-	if(headRadius <= 0.0) headRadius = 0.1*len;
+    if (headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
+    if (bodyRadius <= 0.0) bodyRadius = 0.05*len;
+    if (headRadius <= 0.0) headRadius = 0.1*len;
 
-	_zAxis->setBasePosition(base);
-	_zAxis->setLength((1.0-headRatio)*len, headRatio*len);
-	_zAxis->setRadius(bodyRadius, headRadius);
+    _zAxis->setBasePosition(base);
+    _zAxis->setLength((1.0 - headRatio)*len, headRatio*len);
+    _zAxis->setRadius(bodyRadius, headRadius);
 
-	_zLabel->setCharacterSize(0.4*len);
-	if(zaxisexists)
-	{
-	  _zLabel->setPosition(base + osg::Vec3d(0, 0, len));
-	  if(zlabelexists)
-	    _nameLabel->setPosition(base + osg::Vec3d(0, 0, 1.5*len));
-	  else
-	    _nameLabel->setPosition(base + osg::Vec3d(0, 0, len));
-	}
-	else 
-	{
-	  _zLabel->setPosition(base);
-	  if(zlabelexists)
-	    _nameLabel->setPosition(base + osg::Vec3d(0, 0, 0.5*len));
-	  else
-	    _nameLabel->setPosition(base);
-	}
-}
+    _zLabel->setCharacterSize(0.4*len);
+    if (zaxisexists)
+    {
+      _zLabel->setPosition(base + osg::Vec3d(0, 0, len));
+      if (zlabelexists)
+        _nameLabel->setPosition(base + osg::Vec3d(0, 0, 1.5*len));
+      else
+        _nameLabel->setPosition(base + osg::Vec3d(0, 0, len));
+    }
+    else
+    {
+      _zLabel->setPosition(base);
+      if (zlabelexists)
+        _nameLabel->setPosition(base + osg::Vec3d(0, 0, 0.5*len));
+      else
+        _nameLabel->setPosition(base);
+    }
+  }
 
-/**
-* \brief Add a ReferenceFrame as a child to this one
-*
-* This effectively adds the osg structure of that frame as a child to this frame's transform
-*
-* \param child Child to add
-*
-* \return True if successful, false otherwise
-**/
 bool ReferenceFrame::addChild( ReferenceFrame* child )
 {
 	  // Make sure we're not trying to add ourselves as a child
 	  // Also make sure child is not NULL
-	if(child == this || !child) return false;
+	if (child == this || !child) return false;
 
 	  // Make sure child does not already exist
-	if(getChildIndex(child) != -1) return true;
+	if (getChildIndex(child) != -1) return true;
 
 	  // Check to see if we are a descendant of the child.
 	  // This case would cause a loop in the tree structure.
 	osg::ref_ptr<DescendantTracker> dt = new DescendantTracker(child);
-	if(dt->trackDescendant(this)) 
+	if (dt->trackDescendant(this)) 
 	{
 #ifdef _OF_VERBOSE_
 	  std::cout<< "ReferenceFrame ERROR: Trying to add child "
@@ -516,15 +410,6 @@ bool ReferenceFrame::addChild( ReferenceFrame* child )
 	return true;
 }
 
-/**
-* \brief Remove a ReferenceFrame from the children of this one
-*
-* This effectively removes the osg structure of that frame from this frame's transform
-*
-* \param child Child to remove
-*
-* \return True if successful, false otherwise
-**/
 bool ReferenceFrame::removeChild( ReferenceFrame* child )
 {
 	int index = getChildIndex(child);
@@ -594,126 +479,76 @@ osg::LightSource* ReferenceFrame::getLightSource() const
   return NULL; // Light source doesn't exist
 }
 
-/**
-* \brief Create a formatted string containing names of all child frames
-*
-* \param str    Formatted string
-* \param prefix Prefix to display in front of child objects
-**/
-void ReferenceFrame::createFrameString( std::string& str, std::string prefix ) const
-{
-	str += prefix + _name + " (" + frameInfo() + ")\n";
-	if( prefix[prefix.size() - 1] == '>')
-	  prefix[prefix.size() - 1] = '-';
-	prefix += "|-->";
+  void ReferenceFrame::createFrameString( std::string& str, std::string prefix ) const
+  {
+    str += prefix + _name + " (" + frameInfo() + ")\n";
+    if( prefix[prefix.size() - 1] == '>')
+      prefix[prefix.size() - 1] = '-';
+    prefix += "|-->";
 
-	int num__children = _children.size();
-	for( int i = 0; i < num__children; ++i )
-	  _children[i]->createFrameString( str, prefix );
-}
+    int num__children = _children.size();
+    for( int i = 0; i < num__children; ++i )
+      _children[i]->createFrameString( str, prefix );
+  }
 
-/**
-* \brief Information about this ReferenceFrame that is included in its
-*        formatted name during a createFrameString() call
-*
-* \return Frame info
-**/
 std::string ReferenceFrame::frameInfo() const
 {
 	return "ReferenceFrame";
 }
 
-/**
-* \brief Add a parent for this frame
-*
-* \param frame Parent to add
-**/
-void ReferenceFrame::addParent( ReferenceFrame* frame )
-{
-	if( getParentIndex(frame) == -1 ) _parents.push_back(frame);
-}
+    void ReferenceFrame::addParent( ReferenceFrame* frame )
+    {
+      if ( getParentIndex(frame) == -1 ) _parents.push_back(frame);
+    }
 
-/**
-* \brief Remove a parent for this frame, if it exists
-*
-* \param frame Parent to remove
-**/
-void ReferenceFrame::removeParent( ReferenceFrame* frame )
-{
-	int index = getParentIndex(frame);
-	if( index != -1 ) _parents.erase(_parents.begin() + index);
-}
+    void ReferenceFrame::removeParent( ReferenceFrame* frame )
+    {
+      int index = getParentIndex(frame);
+      if ( index != -1 ) _parents.erase(_parents.begin() + index);
+    }
 
-/**
-* \brief Add a tracker for this frame
-*
-* \param t Tracker to add
-**/
-void ReferenceFrame::addTracker( FrameTracker* t )
-{
-	if( getTrackerIndex(t) == -1 ) _trackers.push_back(t);
-}
+    void ReferenceFrame::addTracker( FrameTracker* t )
+    {
+      if ( getTrackerIndex(t) == -1 ) _trackers.push_back(t);
+    }
 
-/**
-* \brief Remove a tracker for this frame, if it exists
-*
-* \param t Tracker to remove
-**/
-void ReferenceFrame::removeTracker( FrameTracker* t )
-{
-	int index = getTrackerIndex(t);
-	if( index != -1 ) _trackers.erase(_trackers.begin() + index);
-}
+    void ReferenceFrame::removeTracker( FrameTracker* t )
+    {
+      int index = getTrackerIndex(t);
+      if ( index != -1 ) _trackers.erase(_trackers.begin() + index);
+    }
 
-/**
-* \brief Find the index of the requested child
-*
-* \param frame Child to find the index
-*
-* \return Index of the requested child.
-*         If the requested child does not exist, return -1.
-**/
-int ReferenceFrame::getChildIndex( const ReferenceFrame* frame ) const
-{
-	int num__children = _children.size();
-	for( int i = 0; i < num__children; ++i )
-	  if( _children[i] == frame ) return i;
-	
-	return -1;
-}
+    int ReferenceFrame::getChildIndex( const ReferenceFrame* frame ) const
+    {
+      int num__children = _children.size();
+      for( int i = 0; i < num__children; ++i )
+      if( _children[i] == frame ) return i;
 
-/**
-* \brief Find the index of the requested parent
-*
-* \param frame Parent to find the index
-*
-* \return Index of the requested parent.
-*         If the requested parent does not exist, return -1.
-**/
-int ReferenceFrame::getParentIndex( const ReferenceFrame* frame ) const
-{
-	int num_parents = _parents.size();
-	for( int i = 0; i < num_parents; ++i )
-	  if( _parents[i] == frame ) return i;
-	
-	return -1;
-}
+      return -1;
+    }
 
-/**
-* \brief Find the index of the requested tracker
-*
-* \param frame Tracker to find the index
-*
-* \return Index of the requested tracker.
-*         If the requested tracker does not exist, return -1.
-**/
-int ReferenceFrame::getTrackerIndex( const FrameTracker* frame ) const
-{
-	int num_trackers = _trackers.size();
-	for( int i = 0; i < num_trackers; ++i )
-	  if( _trackers[i] == frame ) return i;
-	
-	return -1;
-}
+    int ReferenceFrame::getParentIndex(const ReferenceFrame* frame) const
+    {
+      int num_parents = _parents.size();
+      for (int i=0; i<num_parents; ++i)
+      {
+        if (_parents[i] == frame)
+          return i;
+      }
+
+      return -1;
+    }
+
+    int ReferenceFrame::getTrackerIndex( const FrameTracker* frame ) const
+    {
+      int num_trackers = _trackers.size();
+      for (int i=0; i<num_trackers; ++i)
+      {
+        if (_trackers[i] == frame)
+          return i;
+      }
+
+      return -1;
+    }
 
 } // !namespace OpenFrames
