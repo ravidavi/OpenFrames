@@ -34,6 +34,12 @@
 #include <osgViewer/ViewerEventHandlers>
 #include <algorithm>
 
+/**
+ * \cond SKIP_VR_NAMESPACE_PROCESSING
+ * doxygen seems to get upset about the fact that a) VRControllerState001_t
+ * isn't defined anywhere and b) this undefined thing is then used in a
+ * typedef.
+ */
 /** 
 Classes declared in OpenVR header. We don't include the OpenVR header here because
 the user might want to use the Stub version of the OpenVR device.
@@ -46,6 +52,9 @@ namespace vr
   struct VRControllerState001_t;
   typedef VRControllerState001_t VRControllerState_t;
 }
+/**
+ * \endcond
+ */
 
 namespace OpenFrames
 {

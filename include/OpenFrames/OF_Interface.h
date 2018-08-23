@@ -62,7 +62,7 @@ extern "C"
 {
 #endif
 
-/* \file
+/** \file
  * All functions have a prefix indicating what they operate on:
  * - ofwin: Acts on the currently active WindowProxy
  * - offm: Acts on the specified FrameManager.
