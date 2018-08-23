@@ -72,6 +72,9 @@ namespace OpenFrames
 	virtual void setColor( const osg::Vec4 &color );
 	using ReferenceFrame::setColor;
 
+  /// Inherited
+  virtual std::string frameInfo() const { return "CoordinateAxes"; }
+
   protected:
 	virtual ~CoordinateAxes();
 

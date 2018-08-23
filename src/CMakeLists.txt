@@ -21,6 +21,7 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     DistanceAccumulator.cpp
     DrawableTrajectory.cpp
     FramePathVerifier.cpp
+    FramePointer.cpp
     FrameTracker.cpp
     FrameTransform.cpp
     FramerateLimiter.cpp

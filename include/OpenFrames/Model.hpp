@@ -108,6 +108,9 @@ namespace OpenFrames
     
     /** Inherited function to compute the bounds of the model */
     virtual const osg::BoundingSphere& getBound() const;
+
+    /// Inherited
+    virtual std::string frameInfo() const { return "Model"; }
     
   protected:
     virtual ~Model();

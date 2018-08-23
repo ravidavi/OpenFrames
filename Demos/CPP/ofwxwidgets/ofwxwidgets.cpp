@@ -31,6 +31,7 @@
 #include <OpenFrames/Model.hpp>
 #include <OpenFrames/RadialPlane.hpp>
 #include <OpenFrames/SegmentArtist.hpp>
+#include <OpenFrames/TrajectoryFollower.hpp>
 using namespace OpenFrames;
 
 const unsigned int winWidth = 1024, winHeight = 768;
