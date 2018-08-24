@@ -5,7 +5,7 @@ An API that provides real-time interactive 3D graphics for scientific simulation
 
 -------------------------------------------------------------------------
 
-**Copyright 2013 Ravishankar Mathur**
+**Copyright 2018 Ravishankar Mathur**
 **OpenFrames** is distributed under the Apache v2 License. See the LICENSE file for details.
 
 -------------------------------------------------------------------------
@@ -16,4 +16,4 @@ As a preface, it should be noted that OpenFrames is based on several existing AP
 
 OpenSceneGraph is an API that provides cross-platform scene graph management. A scene graph is a concept that groups objects with similar characteristics together. This grouping then enables operations to be quickly applied to groups of objects. Read more about it at http://www.openscenegraph.org.
 
-Instructions to build and install OpenFrames are available in the INSTALL file at the root of the source code distribution.
+Instructions to build and install OpenFrames are available at http://sourceforge.net/p/openframes/wiki/Home/
