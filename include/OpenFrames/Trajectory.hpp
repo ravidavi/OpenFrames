@@ -22,8 +22,8 @@
 #define _OF_TRAJECTORY_
 
 #include <OpenFrames/Export.h>
+#include <OpenFrames/Utilities.hpp>
 #include <osg/Referenced>
-#include <OpenThreads/ReadWriteMutex>
 #include <vector>
 
 namespace OpenFrames
@@ -243,14 +243,8 @@ namespace OpenFrames
 
 	unsigned int _dof; // Degrees of freedom for position and optionals
 
-	// Synchronization variables
-#define USERWMUTEX
-
-#ifdef USERWMUTEX
-  mutable OpenThreads::ReadWriteMutex _readWriteMutex;
-#else
-  mutable OpenThreads::Mutex _mutex;
-#endif
+  // Enable reader-writer synchronization on the Trajectory
+  mutable ReadWriteMutex _readWriteMutex;
   };
 
   /**

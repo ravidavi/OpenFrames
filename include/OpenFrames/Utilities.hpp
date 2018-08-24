@@ -21,6 +21,8 @@
 #ifndef _OF_UTILITIES_
 #define _OF_UTILITIES_
 
+#include <OpenThreads/Condition>
+#include <OpenThreads/Mutex>
 #include <osg/Matrixd>
 #include <osg/View>
 
@@ -34,6 +36,39 @@ namespace OpenFrames {
   
   /** Get the osg::View's graphics context by searching its master camera then slave cameras */
   osg::GraphicsContext* getMainGraphicsContext(osg::View *view);
+  
+  /** Implements a reader-writer mutex that is biased towards writers.
+      Algorithm comes from https://github.com/angrave/SystemProgramming/wiki/Synchronization,-Part-7:-The-Reader-Writer-Problem
+   */
+  class ReadWriteMutex
+  {
+  public:
+    ReadWriteMutex()
+    : _writerWaitCount(0), _writerCount(0), _readerCount(0)
+    {}
+    
+    /// Acquire the read lock
+    /// This gives preference to waiting writers
+    int readLock();
+    
+    /// Release the read lock
+    int readUnlock();
+    
+    /// Acquire the write lock
+    int writeLock();
+    
+    /// Release the write lock
+    int writeUnlock();
+    
+  protected:
+    int _writerWaitCount; // Number of writers waiting to enter the critical section
+    int _writerCount;     // Number of writers in the critical section (0 or 1)
+    int _readerCount;     // Number of readers in the critical section
+    // Note that if _readerCount > 0 then _writerCount must be 0 (and vice versa)
+    
+    OpenThreads::Condition _turnCond; // Wait for a turn to enter critical section
+    OpenThreads::Mutex _countLock;    // Lock while updating counters
+  };
   
 } // !namespace OpenFrames
 

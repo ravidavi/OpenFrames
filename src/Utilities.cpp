@@ -90,4 +90,49 @@ namespace OpenFrames
     
     return gc;
   }
+  
+  /*******************************************************/
+  int ReadWriteMutex::readLock()
+  {
+    _countLock.lock();
+    while(_writerWaitCount > 0)
+    {
+      _turnCond.wait(&_countLock);
+    }
+    ++_readerCount;
+    return _countLock.unlock();
+  }
+  
+  /*******************************************************/
+  int ReadWriteMutex::readUnlock()
+  {
+    _countLock.lock();
+    --_readerCount;
+    _turnCond.broadcast();
+    return _countLock.unlock();
+  }
+  
+  /*******************************************************/
+  int ReadWriteMutex::writeLock()
+  {
+    _countLock.lock();
+    ++_writerWaitCount;
+    while((_writerCount > 0) || (_readerCount > 0))
+    {
+      _turnCond.wait(&_countLock);
+    }
+    ++_writerCount;
+    return _countLock.unlock();
+  }
+  
+  /*******************************************************/
+  int ReadWriteMutex::writeUnlock()
+  {
+    _countLock.lock();
+    --_writerWaitCount;
+    --_writerCount;
+    _turnCond.broadcast();
+    return _countLock.unlock();
+  }
+  
 } // !namespace OpenFrames

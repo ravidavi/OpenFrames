@@ -510,22 +510,14 @@ void Trajectory::informSubscribers()
   
 void Trajectory::lockData(DataLockType lockType) const
 {
-#ifdef USERWMUTEX
     if (lockType == READ_LOCK) _readWriteMutex.readLock();
     else _readWriteMutex.writeLock();
-#else
-    _mutex.lock();
-#endif
 }
 
 void Trajectory::unlockData(DataLockType lockType) const
 {
-#ifdef USERWMUTEX
     if (lockType == READ_LOCK) _readWriteMutex.readUnlock();
     else _readWriteMutex.writeUnlock();
-#else
-    _mutex.unlock();
-#endif
 }
 
 } // !namespace OpenFrames
