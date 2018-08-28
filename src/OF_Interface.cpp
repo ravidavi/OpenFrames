@@ -1055,7 +1055,7 @@ OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(OF_CHARARG(fname),
     // Convert given character string and length to a proper C string
     std::string fnamestr(OF_STRING(fname));
     std::string fextstr(OF_STRING(fext));
-    _objs->_currWinProxy->setWindowCaptureFile(fname, fext);
+    _objs->_currWinProxy->setWindowCaptureFile(fnamestr, fextstr);
     _objs->_intVal = 0;
   }
   else {
