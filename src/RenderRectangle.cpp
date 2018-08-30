@@ -293,7 +293,8 @@ namespace OpenFrames
     sceneSS->setMode(GL_LIGHTING, osg::StateAttribute::ON); // Enable lighting
     osg::LightModel* globalLightModel = new osg::LightModel;
     globalLightModel->setAmbientIntensity(osg::Vec4(0.0, 0.0, 0.0, 1.0)); // Disable global ambient light
-    globalLightModel->setColorControl(osg::LightModel::SEPARATE_SPECULAR_COLOR);
+    globalLightModel->setColorControl(osg::LightModel::SEPARATE_SPECULAR_COLOR); // Accurate specular light color component
+    globalLightModel->setLocalViewer(true); // Accurate specular light view position
     sceneSS->setAttributeAndModes(globalLightModel);
     osg::Light* globalLight = _sceneView->getLight();
     globalLight->setAmbient(osg::Vec4(0.2, 0.2, 0.2, 1.0)); // low-level ambient light
