@@ -1613,9 +1613,9 @@ OF_EXPORT void OF_FCN(offrame_managetime)(bool *affectChildren, bool *reset,
   }
   
   if(*reset) OSG_WARN << "OpenFrames::offrame_managetime WARNING: function no longer supports reset input. Please set time via WindowProxy time management functions instead." << std::endl;
-  if(*changePauseState) ofwin_pausetime(pauseState);
-  if(*changeOffsetTime) ofwin_settime(offsetTime);
-  if(*changeTimeScale) ofwin_settimescale(timeScale);
+  if(*changePauseState) OF_FCN(ofwin_pausetime)(pauseState);
+  if(*changeOffsetTime) OF_FCN(ofwin_settime)(offsetTime);
+  if(*changeTimeScale) OF_FCN(ofwin_settimescale)(timeScale);
 }
 
 void OF_FCN(offrame_printframestring)()
