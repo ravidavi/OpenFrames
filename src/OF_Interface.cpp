@@ -249,10 +249,11 @@ void OF_FCN(ofwin_getid)(unsigned int *retid)
 void OF_FCN(ofwin_createproxy)(int *x, int *y,
                             unsigned int *width, unsigned int *height,
                             unsigned int *nrow, unsigned int *ncol,
-                            bool *embedded, unsigned int *id)
+                            bool *embedded, unsigned int *id,
+                            bool *useVR)
 {
 	// Create the new WindowProxy with the given ID
-	WindowProxy* wp = new WindowProxy(*x, *y, *width, *height, *nrow, *ncol, *embedded);
+	WindowProxy* wp = new WindowProxy(*x, *y, *width, *height, *nrow, *ncol, *embedded, *useVR);
 	wp->setID(*id);
 
 	// If a WindowProxy already exists with the same id, stop its thread

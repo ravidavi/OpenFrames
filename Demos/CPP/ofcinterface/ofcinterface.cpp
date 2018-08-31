@@ -42,7 +42,8 @@ int main()
 	unsigned int gridy = 1;
 	bool embedded = false;
 	unsigned int id = 0;
-	ofwin_createproxy(&winx, &winy, &width, &height, &gridx, &gridy, &embedded, &id);
+	bool useVR = false;
+	ofwin_createproxy(&winx, &winy, &width, &height, &gridx, &gridy, &embedded, &id, &useVR);
 
 	// Create DrawableTrajectory to hold artists
 	ofdrawtraj_create("Artists");

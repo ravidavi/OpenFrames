@@ -130,11 +130,13 @@ OF_EXPORT void OF_FCN(ofwin_getid)(unsigned int *retid);
  * \param ncol     Number of columns in the window grid.
  * \param embedded True if the user wants to provide their own OpenGL window.
  * \param id       ID of this window.
+ * \param useVR    Whether to enable rendering in VR (if OpenFrames is built with OpenVR support)
  */
 OF_EXPORT void OF_FCN(ofwin_createproxy)(int *x, int *y,
                                       unsigned int *width, unsigned int *height,
                                       unsigned int *nrow, unsigned int *ncol,
-                                      bool *embedded, unsigned int *id);
+                                      bool *embedded, unsigned int *id,
+                                      bool *useVR);
 
 /*
  * \brief Set the window name (title). Only applies to non-embedded windows.

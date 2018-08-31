@@ -97,10 +97,10 @@
 	INTEGER, INTENT(IN) :: id
 	END SUBROUTINE
 	
-	SUBROUTINE ofwin_createproxy(x, y, width, height, nrow, ncol, embedded, id)
+	SUBROUTINE ofwin_createproxy(x, y, width, height, nrow, ncol, embedded, id, useVR)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_createproxy
 	INTEGER, INTENT(IN) :: x, y, width, height, nrow, ncol, id
-	LOGICAL, INTENT(IN) :: embedded
+	LOGICAL, INTENT(IN) :: embedded, useVR
 	END SUBROUTINE
 	
 	SUBROUTINE ofwin_setwindowname(winname)
