@@ -21,6 +21,7 @@
 #include <OpenFrames/LatLonGrid.hpp>
 #include <osg/LineWidth>
 #include <osg/Math>
+#include <algorithm>
 
 namespace OpenFrames
 {
@@ -51,19 +52,31 @@ bool LatLonGrid::getContentsShown() const
 	return (_geode->getNodeMask() != 0x0);
 }
 
-void LatLonGrid::setParameters(const double &radius, const double &latSpace, const double &lonSpace)
+void LatLonGrid::setParameters(const double &radiusX, const double &radiusY, const double &radiusZ, const double &latSpace, const double &lonSpace)
 {
-  	bool recreateGrid = false;
+  bool recreateGrid = false;
 
-	if((_radius != radius) && (radius > 0))
+	if((_radiusX != radiusX) && (radiusX > 0))
 	{
-	  _radius = radius;
-	  moveXAxis(osg::Vec3(radius, 0, 0), 0.5*radius);
-	  moveYAxis(osg::Vec3(0, radius, 0), 0.5*radius);
-	  moveZAxis(osg::Vec3(0, 0, radius), 0.5*radius);
+	  _radiusX = radiusX;
+	  moveXAxis(osg::Vec3(radiusX, 0, 0), 0.5*radiusX);
 	  recreateGrid = true;
 	}
 
+  if((_radiusY != radiusY) && (radiusY > 0))
+  {
+    _radiusY = radiusY;
+    moveYAxis(osg::Vec3(0, radiusY, 0), 0.5*radiusY);
+    recreateGrid = true;
+  }
+  
+  if((_radiusZ != radiusZ) && (radiusZ > 0))
+  {
+    _radiusZ = radiusZ;
+    moveZAxis(osg::Vec3(0, 0, radiusZ), 0.5*radiusZ);
+    recreateGrid = true;
+  }
+  
 	if((_latSpacing != latSpace) && (latSpace >= 0))
 	{
 	  _latSpacing = latSpace;
@@ -79,11 +92,13 @@ void LatLonGrid::setParameters(const double &radius, const double &latSpace, con
 	if(recreateGrid) _createGrid();
 }
 
-void LatLonGrid::getParameters(double &radius, double &latSpace, double &lonSpace) const
+void LatLonGrid::getParameters(double &radiusX, double &radiusY, double &radiusZ, double &latSpace, double &lonSpace) const
 {
-	radius = _radius;
-	latSpace = _latSpacing;
-	lonSpace = _lonSpacing;
+  radiusX = _radiusX;
+  radiusY = _radiusY;
+  radiusZ = _radiusZ;
+  latSpace = _latSpacing;
+  lonSpace = _lonSpacing;
 }
 
 const osg::BoundingSphere& LatLonGrid::getBound() const
@@ -91,7 +106,7 @@ const osg::BoundingSphere& LatLonGrid::getBound() const
   	// Have bounding sphere encompass grid and axes/labels, but centered
 	// on the grid (since that is the object of interest)
 	ReferenceFrame::getBound();
-	osg::BoundingSphere bs = osg::BoundingSphere(osg::Vec3(), _radius);
+  osg::BoundingSphere bs = osg::BoundingSphere(osg::Vec3(), std::max({_radiusX, _radiusY, _radiusZ}));
 	bs.expandRadiusBy(_bound);
 	_bound = bs;
 
@@ -146,20 +161,27 @@ void LatLonGrid::_init()
 	_xform->addChild(_geode.get());
 
 	// Set up defaults for sphere size, line spacing, and color
-	setParameters(1.0, osg::DegreesToRadians(30.0), osg::DegreesToRadians(30.0));
+	setParameters(1.0, 1.0, 1.0, osg::DegreesToRadians(30.0), osg::DegreesToRadians(30.0));
 	setColor(getColor());
 }
 
 void LatLonGrid::_createGrid()
 {
+  // Implements triaxial geodetic ellipsoid, as defined in
+  // M. Ligas, "Cartesian to geodetic coordinates conversion on a triaxial ellipsoid", 2011.
 	double alpha, beta; // Spherical angles to compute grid points
 	double ca, cb, sa, sb; // Sine & Cosine of alpha and beta angles
+  double v; // Radius of curvature in the prime vertical
 	unsigned int start; // Starting index of current lat/lon line
 	double lod; // Level of Detail scale used when drawing latitude lines
 	bool first; // Flag to indicate equator/prime meridian
 	const double epsilon = 1.0e-6; // Precision tolerance
 
-	// Remove existing vertices
+  // Square of first eccentricities
+  double ex2 = (_radiusX*_radiusX - _radiusZ*_radiusZ)/(_radiusX*_radiusX);
+  double ee2 = (_radiusX*_radiusX - _radiusY*_radiusY)/(_radiusX*_radiusX);
+
+  // Remove existing vertices
 	_vertices->clear();
 	if(_gridGeom->getNumPrimitiveSets() > 0)
 	  _gridGeom->removePrimitiveSet(0, _gridGeom->getNumPrimitiveSets());
@@ -184,7 +206,8 @@ void LatLonGrid::_createGrid()
 	    for(alpha = 0; alpha < 2.0*osg::PI-epsilon; alpha += lod*osg::PI/180.0)
 	    {
 	      ca = cos(alpha); sa = sin(alpha);
-	      _vertices->push_back(osg::Vec3(_radius*ca*cb, _radius*sa*cb, _radius*sb));
+        v = _radiusX / std::sqrt(1.0 - ex2*sb*sb - ee2*cb*cb*sa*sa);
+	      _vertices->push_back(osg::Vec3(v*ca*cb, v*(1.0-ee2)*sa*cb, v*(1.0-ex2)*sb));
 	    }
 
 	    if(first)
@@ -192,7 +215,7 @@ void LatLonGrid::_createGrid()
 	      // Draw equator as an OpenGL LINE_LOOP
 	      _mainGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_LOOP, start, _vertices->size() - start));
 	      first = false;
-	      continue;
+	      continue; // Only draw equatorial latitude line once
 	    }
 	    else
 	    {
@@ -200,13 +223,14 @@ void LatLonGrid::_createGrid()
 	      _gridGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_LOOP, start, _vertices->size()-start));
 	    }
 
-	    // Latitude line south of equator.
+	    // Latitude line south of equator
 	    start = _vertices->size();
 	    for(alpha = 0; alpha < 2.0*osg::PI-epsilon; alpha += lod*osg::PI/180.0)
 	    {
 	      ca = cos(alpha); sa = sin(alpha);
-	      _vertices->push_back(osg::Vec3(_radius*ca*cb, _radius*sa*cb, -_radius*sb));
-	    }
+        v = _radiusX / std::sqrt(1.0 - ex2*sb*sb - ee2*cb*cb*sa*sa);
+        _vertices->push_back(osg::Vec3(v*ca*cb, v*(1.0-ee2)*sa*cb, -v*(1.0-ex2)*sb));
+      }
 
 	    // Draw current southern latitude as an OpenGL LINE_LOOP
 	    _gridGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_LOOP, start, _vertices->size()-start));
@@ -228,8 +252,9 @@ void LatLonGrid::_createGrid()
 	    for(beta = -osg::PI_2*osg::sign(step); fabs(beta) <= osg::PI_2+epsilon; beta += step)
 	    {
 	      cb = cos(beta); sb = sin(beta);
-	      _vertices->push_back(osg::Vec3(_radius*ca*cb, _radius*sa*cb, _radius*sb));
-	    }
+        v = _radiusX / std::sqrt(1.0 - ex2*sb*sb - ee2*cb*cb*sa*sa);
+        _vertices->push_back(osg::Vec3(v*ca*cb, v*(1.0-ee2)*sa*cb, v*(1.0-ex2)*sb));
+      }
 	    step *= -1.0; // Reverse direction of travel
 
 	    if(first)

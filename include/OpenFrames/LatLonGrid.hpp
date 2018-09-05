@@ -31,10 +31,10 @@ namespace OpenFrames
   /**
    * \class LatLonGrid
    *
-   * \brief This class draws a spherical lat-lon grid.
+   * \brief This class draws an ellipsoidal lat-lon grid.
    *
-   * This class implements a type of ReferenceFrame that draws a spherical
-   * latitude/longitude grid with adjustable spacings.
+   * This class implements a type of ReferenceFrame that draws an ellipsoidal
+   * latitude/longitude grid with adjustable radii and spacings.
    */
   class OF_EXPORT LatLonGrid : public ReferenceFrame
   {
@@ -50,8 +50,8 @@ namespace OpenFrames
 	/** Set/get latitude and longitude spacing, in radians.
 	    Enter zero to disable latitude or longitude lines, or any value above 2*PI to
 	    draw only the equator or prime meridian. */
-	void setParameters(const double &radius, const double &latSpace, const double &lonSpace);
-	void getParameters(double &radius, double &latSpace, double &lonSpace) const;
+	void setParameters(const double &radiusX, const double &radiusY, const double &radiusZ, const double &latSpace, const double &lonSpace);
+	void getParameters(double &radiusX, double &radiusY, double &radiusZ, double &latSpace, double &lonSpace) const;
 
         /** Inherited from ReferenceFrame. */
 	virtual const osg::BoundingSphere& getBound() const;
@@ -70,7 +70,7 @@ namespace OpenFrames
 	void _createGrid();
 
 	double _latSpacing, _lonSpacing; // Grid line spacing, in radians
-	double _radius; // Radius of sphere
+	double _radiusX, _radiusY, _radiusZ; // Radii in x, y, z directions
 
 	osg::ref_ptr<osg::Geode> _geode;  // Node to hold grid geometry
 	osg::ref_ptr<osg::Geometry> _gridGeom; // Geometry that draws everything

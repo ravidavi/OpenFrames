@@ -2133,12 +2133,12 @@ void OF_FCN(oflatlongrid_create)(OF_CHARARG(name))
     _objs->_intVal = 0;
 }
 
-void OF_FCN(oflatlongrid_setparameters)(double *radius, double *latSpace, double *lonSpace)
+void OF_FCN(oflatlongrid_setparameters)(double *radiusX, double *radiusY, double *radiusZ, double *latSpace, double *lonSpace)
 {
 	LatLonGrid *llg = dynamic_cast<LatLonGrid*>(_objs->_currFrame);
 	if(llg) 
 	{
-	  llg->setParameters(*radius, *latSpace, *lonSpace);
+	  llg->setParameters(*radiusX, *radiusY, *radiusZ, *latSpace, *lonSpace);
 	  _objs->_intVal = 0;
 	}
 	else _objs->_intVal = -2;

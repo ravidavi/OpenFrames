@@ -724,9 +724,9 @@
 	CHARACTER(LEN=*), INTENT(IN) :: name
 	END SUBROUTINE
 
-	SUBROUTINE oflatlongrid_setparameters(radius, latSpace, lonSpace)
+	SUBROUTINE oflatlongrid_setparameters(radiusX, radiusY, radiusZ, latSpace, lonSpace)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: oflatlongrid_setparameters
-	REAL(8), INTENT(IN) :: radius, latSpace, lonSpace
+	REAL(8), INTENT(IN) :: radiusX, radiusY, radiusZ, latSpace, lonSpace
 	END SUBROUTINE
 
 ! RadialPlane functions

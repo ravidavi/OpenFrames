@@ -1350,11 +1350,15 @@ OF_EXPORT void OF_FCN(oflatlongrid_create)(OF_CHARARG(name));
  *
  * This applies to the current active LatLonGrid.
  *
- * \param radius   Radius of the grid.
+ * \param radiusX  Radius of the grid in the X direction.
+ * \param radiusY  Radius of the grid in the Y direction.
+ * \param radiusZ  Radius of the grid in the Z direction.
  * \param latSpace Spacing between latitude grid lines in radians.
  * \param lonSpace Spacing between longitude grid lines in radians.
  */
-OF_EXPORT void OF_FCN(oflatlongrid_setparameters)(double *radius,
+OF_EXPORT void OF_FCN(oflatlongrid_setparameters)(double *radiusX,
+                                                  double *radiusY,
+                                                  double *radiusZ,
                                                   double *latSpace,
                                                   double *lonSpace);
 

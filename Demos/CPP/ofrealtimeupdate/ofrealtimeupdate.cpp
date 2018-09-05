@@ -61,7 +61,7 @@ int main()
 
   // Create the latitude/longitude grid on the earth
   LatLonGrid *earthgrid = new LatLonGrid("EarthGrid", 0, 0, 1, 1.0);
-  earthgrid->setParameters(r_earth, M_PI/4.0, M_PI/3.0);
+  earthgrid->setParameters(r_earth, r_earth, r_earth, M_PI/4.0, M_PI/3.0);
   earthgrid->showAxes(ReferenceFrame::NO_AXES);
   earthgrid->showAxesLabels(ReferenceFrame::NO_AXES);
   earthgrid->showNameLabel(false);
