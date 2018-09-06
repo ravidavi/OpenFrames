@@ -584,6 +584,7 @@ namespace OpenFrames
       // Get default window traits that are saved in the EmbeddedGraphics object (even if it is not used)
       osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
       *traits = *(_embeddedGraphics->getTraits());
+      traits->readDISPLAY(); // Get DISPLAY number for OS's that support it
       traits->windowDecoration = true; // We want decorations such as window borders
       traits->doubleBuffer = true; // We want double buffered graphics since we're doing animation
       if(_useVR)

@@ -40,7 +40,7 @@ Vector::Vector( const osg::Vec3d& vec )
 	  // Reduce the detail for the vector (don't need high detail) and
 	  // leave out the face of the cylinder that connects to the cone.
 	osg::TessellationHints* hints = new osg::TessellationHints;
-	hints->setDetailRatio(0.2f);  // Don't need high detail for a vector
+	hints->setDetailRatio(1.0f);
 	hints->setCreateTop(false);
 
 	  // Create an actual drawable entity out of the vector
