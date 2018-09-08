@@ -90,6 +90,12 @@
 	INTEGER, INTENT(OUT) :: val
 	END SUBROUTINE
 
+! Add a path to the start of the OSG search path list
+  SUBROUTINE of_adddatafilepath(newpath)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: of_adddatafilepath
+  CHARACTER(LEN=*), INTENT(IN) :: newpath
+  END SUBROUTINE
+
 ! WindowProxy functions
 
 	SUBROUTINE ofwin_activate(id)
@@ -1056,7 +1062,7 @@
 
   SUBROUTINE ofview_gettrackball(eye, center, up)
   !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_gettrackball
-  REAL(8), INTENT(IN) :: eye(3), center(3), up(3)
+  REAL(8), INTENT(OUT) :: eye(3), center(3), up(3)
   END SUBROUTINE
 
   SUBROUTINE ofview_settrackball(eye, center, up)

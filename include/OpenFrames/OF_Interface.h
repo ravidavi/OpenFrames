@@ -97,6 +97,16 @@ OF_EXPORT void OF_FCN(of_cleanup)();
  * \param val variable to store the return value from the previous API function call.
  */
 OF_EXPORT void OF_FCN(of_getreturnedvalue)(int *val);
+  
+/*
+ * \brief Add a search path when OSG tries to load data files. 
+ *
+ * These can be images, models, or any other data files. This does not affect loading OSG libraries or plugins. The new path is added to the FRONT of the path search list, and will be searched before any existing paths (including previous calls to of_addDataFilePath.
+ *
+ *
+ * \param newpath full path to be searched when loading a file.
+ */
+OF_EXPORT void OF_FCN(of_adddatafilepath)(OF_CHARARG(newpath));
 
 /***********************************************************************
 	Window Functions

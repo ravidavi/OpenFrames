@@ -36,6 +36,7 @@
 #include <OpenFrames/WindowProxy.hpp>
 #include <OpenThreads/Thread>
 #include <osg/Notify>
+#include <osgDB/Registry>
 #include <map>
 #include <string>
 #include <iostream>
@@ -214,6 +215,12 @@ void OF_FCN(of_getreturnedvalue)(int *val)
 	*val = _objs->_intVal;
 }
 
+OF_EXPORT void OF_FCN(of_adddatafilepath)(OF_CHARARG(newpath))
+{
+  std::string temp(OF_STRING(newpath)); // Convert to std::string
+  osgDB::Registry::instance()->getDataFilePathList().push_front(temp);
+}
+    
 /***********************************************
 	Window Functions
 ***********************************************/
