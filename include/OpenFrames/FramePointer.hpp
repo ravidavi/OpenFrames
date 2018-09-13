@@ -41,7 +41,7 @@ namespace OpenFrames
 class OF_EXPORT FramePointer : public osg::Callback
 {
 public:
-	FramePointer();
+  FramePointer(const osg::Vec3d& pointingVec = osg::Vec3d(1.0, 0.0, 0.0));
 
 	/// Don't allow copying from another FramePointer
 	FramePointer(const FramePointer &tf, const osg::CopyOp &copyop) {}
@@ -50,6 +50,10 @@ public:
   
   /// Set the current and destination frames, as well as the common root of the scene
   void setPointingFrames(ReferenceFrame *root, ReferenceFrame *current, ReferenceFrame *dest);
+  
+  /// Set the vector in the current frame that should point towards the destination frame
+  void setPointingVector(const osg::Vec3d& pointingVec) { _pointingVec = pointingVec; }
+  const osg::Vec3d& getPointingVec() const { return _pointingVec; }
 	
   /// Inherited from osg::Callback, implements the callback.
   virtual bool run(osg::Object* object, osg::Object* data);
@@ -64,6 +68,7 @@ protected:
   osg::ref_ptr<TransformAccumulator> _xform_dest;   // Path to destination frame
   osg::observer_ptr<ReferenceFrame> _currentFrame;  // Frame for this FramePointer
   
+  osg::Vec3d _pointingVec; // The vector in the current frame that should point towards the destination
 };
 
 } // !namespace OpenFrames

@@ -19,10 +19,11 @@
 namespace OpenFrames
 {
 
-FramePointer::FramePointer()
+FramePointer::FramePointer(const osg::Vec3d& pointingVec)
 {
   _xform_parent = new TransformAccumulator;
   _xform_dest = new TransformAccumulator;
+  _pointingVec = pointingVec;
 }
 
 FramePointer::~FramePointer()
@@ -72,11 +73,11 @@ void FramePointer::_computeTransform()
   _currentFrame->getPosition(currentVec);
   
   // Get vector from current frame to destination frame
-  osg::Vec3d pointingVec = destVec - currentVec;
+  osg::Vec3d destVecRelative = destVec - currentVec;
   
-  // Direct rotation from X-axis to destination vector
+  // Direct rotation from desired pointing vector to destination vector
   osg::Quat q;
-  q.makeRotate(osg::Vec3d(1.0, 0.0, 0.0), pointingVec);
+  q.makeRotate(_pointingVec, destVecRelative);
   
   _currentFrame->setAttitude(q);
 }
