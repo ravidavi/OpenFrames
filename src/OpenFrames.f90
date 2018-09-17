@@ -698,6 +698,11 @@
 	REAL(8), INTENT(IN) :: len
 	END SUBROUTINE
 
+	SUBROUTINE ofcoordaxes_setaxiswidth(width)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofcoordaxes_setaxiswidth
+	REAL(8), INTENT(IN) :: width
+	END SUBROUTINE
+
 	SUBROUTINE ofcoordaxes_setdrawaxes(axes)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofcoordaxes_setdrawaxes
 	INTEGER, INTENT(IN) :: axes

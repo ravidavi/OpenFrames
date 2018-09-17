@@ -1317,6 +1317,15 @@ OF_EXPORT void OF_FCN(ofcoordaxes_create)(OF_CHARARG(name));
 OF_EXPORT void OF_FCN(ofcoordaxes_setaxislength)(double *len);
 
 /*
+* \brief Sets the width of the axes.
+*
+* This applies to the current active CoordinateAxes.
+*
+* \param width Axis width.
+*/
+OF_EXPORT void OF_FCN(ofcoordaxes_setaxiswidth)(double *width);
+
+/*
  * \brief Sets which axis to draw.
  *
  * To show multiple axis components, sum the enumerations of OpenFrames::ReferenceFrame::AxesType you want to show.
