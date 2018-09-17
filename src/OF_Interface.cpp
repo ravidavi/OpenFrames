@@ -89,7 +89,10 @@ class OF_Objects : public osg::Referenced
 	ArtistMap _artistMap; ///< Map of ID -> TrajectoryArtist
 	ViewMap _viewMap; ///< Map of ID -> View
 
-	/// Value returned (if any) by last function call
+	/**
+	 * Value returned (if any) by last function call. 0 means
+	 * everything is ok, non-zero means error of some kind.
+	 */
 	int _intVal;
 
     /**
@@ -2040,6 +2043,22 @@ void OF_FCN(ofcoordaxes_setaxislength)(double *len)
 	  _objs->_intVal = 0;
 	}
 	else _objs->_intVal = -2;
+}
+
+void OF_FCN(ofcoordaxes_setaxiswidth)(double *width)
+{
+	CoordinateAxes *ca = dynamic_cast<CoordinateAxes*>(_objs->_currFrame);
+	if (ca)
+	{
+		// Set width and set error code to everything-ok value.
+		ca->setAxisWidth(*width);
+		_objs->_intVal = 0;
+	}
+	else
+	{
+		// Set error code to indicate problem.
+		_objs->_intVal = -2;
+	}
 }
 
 void OF_FCN(ofcoordaxes_setdrawaxes)(unsigned int *axes)
