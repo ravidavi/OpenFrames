@@ -25,6 +25,7 @@
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Geometry>
 #include <osg/ref_ptr>
+#include <osg/LineWidth>
 
 namespace OpenFrames
 {
@@ -33,7 +34,7 @@ namespace OpenFrames
    *
    * \brief A type of ReferenceFrame that displays X, Y, and Z axes.
    *
-   * This class is a type of ReferenceFrame that displays its X, Y, and Z axes
+   * This class is a type of ReferenceFrame that displays its X, Y and Z axes
    * with adjustable tick marks and labels.
    */
   class OF_EXPORT CoordinateAxes : public ReferenceFrame
@@ -54,6 +55,10 @@ namespace OpenFrames
 	/** Set which axes to draw using ReferenceFrame::AxesType */
 	void setDrawAxes(unsigned int axes);
 	inline unsigned int getDrawAxes() const { return _drawAxes; }
+
+	/** Set/get width of axes. */
+	void setAxisWidth( double width );
+	double getAxisWidth() const;
 	
 	/** Set/get tick spacing */
 	void setTickSpacing(double major_sp, double minor_sp);
@@ -88,6 +93,7 @@ namespace OpenFrames
 	double _axisLength; // Length of each axis
 	double _majorTickSpacing, _minorTickSpacing; // Tick mark spacing
 	unsigned int _drawAxes; // Which axes to draw
+	osg::ref_ptr<osg::LineWidth> _lineWidth;  // Width of axis lines.
 
 	osg::ref_ptr<osg::Geode> _axesGeode; // Node to hold axes geometry
 	osg::ref_ptr<osg::Geode> _tickGeode; // Node to hold tick geometry
