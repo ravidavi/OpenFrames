@@ -31,16 +31,18 @@ class Window(QWindow):
         True after the first time that _of has been started
 
     """
-    def __init__(self, width=1, height=1):
+    def __init__(self, nrow=1, ncol=1, id=0):
         """
         Create an instance of OFWindow
 
         Attributes
         ----------
-        width : int, optional
-            The width of the grid in window proxy, default = 1
-        height : int, optional
-            The height of the grid in window proxy, default = 1
+        nrow : int, optional
+            Number of rows in WindowProxy grid, default = 1
+        ncol : int, optional
+            Number of columns in WindowProxy grid, default = 1
+        id : int, optional
+            Identifier for the WindowProxy (each WindowProxy should have a unique identifier), default = 0
 
         """
         super().__init__()
@@ -49,9 +51,9 @@ class Window(QWindow):
         self._saved_size = None
         self.setSurfaceType(QWindow.OpenGLSurface)
 
-        self._window_proxy_id = 0
+        self._window_proxy_id = id
 
-        ofwin_createproxy(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT, 1, 1, True, self._window_proxy_id)
+        ofwin_createproxy(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT, nrow, ncol, True, self._window_proxy_id, False)
         ofwin_setmakecurrentfunction(self.make_current)
         ofwin_setupdatecontextfunction(self.make_current)
         ofwin_setswapbuffersfunction(self.swap_buffers)
