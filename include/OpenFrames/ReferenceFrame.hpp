@@ -347,7 +347,7 @@ class Trajectory;
      *
      * \param font Font name string (or full pathname of font), including extension.
      */
-    void setFont(const std::string &font);
+    void setLabelFont(const std::string &font);
     
     /**
      * Get the font name used for labels
@@ -356,7 +356,7 @@ class Trajectory;
      *
      * \return Font name string, including extension. e.g. 'arial.ttf'
      */
-    std::string getFontName() const;
+    std::string getLabelFontName() const;
     
     /**
      * Get the path to the font used for labels
@@ -365,7 +365,28 @@ class Trajectory;
      *
      * \param Font file path, including extension. e.g. '/usr/share/fonts/arial.ttf'
      */
-    std::string getFontPath() const;
+    std::string getLabelFontPath() const;
+    
+    /**
+     * Set the size for labels
+     *
+     * The default size is 30
+     * The name label has a fixed size, but the X/Y/Z axis labels vary their
+     * size based on distance. This function sets their maximum size.
+     *
+     * \param height Integer maximum character size
+     */
+    void setLabelSize(unsigned int size);
+    
+    /**
+     * Get the size for labels
+     *
+     * The name label has a fixed size, but the X/Y/Z axis labels vary their
+     * size based on distance. This function gets their maximum size.
+     *
+     * \return Integer character size (maximum size for axes labels)
+     */
+    unsigned int getLabelSize() const { return _nameLabel->getCharacterHeight(); }
     
     /*
      * \brief Add a ReferenceFrame as a child to this one.

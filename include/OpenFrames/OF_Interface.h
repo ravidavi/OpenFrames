@@ -896,13 +896,22 @@ OF_EXPORT void OF_FCN(offrame_setaxeslabels)(OF_CHARARG(xlabel),
 #endif
 
 /*
- * \brief Set the font for the current ReferenceFrame.
+ * \brief Set the label font for the current ReferenceFrame.
  *
  * This applies to the current active ReferenceFrame.
  *
  * \param font Font name, either with absolute path or standalone. Must include extension.
  */
-OF_EXPORT void OF_FCN(offrame_setfont)(OF_CHARARG(font));
+OF_EXPORT void OF_FCN(offrame_setlabelfont)(OF_CHARARG(font));
+
+/*
+ * \brief Set the label size for the current ReferenceFrame.
+ *
+ * This applies to the current active ReferenceFrame.
+ *
+ * \param size Label size, used as maximum size for axes labels
+ */
+OF_EXPORT void OF_FCN(offrame_setlabelsize)(unsigned int *size);
   
 /*
  * \brief Reposition and resize the x component of the coordinate axis.

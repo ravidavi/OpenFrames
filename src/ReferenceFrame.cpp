@@ -94,8 +94,6 @@ void ReferenceFrame::_init( const std::string &name, const osg::Vec4& c )
 	_yAxis = new Vector(osg::Y_AXIS);
 	_zAxis = new Vector(osg::Z_AXIS);
   
-  const float maxFontSize = 30.0; // Maximum font size
-
 	// Create labels
 	_xLabel = new osgText::Text;
 	_yLabel = new osgText::Text;
@@ -115,17 +113,13 @@ void ReferenceFrame::_init( const std::string &name, const osg::Vec4& c )
   
   // Name label text is constant size regardless of distance from viewer
   _nameLabel->setCharacterSizeMode(osgText::Text::SCREEN_COORDS);
-  _nameLabel->setCharacterSize(maxFontSize);
 
   // Sets how "smooth" the text looks ... larger resolution looks nicer, but takes up more memory
   // Also sets the maximum height of the font when it grows with distance
-  _xLabel->setFontResolution(maxFontSize, maxFontSize);
-  _yLabel->setFontResolution(maxFontSize, maxFontSize);
-  _zLabel->setFontResolution(maxFontSize, maxFontSize);
-  _nameLabel->setFontResolution(maxFontSize, maxFontSize);
+  setLabelSize(30.0);
 
   // Set label font
-  setFont("arial.ttf");
+  setLabelFont("arial.ttf");
 
   // Set label text
   _xLabel->setText("X");
@@ -382,7 +376,7 @@ void ReferenceFrame::showAxesLabels(unsigned int labels)
     }
   }
 
-  void ReferenceFrame::setFont(const std::string &font)
+  void ReferenceFrame::setLabelFont(const std::string &font)
   {
     // Save current label text
     std::string prevXLabel = _xLabel->getText().createUTF8EncodedString();
@@ -412,16 +406,28 @@ void ReferenceFrame::showAxesLabels(unsigned int labels)
     _nameLabel->setText(prevNameLabel);
   }
   
-  std::string ReferenceFrame::getFontName() const
+  std::string ReferenceFrame::getLabelFontName() const
   {
-    return osgDB::getSimpleFileName(getFontPath());
+    return osgDB::getSimpleFileName(getLabelFontPath());
   }
   
-  std::string ReferenceFrame::getFontPath() const
+  std::string ReferenceFrame::getLabelFontPath() const
   {
     const osgText::Font* font = _xLabel->getFont();
     std::string fontFile = font ? font->getFileName() : "default";
     return fontFile;
+  }
+  
+  void ReferenceFrame::setLabelSize(unsigned int size)
+  {
+    // Set size for axes labels (treated as maximum size)
+    _xLabel->setFontResolution(size, size);
+    _yLabel->setFontResolution(size, size);
+    _zLabel->setFontResolution(size, size);
+    
+    // Set size for name label (treated as fixed size)
+    _nameLabel->setFontResolution(size, size);
+    _nameLabel->setCharacterSize(size);
   }
   
 bool ReferenceFrame::addChild( ReferenceFrame* child )
