@@ -467,6 +467,11 @@
 	CHARACTER(LEN=*), INTENT(IN) :: xlabel, ylabel, zlabel
 	END SUBROUTINE
 
+	SUBROUTINE offrame_setfont(font)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_setfont
+	CHARACTER(LEN=*), INTENT(IN) :: font
+	END SUBROUTINE
+
 	SUBROUTINE offrame_movexaxis(pos, length, headRatio, bodyRadius, headRadius)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_movexaxis
 	REAL(8), INTENT(IN) :: pos(3), length, headRatio, bodyRadius, headRadius

@@ -26,6 +26,7 @@
 #include <osg/Geode>
 #include <osg/PolygonMode>
 #include <osg/ShapeDrawable>
+#include <osgDB/FileNameUtils>
 #include <osgText/Text>
 
 #ifdef _OF_VERBOSE_
@@ -83,7 +84,7 @@ ReferenceFrame::~ReferenceFrame()
 #endif
 }
 
-void ReferenceFrame::_init( const std::string &n, const osg::Vec4& c )
+void ReferenceFrame::_init( const std::string &name, const osg::Vec4& c )
 {
 	  // Create the transform for this frame
 	_xform = new FrameTransform; 
@@ -92,47 +93,45 @@ void ReferenceFrame::_init( const std::string &n, const osg::Vec4& c )
 	_xAxis = new Vector(osg::X_AXIS);
 	_yAxis = new Vector(osg::Y_AXIS);
 	_zAxis = new Vector(osg::Z_AXIS);
+  
+  const float maxFontSize = 30.0; // Maximum font size
 
-	float fontResolution = 30.0; // Resolution to use for all fonts
-
-	// Create x, y, and z axis labels
+	// Create labels
 	_xLabel = new osgText::Text;
 	_yLabel = new osgText::Text;
 	_zLabel = new osgText::Text;
-
-	// Set the actual label text
-	_xLabel->setText("X");
-	_yLabel->setText("Y");
-	_zLabel->setText("Z");
+  _nameLabel = new osgText::Text;
 
 	// Make sure the labels will always be facing the screen
 	_xLabel->setAxisAlignment(osgText::Text::SCREEN);
 	_yLabel->setAxisAlignment(osgText::Text::SCREEN);
 	_zLabel->setAxisAlignment(osgText::Text::SCREEN);
+  _nameLabel->setAxisAlignment(osgText::Text::SCREEN);
 
-	// Text size will get smaller as the text gets further away, but will be limited to a maximum
-	// size (defined by fontResolution) when the text is close up.
+	// X/Y/Z label text size grows as the text gets closer, but is limited to a maximum size (fontResolution)
 	_xLabel->setCharacterSizeMode(osgText::Text::OBJECT_COORDS_WITH_MAXIMUM_SCREEN_SIZE_CAPPED_BY_FONT_HEIGHT);
 	_yLabel->setCharacterSizeMode(osgText::Text::OBJECT_COORDS_WITH_MAXIMUM_SCREEN_SIZE_CAPPED_BY_FONT_HEIGHT);
 	_zLabel->setCharacterSizeMode(osgText::Text::OBJECT_COORDS_WITH_MAXIMUM_SCREEN_SIZE_CAPPED_BY_FONT_HEIGHT);
+  
+  // Name label text is constant size regardless of distance from viewer
+  _nameLabel->setCharacterSizeMode(osgText::Text::SCREEN_COORDS);
+  _nameLabel->setCharacterSize(maxFontSize);
 
-	// This sets how "smooth" the text looks ... larger resolution looks nicer, but takes up more memory
-	_xLabel->setFontResolution(fontResolution, fontResolution);
-	_yLabel->setFontResolution(fontResolution, fontResolution);
-	_zLabel->setFontResolution(fontResolution, fontResolution);
+  // Sets how "smooth" the text looks ... larger resolution looks nicer, but takes up more memory
+  // Also sets the maximum height of the font when it grows with distance
+  _xLabel->setFontResolution(maxFontSize, maxFontSize);
+  _yLabel->setFontResolution(maxFontSize, maxFontSize);
+  _zLabel->setFontResolution(maxFontSize, maxFontSize);
+  _nameLabel->setFontResolution(maxFontSize, maxFontSize);
 
-	// Set the text's font
-	_xLabel->setFont("arial.ttf");
-	_yLabel->setFont("arial.ttf");
-	_zLabel->setFont("arial.ttf");
+  // Set label font
+  setFont("arial.ttf");
 
-	// Create the name label
-	_nameLabel = new osgText::Text;
-	_nameLabel->setAutoRotateToScreen(true);
-	_nameLabel->setCharacterSizeMode(osgText::Text::SCREEN_COORDS); // Constant font size regarless of distance from viewer
-	_nameLabel->setFontResolution(fontResolution, fontResolution);
-	_nameLabel->setCharacterSize(30.0);
-	_nameLabel->setFont("arial.ttf");
+  // Set label text
+  _xLabel->setText("X");
+  _yLabel->setText("Y");
+  _zLabel->setText("Z");
+  _nameLabel->setText(name);
 
 	// Create groups to which axes & labels will be added
 	_axes = new osg::Geode;
@@ -149,11 +148,11 @@ void ReferenceFrame::_init( const std::string &n, const osg::Vec4& c )
     _labels->addDrawable(_zLabel);
     _labels->addDrawable(_nameLabel);
 
-	setName(n); // Set the name of this ReferenceFrame
+	setName(name); // Set the name of this ReferenceFrame
 
 	setColor(c); // Set the axes' color
 
-	// Appropriately position the axes
+	// Appropriately position the axes and labels
 	moveXAxis(osg::Vec3d(), 1.0); // At the origin, with a length of 1.0
 	moveYAxis(osg::Vec3d(), 1.0);
 	moveZAxis(osg::Vec3d(), 1.0);
@@ -174,6 +173,26 @@ void ReferenceFrame::_init( const std::string &n, const osg::Vec4& c )
     _labels->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 }
 
+  void ReferenceFrame::_resetTextGlyphs()
+  {
+    // Some graphics drivers have a bug where text can't be properly changed.
+    // Get around this by initializing text using all likely characters.
+    std::string dummyText("the quick brown fox jumps over the lazy dog"); // Lowercase
+    dummyText += "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; // Uppercase
+    dummyText += "1234567890";   // Numbers
+    dummyText += "~@#$%^&*_|\\"; // Symbols
+    dummyText += "[]{}()<>";     // Brackets
+    dummyText += ",.!?;:";       // Punctuation
+    dummyText += "+-*/=";        // Math
+    dummyText += "`'\"";         // Quotes
+    
+    // Recompute glyphs
+    _xLabel->setText(dummyText);
+    _yLabel->setText(dummyText);
+    _zLabel->setText(dummyText);
+    _nameLabel->setText(dummyText);
+  }
+  
   void ReferenceFrame::setName( const std::string& name )
   {
     _name = name;
@@ -363,6 +382,48 @@ void ReferenceFrame::showAxesLabels(unsigned int labels)
     }
   }
 
+  void ReferenceFrame::setFont(const std::string &font)
+  {
+    // Save current label text
+    std::string prevXLabel = _xLabel->getText().createUTF8EncodedString();
+    std::string prevYLabel = _yLabel->getText().createUTF8EncodedString();
+    std::string prevZLabel = _zLabel->getText().createUTF8EncodedString();
+    std::string prevNameLabel = _nameLabel->getText().createUTF8EncodedString();
+
+    // Empty out text in preparation for new font
+    _xLabel->setText("");
+    _yLabel->setText("");
+    _zLabel->setText("");
+    _nameLabel->setText("");
+
+    // Set the new font
+    _xLabel->setFont(font);
+    _yLabel->setFont(font);
+    _zLabel->setFont(font);
+    _nameLabel->setFont(font);
+    
+    // Initialize text with all printable characters to support older graphics drivers
+    _resetTextGlyphs();
+    
+    // Restore label text
+    _xLabel->setText(prevXLabel);
+    _yLabel->setText(prevYLabel);
+    _zLabel->setText(prevZLabel);
+    _nameLabel->setText(prevNameLabel);
+  }
+  
+  std::string ReferenceFrame::getFontName() const
+  {
+    return osgDB::getSimpleFileName(getFontPath());
+  }
+  
+  std::string ReferenceFrame::getFontPath() const
+  {
+    const osgText::Font* font = _xLabel->getFont();
+    std::string fontFile = font ? font->getFileName() : "default";
+    return fontFile;
+  }
+  
 bool ReferenceFrame::addChild( ReferenceFrame* child )
 {
 	  // Make sure we're not trying to add ourselves as a child

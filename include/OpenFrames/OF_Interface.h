@@ -895,8 +895,15 @@ OF_EXPORT void OF_FCN(offrame_setaxeslabels)(OF_CHARARG(xlabel),
                                              OF_CHARARG(zlabel));
 #endif
 
-// Reposition axes.
-
+/*
+ * \brief Set the font for the current ReferenceFrame.
+ *
+ * This applies to the current active ReferenceFrame.
+ *
+ * \param font Font name, either with absolute path or standalone. Must include extension.
+ */
+OF_EXPORT void OF_FCN(offrame_setfont)(OF_CHARARG(font));
+  
 /*
  * \brief Reposition and resize the x component of the coordinate axis.
  *

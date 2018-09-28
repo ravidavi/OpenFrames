@@ -340,6 +340,33 @@ class Trajectory;
      */
     inline void setZLabel(const std::string &str) { _zLabel->setText(str); }
 
+    /**
+     * Set the font used for labels
+     *
+     * The default font is arial.ttf
+     *
+     * \param font Font name string (or full pathname of font), including extension.
+     */
+    void setFont(const std::string &font);
+    
+    /**
+     * Get the font name used for labels
+     *
+     * This returns only the font name, including extension
+     *
+     * \return Font name string, including extension. e.g. 'arial.ttf'
+     */
+    std::string getFontName() const;
+    
+    /**
+     * Get the path to the font used for labels
+     *
+     * This returns the full font path, including extension
+     *
+     * \param Font file path, including extension. e.g. '/usr/share/fonts/arial.ttf'
+     */
+    std::string getFontPath() const;
+    
     /*
      * \brief Add a ReferenceFrame as a child to this one.
      *
@@ -526,7 +553,8 @@ class Trajectory;
 	osg::ref_ptr<FrameTransform> _xform; ///< The transform that all contained objects will undergo
 
   private:
-	void _init( const std::string &n, const osg::Vec4& c );
+    void _init( const std::string &name, const osg::Vec4& c );
+    void _resetTextGlyphs();
 
 	ParentList _parents;  ///< All direct parents of this frame
 	ChildList _children;  ///< All direct children of this frame

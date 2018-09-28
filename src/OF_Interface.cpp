@@ -1374,6 +1374,20 @@ void OF_FCN(offrame_setaxeslabels)(OF_CHARARG(xlabel),
     }
 }
 
+void OF_FCN(offrame_setfont)(OF_CHARARG(font))
+{
+	if(_objs->_currFrame) 
+	{
+	  // Convert given character string and length to a proper C string
+	  std::string temp(OF_STRING(font));
+	  _objs->_currFrame->setFont(temp);
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
+}
+    
 void OF_FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
 {
 	if(_objs->_currFrame)
