@@ -141,15 +141,15 @@ void CoordinateAxes::setDrawAxes(unsigned int axes)
 	}
 }
 
-  void CoordinateAxes::setAxisWidth( double width )
+  void CoordinateAxes::setAxisWidth(float width)
   {
     if ( width > 1.0 )
     {
-       _lineWidth->setWidth( width );
+      _lineWidth->setWidth( width );
     }
   }
 
-  double CoordinateAxes::getAxisWidth() const
+  float CoordinateAxes::getAxisWidth() const
   {
     return _lineWidth->getWidth();
   }

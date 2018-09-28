@@ -2071,7 +2071,7 @@ void OF_FCN(ofcoordaxes_setaxislength)(double *len)
 	else _objs->_intVal = -2;
 }
 
-void OF_FCN(ofcoordaxes_setaxiswidth)(double *width)
+void OF_FCN(ofcoordaxes_setaxiswidth)(float *width)
 {
 	CoordinateAxes *ca = dynamic_cast<CoordinateAxes*>(_objs->_currFrame);
 	if (ca)

@@ -710,7 +710,7 @@
 
 	SUBROUTINE ofcoordaxes_setaxiswidth(width)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofcoordaxes_setaxiswidth
-	REAL(8), INTENT(IN) :: width
+	REAL, INTENT(IN) :: width
 	END SUBROUTINE
 
 	SUBROUTINE ofcoordaxes_setdrawaxes(axes)

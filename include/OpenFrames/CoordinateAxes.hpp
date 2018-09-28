@@ -57,8 +57,8 @@ namespace OpenFrames
 	inline unsigned int getDrawAxes() const { return _drawAxes; }
 
 	/** Set/get width of axes. */
-	void setAxisWidth( double width );
-	double getAxisWidth() const;
+	void setAxisWidth(float width);
+	float getAxisWidth() const;
 	
 	/** Set/get tick spacing */
 	void setTickSpacing(double major_sp, double minor_sp);

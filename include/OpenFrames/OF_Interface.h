@@ -1339,7 +1339,7 @@ OF_EXPORT void OF_FCN(ofcoordaxes_setaxislength)(double *len);
 *
 * \param width Axis width.
 */
-OF_EXPORT void OF_FCN(ofcoordaxes_setaxiswidth)(double *width);
+OF_EXPORT void OF_FCN(ofcoordaxes_setaxiswidth)(float *width);
 
 /*
  * \brief Sets which axis to draw.
