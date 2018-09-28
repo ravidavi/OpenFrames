@@ -141,6 +141,19 @@ void CoordinateAxes::setDrawAxes(unsigned int axes)
 	}
 }
 
+  void CoordinateAxes::setAxisWidth( double width )
+  {
+    if ( width > 1.0 )
+    {
+       _lineWidth->setWidth( width );
+    }
+  }
+
+  double CoordinateAxes::getAxisWidth() const
+  {
+    return _lineWidth->getWidth();
+  }
+
 void CoordinateAxes::setTickSpacing(double major_sp, double minor_sp)
 {
 	bool create = false;
@@ -303,6 +316,11 @@ void CoordinateAxes::_init()
   _majorTickGeom->setUseVertexBufferObjects(true);
   _minorTickGeom->setUseDisplayList(false);
   _minorTickGeom->setUseVertexBufferObjects(true);
+
+  // Set initial width of the axis lines and activate that attrib.
+  _lineWidth = new osg::LineWidth;
+  _lineWidth->setWidth( 1.0 );
+  _axesGeom->getOrCreateStateSet()->setAttribute( _lineWidth, osg::StateAttribute::ON );
 
         // Add the Point parameter to allow major/minor tick mark resizing
         // Note that major/minor Geoms need separate StateSets since they

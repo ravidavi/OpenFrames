@@ -79,12 +79,17 @@ extern "C"
  * can be obtained by calling of_getreturnedvalue().
 **/
 
-// Must be called before using OpenFrames
-// Sets up all internal data
+/**
+ * \brief Sets up all internal data. Must be called before using OpenFrames.
+ **/
 OF_EXPORT void OF_FCN(of_initialize)();
 
-// Must be called when done using OpenFrames
-// Cleans up all internal data
+/**
+ * \brief Cleans up all internal data. Must be called when done using OpenFrames.
+ *
+ * \warning DO NOT call of_getreturnedvalue after calling of_cleanup.
+ *          This function sets the pointer for _objs to NULL, which would be dereferenced by of_cleanup.
+ **/
 OF_EXPORT void OF_FCN(of_cleanup)();
 
 /*
@@ -204,10 +209,34 @@ OF_EXPORT void OF_FCN(ofwin_setbuttonpresscallback)(void (*fcn)(BUTTON_SIG));
 OF_EXPORT void OF_FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG));  
 
 // Start/stop animation
-OF_EXPORT void OF_FCN(ofwin_start)(); // Start animation
-OF_EXPORT void OF_FCN(ofwin_stop)();  // Force animation to stop and wait for stop
-OF_EXPORT void OF_FCN(ofwin_signalstop)();  // Force animation to stop
-OF_EXPORT void OF_FCN(ofwin_waitforstop)(); // Wait for user to exit animation
+
+/**
+ * \brief Start animation.
+ *
+ * This applies to the current active WindowProxy.
+ **/
+OF_EXPORT void OF_FCN(ofwin_start)();
+
+/**
+ * \brief Force animation to stop and wait for the thread to stop.
+ *
+ * This applies to the current active WindowProxy.
+ **/
+OF_EXPORT void OF_FCN(ofwin_stop)();
+
+/**
+ * \brief Signal animation to stop and return immediately.
+ *
+ * This applies to the current active WindowProxy.
+ **/
+OF_EXPORT void OF_FCN(ofwin_signalstop)();
+
+/**
+ * \brief Wait for user to exit animation.
+ *
+ * This applies to the current active WindowProxy.
+ **/
+OF_EXPORT void OF_FCN(ofwin_waitforstop)();
 
 /*
  * \brief Pause/unpause the animation.
@@ -1286,6 +1315,15 @@ OF_EXPORT void OF_FCN(ofcoordaxes_create)(OF_CHARARG(name));
  * \param len Axis length.
  */
 OF_EXPORT void OF_FCN(ofcoordaxes_setaxislength)(double *len);
+
+/*
+* \brief Sets the width of the axes.
+*
+* This applies to the current active CoordinateAxes.
+*
+* \param width Axis width.
+*/
+OF_EXPORT void OF_FCN(ofcoordaxes_setaxiswidth)(double *width);
 
 /*
  * \brief Sets which axis to draw.

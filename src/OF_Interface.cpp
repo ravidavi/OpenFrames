@@ -89,7 +89,10 @@ class OF_Objects : public osg::Referenced
 	ArtistMap _artistMap; ///< Map of ID -> TrajectoryArtist
 	ViewMap _viewMap; ///< Map of ID -> View
 
-	/// Value returned (if any) by last function call
+	/**
+	 * Value returned (if any) by last function call. 0 means
+	 * everything is ok, non-zero means error of some kind.
+	 */
 	int _intVal;
 
     /**
@@ -181,21 +184,13 @@ class OF_Objects : public osg::Referenced
 };
 OF_Objects *_objs = NULL;
 
-/**
-* \brief Sets up all internal data. Must be called before using OpenFrames.
-**/
 void OF_FCN(of_initialize)()
 {
 	_objs = OF_Objects::instance();
     _objs->_intVal = 0;
 }
 
-/**
-* \brief Cleans up all internal data. Must be called when done using OpenFrames.
-*
-* \warning DO NOT call of_getreturnedvalue after calling of_cleanup.
-*          This function sets the pointer for _objs to NULL, which would be dereferenced by of_cleanup.
-**/
+
 void OF_FCN(of_cleanup)()
 {
 	if(_objs) 
@@ -350,11 +345,6 @@ OF_EXPORT void OF_FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG))
     }
 }
 
-/**
-* \brief Start animation
-*
-* This applies to the current active WindowProxy.
-**/
 void OF_FCN(ofwin_start)()
 {
   if(_objs->_currWinProxy)
@@ -380,11 +370,6 @@ void OF_FCN(ofwin_start)()
   }
 }
 
-/**
-* \brief Force animation to stop and wait for the thread to stop
-*
-* This applies to the current active WindowProxy.
-**/
 void OF_FCN(ofwin_stop)()
 {
   if(_objs->_currWinProxy)
@@ -404,11 +389,6 @@ void OF_FCN(ofwin_stop)()
   }
 }
 
-/**
-* \brief Signal animation to stop and return immediately
-*
-* This applies to the current active WindowProxy.
-**/
 void OF_FCN(ofwin_signalstop)()
 {
 	if(_objs->_currWinProxy)
@@ -422,11 +402,6 @@ void OF_FCN(ofwin_signalstop)()
     }
 }
 
-/**
-* \brief Wait for user to exit animation
-*
-* This applies to the current active WindowProxy.
-**/
 void OF_FCN(ofwin_waitforstop)()
 {
 	if(_objs->_currWinProxy)
@@ -2068,6 +2043,22 @@ void OF_FCN(ofcoordaxes_setaxislength)(double *len)
 	  _objs->_intVal = 0;
 	}
 	else _objs->_intVal = -2;
+}
+
+void OF_FCN(ofcoordaxes_setaxiswidth)(double *width)
+{
+	CoordinateAxes *ca = dynamic_cast<CoordinateAxes*>(_objs->_currFrame);
+	if (ca)
+	{
+		// Set width and set error code to everything-ok value.
+		ca->setAxisWidth(*width);
+		_objs->_intVal = 0;
+	}
+	else
+	{
+		// Set error code to indicate problem.
+		_objs->_intVal = -2;
+	}
 }
 
 void OF_FCN(ofcoordaxes_setdrawaxes)(unsigned int *axes)
