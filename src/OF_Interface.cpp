@@ -1381,7 +1381,8 @@ void OF_FCN(offrame_setlabelfont)(OF_CHARARG(font))
     // Convert given character string and length to a proper C string
     std::string temp(OF_STRING(font));
     _objs->_currFrame->setLabelFont(temp);
-    _objs->_intVal = 0;
+    if(_objs->_currFrame->getLabelFontName() == "default") _objs->_intVal = -1;
+    else _objs->_intVal = 0;
   }
   else {
     _objs->_intVal = -2;
