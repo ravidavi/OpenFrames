@@ -31,6 +31,7 @@
 #include <OpenFrames/MarkerArtist.hpp>
 #include <OpenFrames/RadialPlane.hpp>
 #include <OpenFrames/SegmentArtist.hpp>
+#include <OpenFrames/TrajectoryFollower.hpp>
 
 RenderThread::RenderThread(QObject *parent)
     : QThread(parent),
