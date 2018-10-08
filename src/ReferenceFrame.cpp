@@ -116,7 +116,7 @@ void ReferenceFrame::_init( const std::string &name, const osg::Vec4& c )
 
   // Sets how "smooth" the text looks ... larger resolution looks nicer, but takes up more memory
   // Also sets the maximum height of the font when it grows with distance
-  setLabelSize(30.0);
+  setLabelSize(20.0);
 
   // Set label font
   setLabelFont("arial.ttf");

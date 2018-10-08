@@ -488,6 +488,7 @@ namespace OpenFrames
     if(ncol == 0) ncol = 1;
     
     _viewer = new osgViewer::CompositeViewer;
+    _viewer->setIncrementalCompileOperation(new osgUtil::IncrementalCompileOperation());
     _embeddedGraphics = new EmbeddedGraphics(x, y, width, height, this);
     _eventHandler = new WindowEventHandler(this);
     _statsHandler = new osgViewer::StatsHandler;

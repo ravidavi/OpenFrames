@@ -110,6 +110,7 @@ namespace OpenFrames
     }
     
     _model = newModel; // Set new model
+    _model->setName(filename);
     
     /* If the model's root node is a group, iterate through its children
      to find any osg::ParticleSystem children.  Then move those children
