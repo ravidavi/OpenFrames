@@ -132,7 +132,10 @@ int main()
   // The Gaia image is in Galactic coordinates, so transform it to J2000 Equatorial coordinates
   // to match the HYGv3 coordinate system
   // Matrix that transforms ICRS (J2000 Equatorial) to Galactic coordinates
-  // Source: https://gea.esac.esa.int/archive/documentation/GDR1/Data_processing/chap_cu3ast/sec_cu3ast_intro.html
+  // Source: Gaia Data Release 1 (DR1), Documentation Release 1.2, Section 3.1.7 (Eqn 3.11).
+  //         https://gea.esac.esa.int/archive/documentation/GDR1/Data_processing/chap_cu3ast/sec_cu3ast_intro.html
+  // Source: Lui et al, "Reconsidering the Galactic Coordinate System", Astronomy & Astrophysics 526, A16, 2011.
+  //         https://www.aanda.org/articles/aa/pdf/2011/02/aa14961-10.pdf (See equation for matrix N_Hip in Section 2.2)
   osg::Matrixd eq_to_gal_mat(-0.0548755604162154, +0.4941094278755837, -0.8676661490190047, 0.0,
                              -0.8734370902348850, -0.4448296299600112, -0.1980763734312015, 0.0,
                              -0.4838350155487132, +0.7469822444972189, +0.4559837761750669, 0.0,
