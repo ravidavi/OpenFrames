@@ -220,16 +220,39 @@ bool SkySphere::processStars()
   // Clear all stars before processing new ones
   clearStars();
 
-  // Throw away header line
+  // Get limit for right ascension from header
+  // Assumed that right ascension label is "ra_(maxval)" where "(maxval)" is a double precision value (usually 24.0 or 360.0)
+  const double ra_limit_default = 24.0;
+  double ra_limit = ra_limit_default; // Right ascension assumed in hours unless specified in starfile header
   std::string line;
-  std::getline(starfile, line);
+  std::getline(starfile, line); // Get header line as string
+  std::istringstream ss_header(line);
+  std::string ra_string;
+  ss_header >> ra_string; // Extract first "word" as right ascension label
+  std::size_t maxvalLoc = ra_string.find('_');
+
+  // If underscore was found then extract right ascension limit
+  if (maxvalLoc != std::string::npos)
+  {
+     std::string ra_limit_string = ra_string.substr(maxvalLoc); // String form of right ascension limit
+     try
+     {
+        ra_limit = std::stod(ra_limit_string); // Throws exception if string cannot be parsed
+     }
+     catch (...)
+     {
+        ra_limit = ra_limit_default;
+        OSG_WARN << "OpenFrames::SkySphere Warning: Right Ascension limit string '" << ra_limit_string << "' could not be parsed. Setting limit to 24.0." << std::endl;
+     }
+  }
 
   // Find the scale needed to ensure all stars are in the right pixel size range
   float maxRawSize = getStarPixelSizeFromMagnitude(_minMag); // minimum magnitude = maximum size
   float minRawSize = getStarPixelSizeFromMagnitude(_maxMag);
 
   // Loop over all stars
-  float ra, dec, mag, colorindex;
+  double ra, dec; // Doubles for intermediate position calculations
+  float mag, colorindex;
   unsigned int numStars = 0;
   float maxSize = 0.0, minSize = 10000.0; // Largest/smallest pixel sizes of processed stars
   float maxMag = 0.0, minMag = 10000.0; // Largest/smallest magnitudes of processed stars
@@ -246,7 +269,8 @@ bool SkySphere::processStars()
     std::istringstream ss(line);
 
     // Extract star info
-    ss >> ra >> dec >> mag;
+    ss >> ra >> dec;
+    ss >> mag;
     ss >> colorindex;
     if(ss.fail()) colorindex = 0.0;
 
@@ -254,9 +278,8 @@ bool SkySphere::processStars()
     if((mag < _minMag) || (mag > _maxMag)) continue;
 
     // Prepare star data for processing
-    //currStar.ra = ra*osg::PI/12.0 + 2.0*osg::PI_2; // Debugging: Rotate stars to compare with rotated textures
-    currStar.ra = ra*osg::PI/12.0;    // Hours to radians
-    currStar.dec = dec*osg::PI/180.0; // Degrees to radians
+    currStar.ra = (float)(ra / ra_limit * 2.0*osg::PI); // Convert to radians
+    currStar.dec = (float)(dec*osg::PI / 180.0); // Degrees to radians
     currStar.mag = mag;
     currStar.colorindex = colorindex;
 

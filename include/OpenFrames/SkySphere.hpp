@@ -64,7 +64,17 @@ namespace OpenFrames
     unsigned int getDrawMode();
 
     ///
-    /// Set the star catalog drawn as the starfield
+    /// Set the star catalog text file drawn as the starfield
+    /// Note that the catalog header MUST be:
+    ///  "ra[_ralimit] dec mag ci proper" , where the associated columns are:
+    ///   ra[_ralimit] (hours) Right Ascension. If "_ralimit" is provided then it will
+    ///                        be used as the maximum instead of hours.
+    ///                        e.g. "ra_360.0" for degrees
+    ///   dec          (degrees) Declination
+    ///   mag          Apparent visual magnitude (G-band)
+    ///   ci           (optional) B-V color index
+    ///   proper       (optional) Name or other string identifier
+    ///
     /// Note that magnitude and brightness are inverse, e.g. mag = -1 is
     /// brighter than mag = 1
     /// Note that stars are drawn according to their position in the
