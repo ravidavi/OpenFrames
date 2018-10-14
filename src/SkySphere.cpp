@@ -234,15 +234,21 @@ bool SkySphere::processStars()
   // If underscore was found then extract right ascension limit
   if (maxvalLoc != std::string::npos)
   {
-     std::string ra_limit_string = ra_string.substr(maxvalLoc); // String form of right ascension limit
+     std::string ra_limit_string = ra_string.substr(++maxvalLoc); // String form of right ascension limit
      try
      {
         ra_limit = std::stod(ra_limit_string); // Throws exception if string cannot be parsed
      }
      catch (...)
      {
-        ra_limit = ra_limit_default;
         OSG_WARN << "OpenFrames::SkySphere Warning: Right Ascension limit string '" << ra_limit_string << "' could not be parsed. Setting limit to 24.0." << std::endl;
+        ra_limit = ra_limit_default;
+     }
+
+     if (ra_limit <= 0.0)
+     {
+        OSG_WARN << "OpenFrames::SkySphere Error: " << ra_limit << " is not a valid Right Ascension limit. Setting limit to 24.0." << std::endl;
+        ra_limit = ra_limit_default;
      }
   }
 
@@ -324,7 +330,7 @@ bool SkySphere::processStars()
 
   starfile.close(); // Close star database file
 
-  std::cout<< std::setprecision(2) << std::fixed << "OpenFrames plotting " << numStars << " stars in magnitude range [" << minMag << "," << maxMag << "], and pixel size range [" << minSize << "," << maxSize << "]" << std::endl;
+  OSG_NOTICE<< std::setprecision(2) << std::fixed << "OpenFrames plotting " << numStars << " stars in magnitude range [" << minMag << "," << maxMag << "], and pixel size range [" << minSize << "," << maxSize << "]" << std::endl;
 
   // Tell all star bins to draw their stars
   for(unsigned int i = 0; i < _starBinGeoms.size(); ++i)
