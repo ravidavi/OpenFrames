@@ -245,6 +245,19 @@ namespace OpenFrames
   {
     _distAccumulator = new DistanceAccumulator;
     _cameraManager = new BasicCameraManager;
+
+    _statsText = new osgText::Text;
+    _statsText->setColor(osg::Vec4(0.949, 0.427, 0.129, 1));
+    _statsText->setCharacterSizeMode(osgText::Text::SCREEN_COORDS);
+    _statsText->setCharacterSize(16.0);
+    _statsText->setFont("arial.ttf");
+    _statsText->setFontResolution(16, 16);
+    _statsText->setLineSpacing(0.25);
+    _statsText->setAlignment(osgText::Text::RIGHT_TOP);
+    _statsText->setPosition(osg::Vec3(0.999, 0.999, 0.0));
+
+    _statsGeode = new osg::Geode;
+    _statsGeode->addDrawable(_statsText);
   }
   
   DepthPartitionCallback::~DepthPartitionCallback()
@@ -319,19 +332,20 @@ namespace OpenFrames
     
     // Step 3: Create the slave Cameras that will draw each depth segment
     unsigned int numCameras = camPairs.size(); // Get the number of cameras
-    if(numCameras != _numActiveCameras)
-    {
-      _numActiveCameras = numCameras;
-      //std::cout<< "OpenFrames::DepthPartitionCallback using " << _numActiveCameras << " cameras" << std::endl;
-    }
+    if (numCameras != _numActiveCameras) _numActiveCameras = numCameras;
+
+    std::string statsStr;
     for(unsigned int i = 0; i < numCameras; ++i)
     {
       // Create a new camera if needed, and activate it
       // Note that we slightly extend the far plane to get rid of the "seam" between depth segments
-      // Extending the far plane does not really degrade depth precision
+      // Extending the far plane does not significantly degrade depth precision since the next camera
+      // will render the extended region at its near plane.
       _cameraManager->enableCamera(i, dpMainSlaveCam, camPairs[i].first, camPairs[i].second*1.002);
-      //std::cout<< std::defaultfloat << std::setprecision(5) << "Camera " << _cameraManager->getCameraName(i) << " near = " << camPairs[i].first << ", far = " << camPairs[i].second << std::endl;
+
+      statsStr += _cameraManager->getCameraName(i) + " near = " + std::to_string(camPairs[i].first) + ", far = " + std::to_string(camPairs[i].second) + "\n";
     }
+    _statsText->setText(statsStr);
     
     // Step 4: Disable remaining unused cameras
     _cameraManager->disableCameras(numCameras);

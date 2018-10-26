@@ -24,6 +24,7 @@
 #include <OpenFrames/Export.h>
 #include <OpenFrames/DistanceAccumulator.hpp>
 #include <osg/Camera>
+#include <osgText/Text>
 #include <osgViewer/View>
 
 namespace OpenFrames
@@ -90,6 +91,9 @@ namespace OpenFrames
     
     /** Define the callback function */
     virtual void updateSlave(osg::View& view, osg::View::Slave& slave);
+
+    /** Get the stats text */
+    osg::Geode* getStatsGeode() const { return _statsGeode; }
     
     /** Manage cameras for the depth partition callback. */
     struct CameraManager : public virtual osg::Referenced
@@ -127,6 +131,10 @@ namespace OpenFrames
     
     // The camera manager that creates cameras
     osg::ref_ptr<CameraManager> _cameraManager;
+
+    // Onscreen HUD text for stats
+    osg::ref_ptr<osgText::Text> _statsText;
+    osg::ref_ptr<osg::Geode> _statsGeode;
     
     unsigned int _numActiveCameras;
   };

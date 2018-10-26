@@ -248,6 +248,7 @@ namespace OpenFrames
       for(unsigned int i = 0; i < geode.getNumDrawables(); ++i)
       {
         drawable = geode.getDrawable(i);
+        if (!validNodeMask(*drawable)) continue;
         
         const osg::BoundingBox &bb = drawable->getBoundingBox();
         if(bb.valid())

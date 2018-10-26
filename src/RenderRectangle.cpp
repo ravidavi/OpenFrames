@@ -167,6 +167,7 @@ namespace OpenFrames
       _hudCamera->setViewMatrix(osg::Matrix::identity());
       _hudCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));
       _hudCamera->setProjectionResizePolicy(osg::Camera::FIXED); // Resizing should not affect projection matrix
+      //_hudCamera->addChild(_depthPartitioner->getCallback()->getStatsGeode()); // Set up Depth Partitioner stats text
       _sceneView->addSlave(_hudCamera, false);
       
       // Set up background camera render properties
