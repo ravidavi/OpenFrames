@@ -30,7 +30,7 @@
 namespace OpenFrames
 {
 /**
- * \class DPCameraCallback
+ * \class UniformCallback
  *
  * \brief Callback that sets shader uniforms.
  *
@@ -42,44 +42,44 @@ namespace OpenFrames
  */
 class UniformCallback : public osg::NodeCallback
 {
-  public:
-	UniformCallback(osg::Uniform &mvmat, osg::Uniform &eyeHigh, osg::Uniform &eyeLow) 
-        : _mvmat(mvmat), _eyeHigh(eyeHigh), _eyeLow(eyeLow)
-	{}
+public:
+  UniformCallback(osg::Uniform &mvmat, osg::Uniform &eyeHigh, osg::Uniform &eyeLow)
+    : _mvmat(mvmat), _eyeHigh(eyeHigh), _eyeLow(eyeLow)
+  {}
 
-        virtual void operator()(osg::Node *node, osg::NodeVisitor *nv)
-	{
-	  osgUtil::CullVisitor *cv = dynamic_cast<osgUtil::CullVisitor*>(nv);
-	  if(cv)
-	  {
-            // Get ModelView matrix
-            osg::Matrixd mvmat = *(cv->getModelViewMatrix());
+  virtual void operator()(osg::Node *node, osg::NodeVisitor *nv)
+  {
+    osgUtil::CullVisitor *cv = dynamic_cast<osgUtil::CullVisitor*>(nv);
+    if (cv)
+    {
+      // Get ModelView matrix
+      osg::Matrixd mvmat = *(cv->getModelViewMatrix());
 
-            // Invert to get eye point
-            // Note that we can't use cv->getEyeLocal since Vec3=Vec3f
-            osg::Matrixd mvmatinv;
-            mvmatinv.invert(mvmat);
-            osg::Vec3d eye = mvmatinv.getTrans();
+      // Invert to get eye point
+      // Note that we can't use cv->getEyeLocal since Vec3=Vec3f
+      osg::Matrixd mvmatinv;
+      mvmatinv.invert(mvmat);
+      osg::Vec3d eye = mvmatinv.getTrans();
 
-            // Convert eye point to 2 single-precision values
-            osg::Vec3f eyeHigh, eyeLow;
-            OpenFrames::DS_Split(eye, eyeHigh, eyeLow);
+      // Convert eye point to 2 single-precision values
+      osg::Vec3f eyeHigh, eyeLow;
+      OpenFrames::DS_Split(eye, eyeHigh, eyeLow);
 
-            // Zero out translation since it will be directly applied
-            // in the vertex shader
-            mvmat.setTrans(0.0, 0.0, 0.0);
+      // Zero out translation since it will be directly applied
+      // in the vertex shader
+      mvmat.setTrans(0.0, 0.0, 0.0);
 
-            // Apply new ModelView matrix and eye point shader Uniforms
-            _mvmat.set(mvmat);
-            _eyeHigh.set(eyeHigh);
-            _eyeLow.set(eyeLow);
-          }
+      // Apply new ModelView matrix and eye point shader Uniforms
+      _mvmat.set(mvmat);
+      _eyeHigh.set(eyeHigh);
+      _eyeLow.set(eyeLow);
+    }
 
-          traverse(node,nv);
-        }
+    traverse(node, nv);
+  }
 
-  private:
-        osg::Uniform &_mvmat, &_eyeHigh, &_eyeLow;
+private:
+  osg::Uniform &_mvmat, &_eyeHigh, &_eyeLow;
 };
 
 DrawableTrajectory::DrawableTrajectory( const std::string &name ) 
@@ -111,72 +111,70 @@ DrawableTrajectory::~DrawableTrajectory()
 
 void DrawableTrajectory::showContents(bool showContents)
 {
-	if (showContents) _geode->setNodeMask(0xffffffff);
-	else _geode->setNodeMask(0x0);
+	if (showContents) _artists->setNodeMask(0xffffffff);
+	else _artists->setNodeMask(0x0);
 }
 
 bool DrawableTrajectory::getContentsShown() const
 {
-	return (_geode->getNodeMask() != 0x0);
+	return (_artists->getNodeMask() != 0x0);
 }
 
 void DrawableTrajectory::_init()
 {
-        // Geode will contain all trajectory artists
-	_geode = new osg::Geode;
-	_geode->setName(_name);
-	osg::StateSet *stateset = _geode->getOrCreateStateSet();
-	stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+  // Create group to contain all artists
+  _artists = new osg::Group;
+  _artists->setName(_name + " artists");
+  osg::StateSet *stateset = _artists->getOrCreateStateSet();
+  stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
-        // Set shader properties for GPU rendering relative to eye
-        osg::Uniform *mvmat = new osg::Uniform(osg::Uniform::FLOAT_MAT4, "of_RTEModelViewMatrix");
-        osg::Uniform *eyeHigh = new osg::Uniform(osg::Uniform::FLOAT_VEC3, "of_ModelViewEyeHigh");
-        osg::Uniform *eyeLow = new osg::Uniform(osg::Uniform::FLOAT_VEC3, "of_ModelViewEyeLow");
-        mvmat->setDataVariance(osg::Object::DYNAMIC);
-        eyeHigh->setDataVariance(osg::Object::DYNAMIC);
-        eyeLow->setDataVariance(osg::Object::DYNAMIC);
-        stateset->addUniform(mvmat);
-        stateset->addUniform(eyeHigh);
-        stateset->addUniform(eyeLow);
-        _geode->setCullCallback(new UniformCallback(*mvmat, *eyeHigh, *eyeLow));
+  // Add contained artists to this frame's transform
+  _xform->addChild(_artists.get());
 
-        // Add contained artists to this frame's transform
-	_xform->addChild(_geode.get());
+  // Set shader properties for GPU rendering relative to eye
+  osg::Uniform *mvmat = new osg::Uniform(osg::Uniform::FLOAT_MAT4, "of_RTEModelViewMatrix");
+  osg::Uniform *eyeHigh = new osg::Uniform(osg::Uniform::FLOAT_VEC3, "of_ModelViewEyeHigh");
+  osg::Uniform *eyeLow = new osg::Uniform(osg::Uniform::FLOAT_VEC3, "of_ModelViewEyeLow");
+  mvmat->setDataVariance(osg::Object::DYNAMIC);
+  eyeHigh->setDataVariance(osg::Object::DYNAMIC);
+  eyeLow->setDataVariance(osg::Object::DYNAMIC);
+  stateset->addUniform(mvmat);
+  stateset->addUniform(eyeHigh);
+  stateset->addUniform(eyeLow);
+  _artists->setCullCallback(new UniformCallback(*mvmat, *eyeHigh, *eyeLow));
 }
 
-/** Set the artist which will draw the trajectory */
 void DrawableTrajectory::addArtist(TrajectoryArtist *artist)
 {
-	if(_geode->containsDrawable(artist)) return; // Artist already exists
-
-	_geode->addDrawable(artist); // Add the new artist
+  if (_artists->containsNode(artist)) return; // Artist already exists
+  _artists->addChild(artist); // Add the new artist
 }
 
 void DrawableTrajectory::removeArtist(TrajectoryArtist *artist)
 {
-	_geode->removeDrawable(artist);
+  _artists->removeChild(artist);
 }
 
 void DrawableTrajectory::removeAllArtists()
 {
-	_geode->removeDrawables(0, _geode->getNumDrawables());
+  _artists->removeChildren(0, _artists->getNumChildren());
 }
 
 unsigned int DrawableTrajectory::getNumArtists() const
 {
-	return _geode->getNumDrawables();
+  return _artists->getNumChildren();
 }
 
 TrajectoryArtist* DrawableTrajectory::getArtist(unsigned int index)
 {
-	osg::Drawable* drawable = _geode->getDrawable(index);
-	return static_cast<TrajectoryArtist*>(drawable);
+  osg::Node* artist = _artists->getChild(index);
+  return static_cast<TrajectoryArtist*>(artist);
 }
 
 const osg::BoundingSphere& DrawableTrajectory::getBound() const
 {
 	ReferenceFrame::getBound();
-	osg::BoundingSphere bs = _geode->getBound();
+	osg::BoundingSphere bs = _artists->getBound();
 	bs.expandRadiusBy(_bound);
 	_bound = bs;
 
@@ -185,12 +183,12 @@ const osg::BoundingSphere& DrawableTrajectory::getBound() const
 
 std::string DrawableTrajectory::frameInfo() const
 {
-	std::string info = "DrawableTrajectory: ";
-	std::stringstream numDrawables;
-	numDrawables << _geode->getNumDrawables();
-	info = info + "Contains " + numDrawables.str() + " drawables";
+  std::string info = "DrawableTrajectory: ";
+  std::stringstream numArtists;
+  numArtists << getNumArtists();
+  info = info + "Contains " + numArtists.str() + " artists";
 
-	return info;
+  return info;
 }
 
 } //!namespace OpenFrames

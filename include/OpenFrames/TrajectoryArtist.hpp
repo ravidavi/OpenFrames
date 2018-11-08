@@ -23,7 +23,7 @@
 
 #include <OpenFrames/Export.h>
 #include <OpenFrames/Trajectory.hpp>
-#include <osg/Drawable>
+#include <osg/Geode>
 #include <osg/ref_ptr>
 #include <vector>
 
@@ -36,48 +36,40 @@ namespace OpenFrames
    *
    * This abstract class provides the framework that is used to interpret
    * and draw a given Trajectory object. What is actually drawn is left
-   * to deriving classes; this class just stores the Trajectory and line
-   * styles that should be used for drawing.
+   * to deriving classes; this base class just stores the Trajectory that
+   * should be used for drawing.
    */
-  class OF_EXPORT TrajectoryArtist : public osg::Drawable, public OpenFrames::TrajectorySubscriber
+  class OF_EXPORT TrajectoryArtist : public osg::Geode, public OpenFrames::TrajectorySubscriber
   {
   public:
-	TrajectoryArtist();
+    TrajectoryArtist();
 
-	// Copy constructor
-	TrajectoryArtist( const TrajectoryArtist &ta,
-	               const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY );
+    // Copy constructor
+    TrajectoryArtist(const TrajectoryArtist &ta,
+      const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
 
-	/** Standard OSG Node methods */
-	virtual bool isSameKindAs(const Object* obj) const { return dynamic_cast<const TrajectoryArtist*>(obj) != NULL; }
-	virtual const char* libraryName() const { return "OpenFrames"; }
-	virtual const char* className() const { return "TrajectoryArtist"; }
+    /** Set the trajectory to be drawn. */
+    virtual void setTrajectory(const Trajectory *traj);
+    inline const Trajectory* getTrajectory() const { return _traj.get(); }
 
-	/** Set the trajectory to be drawn. */
-	virtual void setTrajectory(const Trajectory *traj);
-	inline const Trajectory* getTrajectory() const {return _traj.get();}
+    /** Called by the trajectory when its data is cleared. Must be
+        implemented by derived classes. */
+    virtual void dataCleared(Trajectory* traj) = 0;
 
-	/** Called by the trajectory when its data is cleared. Must be
-	    implemented by derived classes. */
-	virtual void dataCleared(Trajectory* traj) = 0;
-
-	/** Called by the trajectory when data is added to it. Must be
-	    implemented by derived classes. */
-	virtual void dataAdded(Trajectory* traj) = 0;
+    /** Called by the trajectory when data is added to it. Must be
+        implemented by derived classes. */
+    virtual void dataAdded(Trajectory* traj) = 0;
 
   protected:
-	virtual ~TrajectoryArtist();
+    virtual ~TrajectoryArtist();
 
-	/** Inherited from osg::Drawable */
-	virtual osg::BoundingBox computeBoundingBox() const;
+    /** Convert double vector to two float vectors and submit
+        to OpenGL for GPU-based rendering relative to the eye. */
+    void RTE_glVertex(osg::Vec3d &point, osg::GLExtensions &glext) const;
 
-        /** Convert double vector to two float vectors and submit
-            to OpenGL using rendering relative to the eye. */
-        void RTE_glVertex(osg::Vec3d &point, osg::GLExtensions &glext) const;
+    osg::ref_ptr<const Trajectory> _traj; // Trajectory to be drawn
 
-	osg::ref_ptr<const Trajectory> _traj; // Trajectory to be drawn
-
-        osg::ref_ptr<osg::Program> _program; // GLSL program
+    osg::ref_ptr<osg::Program> _program; // GLSL program
   };
 
 }

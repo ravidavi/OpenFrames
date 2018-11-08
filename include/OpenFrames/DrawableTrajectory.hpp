@@ -63,7 +63,7 @@ namespace OpenFrames
 
 	void _init();
 
-	osg::ref_ptr<osg::Geode> _geode; // Node to hold the artists
+    osg::ref_ptr<osg::Group> _artists; // Group to hold all artists
   };
 
 } //!namespace OpenFrames
