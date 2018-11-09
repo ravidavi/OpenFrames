@@ -68,8 +68,9 @@ namespace OpenFrames
     void RTE_glVertex(osg::Vec3d &point, osg::GLExtensions &glext) const;
 
     osg::ref_ptr<const Trajectory> _traj; // Trajectory to be drawn
-
     osg::ref_ptr<osg::Program> _program; // GLSL program
+
+    const unsigned int OF_VERTEXLOW = 0; // Vertex attribute index
   };
 
 }

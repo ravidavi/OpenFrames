@@ -72,7 +72,7 @@ TrajectoryArtist::TrajectoryArtist()
 
   // Create vertex attribute that stores low part of vertex
   // Used by Artists to implement Rendering RTE in GPU
-  _program->addBindAttribLocation("of_VertexLow", 1);
+  _program->addBindAttribLocation("of_VertexLow", OF_VERTEXLOW);
 
   // Set the shader program for this Artist
   getOrCreateStateSet()->setAttribute(_program);
@@ -108,7 +108,7 @@ void TrajectoryArtist::RTE_glVertex(osg::Vec3d &point, osg::GLExtensions &glext)
 
   // Submit to OpenGL
   // Note that vertex attribute must be specified BEFORE glVertex
-  glext.glVertexAttrib3fv(1, low._v);
+  glext.glVertexAttrib3fv(OF_VERTEXLOW, low._v);
   glVertex3fv(high._v);
 }
 

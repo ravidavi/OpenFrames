@@ -41,45 +41,43 @@ namespace OpenFrames
   {
   public:
 
-	CurveArtist( const Trajectory *traj = NULL );
+    CurveArtist(const Trajectory *traj = NULL);
 
-	// Copy constructor
-	CurveArtist( const CurveArtist &ca,
-	               const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY );
+    // Copy constructor
+    CurveArtist(const CurveArtist &ca,
+      const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
 
-	/** Standard OSG node methods. */
-	virtual Object* cloneType() const { return new CurveArtist(); }
-	virtual Object* clone(const osg::CopyOp& copyop) const { return new CurveArtist(*this,copyop); }
-	virtual bool isSameKindAs(const osg::Object* obj) const { return dynamic_cast<const CurveArtist*>(obj)!=NULL; }
-	virtual const char* libraryName() const { return "OpenFrames"; }
-	virtual const char* className() const { return "CurveArtist"; }
+    /** Standard OSG node methods. */
+    virtual Object* cloneType() const { return new CurveArtist(); }
+    virtual Object* clone(const osg::CopyOp& copyop) const { return new CurveArtist(*this, copyop); }
+    virtual bool isSameKindAs(const osg::Object* obj) const { return dynamic_cast<const CurveArtist*>(obj) != NULL; }
+    virtual const char* libraryName() const { return "OpenFrames"; }
+    virtual const char* className() const { return "CurveArtist"; }
 
-	/** Set the trajectory to be drawn. */
-	virtual void setTrajectory(const Trajectory *traj);
+    /** Set the trajectory to be drawn. */
+    virtual void setTrajectory(const Trajectory *traj);
 
-	/** Set the data to be used for plotting x/y/z components */
-	bool setXData(const Trajectory::DataSource &src);
-	bool setYData(const Trajectory::DataSource &src);
-	bool setZData(const Trajectory::DataSource &src);
+    /** Set the data to be used for plotting x/y/z components */
+    bool setXData(const Trajectory::DataSource &src);
+    bool setYData(const Trajectory::DataSource &src);
+    bool setZData(const Trajectory::DataSource &src);
+    const Trajectory::DataSource* getDataSource() const { return _dataSource; }
 
 		/** Specify line attributes that should be used. */
 	void setColor(float r, float g, float b);
 	void setWidth( float width );
 	void setPattern( GLint factor, GLushort pattern );
 
-	/** Do the actual drawing */
-	virtual void drawImplementation(osg::RenderInfo& renderInfo) const;
-
 	/** Data was cleared from or added to the trajectory. Inherited
 	    from TrajectoryArtist */
 	virtual void dataCleared(Trajectory* traj);
 	virtual void dataAdded(Trajectory* traj);
 
+  bool isDataValid() const { return _dataValid; }
+  bool isDataZero() const { return _dataZero; }
+
   protected:
 	virtual ~CurveArtist();
-
-	/** Inhereted from TrajectoryArtist */
-	virtual osg::BoundingBox computeBoundingBox() const;
 
 	void verifyData() const;
 
@@ -89,7 +87,7 @@ namespace OpenFrames
 	/** Line width, stipple pattern, and color. */
 	osg::ref_ptr<osg::LineWidth> _lineWidth; 
 	osg::ref_ptr<osg::LineStipple>  _linePattern;
-	float _lineColor[3];
+  osg::ref_ptr<osg::Vec4Array> _lineColors; 
 
 	mutable bool _dataValid; // If trajectory supports required data
 	mutable bool _dataZero; // If we are just drawing at the origin

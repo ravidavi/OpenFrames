@@ -19,10 +19,103 @@
  */
 
 #include <OpenFrames/CurveArtist.hpp>
+#include <OpenFrames/DoubleSingleUtils.hpp>
+#include <osg/Geometry>
 #include <climits>
 
 namespace OpenFrames
 {
+
+/** Updates a CurveArtist's internal geometry when its target Trajectory changes. */
+class CurveArtistUpdateCallback : public osg::Callback
+{
+public:
+  CurveArtistUpdateCallback()
+    : _numPoints(0),
+    _dataAdded(true),
+    _dataCleared(true)
+  {}
+
+  virtual bool run(osg::Object* object, osg::Object* data)
+  {
+    // Get the arrays that hold vertex data
+    // Note that all object types are known, since this callback is only added to a CurveArtist
+    // This is why we don't have to use dynamic_cast
+    CurveArtist* ca = static_cast<CurveArtist*>(object);
+    osg::Geometry* geom = ca->getDrawable(0)->asGeometry();
+    osg::Vec3Array* vertexHigh = static_cast<osg::Vec3Array*>(geom->getVertexArray());
+    osg::Vec3Array* vertexLow = static_cast<osg::Vec3Array*>(geom->getVertexAttribArray(0));
+
+    // Clear data if it is invalid or all points are zero
+    if (!ca->isDataValid() || ca->isDataZero())
+    {
+      // Clear all points
+      vertexHigh->clear();
+      vertexLow->clear();
+      vertexHigh->dirty();
+      vertexLow->dirty();
+      _numPoints = 0;
+    }
+
+    // Otherwise process trajectory points and update vertex data as needed
+    else
+    {
+      // Clear all points if needed
+      if (_dataCleared)
+      {
+        vertexHigh->clear();
+        vertexLow->clear();
+        _numPoints = 0;
+        _dataCleared = false;
+        _dataAdded = true; // Ensure arrays are marked as dirty
+      }
+
+      // Process new data if needed
+      if (_dataAdded)
+      {
+        // Get and lock trajectory so its data doesn't move while we're analyzing it
+        const Trajectory* traj = ca->getTrajectory();
+        traj->lockData();
+
+        // Get number of points in trajectory
+        unsigned int newNumPoints = traj->getNumPoints(ca->getDataSource());
+
+        // Process each new point
+        osg::Vec3d newPoint;
+        for (unsigned int i = _numPoints; i < newNumPoints; ++i)
+        {
+          traj->getPoint(i, ca->getDataSource(), newPoint._v); // Get current point
+
+          // Split point into high and low portions to support GPU-based RTE rendering
+          osg::Vec3f high, low;
+          OpenFrames::DS_Split(newPoint, high, low);
+          vertexHigh->push_back(high);
+          vertexLow->push_back(low);
+        }
+
+        // Unlock trajectory
+        traj->unlockData();
+
+        // Mark data as changed
+        vertexHigh->dirty();
+        vertexLow->dirty();
+        _numPoints = newNumPoints;
+
+        _dataAdded = false;
+      }
+    }
+
+    // Continue traversing as needed
+    return traverse(object, data);
+  }
+
+  void dataAdded() { _dataAdded = true; }
+  void dataCleared() { _dataCleared = true; }
+
+private:
+  unsigned int _numPoints;
+  bool _dataAdded, _dataCleared;
+};
 
 CurveArtist::CurveArtist(const Trajectory *traj)
 : _dataValid(false), _dataZero(false)
@@ -55,12 +148,34 @@ CurveArtist::CurveArtist(const Trajectory *traj)
           setZData(data);
 	}
 
-  	// Set line width and pattern. Actual values will be specified later
+  // Initialize line properties
 	_lineWidth = new osg::LineWidth;
 	_linePattern = new osg::LineStipple;
-	osg::StateSet* stateset = getOrCreateStateSet();
+  osg::StateSet* stateset = getOrCreateStateSet();
 	stateset->setAttribute(_lineWidth.get());
 	stateset->setAttributeAndModes(_linePattern.get());
+
+  // Initialize colors
+  // Currently we use one color for the whole trajectory, but this can be
+  // changed later for per-vertex colors
+  _lineColors = new osg::Vec4Array(1);
+  (*_lineColors)[0] = osg::Vec4(1.0, 1.0, 1.0, 1.0);
+  _lineColors->setBinding(osg::Array::BIND_OVERALL);
+
+  // Initialize data arrays that will draw line strips
+  osg::Geometry *geom = new osg::Geometry;
+  geom->setName("CurveArtist geometry");
+  geom->setDataVariance(osg::Object::DYNAMIC);
+  geom->setUseDisplayList(false);
+  geom->setUseVertexBufferObjects(true);
+  geom->setVertexArray(new osg::Vec3Array());
+  geom->setVertexAttribArray(OF_VERTEXLOW, new osg::Vec3Array(), osg::Array::BIND_PER_VERTEX);
+  geom->setColorArray(_lineColors);
+  geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_STRIP, 0, 0));
+  addDrawable(geom);
+
+  // Add callback that updates our geometry when the Trajectory changes
+  addUpdateCallback(new CurveArtistUpdateCallback());
 }
 
 // Not using the copy constructor
@@ -79,10 +194,6 @@ void CurveArtist::setTrajectory(const Trajectory *traj)
 	TrajectoryArtist::setTrajectory(traj);
 
 	verifyData();
-
-	// Indicate that the trajectory has changed and should be redrawn
-	dirtyBound();
-	dirtyDisplayList();
 }
 
 bool CurveArtist::setXData(const Trajectory::DataSource &src)
@@ -91,10 +202,6 @@ bool CurveArtist::setXData(const Trajectory::DataSource &src)
 
 	_dataSource[0] = src; // Set new source
 	verifyData();
-
-	// Indicate that the trajectory has changed and should be redrawn
-	dirtyBound();
-	dirtyDisplayList();
 
 	return _dataValid;
 }
@@ -106,10 +213,6 @@ bool CurveArtist::setYData(const Trajectory::DataSource &src)
 	_dataSource[1] = src; // Set new source
 	verifyData();
 
-	// Indicate that the trajectory has changed and should be redrawn
-	dirtyBound();
-	dirtyDisplayList();
-
 	return _dataValid;
 }
 
@@ -120,21 +223,13 @@ bool CurveArtist::setZData(const Trajectory::DataSource &src)
 	_dataSource[2] = src; // Set new source
 	verifyData();
 
-	// Indicate that the trajectory has changed and should be redrawn
-	dirtyBound();
-	dirtyDisplayList();
-
 	return _dataValid;
 }
 
 void CurveArtist::setColor( float r, float g, float b)
 {
-	_lineColor[0] = r;
-	_lineColor[1] = g;
-	_lineColor[2] = b;
-
-	// Indicate that the trajectory has changed
-	dirtyDisplayList();
+  (*_lineColors)[0] = osg::Vec4(r, g, b, 1.0);
+  _lineColors->dirty();
 }
 
 void CurveArtist::setWidth( float width )
@@ -142,9 +237,6 @@ void CurveArtist::setWidth( float width )
 	if(width > 0.0)
 	{
 	  _lineWidth->setWidth(width);
-
-	  // Indicate that the trajectory has changed
-	  dirtyDisplayList();
 	}
 }
 
@@ -152,91 +244,19 @@ void CurveArtist::setPattern( GLint factor, GLushort pattern )
 {
 	_linePattern->setFactor(factor);
 	_linePattern->setPattern(pattern);
-
-	// Indicate that the trajectory has changed
-	dirtyDisplayList();
-}
-
-void CurveArtist::drawImplementation(osg::RenderInfo& renderInfo) const
-{
-	// Make sure trajectory's data is valid
-	if(!_dataValid || _dataZero) return;
-
-        unsigned int numPoints; // Number of points to draw
-        _traj->lockData();
-
-        // Make sure there are at least 2 drawable points
-        numPoints = _traj->getNumPoints(_dataSource);
-        if(numPoints < 2 || numPoints == UINT_MAX)
-        {
-          _traj->unlockData();
-
-          return;
-        }
-
-        osg::GLExtensions *glext = renderInfo.getState()->get<osg::GLExtensions>();
-        osg::Vec3d currPoint;  // Coordinates to plot
-
-        // Set the drawing color; width & pattern are already set by the State
-        glColor3fv(_lineColor); // One color for all lines
-
-	glBegin(GL_LINE_STRIP); // Begin plotting line strips
-
-        // Iterate through each point to be drawn
-	for(unsigned int i = 0; i < numPoints; ++i)
-	{
-          _traj->getPoint(i, _dataSource, currPoint._v); // Get current point
-          RTE_glVertex(currPoint, *glext);
-	}
-
-	glEnd(); // GL_LINE_STRIP
-
-	_traj->unlockData();
 }
 
 void CurveArtist::dataCleared(Trajectory* traj)
 {
 	verifyData();
-	dirtyBound();
-	dirtyDisplayList();
+  CurveArtistUpdateCallback *cb = static_cast<CurveArtistUpdateCallback*>(getUpdateCallback());
+  cb->dataCleared();
 }
 
 void CurveArtist::dataAdded(Trajectory* traj)
 {
-	// Indicate that the trajectory has changed
-	dirtyBound();
-	dirtyDisplayList();
-}
-
-osg::BoundingBox CurveArtist::computeBoundingBox() const
-{
-	// Set up bounding box
-	_boundingBox.init();
-
-	if(_dataZero)
-	{
-	  _boundingBox.expandBy(0, 0, 0);
-	}
-	else if(_dataValid)
-	{
-	  _traj->lockData();
-
-	  unsigned int maxPoints = _traj->getNumPoints(_dataSource);
-	  if(maxPoints == UINT_MAX) maxPoints = 1;
-
-	  Trajectory::DataType point[3];
-
-	  // Iterate through each point and expand the bounding box to encompass it
-	  for(unsigned int i = 0; i < maxPoints; ++i)
-	  {
-	    _traj->getPoint(i, _dataSource, point);
-	    _boundingBox.expandBy(point[0], point[1], point[2]);
-	  }
-
-	  _traj->unlockData();
-	}
-
-	return _boundingBox;
+  CurveArtistUpdateCallback *cb = static_cast<CurveArtistUpdateCallback*>(getUpdateCallback());
+  cb->dataAdded();
 }
 
 void CurveArtist::verifyData() const
