@@ -18,6 +18,7 @@
  * Definitions for the MarkerArtist class.
  */
 
+#include <OpenFrames/DoubleSingleUtils.hpp>
 #include <OpenFrames/MarkerArtist.hpp>
 #include <osg/BlendFunc>
 #include <osg/Point>
@@ -32,18 +33,182 @@ namespace OpenFrames
 
 /** The AttenuateUpdater tells a MarkerArtist to recompute its marker
     attenuation parameters during the update traversal. */
-struct AttenuateUpdater : public osg::Drawable::UpdateCallback
+class MarkerArtistUpdateCallback : public osg::Callback
 {
-	AttenuateUpdater() {}
-	AttenuateUpdater(const AttenuateUpdater&,const osg::CopyOp&) {}
+public:
+  MarkerArtistUpdateCallback()
+    : _numPoints(0),
+    _dataAdded(true),
+    _dataCleared(true),
+    _computeAttenuation(false)
+  {}
 
-	META_Object(OpenFrames, AttenuateUpdater);
+  void dataAdded() { _dataAdded = true; }
+  void dataCleared() { _dataCleared = true; }
 
-	virtual void update(osg::NodeVisitor *nv, osg::Drawable *drawable)
-	{
-	  MarkerArtist *ma = static_cast<MarkerArtist*>(drawable);
-	  ma->computeAttenuation();
+  bool setComputeAttenuation(bool computeAttenuation) { _computeAttenuation = computeAttenuation; }
+  bool getComputeAttenuation() const { return _computeAttenuation; }
+
+  virtual bool run(osg::Object* object, osg::Object* data)
+  {
+    // Get the arrays that hold vertex data
+    // Note that all object types are known, since this callback is only added to a MarkerArtist
+    // This is why we don't have to use dynamic_cast
+    _ma = static_cast<MarkerArtist*>(object);
+    _endpointGeom = _ma->getDrawable(0)->asGeometry();
+    _endpointVertexHigh = static_cast<osg::Vec3Array*>(_endpointGeom->getVertexArray());
+    _endpointVertexLow = static_cast<osg::Vec3Array*>(_endpointGeom->getVertexAttribArray(0));
+    _endpointDrawArrays = static_cast<osg::DrawArrays*>(_endpointGeom->getPrimitiveSet(0));
+    _intermediateGeom = _ma->getDrawable(1)->asGeometry();
+    _intermediateVertexHigh = static_cast<osg::Vec3Array*>(_intermediateGeom->getVertexArray());
+    _intermediateVertexLow = static_cast<osg::Vec3Array*>(_intermediateGeom->getVertexAttribArray(0));
+    _intermediateDrawArrays = static_cast<osg::DrawArrays*>(_intermediateGeom->getPrimitiveSet(0));
+
+    // Clear data if it is invalid
+    if (!_ma->isDataValid())
+    {
+      // Clear all points
+      clearVertexData();
+      dirtyVertexData(0);
+    }
+
+    // Otherwise process trajectory points and update vertex data as needed
+    else
+    {
+      // Clear all points if needed
+      if (_dataCleared)
+      {
+        clearVertexData();
+        _numPoints = 0;
+        _dataCleared = false;
+        _dataAdded = true; // Ensure arrays are marked as dirty
+      }
+
+      // Process new data if needed
+      if (_dataAdded)
+      {
+        _traj = _ma->getTrajectory();
+
+        unsigned int newNumPoints;
+        if (_ma->isDataZero()) newNumPoints = 1;
+        else
+        {
+          _traj->lockData(); // Lock trajectory so its data doesn't move while being analyzed
+
+          // Compute number of drawable points
+          newNumPoints = _traj->getNumPoints(_ma->getDataSource());
+        }
+
+        // Process trajectory points
+        processPoints(newNumPoints);
+
+        // Unlock trajectory
+        if (!_ma->isDataZero()) _traj->unlockData();
+
+        // Mark data as changed
+        dirtyVertexData(newNumPoints);
+        _dataAdded = false;
+      }
+    }
+
+    // Compute point attenuation
+    if (_computeAttenuation) _ma->computeAttenuation();
+
+    // Traverse nested callbacks
+    return traverse(object, data);
 	}
+
+private:
+  void clearVertexData()
+  {
+    // Clear endpoint vertex array
+    _endpointVertexHigh->clear();
+    _endpointVertexLow->clear();
+
+    // Clear intermediate vertex array
+    _intermediateVertexHigh->clear();
+    _intermediateVertexLow->clear();
+  }
+
+  void dirtyVertexData(unsigned int numPoints)
+  {
+    // Dirty vertex arrays to indicate they've changed
+    _endpointVertexHigh->dirty();
+    _endpointVertexLow->dirty();
+    _intermediateVertexHigh->dirty();
+    _intermediateVertexLow->dirty();
+
+    _numPoints = numPoints;
+
+    // Show/hide endpoint markers
+    if (_endpointVertexHigh->empty()) _endpointGeom->setNodeMask(0);
+    else
+    {
+      _endpointGeom->setNodeMask(~0);
+      _endpointDrawArrays->setCount(_endpointVertexHigh->size());
+      _endpointDrawArrays->dirty();
+    }
+
+    // Show/hide intermediate markers
+    if (_intermediateVertexHigh->empty()) _intermediateGeom->setNodeMask(0);
+    else
+    {
+      _intermediateGeom->setNodeMask(~0);
+      _intermediateDrawArrays->setCount(_intermediateVertexHigh->size());
+      _intermediateDrawArrays->dirty();
+    }
+  }
+
+  void processPoints(unsigned int newNumPoints)
+  {
+    // Parameters for each new point
+    osg::Vec3d newPoint;
+    osg::Vec3f high, low; // High and Low portions of each point for GPU-based RTE rendering
+
+    // Compute first point if requested and if not already stored
+    if ((_ma->getMarkers() & MarkerArtist::START) && (_numPoints == 0))
+    {
+      if (_ma->isDataZero()) newPoint.set(0, 0, 0);
+      else _traj->getPoint(0, _ma->getDataSource(), newPoint._v);
+
+      // Split point into high and low portions
+      OpenFrames::DS_Split(newPoint, high, low);
+      _endpointVertexHigh->push_back(high);
+      _endpointVertexLow->push_back(low);
+    }
+
+    // Compute last point if requested and available
+    if ((_ma->getMarkers() & MarkerArtist::END) && (_numPoints > 1))
+    {
+      // Get point and split it into high and low portions
+      _traj->getPoint(newNumPoints - 1, _ma->getDataSource(), newPoint._v);
+      OpenFrames::DS_Split(newPoint, high, low);
+
+      // Store endpoint
+    }
+
+    // Process each new point
+    osg::Vec3d newPoint;
+    for (unsigned int i = _numPoints; i < newNumPoints; ++i)
+    {
+    }
+  }
+
+  unsigned int _numPoints;
+  bool _dataAdded, _dataCleared;
+  bool _computeAttenuation;
+
+  // Vertex data arrays
+  osg::Geometry* _endpointGeom;
+  osg::Vec3Array* _endpointVertexHigh;
+  osg::Vec3Array* _endpointVertexLow;
+  osg::DrawArrays* _endpointDrawArrays;
+  osg::Geometry* _intermediateGeom;
+  osg::Vec3Array* _intermediateVertexHigh;
+  osg::Vec3Array* _intermediateVertexLow;
+  osg::DrawArrays* _intermediateDrawArrays;
+  const Trajectory* _traj;
+  MarkerArtist* _ma;
 };
 
 // Fragment shader that draws a texture on a PointSprite
@@ -89,57 +254,92 @@ static const char *FragSource_Disk = {
 
 MarkerArtist::MarkerArtist(const Trajectory *traj)
 : _markers(START | END), _intermediateType(DATA), _intermediateSpacing(1.0),
-  _intermediateDirection(START), _dataValid(true), _dataZero(true), _shouldAttenuate(false)
+_intermediateDirection(START), _dataValid(true), _dataZero(true), _attenuationDirty(true)
 {
-	setTrajectory(traj); // Set the specified trajectory
+  setTrajectory(traj); // Set the specified trajectory
 
-	unsigned int dof = 0;
-	if(_traj.valid()) dof = _traj->getDOF();
+  unsigned int dof = 0;
+  if (_traj.valid()) dof = _traj->getDOF();
 
-	// By default, the MarkerArtist will draw a point at the origin. If
-	// a trajectory is specified, then it will instead attempt to draw
-	// the position components of the trajectory.
-	Trajectory::DataSource data;
-	data._src = Trajectory::POSOPT;
+  // By default, the MarkerArtist will draw a point at the origin. If
+  // a trajectory is specified, then it will instead attempt to draw
+  // the position components of the trajectory.
+  Trajectory::DataSource data;
+  data._src = Trajectory::POSOPT;
 
-	if(dof >= 1) 
-	{
-	  data._element = 0;
-	  setXData(data);
-	}
+  if (dof >= 1)
+  {
+    data._element = 0;
+    setXData(data);
+  }
 
-	if(dof >= 2)
-	{
-	  data._element = 1;
-	  setYData(data);
-	}
+  if (dof >= 2)
+  {
+    data._element = 1;
+    setYData(data);
+  }
 
-	if(dof >= 3)
-	{
-	  data._element = 2;
-	  setZData(data);
-	}
+  if (dof >= 3)
+  {
+    data._element = 2;
+    setZData(data);
+  }
 
-        osg::StateSet *ss = getOrCreateStateSet();
+  // Initialize point properties
+  osg::StateSet *ss = getOrCreateStateSet();
+  ss->setAttribute(new osg::Point); // Allows marker resizing
+  osg::PointSprite *sprite = new osg::PointSprite();
+  ss->setTextureAttributeAndModes(0, sprite);
 
-	// Add the Point parameter to allow marker resizing
-	ss->setAttribute(new osg::Point);
+  // Install fragment shader to draw the marker
+  _fragShader = new osg::Shader(osg::Shader::FRAGMENT);
+  _program->addShader(_fragShader);
+  resetMarkerShader(); // Set default shader
 
-        // Set up point sprite
-        osg::PointSprite *sprite = new osg::PointSprite();
-        ss->setTextureAttributeAndModes(0, sprite);
+  // Initialize colors for Start & End markers
+  _endpointColors = new osg::Vec4Array(2);
+  (*_endpointColors)[0] = osg::Vec4(1.0, 0.0, 0.0, 1.0); // Start marker
+  (*_endpointColors)[1] = osg::Vec4(1.0, 0.0, 0.0, 1.0); // End marker
+  _endpointColors->setBinding(osg::Array::BIND_PER_VERTEX);
 
-        // Fragment shader to draw the marker
-        _fragShader = new osg::Shader(osg::Shader::FRAGMENT);
-        _program->addShader(_fragShader);
-        resetMarkerShader(); // Set default shader
+  // Initialize color for Intermediate markers
+  // Currently we use one color for the whole trajectory, but this can be
+  // changed later for per-vertex colors
+  _intermediateColors = new osg::Vec4Array(1);
+  (*_intermediateColors)[0] = osg::Vec4(1.0, 1.0, 1.0, 1.0);
+  _intermediateColors->setBinding(osg::Array::BIND_OVERALL);
 
-        // Set default marker color and size
-	setMarkerColor(_markers, 1, 0, 0);
-	setMarkerSize(10);
-	
-	// Set the auto point size attenuation
-	setAutoAttenuate(false);
+  // Set default marker color and size
+  setMarkerColor(_markers, 1.0, 0.0, 0.0);
+  setMarkerSize(10);
+
+  // Initialize geometry that will draw Start and End markers
+  osg::Geometry *endpointGeom = new osg::Geometry;
+  endpointGeom->setDataVariance(osg::Object::DYNAMIC);
+  endpointGeom->setUseDisplayList(false);
+  endpointGeom->setUseVertexBufferObjects(true);
+  endpointGeom->setVertexArray(new osg::Vec3Array());
+  endpointGeom->setVertexAttribArray(OF_VERTEXLOW, new osg::Vec3Array(), osg::Array::BIND_PER_VERTEX);
+  endpointGeom->setColorArray(_endpointColors);
+  endpointGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS, 0, 0));
+  addDrawable(endpointGeom);
+
+  // Initialize geometry that will draw Intermediate markers
+  osg::Geometry *intermediateGeom = new osg::Geometry;
+  intermediateGeom->setDataVariance(osg::Object::DYNAMIC);
+  intermediateGeom->setUseDisplayList(false);
+  intermediateGeom->setUseVertexBufferObjects(true);
+  intermediateGeom->setVertexArray(new osg::Vec3Array());
+  intermediateGeom->setVertexAttribArray(OF_VERTEXLOW, new osg::Vec3Array(), osg::Array::BIND_PER_VERTEX);
+  intermediateGeom->setColorArray(_intermediateColors);
+  intermediateGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS, 0, 0));
+  addDrawable(intermediateGeom);
+
+  // Add callback that updates our geometry when the Trajectory changes
+  addUpdateCallback(new MarkerArtistUpdateCallback());
+
+  // Set the auto point size attenuation
+  setAutoAttenuate(false);
 }
 
 // Not using the copy constructor
@@ -158,10 +358,6 @@ void MarkerArtist::setTrajectory(const Trajectory *traj)
 	TrajectoryArtist::setTrajectory(traj);
 
 	verifyData(); // Verify whether the trajectory data is valid
-
-	// Indicate that the trajectory has changed and should be redrawn
-	dirtyBound();
-	dirtyDisplayList();
 }
 
 bool MarkerArtist::setXData(const Trajectory::DataSource &src)
@@ -170,10 +366,6 @@ bool MarkerArtist::setXData(const Trajectory::DataSource &src)
 
 	_dataSource[0] = src;
 	verifyData();
-
-	// Indicate that the trajectory has changed and should be redrawn
-	dirtyBound();
-	dirtyDisplayList();
 
 	return _dataValid;
 }
@@ -185,10 +377,6 @@ bool MarkerArtist::setYData(const Trajectory::DataSource &src)
 	_dataSource[1] = src;
 	verifyData();
 
-	// Indicate that the trajectory has changed and should be redrawn
-	dirtyBound();
-	dirtyDisplayList();
-
 	return _dataValid;
 }
 
@@ -199,10 +387,6 @@ bool MarkerArtist::setZData(const Trajectory::DataSource &src)
 	_dataSource[2] = src;
 	verifyData();
 
-	// Indicate that the trajectory has changed and should be redrawn
-	dirtyBound();
-	dirtyDisplayList();
-
 	return _dataValid;
 }
 
@@ -211,8 +395,8 @@ void MarkerArtist::setMarkers(unsigned int markers)
 	if(_markers == markers) return;
 
 	_markers = markers;
-	dirtyBound();
-	dirtyDisplayList();
+  MarkerArtistUpdateCallback *cb = static_cast<MarkerArtistUpdateCallback*>(getUpdateCallback());
+  cb->dataCleared();
 }
 
 void MarkerArtist::setMarkerColor(unsigned int markers,
@@ -220,28 +404,20 @@ void MarkerArtist::setMarkerColor(unsigned int markers,
 {
 	if(markers & START)
 	{
-	  _startColor[0] = r;
-	  _startColor[1] = g;
-	  _startColor[2] = b;
+    (*_endpointColors)[0].set(r, g, b, 1.0); // Start marker
+    _endpointColors->dirty();
 	}
 
 	if(markers & END)
 	{
-	  _endColor[0] = r;
-	  _endColor[1] = g;
-	  _endColor[2] = b;
+    (*_endpointColors)[1].set(r, g, b, 1.0); // End marker
+    _endpointColors->dirty();
 	}
 
 	if(markers & INTERMEDIATE)
 	{
-	  _intermediateColor[0] = r;
-	  _intermediateColor[1] = g;
-	  _intermediateColor[2] = b;
-	}
-
-	if(markers)
-	{
-	  dirtyDisplayList();
+    (*_intermediateColors)[0].set(r, g, b, 1.0); // Intermediate markers
+    _intermediateColors->dirty();
 	}
 }
 
@@ -329,18 +505,14 @@ bool MarkerArtist::setMarkerShader(const std::string &fname)
 
 void MarkerArtist::setAutoAttenuate(bool attenuate)
 {
-	if(attenuate)
-	{
-	  if(osg::Drawable::getUpdateCallback() == NULL) osg::Drawable::setUpdateCallback(new AttenuateUpdater);
-	}
-	else osg::Drawable::setUpdateCallback(NULL);
-
-	_shouldAttenuate = true;
+  MarkerArtistUpdateCallback *cb = static_cast<MarkerArtistUpdateCallback*>(getUpdateCallback());
+  cb->setComputeAttenuation(attenuate);
 }
 
 bool MarkerArtist::getAutoAttenuate() const
 {
-  return (osg::Drawable::getUpdateCallback() != NULL);
+  const MarkerArtistUpdateCallback *cb = static_cast<const MarkerArtistUpdateCallback*>(getUpdateCallback());
+  return cb->getComputeAttenuation();
 }
 
 void MarkerArtist::setIntermediateType(IntermediateType type)
@@ -348,8 +520,6 @@ void MarkerArtist::setIntermediateType(IntermediateType type)
 	if(_intermediateType != type)
 	{
 	  _intermediateType = type;
-	  dirtyBound();
-	  dirtyDisplayList();
 	}
 }
 
@@ -358,8 +528,6 @@ void MarkerArtist::setIntermediateSpacing(double spacing)
 	if((_intermediateSpacing != spacing) && (spacing > 0.0)) 
 	{
 	  _intermediateSpacing = spacing;
-	  dirtyBound();
-	  dirtyDisplayList();
 	}
 }
 
@@ -368,8 +536,6 @@ void MarkerArtist::setIntermediateDirection(DrawnMarkers direction)
 	if(_intermediateDirection != direction)
 	{
 	  _intermediateDirection = direction;
-	  dirtyBound();
-	  dirtyDisplayList();
 	}
 }
 
@@ -414,7 +580,7 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 	// Draw intermediate points
 	if((_markers & INTERMEDIATE) && (numPoints > 2))
 	{
-	  glColor3fv(_intermediateColor);
+	  glColor3fv(_intermediateColors);
 
 	  // Draw points at specified time increments
 	  if(_intermediateType == TIME)
@@ -586,20 +752,20 @@ void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
 void MarkerArtist::dataCleared(Trajectory* traj)
 {
 	verifyData();
-	dirtyBound();
-	dirtyDisplayList();
+  MarkerArtistUpdateCallback *cb = static_cast<MarkerArtistUpdateCallback*>(getUpdateCallback());
+  cb->dataCleared();
 }
 
 void MarkerArtist::dataAdded(Trajectory* traj)
 {
-	dirtyBound();
-	dirtyDisplayList();
+  MarkerArtistUpdateCallback *cb = static_cast<MarkerArtistUpdateCallback*>(getUpdateCallback());
+  cb->dataAdded();
 }
 
 void MarkerArtist::computeAttenuation()
 {
 	// Make sure we need to recompute the attenuation parameters
-	if(!_shouldAttenuate) return;
+	if(!_attenuationDirty) return;
 
 	// The computed point size is based on the specified point size and
 	// the attenuation parameters a, b, c. See glPointParameter with the
@@ -608,14 +774,15 @@ void MarkerArtist::computeAttenuation()
 	//   computed size = clamp(specified size * sqrt(1/(a + b*d + c*d*d)))
 	//   where d is the eye-distance to the point
 	// Here we compute attenuation parameters such that the tick marks
-	// will be visible at distances proportional to the size of the box
+	// will be visible at distances proportional to the size of the sphere
 	// encompassing all of the markers.
 	float a, b, c; // Coefficients for attenuation
+  bool computedParams;
 
-	if(_boundingBox.valid())
+	if(_boundingSphere.valid())
 	{
-	  // Get size of the bounding box
-	  double length = (_boundingBox._max - _boundingBox._min).length();
+	  // Get size of the bounding sphere
+    double length = _boundingSphere._radius;
 
 	  // If size is too small, then don't auto-attenuate
 	  if(length < 1.0e-8)
@@ -628,11 +795,15 @@ void MarkerArtist::computeAttenuation()
 	    a = c = 0.0;
 	    b = 1.0/length;
 	  }
+
+    computedParams = true;
 	}
 	else
 	{
+    // Disable attenuation until the bounding sphere is available
 	  a = 1.0;
 	  b = c = 0.0;
+    computedParams = false;
 	}
 
 	osg::Vec3 attenuation(a, b, c);
@@ -641,70 +812,7 @@ void MarkerArtist::computeAttenuation()
 	osg::Point *point = static_cast<osg::Point*>(getOrCreateStateSet()->getAttribute(osg::StateAttribute::POINT));
 	point->setDistanceAttenuation(attenuation);
 
-	_shouldAttenuate = false; // Parameters computed
-}
-
-/** Compute the bounding box that encompasses all of the markers */
-osg::BoundingBox MarkerArtist::computeBoundingBox() const
-{
-	// Set up bounding box
-	_boundingBox.init();
-
-	if(_dataZero) // Just the zero point
-	{
-          _boundingBox.expandBy(0.0, 0.0, 0.0);
-	}
-	else if(_dataValid)
-	{
-	  _traj->lockData(); // Make sure data doesn't change while in use
-
-	  // Get the maximum number of points supported by the trajectory
-	  // with the required data sources
-	  unsigned int maxPoints = _traj->getNumPoints(_dataSource);
-	  if(maxPoints == UINT_MAX) maxPoints = 1;
-
-	  Trajectory::DataType point[3];
-
-	  if(maxPoints != 0)
-	  {
-	    // If intermediate markers are not drawn, then just encompass the
-	    // start & end markers
-	    if(!(_markers & INTERMEDIATE))
-	    {
-	      if(_markers & START)
-	      {
-		_traj->getPoint(0, _dataSource, point); // Get first point
-		_boundingBox.expandBy(point[0], point[1], point[2]);
-	      }
-
-	      if((_markers & END) && (maxPoints > 1))
-	      {
-		_traj->getPoint(maxPoints-1, _dataSource, point); // Get last point
-		_boundingBox.expandBy(point[0], point[1], point[2]);
-	      }
-	    }
-
-	    // Intermediate markers are drawn, so we *should* check to see
-	    // which type of markers are required (TIME, DISTANCE, DATA).
-	    // HOWEVER, for ease of computation, we will just create a bounding
-	    // box that encompasses the entire trajectory.
-	    else
-	    {
-	      for(unsigned int i = 0; i < maxPoints-1; ++i)
-	      {
-		_traj->getPoint(i, _dataSource, point);
-		_boundingBox.expandBy(point[0], point[1], point[2]);
-	      }
-	    }
-	  }
-
-	  _traj->unlockData();
-	}
-
-	// Indiate that we need to recompute attenuation parameters
-	_shouldAttenuate = true;
-
-	return _boundingBox;
+	if(computedParams) _attenuationDirty = false; // Parameters computed
 }
 
 void MarkerArtist::verifyData() const
@@ -730,17 +838,17 @@ void MarkerArtist::verifyData() const
 
 void MarkerArtist::resetMarkerShader()
 {
-        osg::StateSet *ss = getOrCreateStateSet();
+  osg::StateSet *ss = getOrCreateStateSet();
 
-        // Remove existing image texture and blending
-        ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
-        ss->removeAttribute(osg::StateAttribute::BLENDFUNC);
+  // Remove existing image texture and blending
+  ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
+  ss->removeAttribute(osg::StateAttribute::BLENDFUNC);
 
-        // Assume opaque marker
-        ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
+  // Assume opaque marker
+  ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
 
-        // Default to circular point marker
-        _fragShader->setShaderSource(FragSource_Disk);
+  // Default to circular point marker
+  _fragShader->setShaderSource(FragSource_Disk);
 }
 
 }

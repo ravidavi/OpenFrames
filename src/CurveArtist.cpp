@@ -36,25 +36,26 @@ public:
     _dataCleared(true)
   {}
 
+  void dataAdded() { _dataAdded = true; }
+  void dataCleared() { _dataCleared = true; }
+
   virtual bool run(osg::Object* object, osg::Object* data)
   {
     // Get the arrays that hold vertex data
     // Note that all object types are known, since this callback is only added to a CurveArtist
     // This is why we don't have to use dynamic_cast
-    CurveArtist* ca = static_cast<CurveArtist*>(object);
-    osg::Geometry* geom = ca->getDrawable(0)->asGeometry();
-    osg::Vec3Array* vertexHigh = static_cast<osg::Vec3Array*>(geom->getVertexArray());
-    osg::Vec3Array* vertexLow = static_cast<osg::Vec3Array*>(geom->getVertexAttribArray(0));
+    _ca = static_cast<CurveArtist*>(object);
+    _geom = _ca->getDrawable(0)->asGeometry();
+    _vertexHigh = static_cast<osg::Vec3Array*>(_geom->getVertexArray());
+    _vertexLow = static_cast<osg::Vec3Array*>(_geom->getVertexAttribArray(0));
+    _drawArrays = static_cast<osg::DrawArrays*>(_geom->getPrimitiveSet(0));
 
     // Clear data if it is invalid or all points are zero
-    if (!ca->isDataValid() || ca->isDataZero())
+    if (!_ca->isDataValid() || _ca->isDataZero())
     {
       // Clear all points
-      vertexHigh->clear();
-      vertexLow->clear();
-      vertexHigh->dirty();
-      vertexLow->dirty();
-      _numPoints = 0;
+      clearVertexData();
+      dirtyVertexData(0);
     }
 
     // Otherwise process trajectory points and update vertex data as needed
@@ -63,8 +64,7 @@ public:
       // Clear all points if needed
       if (_dataCleared)
       {
-        vertexHigh->clear();
-        vertexLow->clear();
+        clearVertexData();
         _numPoints = 0;
         _dataCleared = false;
         _dataAdded = true; // Ensure arrays are marked as dirty
@@ -74,33 +74,18 @@ public:
       if (_dataAdded)
       {
         // Get and lock trajectory so its data doesn't move while we're analyzing it
-        const Trajectory* traj = ca->getTrajectory();
-        traj->lockData();
+        _traj = _ca->getTrajectory();
+        _traj->lockData();
 
-        // Get number of points in trajectory
-        unsigned int newNumPoints = traj->getNumPoints(ca->getDataSource());
-
-        // Process each new point
-        osg::Vec3d newPoint;
-        for (unsigned int i = _numPoints; i < newNumPoints; ++i)
-        {
-          traj->getPoint(i, ca->getDataSource(), newPoint._v); // Get current point
-
-          // Split point into high and low portions to support GPU-based RTE rendering
-          osg::Vec3f high, low;
-          OpenFrames::DS_Split(newPoint, high, low);
-          vertexHigh->push_back(high);
-          vertexLow->push_back(low);
-        }
+        // Process trajectory points
+        unsigned int newNumPoints = _traj->getNumPoints(_ca->getDataSource());
+        processPoints(newNumPoints);
 
         // Unlock trajectory
-        traj->unlockData();
+        _traj->unlockData();
 
         // Mark data as changed
-        vertexHigh->dirty();
-        vertexLow->dirty();
-        _numPoints = newNumPoints;
-
+        dirtyVertexData(newNumPoints);
         _dataAdded = false;
       }
     }
@@ -109,12 +94,54 @@ public:
     return traverse(object, data);
   }
 
-  void dataAdded() { _dataAdded = true; }
-  void dataCleared() { _dataCleared = true; }
-
 private:
+  void clearVertexData()
+  {
+    _vertexHigh->clear();
+    _vertexLow->clear();
+  }
+
+  void dirtyVertexData(unsigned int numPoints)
+  {
+    _vertexHigh->dirty();
+    _vertexLow->dirty();
+    _numPoints = numPoints;
+
+    // Update number of points to draw
+    if (_numPoints == 0) _geom->setNodeMask(0);
+    else
+    {
+      _geom->setNodeMask(~0);
+      _drawArrays->setCount(_numPoints);
+      _drawArrays->dirty();
+    }
+  }
+
+  void processPoints(unsigned int newNumPoints)
+  {
+    // Process each new point
+    osg::Vec3d newPoint;
+    for (unsigned int i = _numPoints; i < newNumPoints; ++i)
+    {
+      _traj->getPoint(i, _ca->getDataSource(), newPoint._v); // Get current point
+
+      // Split point into high and low portions to support GPU-based RTE rendering
+      osg::Vec3f high, low;
+      OpenFrames::DS_Split(newPoint, high, low);
+      _vertexHigh->push_back(high);
+      _vertexLow->push_back(low);
+    }
+  }
+
   unsigned int _numPoints;
   bool _dataAdded, _dataCleared;
+
+  osg::Geometry* _geom;
+  osg::Vec3Array* _vertexHigh;
+  osg::Vec3Array* _vertexLow;
+  osg::DrawArrays* _drawArrays;
+  const Trajectory* _traj;
+  CurveArtist* _ca;
 };
 
 CurveArtist::CurveArtist(const Trajectory *traj)
@@ -162,9 +189,8 @@ CurveArtist::CurveArtist(const Trajectory *traj)
   (*_lineColors)[0] = osg::Vec4(1.0, 1.0, 1.0, 1.0);
   _lineColors->setBinding(osg::Array::BIND_OVERALL);
 
-  // Initialize data arrays that will draw line strips
+  // Initialize geometry that will draw line strips
   osg::Geometry *geom = new osg::Geometry;
-  geom->setName("CurveArtist geometry");
   geom->setDataVariance(osg::Object::DYNAMIC);
   geom->setUseDisplayList(false);
   geom->setUseVertexBufferObjects(true);
@@ -228,7 +254,7 @@ bool CurveArtist::setZData(const Trajectory::DataSource &src)
 
 void CurveArtist::setColor( float r, float g, float b)
 {
-  (*_lineColors)[0] = osg::Vec4(r, g, b, 1.0);
+  (*_lineColors)[0].set(r, g, b, 1.0);
   _lineColors->dirty();
 }
 

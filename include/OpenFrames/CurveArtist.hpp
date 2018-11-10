@@ -63,34 +63,34 @@ namespace OpenFrames
     bool setZData(const Trajectory::DataSource &src);
     const Trajectory::DataSource* getDataSource() const { return _dataSource; }
 
-		/** Specify line attributes that should be used. */
-	void setColor(float r, float g, float b);
-	void setWidth( float width );
-	void setPattern( GLint factor, GLushort pattern );
+    /** Specify line attributes that should be used. */
+    void setColor(float r, float g, float b);
+    void setWidth(float width);
+    void setPattern(GLint factor, GLushort pattern);
 
-	/** Data was cleared from or added to the trajectory. Inherited
-	    from TrajectoryArtist */
-	virtual void dataCleared(Trajectory* traj);
-	virtual void dataAdded(Trajectory* traj);
+    /** Data was cleared from or added to the trajectory. Inherited
+        from TrajectoryArtist */
+    virtual void dataCleared(Trajectory* traj);
+    virtual void dataAdded(Trajectory* traj);
 
-  bool isDataValid() const { return _dataValid; }
-  bool isDataZero() const { return _dataZero; }
+    bool isDataValid() const { return _dataValid; }
+    bool isDataZero() const { return _dataZero; }
 
   protected:
-	virtual ~CurveArtist();
+    virtual ~CurveArtist();
 
-	void verifyData() const;
+    void verifyData() const;
 
-        // Data sources for x, y, and z coordinates
-	Trajectory::DataSource _dataSource[3];
+    // Data sources for x, y, and z coordinates
+    Trajectory::DataSource _dataSource[3];
 
-	/** Line width, stipple pattern, and color. */
-	osg::ref_ptr<osg::LineWidth> _lineWidth; 
-	osg::ref_ptr<osg::LineStipple>  _linePattern;
-  osg::ref_ptr<osg::Vec4Array> _lineColors; 
+    /** Line width, stipple pattern, and color. */
+    osg::ref_ptr<osg::LineWidth> _lineWidth;
+    osg::ref_ptr<osg::LineStipple>  _linePattern;
+    osg::ref_ptr<osg::Vec4Array> _lineColors;
 
-	mutable bool _dataValid; // If trajectory supports required data
-	mutable bool _dataZero; // If we are just drawing at the origin
+    mutable bool _dataValid; // If trajectory supports required data
+    mutable bool _dataZero; // If we are just drawing at the origin
   };
 
 }
