@@ -93,17 +93,17 @@ namespace OpenFrames
 
     /** Set the intermediate marker parameters */
     void setIntermediateType(IntermediateType type);
+    IntermediateType getIntermediateType() const { return _intermediateType; }
 
     /** Set the intermediate marker spacing */
     void setIntermediateSpacing(double spacing);
+    double getIntermediateSpacing() const { return _intermediateSpacing; }
 
     /** Specify if the markers should be computed forward from the start
         of the trajectory, or backward from the end of the trajectory.
         Use MarkerType enum values START or END */
     void setIntermediateDirection(DrawnMarkers direction);
-
-    /** Do the actual drawing */
-    virtual void drawImplementation(osg::RenderInfo& renderInfo) const;
+    DrawnMarkers getIntermediateDirection() const { return _intermediateDirection; }
 
     /** Tell artist that data was cleared. This is automatically called. */
     virtual void dataCleared(Trajectory* traj);

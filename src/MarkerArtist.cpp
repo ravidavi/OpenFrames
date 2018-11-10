@@ -41,12 +41,14 @@ public:
     _dataAdded(true),
     _dataCleared(true),
     _computeAttenuation(false)
-  {}
+  {
+    resetIntermediateData();
+  }
 
   void dataAdded() { _dataAdded = true; }
   void dataCleared() { _dataCleared = true; }
 
-  bool setComputeAttenuation(bool computeAttenuation) { _computeAttenuation = computeAttenuation; }
+  void setComputeAttenuation(bool computeAttenuation) { _computeAttenuation = computeAttenuation; }
   bool getComputeAttenuation() const { return _computeAttenuation; }
 
   virtual bool run(osg::Object* object, osg::Object* data)
@@ -79,6 +81,8 @@ public:
       if (_dataCleared)
       {
         clearVertexData();
+        resetIntermediateData();
+
         _numPoints = 0;
         _dataCleared = false;
         _dataAdded = true; // Ensure arrays are marked as dirty
@@ -119,11 +123,15 @@ public:
 	}
 
 private:
+  void resetIntermediateData()
+  {
+    _currTime = DBL_MAX;
+    _currIndex = INT_MAX;
+  }
+
   void clearVertexData()
   {
-    // Clear endpoint vertex array
-    _endpointVertexHigh->clear();
-    _endpointVertexLow->clear();
+    // Don't clear endpoint vertex array because it should always contain 2 points
 
     // Clear intermediate vertex array
     _intermediateVertexHigh->clear();
@@ -132,22 +140,43 @@ private:
 
   void dirtyVertexData(unsigned int numPoints)
   {
+    _numPoints = numPoints;
+
     // Dirty vertex arrays to indicate they've changed
     _endpointVertexHigh->dirty();
     _endpointVertexLow->dirty();
     _intermediateVertexHigh->dirty();
     _intermediateVertexLow->dirty();
 
-    _numPoints = numPoints;
-
-    // Show/hide endpoint markers
-    if (_endpointVertexHigh->empty()) _endpointGeom->setNodeMask(0);
-    else
+    // Show endpoint markers using their primitive set
+    if (_ma->getMarkers() & (MarkerArtist::START | MarkerArtist::END)) // Using START and/or END
     {
-      _endpointGeom->setNodeMask(~0);
-      _endpointDrawArrays->setCount(_endpointVertexHigh->size());
+      _endpointGeom->setNodeMask(~0); // Enable endpoints
+
+      GLint first;
+      GLsizei count;
+
+      if (!(_ma->getMarkers() & MarkerArtist::END)) // Only using START
+      {
+        first = 0;
+        count = 1;
+      }
+      else if (!(_ma->getMarkers() & MarkerArtist::START)) // Only using END
+      {
+        first = 1;
+        count = 1;
+      }
+      else // Usign START and END
+      {
+        first = 0;
+        count = 2;
+      }
+
+      _endpointDrawArrays->setFirst(first);
+      _endpointDrawArrays->setCount(count);
       _endpointDrawArrays->dirty();
     }
+    else _endpointGeom->setNodeMask(0); // Disable endpoints
 
     // Show/hide intermediate markers
     if (_intermediateVertexHigh->empty()) _intermediateGeom->setNodeMask(0);
@@ -162,41 +191,228 @@ private:
   void processPoints(unsigned int newNumPoints)
   {
     // Parameters for each new point
-    osg::Vec3d newPoint;
+    osg::Vec3d newPoint, prevPoint;
     osg::Vec3f high, low; // High and Low portions of each point for GPU-based RTE rendering
 
-    // Compute first point if requested and if not already stored
-    if ((_ma->getMarkers() & MarkerArtist::START) && (_numPoints == 0))
+    // Compute start point
+    if (_ma->getMarkers() & MarkerArtist::START)
     {
-      if (_ma->isDataZero()) newPoint.set(0, 0, 0);
-      else _traj->getPoint(0, _ma->getDataSource(), newPoint._v);
-
-      // Split point into high and low portions
-      OpenFrames::DS_Split(newPoint, high, low);
-      _endpointVertexHigh->push_back(high);
-      _endpointVertexLow->push_back(low);
+      if (_ma->isDataZero() || (newNumPoints > 0))
+      {
+        // Get point and split it into high and low portions
+        _traj->getPoint(0, _ma->getDataSource(), newPoint._v);
+        OpenFrames::DS_Split(newPoint, high, low);
+        (*_endpointVertexHigh)[0] = high;
+        (*_endpointVertexLow)[0] = low;
+      }
     }
 
-    // Compute last point if requested and available
-    if ((_ma->getMarkers() & MarkerArtist::END) && (_numPoints > 1))
+    // Compute end point
+    if ((_ma->getMarkers() & MarkerArtist::END) && (newNumPoints > 1))
     {
       // Get point and split it into high and low portions
       _traj->getPoint(newNumPoints - 1, _ma->getDataSource(), newPoint._v);
       OpenFrames::DS_Split(newPoint, high, low);
-
-      // Store endpoint
+      (*_endpointVertexHigh)[1] = high;
+      (*_endpointVertexLow)[1] = low;
     }
 
-    // Process each new point
-    osg::Vec3d newPoint;
-    for (unsigned int i = _numPoints; i < newNumPoints; ++i)
+    // Compute intermediate points
+    if ((_ma->getMarkers() & MarkerArtist::INTERMEDIATE) && (newNumPoints > 2) && (newNumPoints > _numPoints))
     {
+      // Compute points at specified time increments
+      if (_ma->getIntermediateType() == MarkerArtist::TIME)
+      {
+        // Get the start & end times of the trajectory, depending on
+        // whether we want to plot points from beginning or from end
+        // of the trajectory
+        double start, end;
+        if (_ma->getIntermediateDirection() == MarkerArtist::START)
+        {
+          _traj->getTimeRange(start, end);
+        }
+        else
+        {
+          _traj->getTimeRange(end, start);
+
+          // Need to clear and recompute all vertices since new points are at the
+          // back of the trajectory array and time intervals are computed from the back
+          // to the front of the trajectory array
+          clearVertexData();
+          resetIntermediateData();
+        }
+
+        // Determine whether times are increasing or decreasing
+        int direction = (start <= end) ? 1 : -1;
+        double spacing = direction*_ma->getIntermediateSpacing(); 
+        if (spacing == 0.0) spacing = direction;
+
+        int index; // Used to find index of data to plot
+        if (_currTime == DBL_MAX) _currTime = start + spacing; // Initialize time if needed
+
+        for (; direction*_currTime < direction*end; _currTime += spacing)
+        {
+          // Get the lower bounding index for the current time
+          _traj->getTimeIndex(_currTime, index);
+
+          // Compute the distance between the lower & upper bounding times
+          double t_a = _traj->getTimeList()[index];
+          double t_b = _traj->getTimeList()[index + 1];
+
+          // Make sure bounding times are not equal
+          if (t_a == t_b)
+          {
+            // Get the data point at the lower time
+            _traj->getPoint(index, _ma->getDataSource(), newPoint._v);
+          }
+          else
+          {
+            double frac = (_currTime - t_a) / (t_b - t_a);
+
+            // Get the data points at the lower and upper times
+            _traj->getPoint(index, _ma->getDataSource(), prevPoint._v);
+            _traj->getPoint(index + 1, _ma->getDataSource(), newPoint._v);
+
+            // Extrapolate the data point to be plotted
+            newPoint = prevPoint + (newPoint - prevPoint)*frac;
+          }
+
+          // Store the interpolated point
+          OpenFrames::DS_Split(newPoint, high, low);
+          _intermediateVertexHigh->push_back(high);
+          _intermediateVertexLow->push_back(low);
+        }
+      }
+
+      // Compute points at specified distances between points. The distance
+      // here is defined by the arc-length between the two points.
+      else if (_ma->getIntermediateType() == MarkerArtist::DISTANCE)
+      {
+        double frac;
+        int start, end, direction;
+
+        // Determine start & end indices depending on whether we want to
+        // plot intermediate points from start or end of trajectory.
+        if (_ma->getIntermediateDirection() == MarkerArtist::START)
+        {
+          start = 0;
+          end = newNumPoints;
+          direction = 1;
+        }
+        else
+        {
+          start = newNumPoints - 1;
+          end = -1;
+          direction = -1;
+
+          // Need to clear and recompute all vertices since new points are at the back
+          // of the trajectory array and all distance intervals would be invalidated
+          clearVertexData();
+          resetIntermediateData();
+        }
+
+        if (_currIndex == INT_MAX)
+        {
+          _currIndex = start + direction;
+          _currDistance = 0.0;
+          _prevDistance = 0.0;
+          _targetDistance = _ma->getIntermediateSpacing();
+        }
+
+        // Iterate over every point, integrating the arc length by
+        // assuming a straight line between points. Draw a marker each
+        // time the arc length reaches the appropriate spacing distance.
+        // Note that if the trajectory's total arc length is less than
+        // the desired marker spacing, then no markers will be drawn.
+        _traj->getPoint(_currIndex - direction, _ma->getDataSource(), prevPoint._v);
+        for (; _currIndex != end; _currIndex += direction)
+        {
+          // Get the current point
+          _traj->getPoint(_currIndex, _ma->getDataSource(), newPoint._v);
+
+          // Add the incremental length from the previous point
+          _currDistance += (newPoint - prevPoint).length();
+
+          // If we have reached (or overshot) the target distance, then
+          // start plotting points
+          while (_currDistance >= _targetDistance)
+          {
+            // Interpolate the data point to be plotted
+            frac = (_targetDistance - _prevDistance) / (_currDistance - _prevDistance);
+            osg::Vec3d temp = prevPoint + (newPoint - prevPoint)*frac;
+            OpenFrames::DS_Split(temp, high, low);
+            _intermediateVertexHigh->push_back(high);
+            _intermediateVertexLow->push_back(low);
+
+            _targetDistance += _ma->getIntermediateSpacing();
+          }
+
+          // Prepare for next iteration
+          _prevDistance = _currDistance;
+          prevPoint = newPoint;
+        }
+      }
+
+      // Draw points at specified data intervals
+      else if (_ma->getIntermediateType() == MarkerArtist::DATA)
+      {
+        int spacing, start, end, direction;
+
+        // Make sure requested spacing is valid
+        spacing = (int)_ma->getIntermediateSpacing();
+        if (spacing == 0) spacing = 1;
+
+        // Determine start & end points depending on whether we want to
+        // plot intermediate points from start or end of trajectory.
+        if (_ma->getIntermediateDirection() == MarkerArtist::START)
+        {
+          start = spacing;
+          end = newNumPoints - 1;
+          direction = 1;
+        }
+        else
+        {
+          start = (newNumPoints - 1) - spacing;
+          end = 0;
+          direction = -1;
+          spacing = -spacing;
+
+          // Need to clear and recompute all vertices since new points are at the back
+          // of the trajectory array and all index intervals would be invalidated
+          clearVertexData();
+          resetIntermediateData();
+        }
+
+        if (_currIndex == INT_MAX) _currIndex = start;
+
+        // Iterate over the data points, skipping the first one and
+        // stopping before the last one
+        for (; direction*_currIndex < end; _currIndex += spacing)
+        {
+          _traj->getPoint(_currIndex, _ma->getDataSource(), newPoint._v);
+          OpenFrames::DS_Split(newPoint, high, low);
+          _intermediateVertexHigh->push_back(high);
+          _intermediateVertexLow->push_back(low);
+        }
+      }
     }
   }
 
+  // Number of points last processed
   unsigned int _numPoints;
+
+  // Whether data was added to trajectory or trajectory was cleared
   bool _dataAdded, _dataCleared;
+
+  // Whether attenuation parameters should be computed
   bool _computeAttenuation;
+
+  // Data used to restart intermediate point computations in TIME mode
+  double _currTime;
+
+  // Data used to restart intermediate point computations in DISTANCE mode
+  int _currIndex;
+  double _currDistance, _prevDistance, _targetDistance;
 
   // Vertex data arrays
   osg::Geometry* _endpointGeom;
@@ -318,7 +534,7 @@ _intermediateDirection(START), _dataValid(true), _dataZero(true), _attenuationDi
   endpointGeom->setDataVariance(osg::Object::DYNAMIC);
   endpointGeom->setUseDisplayList(false);
   endpointGeom->setUseVertexBufferObjects(true);
-  endpointGeom->setVertexArray(new osg::Vec3Array());
+  endpointGeom->setVertexArray(new osg::Vec3Array(2)); // Always 2 endpoints
   endpointGeom->setVertexAttribArray(OF_VERTEXLOW, new osg::Vec3Array(), osg::Array::BIND_PER_VERTEX);
   endpointGeom->setColorArray(_endpointColors);
   endpointGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS, 0, 0));
@@ -520,6 +736,8 @@ void MarkerArtist::setIntermediateType(IntermediateType type)
 	if(_intermediateType != type)
 	{
 	  _intermediateType = type;
+    MarkerArtistUpdateCallback *cb = static_cast<MarkerArtistUpdateCallback*>(getUpdateCallback());
+    return cb->dataCleared();
 	}
 }
 
@@ -528,6 +746,8 @@ void MarkerArtist::setIntermediateSpacing(double spacing)
 	if((_intermediateSpacing != spacing) && (spacing > 0.0)) 
 	{
 	  _intermediateSpacing = spacing;
+    MarkerArtistUpdateCallback *cb = static_cast<MarkerArtistUpdateCallback*>(getUpdateCallback());
+    return cb->dataCleared();
 	}
 }
 
@@ -536,217 +756,9 @@ void MarkerArtist::setIntermediateDirection(DrawnMarkers direction)
 	if(_intermediateDirection != direction)
 	{
 	  _intermediateDirection = direction;
+    MarkerArtistUpdateCallback *cb = static_cast<MarkerArtistUpdateCallback*>(getUpdateCallback());
+    return cb->dataCleared();
 	}
-}
-
-void MarkerArtist::drawImplementation(osg::RenderInfo& renderInfo) const
-{
-	// Make sure data to be drawn is valid
-	if(!_dataValid) return;
-
-	unsigned int numPoints; // Number of drawable points
-	if(_dataZero)
-	{
-	  numPoints = 1;
-	}
-	else
-	{
-	  _traj->lockData();
-
-	  // Compute number of drawable points
-	  numPoints = _traj->getNumPoints(_dataSource);
-
-	  if(numPoints == 0) // No points to draw
-	  {
-	    _traj->unlockData();
-	    return;
-	  }
-	}
-
-        osg::GLExtensions *glext = renderInfo.getState()->get<osg::GLExtensions>();
-	osg::Vec3d currPoint, prevPoint;  // Coordinates to plot
-
-	glBegin(GL_POINTS); // Begin plotting points
-
-	// Draw first point if requested
-	if(_markers & START)
-	{
-	  glColor3fv(_startColor);
-	  if(_dataZero) currPoint.set(0, 0, 0);
-	  else _traj->getPoint(0, _dataSource, currPoint._v);
-	  RTE_glVertex(currPoint, *glext);
-	}
-
-	// Draw intermediate points
-	if((_markers & INTERMEDIATE) && (numPoints > 2))
-	{
-	  glColor3fv(_intermediateColors);
-
-	  // Draw points at specified time increments
-	  if(_intermediateType == TIME)
-	  {
-	    // Get the start & end times of the trajectory, depending on
-	    // whether we want to plot points from beginning or from end
-	    // of the trajectory
-	    double start, end;
-	    if(_intermediateDirection == START)
-	    {
-	      _traj->getTimeRange(start, end);
-	    }
-	    else if(_intermediateDirection == END)
-	    {
-	      _traj->getTimeRange(end, start);
-	    }
-
-	    // Determine whether times are increasing or decreasing
-	    int direction = (start <= end)?1:-1;
-	    double spacing = direction*_intermediateSpacing;
-	    
-	    int index; // Used to find index of data to plot
-
-	    for(double t = start + spacing; direction*t < direction*end; t += spacing)
-	    {
-	      // Get the lower bounding index for the current time
-	      _traj->getTimeIndex(t, index);
-
-	      // Compute the distance between the lower & upper bounding times
-	      double t_a = _traj->getTimeList()[index];
-	      double t_b = _traj->getTimeList()[index+1];
-
-	      // Make sure bounding times are not equal
-	      if(t_a == t_b)
-	      {
-		// Get the data point at the lower time
-		_traj->getPoint(index, _dataSource, currPoint._v);
-	      }
-	      else 
-	      {
-		double frac = (t - t_a)/(t_b - t_a);
-
-		// Get the data points at the lower and upper times
-		_traj->getPoint(index, _dataSource, prevPoint._v);
-		_traj->getPoint(index+1, _dataSource, currPoint._v);
-
-		// Extrapolate the data point to be plotted
-		currPoint = prevPoint + (currPoint - prevPoint)*frac;
-	      }
-
-	      RTE_glVertex(currPoint, *glext); // Plot the interpolated point
-	    }
-	  }
-
-	  // Draw points at specified distances between points. The distance
-	  // here is defined by the arc-length between the two points.
-	  else if(_intermediateType == DISTANCE)
-	  {
-	    double curr_d = 0.0; // Current distance along trajectory
-	    double prev_d = 0.0; // Previous distance along trajectory
-	    double target_d = _intermediateSpacing; // Target distance
-	    double frac;
-	    int start, end, direction;
-
-	    // Determine start & end points depending on whether we want to
-	    // plot intermediate points from start or end of trajectory.
-	    if(_intermediateDirection == START)
-	    {
-	      start = 0;
-	      end = numPoints;
-	      direction = 1;
-	    }
-	    else if(_intermediateDirection == END)
-	    {
-	      start = numPoints-1;
-	      end = -1;
-	      direction = -1;
-	    }
-
-	    // Iterate over every point, integrating the arc length by
-	    // assuming a straight line between points. Draw a marker each
-	    // time the arc length reaches the appropriate spacing distance.
-	    // Note that if the trajectory's total arc length is less than
-	    // the desired marker spacing, then no markers will be drawn.
-	    _traj->getPoint(start, _dataSource, prevPoint._v);
-	    for(int i = start + direction; i != end; i += direction)
-	    {
-	      // Get the current point
-	      _traj->getPoint(i, _dataSource, currPoint._v);
-
-	      // Add the incremental length from the previous point
-	      curr_d += (currPoint - prevPoint).length();
-
-	      // Check if we didn't add any length to the arc, eg if 2
-	      // adjacent points in the trajectory are the same.
-	      if(curr_d == prev_d) continue;
-
-	      // If we have reached (or overshot) the target distance, then
-	      // start plotting points.
-	      while(target_d <= curr_d)
-	      {
-		// Don't plot the last point in the trajectory, since this is
-		// handled by the DrawnMarkers::END case.
-		if((i == numPoints-1) && (target_d == curr_d)) break;
-
-		frac = (target_d - prev_d)/(curr_d - prev_d);
-
-		// Extrapolate the data point to be plotted
-                osg::Vec3d temp = prevPoint + (currPoint - prevPoint)*frac;
-                RTE_glVertex(temp, *glext);
-
-		target_d += _intermediateSpacing;
-	      }
-
-	      // Prepare for next iteration
-	      prev_d = curr_d;
-	      prevPoint = currPoint;
-	    }
-	  }
-
-	  // Draw points at specified data intervals
-	  else if(_intermediateType == DATA)
-	  {
-	    int spacing, start, end, direction;
-
-	    // Make sure requested spacing is valid
-	    spacing = (int)_intermediateSpacing;
-	    if(spacing == 0) spacing = 1;
-
-	    // Determine start & end points depending on whether we want to
-	    // plot intermediate points from start or end of trajectory.
-	    if(_intermediateDirection == START)
-	    {
-	      start = spacing;
-	      end = numPoints-1;
-	      direction = 1;
-	    }
-	    else if(_intermediateDirection == END)
-	    {
-	      start = (numPoints-1) - spacing;
-	      end = 0;
-	      direction = -1;
-	      spacing = -spacing;
-	    }
-
-	    // Iterate over the data points, skipping the first one and
-	    // stopping before the last one
-	    for(int i = start; direction*i < end; i += spacing)
-	    {
-	      _traj->getPoint(i, _dataSource, currPoint._v);
-	      RTE_glVertex(currPoint, *glext);
-	    }
-	  }
-	}
-
-	// Draw last point if requested and available
-	if((_markers & END) && (numPoints > 1))
-	{
-	  glColor3fv(_endColor);
-	  _traj->getPoint(numPoints-1, _dataSource, currPoint._v);
-	  RTE_glVertex(currPoint, *glext);
-	}
-
-	glEnd(); // GL_POINTS
-
-	if(!_dataZero) _traj->unlockData();
 }
 
 void MarkerArtist::dataCleared(Trajectory* traj)

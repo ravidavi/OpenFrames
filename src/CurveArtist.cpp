@@ -103,9 +103,11 @@ private:
 
   void dirtyVertexData(unsigned int numPoints)
   {
+    _numPoints = numPoints;
+
+    // Dirty vertex arrays to indicate they've changed
     _vertexHigh->dirty();
     _vertexLow->dirty();
-    _numPoints = numPoints;
 
     // Update number of points to draw
     if (_numPoints == 0) _geom->setNodeMask(0);
