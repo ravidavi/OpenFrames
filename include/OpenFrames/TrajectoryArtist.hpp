@@ -42,6 +42,10 @@ namespace OpenFrames
   class OF_EXPORT TrajectoryArtist : public osg::Geode, public OpenFrames::TrajectorySubscriber
   {
   public:
+    // Vertex attribute index for low part of double-precision vertex
+    // Used for GPU-based rendering relative to the eye (RTE)
+    static const unsigned int OF_VERTEXLOW = 1; 
+
     TrajectoryArtist();
 
     // Copy constructor
@@ -69,8 +73,6 @@ namespace OpenFrames
 
     osg::ref_ptr<const Trajectory> _traj; // Trajectory to be drawn
     osg::ref_ptr<osg::Program> _program; // GLSL program
-
-    const unsigned int OF_VERTEXLOW = 0; // Vertex attribute index
   };
 
 }

@@ -48,7 +48,7 @@ public:
     _sa = static_cast<SegmentArtist*>(object);
     _geom = _sa->getDrawable(0)->asGeometry();
     _vertexHigh = static_cast<osg::Vec3Array*>(_geom->getVertexArray());
-    _vertexLow = static_cast<osg::Vec3Array*>(_geom->getVertexAttribArray(0));
+    _vertexLow = static_cast<osg::Vec3Array*>(_geom->getVertexAttribArray(TrajectoryArtist::OF_VERTEXLOW));
     _drawArrays = static_cast<osg::DrawArrays*>(_geom->getPrimitiveSet(0));
 
     // Clear data if it is invalid or all points are zero
@@ -119,6 +119,7 @@ private:
       _geom->setNodeMask(~0);
       _drawArrays->setCount(2*_numPoints); // 2 vertices per point
       _drawArrays->dirty();
+      _geom->dirtyBound();
     }
   }
 

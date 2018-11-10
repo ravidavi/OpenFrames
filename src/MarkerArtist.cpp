@@ -59,11 +59,11 @@ public:
     _ma = static_cast<MarkerArtist*>(object);
     _endpointGeom = _ma->getDrawable(0)->asGeometry();
     _endpointVertexHigh = static_cast<osg::Vec3Array*>(_endpointGeom->getVertexArray());
-    _endpointVertexLow = static_cast<osg::Vec3Array*>(_endpointGeom->getVertexAttribArray(0));
+    _endpointVertexLow = static_cast<osg::Vec3Array*>(_endpointGeom->getVertexAttribArray(TrajectoryArtist::OF_VERTEXLOW));
     _endpointDrawArrays = static_cast<osg::DrawArrays*>(_endpointGeom->getPrimitiveSet(0));
     _intermediateGeom = _ma->getDrawable(1)->asGeometry();
     _intermediateVertexHigh = static_cast<osg::Vec3Array*>(_intermediateGeom->getVertexArray());
-    _intermediateVertexLow = static_cast<osg::Vec3Array*>(_intermediateGeom->getVertexAttribArray(0));
+    _intermediateVertexLow = static_cast<osg::Vec3Array*>(_intermediateGeom->getVertexAttribArray(TrajectoryArtist::OF_VERTEXLOW));
     _intermediateDrawArrays = static_cast<osg::DrawArrays*>(_intermediateGeom->getPrimitiveSet(0));
 
     // Clear data if it is invalid
@@ -175,6 +175,7 @@ private:
       _endpointDrawArrays->setFirst(first);
       _endpointDrawArrays->setCount(count);
       _endpointDrawArrays->dirty();
+      _endpointGeom->dirtyBound();
     }
     else _endpointGeom->setNodeMask(0); // Disable endpoints
 
@@ -185,6 +186,7 @@ private:
       _intermediateGeom->setNodeMask(~0);
       _intermediateDrawArrays->setCount(_intermediateVertexHigh->size());
       _intermediateDrawArrays->dirty();
+      _intermediateGeom->dirtyBound();
     }
   }
 
@@ -200,7 +202,9 @@ private:
       if (_ma->isDataZero() || (newNumPoints > 0))
       {
         // Get point and split it into high and low portions
-        _traj->getPoint(0, _ma->getDataSource(), newPoint._v);
+        if(_traj != nullptr) _traj->getPoint(0, _ma->getDataSource(), newPoint._v);
+        else newPoint.set(0.0, 0.0, 0.0);
+
         OpenFrames::DS_Split(newPoint, high, low);
         (*_endpointVertexHigh)[0] = high;
         (*_endpointVertexLow)[0] = low;
@@ -535,7 +539,7 @@ _intermediateDirection(START), _dataValid(true), _dataZero(true), _attenuationDi
   endpointGeom->setUseDisplayList(false);
   endpointGeom->setUseVertexBufferObjects(true);
   endpointGeom->setVertexArray(new osg::Vec3Array(2)); // Always 2 endpoints
-  endpointGeom->setVertexAttribArray(OF_VERTEXLOW, new osg::Vec3Array(), osg::Array::BIND_PER_VERTEX);
+  endpointGeom->setVertexAttribArray(OF_VERTEXLOW, new osg::Vec3Array(2), osg::Array::BIND_PER_VERTEX);
   endpointGeom->setColorArray(_endpointColors);
   endpointGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS, 0, 0));
   addDrawable(endpointGeom);
