@@ -274,14 +274,14 @@ void CurveArtist::setPattern( GLint factor, GLushort pattern )
 	_linePattern->setPattern(pattern);
 }
 
-void CurveArtist::dataCleared(Trajectory* traj)
+void CurveArtist::dataCleared(const Trajectory* traj)
 {
 	verifyData();
   CurveArtistUpdateCallback *cb = static_cast<CurveArtistUpdateCallback*>(getUpdateCallback());
   cb->dataCleared();
 }
 
-void CurveArtist::dataAdded(Trajectory* traj)
+void CurveArtist::dataAdded(const Trajectory* traj)
 {
   CurveArtistUpdateCallback *cb = static_cast<CurveArtistUpdateCallback*>(getUpdateCallback());
   cb->dataAdded();

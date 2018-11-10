@@ -97,6 +97,8 @@ void TrajectoryArtist::setTrajectory(const Trajectory *traj)
 	// Register with the new trajectory
 	_traj = traj;
 	if(_traj.valid()) _traj->addSubscriber(this);
+
+  dataCleared(traj);
 }
 
 void TrajectoryArtist::RTE_glVertex(osg::Vec3d &point, osg::GLExtensions &glext) const

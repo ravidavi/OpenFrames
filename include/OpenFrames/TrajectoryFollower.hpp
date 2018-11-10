@@ -131,8 +131,8 @@ namespace OpenFrames
   
   /** Inherited from OpenFrames::TrajectorySubscriber
       Functions that inform about Trajectory changes */
-  virtual void dataCleared(Trajectory* traj) { _needsUpdate = true; }
-  virtual void dataAdded(Trajectory* traj) { _needsUpdate = true; }
+  virtual void dataCleared(const Trajectory* traj) { _needsUpdate = true; }
+  virtual void dataAdded(const Trajectory* traj) { _needsUpdate = true; }
 
   protected:
 	virtual ~TrajectoryFollower();

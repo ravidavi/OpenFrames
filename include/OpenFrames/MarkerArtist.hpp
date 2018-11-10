@@ -106,10 +106,10 @@ namespace OpenFrames
     DrawnMarkers getIntermediateDirection() const { return _intermediateDirection; }
 
     /** Tell artist that data was cleared. This is automatically called. */
-    virtual void dataCleared(Trajectory* traj);
+    virtual void dataCleared(const Trajectory* traj);
 
     /** Tell artist that data was added. This is automatically called. */
-    virtual void dataAdded(Trajectory* traj);
+    virtual void dataAdded(const Trajectory* traj);
 
     bool isDataValid() const { return _dataValid; }
     bool isDataZero() const { return _dataZero; }

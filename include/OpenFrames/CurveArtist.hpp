@@ -70,8 +70,8 @@ namespace OpenFrames
 
     /** Data was cleared from or added to the trajectory. Inherited
         from TrajectoryArtist */
-    virtual void dataCleared(Trajectory* traj);
-    virtual void dataAdded(Trajectory* traj);
+    virtual void dataCleared(const Trajectory* traj);
+    virtual void dataAdded(const Trajectory* traj);
 
     bool isDataValid() const { return _dataValid; }
     bool isDataZero() const { return _dataZero; }

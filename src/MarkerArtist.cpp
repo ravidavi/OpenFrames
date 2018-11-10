@@ -761,14 +761,14 @@ void MarkerArtist::setIntermediateDirection(DrawnMarkers direction)
 	}
 }
 
-void MarkerArtist::dataCleared(Trajectory* traj)
+void MarkerArtist::dataCleared(const Trajectory* traj)
 {
 	verifyData();
   MarkerArtistUpdateCallback *cb = static_cast<MarkerArtistUpdateCallback*>(getUpdateCallback());
   cb->dataCleared();
 }
 
-void MarkerArtist::dataAdded(Trajectory* traj)
+void MarkerArtist::dataAdded(const Trajectory* traj)
 {
   MarkerArtistUpdateCallback *cb = static_cast<MarkerArtistUpdateCallback*>(getUpdateCallback());
   cb->dataAdded();

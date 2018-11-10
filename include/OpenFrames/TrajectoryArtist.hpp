@@ -54,11 +54,11 @@ namespace OpenFrames
 
     /** Called by the trajectory when its data is cleared. Must be
         implemented by derived classes. */
-    virtual void dataCleared(Trajectory* traj) = 0;
+    virtual void dataCleared(const Trajectory* traj) = 0;
 
     /** Called by the trajectory when data is added to it. Must be
         implemented by derived classes. */
-    virtual void dataAdded(Trajectory* traj) = 0;
+    virtual void dataAdded(const Trajectory* traj) = 0;
 
   protected:
     virtual ~TrajectoryArtist();
