@@ -104,9 +104,9 @@ private:
     _vertexLow->clear();
   }
 
-  void dirtyVertexData(unsigned int numPoints)
+  void dirtyVertexData(unsigned int newNumPoints)
   {
-    _numPoints = numPoints;
+    _numPoints = newNumPoints;
 
     // Dirty vertex arrays to indicate they've changed
     _vertexHigh->dirty();

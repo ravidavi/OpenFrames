@@ -138,9 +138,9 @@ private:
     _intermediateVertexLow->clear();
   }
 
-  void dirtyVertexData(unsigned int numPoints)
+  void dirtyVertexData(unsigned int newNumPoints)
   {
-    _numPoints = numPoints;
+    _numPoints = newNumPoints;
 
     // Dirty vertex arrays to indicate they've changed
     _endpointVertexHigh->dirty();
@@ -156,6 +156,7 @@ private:
       GLint first;
       GLsizei count;
 
+      // Determine 'first' and 'count' params for primitive set to draw desired markers
       if (!(_ma->getMarkers() & MarkerArtist::END)) // Only using START
       {
         first = 0;

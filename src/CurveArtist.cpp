@@ -101,9 +101,9 @@ private:
     _vertexLow->clear();
   }
 
-  void dirtyVertexData(unsigned int numPoints)
+  void dirtyVertexData(unsigned int newNumPoints)
   {
-    _numPoints = numPoints;
+    _numPoints = newNumPoints;
 
     // Dirty vertex arrays to indicate they've changed
     _vertexHigh->dirty();
@@ -124,12 +124,12 @@ private:
   {
     // Process each new point
     osg::Vec3d newPoint;
+    osg::Vec3f high, low;
     for (unsigned int i = _numPoints; i < newNumPoints; ++i)
     {
       _traj->getPoint(i, _ca->getDataSource(), newPoint._v); // Get current point
 
       // Split point into high and low portions to support GPU-based RTE rendering
-      osg::Vec3f high, low;
       OpenFrames::DS_Split(newPoint, high, low);
       _vertexHigh->push_back(high);
       _vertexLow->push_back(low);
