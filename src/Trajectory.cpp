@@ -508,7 +508,7 @@ void Trajectory::informSubscribers()
     if(_dataCleared) (*i)->dataCleared(this);
 
     // Inform artist that data has been added
-    if(!_time.empty()) (*i)->dataAdded(this);
+    else if(!_time.empty()) (*i)->dataAdded(this);
   }
 
   _dataCleared = false; // Reset flag

@@ -99,17 +99,4 @@ void TrajectoryArtist::setTrajectory(const Trajectory *traj)
 	if(_traj.valid()) _traj->addSubscriber(this);
 }
 
-void TrajectoryArtist::RTE_glVertex(osg::Vec3d &point, osg::GLExtensions &glext) const
-{
-  osg::Vec3f high, low;
-
-  // Split input point into high and low portions
-  OpenFrames::DS_Split(point, high, low);
-
-  // Submit to OpenGL
-  // Note that vertex attribute must be specified BEFORE glVertex
-  glext.glVertexAttrib3fv(OF_VERTEXLOW, low._v);
-  glVertex3fv(high._v);
-}
-
 } //!namespace OpenFrames

@@ -67,10 +67,6 @@ namespace OpenFrames
   protected:
     virtual ~TrajectoryArtist();
 
-    /** Convert double vector to two float vectors and submit
-        to OpenGL for GPU-based rendering relative to the eye. */
-    void RTE_glVertex(osg::Vec3d &point, osg::GLExtensions &glext) const;
-
     osg::ref_ptr<const Trajectory> _traj; // Trajectory to be drawn
     osg::ref_ptr<osg::Program> _program; // GLSL program
   };
