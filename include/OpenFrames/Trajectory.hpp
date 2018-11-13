@@ -231,7 +231,8 @@ namespace OpenFrames
 	DataArray _att;    // Attitudes
   
   mutable SubscriberArray _subscribers; // Subscribers of this Trajectory
-  bool _autoInformSubscribers;
+  bool _autoInformSubscribers; // Whether subscribers should be informed whenever data is modified
+  bool _dataCleared; // Whether data has recently been cleared
 
 	unsigned int _nopt; // Number of optionals for each time.
 	unsigned int _base; // Number of data elements taken up by each

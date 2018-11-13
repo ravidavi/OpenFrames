@@ -31,6 +31,7 @@ namespace OpenFrames {
 Trajectory::Trajectory(unsigned int dof, unsigned int nopt )
 {
   _autoInformSubscribers = true;
+  _dataCleared = true;
 
 	if(dof == 0) dof = 1;
 	setDOF(dof);
@@ -405,6 +406,7 @@ void Trajectory::clear()
 	_posopt.clear();
 	_att.clear();
 	_numPos = _numAtt = 0;
+  _dataCleared = true;
 
 	unlockData(WRITE_LOCK);
 
@@ -500,12 +502,16 @@ void Trajectory::removeSubscriber(TrajectorySubscriber* subscriber) const
 
 void Trajectory::informSubscribers()
 {
-  bool cleared = _time.empty();
   for(SubscriberArray::iterator i = _subscribers.begin(); i != _subscribers.end(); ++i)
   {
-    if(cleared) (*i)->dataCleared(this);
-    else (*i)->dataAdded(this);
+    // Inform artist that data has been cleared
+    if(_dataCleared) (*i)->dataCleared(this);
+
+    // Inform artist that data has been added
+    if(!_time.empty()) (*i)->dataAdded(this);
   }
+
+  _dataCleared = false; // Reset flag
 }
   
 void Trajectory::lockData(DataLockType lockType) const

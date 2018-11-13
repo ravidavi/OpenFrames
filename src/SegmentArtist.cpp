@@ -75,6 +75,7 @@ public:
       if (_dataAdded)
       {
         // Get and lock trajectory so its data doesn't move while we're analyzing it
+        _dataAdded = false;
         _traj = _sa->getTrajectory();
         _traj->lockData();
 
@@ -89,7 +90,6 @@ public:
 
         // Mark data as changed
         dirtyVertexData(newNumPoints);
-        _dataAdded = false;
       }
     }
 

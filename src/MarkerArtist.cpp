@@ -91,6 +91,7 @@ public:
       // Process new data if needed
       if (_dataAdded)
       {
+        _dataAdded = false;
         _traj = _ma->getTrajectory();
 
         unsigned int newNumPoints;
@@ -111,7 +112,6 @@ public:
 
         // Mark data as changed
         dirtyVertexData(newNumPoints);
-        _dataAdded = false;
       }
     }
 
