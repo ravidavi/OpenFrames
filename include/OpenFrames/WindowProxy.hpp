@@ -277,17 +277,7 @@ namespace OpenFrames
     /// If animation is done, then reset the animation state
     void resetAnimationState() { if(doneAnimating()) _animationState = IDLE; }
     
-    /** Set the desired framerate at which animation should occur. */
-    inline void setDesiredFramerate(const double &fps)
-    { _frameThrottle.setDesiredFramerate(fps); }
-    
-    /** Get the desired framerate at which animation should occur. */
-    inline double getDesiredFramerate()
-    { return _frameThrottle.getDesiredFramerate(); }
-    
-    /** Get the actual animation framerate. This is an instantaneous value. */
-    inline double getFramerate()
-    { return _frameThrottle.getFramerate(); }
+    FramerateLimiter* getFramerateLimiter() { return &_frameThrottle; }
     
     osgViewer::CompositeViewer* getViewer() const { return _viewer.get(); }
     

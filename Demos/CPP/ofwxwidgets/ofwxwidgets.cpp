@@ -107,7 +107,7 @@ MyGLCanvas::MyGLCanvas(wxFrame* parent, int* args)
   m_winproxy->setUpdateContextFunction(MyGLCanvas::makecurrent);
 #endif
   
-  m_winproxy->setDesiredFramerate(20);
+  m_winproxy->getFramerateLimiter()->setDesiredFramerate(20);
 
   // Create the models that will populate the scene using
   // Model(name, color(r,g,b,a))
