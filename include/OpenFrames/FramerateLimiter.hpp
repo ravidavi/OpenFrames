@@ -29,47 +29,37 @@ namespace OpenFrames
   /**
    * \class FramerateLimiter
    *
-   * \brief This class implements a framerate-limiting algorithm.
+   * \brief Implements a framerate-limiting algorithm.
    *
-   * This class implements a simple framerate limiting algorithm. The method is to wait until
-   * a certain number of frames have elapsed, then compute the average time per frame. This
-   * is used to compute how much extra time each frame needs to take up in order to achieve
-   * the target framerate. The limiter then applies this extra time to each frame in the next
-   * set, and the process is repeated.
+   * Implements a simple framerate-limiting algorithm that waits the necessary amount of time
+   * between frames, thereby achieving the desired framerate for any given workload.
    */
   class OF_EXPORT FramerateLimiter
   {
   public:
     FramerateLimiter(double fps = 30.0);
-    
+
     // Set/get the desired framerate in frames/second
     void setDesiredFramerate(double fps);
-    double getDesiredFramerate()
+    double getDesiredFramerate() const
     {
-      if(_desired_spf == 0.0) return 0.0;
-      else return 1.0/_desired_spf;
+      if (_desiredSPF == 0.0) return 0.0;
+      else return 1.0 / _desiredSPF;
     }
-    
-    // Get the actual framerate for the previous set of frames
-    double getFramerate() { return 1.0/_curr_spf; }
-    
+
+    // Get the measured framerate for the last frame
+    double getFramerate() const { return 1.0 / _currSPF; }
+
     // Indicates the start of a frame
     void frame();
-    
-    // Reset the timer
-    void reset();
-    
+
   private:
-    double _desired_spf; // Desired seconds/frame (inverse of fps)
-    double _curr_spf;  // Current measured seconds/frame
-    
-    unsigned int _max_frames; // Number of frames to use for averaging
-    double _max_frames_inv; // Inverse of _max_frames (for efficiency)
-    unsigned int _framecount; // Current number of elapsed frames
-    
-    int _sleeptime; // Time length to sleep for, in milli/microseconds (depending on system)
-    const osg::Timer &_timer; // Timer, duh....
-    osg::Timer_t _ref_time;  // Time at start of framerate check
+    double _desiredSPF; // Desired seconds/frame (inverse of fps)
+    double _currSPF;  // Current measured seconds/frame
+
+    const osg::Timer &_timer; // Timer for framerate control
+    osg::Timer_t _startTick, _endTick; // Workload start/end times
+    osg::Timer_t _prevStartTick; // Used to measure framerate
   };
   
 } // !namespace OpenFrames

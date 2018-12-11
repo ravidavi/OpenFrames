@@ -935,7 +935,7 @@ void OF_FCN(ofwin_mousemotion)(float *x, float *y)
 void OF_FCN(ofwin_setdesiredframerate)(double *fps)
 {
 	if (_objs->_currWinProxy) {
-	  _objs->_currWinProxy->setDesiredFramerate(*fps);
+	  _objs->_currWinProxy->getFramerateLimiter()->setDesiredFramerate(*fps);
       _objs->_intVal = 0;
     }
     else {

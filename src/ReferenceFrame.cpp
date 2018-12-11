@@ -434,7 +434,7 @@ bool ReferenceFrame::addChild( ReferenceFrame* child )
 {
 	  // Make sure we're not trying to add ourselves as a child
 	  // Also make sure child is not NULL
-	if (child == this || !child) return false;
+	if ((child == this) || (child == nullptr)) return false;
 
 	  // Make sure child does not already exist
 	if (getChildIndex(child) != -1) return true;

@@ -119,7 +119,8 @@ namespace OpenFrames
     if(!vr::VR_IsHmdPresent())
     {
       osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: No valid HMD present." << std::endl;
-      return (_isInitialized = false);
+      _isInitialized = false;
+      return _isInitialized;
     }
     
     // Initialize OpenVR and the SteamVR runtime
@@ -129,7 +130,8 @@ namespace OpenFrames
     {
       _vrSystem = nullptr;
       osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: OpenVR could not be initialized. OpenVR says: " << vr::VR_GetVRInitErrorAsEnglishDescription(vrError) << std::endl;
-      return (_isInitialized = false);
+      _isInitialized = false;
+      return _isInitialized;
     }
     
     // Initialize OpenVR Compositor
@@ -138,7 +140,8 @@ namespace OpenFrames
       _vrSystem = nullptr;
       vr::VR_Shutdown();
       osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: Compositor could not be initialized." << std::endl;
-      return (_isInitialized = false);
+      _isInitialized = false;
+      return _isInitialized;
     }
     vr::VRCompositor()->SetTrackingSpace(vr::TrackingUniverseStanding); // Room-scale VR
     
@@ -150,7 +153,8 @@ namespace OpenFrames
       _vrSystem = nullptr;
       vr::VR_Shutdown();
       osg::notify(osg::WARN) << "OpenFrames::OpenVRDevice ERROR: Generic interface error. OpenVR says: " << vr::VR_GetVRInitErrorAsEnglishDescription(vrError) << std::endl;
-      return (_isInitialized = false);
+      _isInitialized = false;
+      return _isInitialized;
     }
     
     // Print HMD driver info

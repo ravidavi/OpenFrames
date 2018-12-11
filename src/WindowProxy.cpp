@@ -542,8 +542,8 @@ namespace OpenFrames
     setTimeScale(1.0);
     
     // Set framerate (in fps) based on whether VR is enabled
-    if(_useVR) setDesiredFramerate(0.0); // Don't limit framerate
-    else setDesiredFramerate(30.0);
+    if(_useVR) _frameThrottle.setDesiredFramerate(0.0); // Don't limit framerate
+    else _frameThrottle.setDesiredFramerate(30.0);
   }
   
   // WindowProxy destructor
@@ -858,9 +858,6 @@ namespace OpenFrames
   void WindowProxy::pauseAnimation(bool pause)
   {
     if(pause == _pauseAnimation) return;
-    
-    // Reset framerate limiter before resuming animation (to avoid stutter on resume)
-    if(!pause) _frameThrottle.reset();
     _pauseAnimation = pause;
     
     // As long as animation is active, wait until animation state matches the desired state
