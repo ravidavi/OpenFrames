@@ -31,9 +31,7 @@ class CurveArtistUpdateCallback : public osg::Callback
 {
 public:
   CurveArtistUpdateCallback()
-    : _numPoints(0),
-    _dataAdded(true),
-    _dataCleared(true)
+    : _dataAdded(true), _dataCleared(true), _batchSize(1000), _lastUpdateTime(0.0), _lastRunTime(0.0)
   {}
 
   void dataAdded() { _dataAdded = true; }
@@ -41,6 +39,14 @@ public:
 
   virtual bool run(osg::Object* object, osg::Object* data)
   {
+    // Get the current time
+    osg::NodeVisitor* nv = data->asNodeVisitor();
+    double currTime = nv->getFrameStamp()->getReferenceTime();
+
+    // Process points at fixed rate to avoid performance bottlenecks in high-FPS applications (e.g. VR)
+    if (currTime - _lastRunTime < 0.05) return traverse(object, data);
+    else _lastRunTime = currTime;
+
     // Get the arrays that hold vertex data
     // Note that all object types are known, since this callback is only added to a CurveArtist
     // This is why we don't have to use dynamic_cast
@@ -55,17 +61,16 @@ public:
     {
       // Clear all points
       clearVertexData();
-      dirtyVertexData(0);
+      dirtyVertexData();
     }
 
     // Otherwise process trajectory points and update vertex data as needed
-    else
+    else if (_dataCleared || _dataAdded)
     {
       // Clear all points if needed
       if (_dataCleared)
       {
         clearVertexData();
-        _numPoints = 0;
         _dataCleared = false;
         _dataAdded = true; // Ensure arrays are marked as dirty
       }
@@ -75,6 +80,7 @@ public:
       {
         // Get and lock trajectory so its data doesn't move while we're analyzing it
         _dataAdded = false;
+        _lastUpdateTime = currTime;
         _traj = _ca->getTrajectory();
         _traj->lockData();
 
@@ -86,8 +92,20 @@ public:
         _traj->unlockData();
 
         // Mark data as changed
-        dirtyVertexData(newNumPoints);
+        dirtyVertexData();
       }
+    }
+
+    // If vertex arrays have not been modified in a while, then shink them
+    // to fit the current number of points
+    else if ((currTime - _lastUpdateTime >= 1.0) && (_vertexHigh->size() > _drawArrays->getCount()))
+    {
+      _vertexHigh->resize(_drawArrays->getCount());
+      _vertexLow->resize(_drawArrays->getCount());
+      _vertexHigh->asVector().shrink_to_fit();
+      _vertexLow->asVector().shrink_to_fit();
+      _vertexHigh->dirty();
+      _vertexLow->dirty();
     }
 
     // Continue traversing as needed
@@ -99,45 +117,47 @@ private:
   {
     _vertexHigh->clear();
     _vertexLow->clear();
+    _drawArrays->setCount(0);
   }
 
-  void dirtyVertexData(unsigned int newNumPoints)
+  void dirtyVertexData()
   {
-    _numPoints = newNumPoints;
-
-    // Dirty vertex arrays to indicate they've changed
+    // Dirty arrays to indicate they've changed
     _vertexHigh->dirty();
     _vertexLow->dirty();
-
-    // Update number of points to draw
-    if (_numPoints == 0) _geom->setNodeMask(0);
-    else
-    {
-      _geom->setNodeMask(~0);
-      _drawArrays->setCount(_numPoints);
-      _drawArrays->dirty();
-      _geom->dirtyBound();
-    }
+    _drawArrays->dirty();
+    _geom->dirtyBound();
   }
 
   void processPoints(unsigned int newNumPoints)
   {
+    // Make space for new points
+    if (newNumPoints > _vertexHigh->size())
+    {
+      unsigned int newSize = std::ceil((double)newNumPoints / (double)_batchSize);
+      newSize *= _batchSize;
+      _vertexHigh->resize(newSize);
+      _vertexLow->resize(newSize);
+    }
+
     // Process each new point
     osg::Vec3d newPoint;
     osg::Vec3f high, low;
-    for (unsigned int i = _numPoints; i < newNumPoints; ++i)
+    for (unsigned int i = _drawArrays->getCount(); i < newNumPoints; ++i)
     {
       _traj->getPoint(i, _ca->getDataSource(), newPoint._v); // Get current point
 
       // Split point into high and low portions to support GPU-based RTE rendering
       OpenFrames::DS_Split(newPoint, high, low);
-      _vertexHigh->push_back(high);
-      _vertexLow->push_back(low);
+      (*_vertexHigh)[i] = high;
+      (*_vertexLow)[i] = low;
     }
+    _drawArrays->setCount(newNumPoints);
   }
 
-  unsigned int _numPoints;
   bool _dataAdded, _dataCleared;
+  unsigned int _batchSize;
+  double _lastUpdateTime, _lastRunTime;
 
   osg::Geometry* _geom;
   osg::Vec3Array* _vertexHigh;
@@ -201,6 +221,7 @@ CurveArtist::CurveArtist(const Trajectory *traj)
   geom->setVertexAttribArray(OF_VERTEXLOW, new osg::Vec3Array(), osg::Array::BIND_PER_VERTEX);
   geom->setColorArray(_lineColors);
   geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_STRIP, 0, 0));
+  geom->getOrCreateVertexBufferObject()->setUsage(GL_DYNAMIC_DRAW);
   addDrawable(geom);
 
   // Add callback that updates our geometry when the Trajectory changes
