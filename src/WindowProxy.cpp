@@ -1016,12 +1016,6 @@ namespace OpenFrames
       }
     }
     
-    // Close the graphics context before exiting this thread. If this is
-    // not done, then the graphics context will be released when this
-    // WindowProxy is destroyed. This could result in a seg fault if
-    // the context is already destroyed before OSG can release it.
-    _window->close();
-    
     // Shutdown OpenVR if needed
     if (_useVR) _ovrDevice->shutdownVR();
     

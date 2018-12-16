@@ -172,9 +172,6 @@ namespace OpenFrames
   class OF_EXPORT WindowProxy : public OpenThreads::Thread, public osg::Referenced
   {
   public:
-    // A list of RenderRectangles for each grid position
-    typedef std::vector<osg::ref_ptr<RenderRectangle> > RenderList;
-    
     WindowProxy(int x, int y,
                 unsigned int width, unsigned int height,
                 unsigned int nrow, unsigned int ncol,
@@ -391,13 +388,14 @@ namespace OpenFrames
     
     bool _isEmbedded; // True if the user wants to provide their own OpenGL window
     
-    RenderList _renderList;  // List of subwindows to be rendered
+    /** The CompositeViewer handles drawing several scenes onto a single drawing surface (a window). */
+    osg::ref_ptr<osgViewer::CompositeViewer> _viewer;
+
+    typedef std::vector<osg::ref_ptr<RenderRectangle>> RenderList;
+    RenderList _renderList;  // List of RenderRectangles for each grid position
     
     typedef std::set<FrameManager*> SceneSet;
     SceneSet _scenes; // Set of all unique scenes
-    
-    /** The CompositeViewer handles drawing several scenes onto a single drawing surface (a window) */
-    osg::ref_ptr<osgViewer::CompositeViewer> _viewer;
     
     /** The GraphicsWindow is the actual window that is drawn onto */
     osg::ref_ptr<osgViewer::GraphicsWindow> _window;
