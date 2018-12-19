@@ -40,10 +40,6 @@ namespace OpenFrames
     _traits->y = y;
     _traits->width = width;
     _traits->height = height;
-    
-    setState( new osg::State ); // State tracks current OpenGL state
-    getState()->setGraphicsContext(this);
-    getState()->setContextID(osg::GraphicsContext::createNewContextID());
   }
   
   EmbeddedGraphics::~EmbeddedGraphics() {}
@@ -578,6 +574,10 @@ namespace OpenFrames
   {
     if(_isEmbedded) // For embedded windows, just set the window to our embedded GraphicsContext
     {
+      osg::State* state = new osg::State; // Tracks current OpenGL state
+      _embeddedGraphics->setState(state); 
+      state->setGraphicsContext(_embeddedGraphics);
+      state->setContextID(osg::GraphicsContext::createNewContextID());
       _window = _embeddedGraphics.get();
     }
     else // Otherwise create a new window for OpenGL graphics
