@@ -20,6 +20,7 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     DescendantTracker.cpp
     DistanceAccumulator.cpp
     DrawableTrajectory.cpp
+    FocalPointShadowMap.cpp
     FramePathVerifier.cpp
     FramePointer.cpp
     FrameTracker.cpp
