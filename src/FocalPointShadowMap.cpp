@@ -65,62 +65,46 @@ static const char fragmentShaderSource_withBaseTexture[] =
 
 //  Step 1: Determine the minimum amount of light this fragment is guaranteed to see
 "   float minVisibility = 1.0; \n"
-"   vec2 pEyeDepth = vec2(gl_TexCoord[1].w); \n" // Fragment's penumbral eye-space depth
-"   vec2 uEyeDepth = vec2(gl_TexCoord[2].w); \n" // Fragment's umbral eye-space depth
+"   vec4 pTexCoord = gl_TexCoord[1]; \n"
+"   vec4 uTexCoord = gl_TexCoord[2]; \n"
 
 //  -- If fragment is outside penumbra then it sees all of the light
-"   if((gl_TexCoord[1].w <= 0.0) || \n" // Behind penumbral focal point
-"      any(lessThanEqual(gl_TexCoord[1].xy, vec2(0.0))) || \n" // Outside penumbral left/bottom bounds
-"      any(greaterThanEqual(gl_TexCoord[1].xy, pEyeDepth))) \n" // Outside penumbra; right/top bounds
+"   if((pTexCoord.w <= 0.0) || \n" // Behind penumbral focal point
+"      any(lessThanEqual(pTexCoord.xy, vec2(0.0))) || \n" // Outside penumbral left/bottom bounds
+"      any(greaterThanEqual(pTexCoord.xy, vec2(pTexCoord.w)))) \n" // Outside penumbra; right/top bounds
 "   { \n"
 "     minVisibility = 1.0; \n"
 "   } \n"
 
-//  -- If fragment is inside penumbra and in front of umbral focal point
-//  -- then determine how much penumbral light it is guaranteed to see
-"   else if(gl_TexCoord[2].w > 0.0) \n"
-"   { \n"
-//    TexCoords are in range [0, 1], so recover clip-space coordinates in range [-1, 1]
-"     vec2 pClipCoord = (gl_TexCoord[1].xy / pEyeDepth) * 2.0 - 1.0; \n"
-"     vec2 uClipCoord = (gl_TexCoord[2].xy / uEyeDepth) * 2.0 - 1.0; \n"
-"     float pRatio = length(pClipCoord); \n" // Assumes circular light (implicit divide by 1)
-"     float uRatio = length(uClipCoord); \n"
-
-//    Penumbra only exists outside umbra
-"     if((uRatio < 1.0) || (pRatio >= uRatio)) minVisibility = 0.0; \n"
-"     else minVisibility = pRatio * (uRatio - 1.0) / (uRatio - pRatio); \n"
-"   } \n"
-
-//  -- If fragment is inside penumbra and behind umbral focal point (i.e. antumbra)
-//  -- then determine how much light it is guaranteed to see
+//  -- If fragment is inside penumbra then determine how much light it is guaranteed to see
+//  -- based on whether it is also in umbra or antumbra
 "   else \n"
 "   { \n"
-//    TexCoords are in range [0, 1], so recover clip-space coordinates in range [-1, 1]
-"     vec2 pClipCoord = (gl_TexCoord[1].xy / pEyeDepth) * 2.0 - 1.0; \n"
-"     vec2 uClipCoord = (gl_TexCoord[2].xy / uEyeDepth) * 2.0 - 1.0; \n"
+//    TexCoords are in range [0, w], so recover clip-space coordinates in range [-1, 1]
+"     vec2 pClipCoord = (pTexCoord.xy / pTexCoord.w) * 2.0 - 1.0; \n"
+"     vec2 uClipCoord = (uTexCoord.xy / uTexCoord.w) * 2.0 - 1.0; \n"
 "     float pRatio = length(pClipCoord); \n" // Assumes circular light (implicit divide by 1)
 "     float uRatio = length(uClipCoord); \n"
 
-"     float coveredLightArea = 1.0; \n"
-"     if(gl_TexCoord[2].w < 0.0) coveredLightArea = osgShadow_sizeRatio * (-gl_TexCoord[2].w + osgShadow_umbraDistance + osgShadow_lightDistance) / (-gl_TexCoord[2].w + osgShadow_umbraDistance); \n"
-"     float minUmbraVisibility = 1.0 - coveredLightArea*coveredLightArea; \n"
+//    Compute amount of guaranteed visible light in umbra/antumbra
+"     float uBlockedLight = 1.0; \n" // No guaranteed visible light in umbra
+"     if(uTexCoord.w < 0.0) uBlockedLight = osgShadow_sizeRatio * (-uTexCoord.w + osgShadow_umbraDistance + osgShadow_lightDistance) / (-uTexCoord.w + osgShadow_umbraDistance); \n"
+"     float uMinVisibility = 1.0 - uBlockedLight*uBlockedLight; \n"
 
-"     if((uRatio < 1.0) || (pRatio >= uRatio)) minVisibility = minUmbraVisibility; \n"
+"     if((uRatio < 1.0) || (pRatio >= uRatio)) minVisibility = uMinVisibility; \n"
 "     else \n"
 "     { \n"
 "       minVisibility = pRatio * (uRatio - 1.0) / (uRatio - pRatio); \n"
-"       minVisibility = minUmbraVisibility + minVisibility*(1.0 - minUmbraVisibility); \n"
+"       minVisibility = uMinVisibility + minVisibility*(1.0 - uMinVisibility); \n"
 "     } \n"
+
+//    In antumbra the texture lookup is reversed, so reverse texcoords preemptively
+"     if(uTexCoord.w < 0.0) uTexCoord.xyz = -uTexCoord.xyz + vec3(uTexCoord.w, uTexCoord.w, 0.0); \n"
 "   } \n"
 
 //  Step 2: Compute umbral and penumbral visibility
-"   vec4 pVisibility = shadow2DProj(osgShadow_penumbraTexture, gl_TexCoord[1]); \n"
-"   vec4 uVisibility = shadow2DProj(osgShadow_umbraTexture, gl_TexCoord[2]); \n"
-//"   if((minVisibility > 0.0) && (gl_TexCoord[2].w > 0.00001)) \n" // Outside umbra
-"   if(minVisibility > 0.0) \n" // Outside umbra
-"   { \n"
-"     uVisibility = vec4(1.0); \n"
-"   } \n"
+"   vec4 pVisibility = shadow2DProj(osgShadow_penumbraTexture, pTexCoord); \n"
+"   vec4 uVisibility = shadow2DProj(osgShadow_umbraTexture, uTexCoord); \n"
 
 //"   pVisibility.gb = vec2(0.0); \n"
 //"   uVisibility.rg = vec2(0.0); \n"
