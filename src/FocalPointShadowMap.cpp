@@ -55,64 +55,51 @@ static const char fragmentShaderSource_withBaseTexture[] =
 "uniform sampler2DShadow osgShadow_penumbraTexture; \n"
 "uniform sampler2DShadow osgShadow_umbraTexture; \n"
 "uniform vec2 osgShadow_ambientBias; \n"
-"uniform float osgShadow_umbraDistance; \n"
-"uniform float osgShadow_lightDistance; \n"
-"uniform float osgShadow_sizeRatio; \n"
-"\n"
+"uniform float osgShadow_umbraDistance; \n" // Distance from umbral focal point to center of shadowing body
+"uniform float osgShadow_lightDistance; \n" // Distance from shadowing body center to light center
+"uniform float osgShadow_sizeRatio; \n"     // Ratio of shadowing body radius to light radius
+
 "void main(void) \n"
 "{ \n"
-"   vec4 color = gl_Color * texture2D( osgShadow_baseTexture, gl_TexCoord[0].xy ); \n"
+//  Get base fragment color, which will be attenuated based on visible light
+"   vec4 color = gl_Color * texture2D(osgShadow_baseTexture, gl_TexCoord[0].xy); \n"
 
-//  Step 1: Determine the minimum amount of light this fragment is guaranteed to see
-"   float minVisibility = 1.0; \n"
+//  TexCoords are in range [0, w], so recover clip-space coordinates in range [-1, 1]
 "   vec4 pTexCoord = gl_TexCoord[1]; \n"
 "   vec4 uTexCoord = gl_TexCoord[2]; \n"
+"   vec2 pClipCoord = (pTexCoord.xy / pTexCoord.w) * 2.0 - 1.0; \n"
+"   vec2 uClipCoord = (uTexCoord.xy / uTexCoord.w) * 2.0 - 1.0; \n"
+"   float pRatio = length(pClipCoord); \n" // Assumes circular light due to implicit divide by 1
+"   float uRatio = length(uClipCoord); \n" // TODO: For square light divide by distance to square edge
 
-//  -- If fragment is outside penumbra then it sees all of the light
-"   if((pTexCoord.w <= 0.0) || \n" // Behind penumbral focal point
-"      any(lessThanEqual(pTexCoord.xy, vec2(0.0))) || \n" // Outside penumbral left/bottom bounds
-"      any(greaterThanEqual(pTexCoord.xy, vec2(pTexCoord.w)))) \n" // Outside penumbra; right/top bounds
-"   { \n"
-"     minVisibility = 1.0; \n"
-"   } \n"
+//  Compute amount of guaranteed visible light in umbra/antumbra
+//  This is always zero in umbra, and asymptotically increases with distance in antumbra
+"   float uDistance = max(-uTexCoord.w, 0.0); \n" // z-distance from fragment to umbra focal point
+"   float uBlockedLight = osgShadow_sizeRatio * (uDistance + osgShadow_umbraDistance + osgShadow_lightDistance) / (uDistance + osgShadow_umbraDistance); \n"
+"   float uMinVisibility = 1.0 - uBlockedLight*uBlockedLight; \n"
 
-//  -- If fragment is inside penumbra then determine how much light it is guaranteed to see
-//  -- based on whether it is also in umbra or antumbra
-"   else \n"
-"   { \n"
-//    TexCoords are in range [0, w], so recover clip-space coordinates in range [-1, 1]
-"     vec2 pClipCoord = (pTexCoord.xy / pTexCoord.w) * 2.0 - 1.0; \n"
-"     vec2 uClipCoord = (uTexCoord.xy / uTexCoord.w) * 2.0 - 1.0; \n"
-"     float pRatio = length(pClipCoord); \n" // Assumes circular light (implicit divide by 1)
-"     float uRatio = length(uClipCoord); \n"
+//  Determine the minimum amount of light this fragment is guaranteed to see base on whether
+//  it is in penumbra, umbra, or antumbra. Number in range [uMinVisibility, 1.0]
+"   float lightMinVisibility = 1.0; \n" // Assume full light visibility unless computed otherwise
+"   uRatio = max(uRatio, 1.0); \n" // Anything less than 1 will use uMinVisibility anyway
+"   if(pTexCoord.w > 0.0) lightMinVisibility = pRatio * (uRatio - 1.0) / (uRatio - pRatio); \n"
+"   lightMinVisibility = clamp(lightMinVisibility, 0.0, 1.0); \n"
+"   lightMinVisibility = uMinVisibility + lightMinVisibility*(1.0 - uMinVisibility); \n"
 
-//    Compute amount of guaranteed visible light in umbra/antumbra
-"     float uBlockedLight = 1.0; \n" // No guaranteed visible light in umbra
-"     if(uTexCoord.w < 0.0) uBlockedLight = osgShadow_sizeRatio * (-uTexCoord.w + osgShadow_umbraDistance + osgShadow_lightDistance) / (-uTexCoord.w + osgShadow_umbraDistance); \n"
-"     float uMinVisibility = 1.0 - uBlockedLight*uBlockedLight; \n"
+//  In antumbra the texture lookup is reversed, so reverse texcoords preemptively
+"   if(uTexCoord.w < 0.0) uTexCoord.xyz = -uTexCoord.xyz + vec3(uTexCoord.w, uTexCoord.w, 0.0); \n"
 
-"     if((uRatio < 1.0) || (pRatio >= uRatio)) minVisibility = uMinVisibility; \n"
-"     else \n"
-"     { \n"
-"       minVisibility = pRatio * (uRatio - 1.0) / (uRatio - pRatio); \n"
-"       minVisibility = uMinVisibility + minVisibility*(1.0 - uMinVisibility); \n"
-"     } \n"
-
-//    In antumbra the texture lookup is reversed, so reverse texcoords preemptively
-"     if(uTexCoord.w < 0.0) uTexCoord.xyz = -uTexCoord.xyz + vec3(uTexCoord.w, uTexCoord.w, 0.0); \n"
-"   } \n"
-
-//  Step 2: Compute umbral and penumbral visibility
+//  Lookup umbral and penumbral visibility from their texture maps
 "   vec4 pVisibility = shadow2DProj(osgShadow_penumbraTexture, pTexCoord); \n"
 "   vec4 uVisibility = shadow2DProj(osgShadow_umbraTexture, uTexCoord); \n"
 
 //"   pVisibility.gb = vec2(0.0); \n"
 //"   uVisibility.rg = vec2(0.0); \n"
 
-//  Step 3: Compute fragment color
-"   gl_FragColor = color * (osgShadow_ambientBias.x + minVisibility * osgShadow_ambientBias.y); \n"
-"   vec4 dynamicVisibility = 0.5 * (pVisibility + uVisibility); \n"
-"   gl_FragColor += color * (1.0 - minVisibility) * dynamicVisibility * osgShadow_ambientBias.y; \n"
+//  Compute fragment color
+"   float minVisibility = osgShadow_ambientBias.x + lightMinVisibility * osgShadow_ambientBias.y; \n"
+"   vec4 shadowedVisibility = (1.0 - lightMinVisibility) * 0.5 * (pVisibility + uVisibility) * osgShadow_ambientBias.y; \n"
+"   gl_FragColor = color * (minVisibility + shadowedVisibility); \n"
 "}\n";
 
 //////////////////////////////////////////////////////////////////
@@ -256,7 +243,7 @@ namespace OpenFrames
       _texturePenumbra->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR);
       _texturePenumbra->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
       
-      // the shadow comparison should fail if object is outside the texture
+      // The shadow depth comparison should pass (i.e. not shadowed) if point is outside the penumbra texture
       _texturePenumbra->setWrap(osg::Texture2D::WRAP_S,osg::Texture2D::CLAMP_TO_BORDER);
       _texturePenumbra->setWrap(osg::Texture2D::WRAP_T,osg::Texture2D::CLAMP_TO_BORDER);
       _texturePenumbra->setBorderColor(osg::Vec4(1.0f,1.0f,1.0f,1.0f));
@@ -270,7 +257,7 @@ namespace OpenFrames
       _textureUmbra->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR);
       _textureUmbra->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
       
-      // the shadow comparison should fail if object is outside the texture
+      // The shadow depth comparison should pass (i.e. not shadowed) if point is outside the umbra texture
       _textureUmbra->setWrap(osg::Texture2D::WRAP_S,osg::Texture2D::CLAMP_TO_BORDER);
       _textureUmbra->setWrap(osg::Texture2D::WRAP_T,osg::Texture2D::CLAMP_TO_BORDER);
       _textureUmbra->setBorderColor(osg::Vec4(0.0f,0.0f,0.0f,0.0f));
