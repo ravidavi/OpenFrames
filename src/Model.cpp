@@ -24,6 +24,7 @@
 #include <osg/ShapeDrawable>
 #include <osgParticle/ParticleSystem>
 #include <osgDB/ReadFile>
+#include <osgVolume/Volume>
 #include <iostream>
 
 namespace OpenFrames
@@ -153,13 +154,26 @@ namespace OpenFrames
       if(_extras->getNumDrawables() > 0)
         _group->addChild(_extras.get());
     }
+
+    // If the model is an osgVolume tile then add a volume above it
+    bool rescaleNormals = true;
+    osg::ref_ptr<osgVolume::VolumeTile> volumeTile = dynamic_cast<osgVolume::VolumeTile*>(_model.get());
+    if (volumeTile)
+    {
+      OSG_NOTICE << "OpenFrames::Model loading volume" << std::endl;
+      rescaleNormals = false;
+      osg::ref_ptr<osgVolume::Volume> volume = new osgVolume::Volume;
+      volume->addChild(_model);
+      _model = volume;
+      _model->setName(filename);
+    }
     
     // Add the new model to this frame
     _modelXform->addChild(_model.get());
     _xform->addChild(_modelXform.get());
     
     // Rescale normals in case we want to scale the model
-    _model->getOrCreateStateSet()->setMode( GL_RESCALE_NORMAL, osg::StateAttribute::ON );
+    if(rescaleNormals) _model->getOrCreateStateSet()->setMode( GL_RESCALE_NORMAL, osg::StateAttribute::ON );
     
     // Set the model pivot at its geometric center, so that scales/rotations will make sense.
     osg::Vec3d center = _model->getBound()._center;
