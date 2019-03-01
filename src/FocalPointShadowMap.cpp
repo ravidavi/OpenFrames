@@ -505,30 +505,31 @@ namespace OpenFrames
         osg::Vec3d lightPos3(lightPos.x(), lightPos.y(), lightPos.z());
         osg::Vec3d lightToCenter = bb.center() - lightPos3;
         double lightDistance = lightToCenter.normalize();
+        double bbRadius = bb.radius();
         
-        double penumbraDistance = lightDistance / (_lightSize/bb.radius() + 1.0);
-        double penumbraZNear = penumbraDistance - bb.radius();
-        double penumbraZFar  = penumbraDistance + bb.radius();
-        double penumbraFOV = 2.0*std::asin(bb.radius() / penumbraDistance);
+        double penumbraDistance = lightDistance / (_lightSize/bbRadius + 1.0);
+        double penumbraZNear = penumbraDistance - bbRadius;
+        double penumbraZFar  = penumbraDistance + bbRadius;
+        double penumbraFOV = 2.0*std::asin(bbRadius / penumbraDistance);
 
         _cameraPenumbra->setViewMatrixAsLookAt(bb.center() - (lightToCenter * penumbraDistance), bb.center(), computeOrthogonalVector(lightToCenter));
         _cameraPenumbra->setProjectionMatrixAsPerspective(penumbraFOV * 180.0/osg::PI, 1.0, penumbraZNear, penumbraZFar);
         
-        double umbraDistance = lightDistance / (_lightSize/bb.radius() - 1.0);
-        double umbraZNear = umbraDistance - bb.radius();
-        double umbraZFar  = umbraDistance + bb.radius();
-        double umbraFOV = 2.0*std::asin(bb.radius() / umbraDistance);
+        double umbraDistance = lightDistance / (_lightSize/bbRadius - 1.0);
+        double umbraZNear = umbraDistance - bbRadius;
+        double umbraZFar  = umbraDistance + bbRadius;
+        double umbraFOV = 2.0*std::asin(bbRadius / umbraDistance);
         
         _lightDistanceUniform->set((float)lightDistance);
         _umbraDistanceUniform->set((float)umbraDistance);
-        _sizeRatioUniform->set((float)(bb.radius()/_lightSize));
+        _sizeRatioUniform->set((float)(bbRadius/_lightSize));
 
         _cameraUmbra->setViewMatrixAsLookAt(bb.center() + (lightToCenter * umbraDistance), bb.center(), computeOrthogonalVector(-lightToCenter));
         _cameraUmbra->setProjectionMatrixAsPerspective(umbraFOV * 180.0/osg::PI, 1.0, umbraZNear, umbraZFar);
         
-        //std::cout<< "lightDistance = " << lightDistance << ", penumbraDistance = " << penumbraDistance << ", bb radius = " << bb.radius() << ", Penumbra fov (deg) = " << penumbraFOV * 180.0/osg::PI << std::endl;
+        //std::cout<< "lightDistance = " << lightDistance << ", penumbraDistance = " << penumbraDistance << ", bb radius = " << bbRadius << ", Penumbra fov (deg) = " << penumbraFOV * 180.0/osg::PI << std::endl;
 
-        //std::cout<< "lightDistance = " << lightDistance << ", umbraDistance = " << umbraDistance << ", bb radius = " << bb.radius() << ", Umbra fov (deg) = " << umbraFOV * 180.0/osg::PI << std::endl;
+        //std::cout<< "lightDistance = " << lightDistance << ", umbraDistance = " << umbraDistance << ", bb radius = " << bbRadius << ", Umbra fov (deg) = " << umbraFOV * 180.0/osg::PI << std::endl;
 
       }
       else    // directional light
@@ -536,20 +537,21 @@ namespace OpenFrames
         // make an orthographic projection
         osg::Vec3d ortho_lightDir(lightPos.x(), lightPos.y(), lightPos.z());
         ortho_lightDir.normalize();
+        double bbRadius = bb.radius();
         
         // set the position far away along the light direction
-        double centerDistance = bb.radius();
+        double centerDistance = bbRadius;
         osg::Vec3d position = bb.center() + ortho_lightDir * centerDistance;
         
-        double znear = centerDistance-bb.radius();
-        double zfar  = centerDistance+bb.radius();
+        double znear = centerDistance-bbRadius;
+        double zfar  = centerDistance+bbRadius;
         //double zNearRatio = 0.001;
         //if (znear<zfar*zNearRatio) znear = zfar*zNearRatio;
         
-        double top   = bb.radius();
+        double top   = bbRadius;
         double right = top;
         
-        //std::cout<< "centerDistance = " << centerDistance << ", bb radius = " << bb.radius() << std::endl;
+        //std::cout<< "centerDistance = " << centerDistance << ", bb radius = " << bbRadius << std::endl;
         
         _cameraPenumbra->setProjectionMatrixAsOrtho(-right, right, -top, top, znear, zfar);
         _cameraPenumbra->setViewMatrixAsLookAt(position,bb.center(),computeOrthogonalVector(ortho_lightDir));
