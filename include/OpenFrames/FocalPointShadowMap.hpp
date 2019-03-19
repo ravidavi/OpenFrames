@@ -115,7 +115,6 @@ namespace OpenFrames
     osg::ref_ptr<osg::Camera>       _cameraPenumbra;
     osg::ref_ptr<osg::Camera>       _cameraUmbra;
     osg::ref_ptr<osg::Texture2D>    _texturePenumbraDepth;
-    osg::ref_ptr<osg::Texture2D>    _texturePenumbraColor;
     osg::ref_ptr<osg::Texture2D>    _textureUmbraDepth;
     osg::ref_ptr<osg::TexGen>       _texgenPenumbra;
     osg::ref_ptr<osg::TexGen>       _texgenUmbra;
@@ -129,6 +128,7 @@ namespace OpenFrames
     osg::ref_ptr<osg::Uniform>      _umbraDistanceUniform;
     osg::ref_ptr<osg::Uniform>      _lightDistanceUniform;
     osg::ref_ptr<osg::Uniform>      _sizeRatioUniform;
+    osg::ref_ptr<osg::Uniform>      _texelSizeUniform;
     UniformList                     _uniformList;
     ShaderList                      _shaderList;
     ShaderList                      _shaderListShadowPass;

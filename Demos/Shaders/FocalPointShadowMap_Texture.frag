@@ -2,33 +2,42 @@
 //
 uniform sampler2D osgShadow_baseTexture;
 uniform sampler2DShadow osgShadow_penumbraDepthTexture;
-uniform sampler2D osgShadow_penumbraColorTexture;
 uniform sampler2DShadow osgShadow_umbraDepthTexture;
 uniform vec2 osgShadow_ambientBias;
 uniform float osgShadow_umbraDistance;  // Distance from umbral focal point to center of shadowing body
 uniform float osgShadow_lightDistance;  // Distance from shadowing body center to light center
 uniform float osgShadow_sizeRatio;      // Ratio of shadowing body radius to light radius
+uniform vec2 osgShadow_texelSize;       // Size of each texel in normalized device coordinates (NDC)
 
 vec4 pTexCoord = gl_TexCoord[1];
 vec4 uTexCoord = gl_TexCoord[2];
 
-float chebyshevUpperBound()
+float uVisibility_PCF()
 {
-  vec2 momentsPenumbra = texture2D(osgShadow_penumbraColorTexture, pTexCoord.xy).rg;
-  
-  // Surface is fully lit since the current fragment is before the light occluder
-  if ((momentsPenumbra.r == 1.0) || (pTexCoord.z <= momentsPenumbra.r))
-    return 1.0;
-  
-  // The fragment is either in shadow or penumbra. We now use chebyshev's upperBound to check
-  // How likely this pixel is to be lit (p_max)
-  float variance = momentsPenumbra.g - (momentsPenumbra.r*momentsPenumbra.r);
-  variance = max(variance,0.00002);
-  
-  float d = pTexCoord.z - momentsPenumbra.r;
-  float p_max = variance / (variance + d*d);
-  
-  return p_max;
+  const int maxPointID = 2;
+  const float numPoints = 2.0*float(maxPointID) + 1.0;
+  float uVisibility = 0.0;
+  for(int x = -maxPointID; x <= maxPointID; ++x){
+    for(int y = -maxPointID; y <= maxPointID; ++y){
+      vec2 off = 2.0*vec2(x,y) * osgShadow_texelSize;
+      uVisibility += shadow2D(osgShadow_umbraDepthTexture, uTexCoord.xyz + vec3(off, 0.0)).r;
+    }
+  }
+  return uVisibility / (numPoints * numPoints);
+}
+
+float pVisibility_PCF()
+{
+  const int maxPointID = 2;
+  const float numPoints = 2.0*float(maxPointID) + 1.0;
+  float pVisibility = 0.0;
+  for(int x = -maxPointID; x <= maxPointID; ++x){
+    for(int y = -maxPointID; y <= maxPointID; ++y){
+      vec2 off = 2.0*vec2(x,y) * osgShadow_texelSize;
+      pVisibility += shadow2D(osgShadow_penumbraDepthTexture, pTexCoord.xyz + vec3(off, 0.0)).r;
+    }
+  }
+  return pVisibility / (numPoints * numPoints);
 }
 
 void main(void)
@@ -62,15 +71,14 @@ void main(void)
   if(uTexCoord.w < 0.0) uTexCoord.xyz = -uTexCoord.xyz + vec3(1.0, 1.0, 0.0);
   
   // Lookup umbral and penumbral visibility from their texture maps
-  float pVisibility = shadow2D(osgShadow_penumbraDepthTexture, pTexCoord.xyz).r;
-  float uVisibility = shadow2D(osgShadow_umbraDepthTexture, uTexCoord.xyz).r;
-  //float pTextureDepth = texture2D(osgShadow_penumbraColorTexture, pTexCoord.xy).r;
-  //float pVisibilityFromColor = ((pTextureDepth < 1.0) && (pTextureDepth < pTexCoord.z)) ? 0.0 : 1.0;
-  float pVisibilityFromColor = chebyshevUpperBound();
+  float uVisibility = 0.0, pVisibility = 0.0;
+  //pVisibility = shadow2D(osgShadow_penumbraDepthTexture, pTexCoord.xyz).r;
+  //uVisibility = shadow2D(osgShadow_umbraDepthTexture, uTexCoord.xyz).r;
+  uVisibility = uVisibility_PCF();
+  pVisibility = pVisibility_PCF();
   
   // Compute fragment color
   float minVisibility = osgShadow_ambientBias.x + lightMinVisibility * osgShadow_ambientBias.y;
-  float shadowedVisibility = (1.0 - lightMinVisibility) * 0.5 * (pVisibilityFromColor + uVisibility) * osgShadow_ambientBias.y;
+  float shadowedVisibility = (1.0 - lightMinVisibility) * 0.5 * (pVisibility + uVisibility) * osgShadow_ambientBias.y;
   gl_FragColor = color * (minVisibility + shadowedVisibility);
-  //gl_FragColor = color * (1.0 - pVisibilityFromColor);
 }

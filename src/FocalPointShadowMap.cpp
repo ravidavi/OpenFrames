@@ -19,20 +19,15 @@
  */
 
 #include <OpenFrames/FocalPointShadowMap.hpp>
-#include <osgShadow/ShadowedScene>
-#include <osg/Notify>
 #include <osg/ComputeBoundsVisitor>
 #include <osg/PolygonOffset>
 #include <osg/CullFace>
-#include <osg/io_utils>
-
-#include <iostream>
 #include <osg/LightSource>
 #include <osg/PolygonMode>
 #include <osg/Geometry>
 #include <osg/Depth>
 #include <osgDB/ReadFile>
-#include <osgText/Text>
+#include <osgShadow/ShadowedScene>
 
 //////////////////////////////////////////////////////////////////
 // fragment shader when there is no base texture
@@ -85,7 +80,6 @@ namespace OpenFrames
     osg::resizeGLObjectBuffers(_cameraPenumbra, maxSize);
     osg::resizeGLObjectBuffers(_texgenPenumbra, maxSize);
     osg::resizeGLObjectBuffers(_texturePenumbraDepth, maxSize);
-    osg::resizeGLObjectBuffers(_texturePenumbraColor, maxSize);
     osg::resizeGLObjectBuffers(_cameraUmbra, maxSize);
     osg::resizeGLObjectBuffers(_texgenUmbra, maxSize);
     osg::resizeGLObjectBuffers(_textureUmbraDepth, maxSize);
@@ -105,7 +99,6 @@ namespace OpenFrames
     osg::releaseGLObjects(_cameraPenumbra, state);
     osg::releaseGLObjects(_texgenPenumbra, state);
     osg::releaseGLObjects(_texturePenumbraDepth, state);
-    osg::releaseGLObjects(_texturePenumbraColor, state);
     osg::releaseGLObjects(_cameraUmbra, state);
     osg::releaseGLObjects(_texgenUmbra, state);
     osg::releaseGLObjects(_textureUmbraDepth, state);
@@ -135,13 +128,11 @@ namespace OpenFrames
     
     unsigned int baseShadowTextureUnit = _shadowedScene->getShadowSettings()->getBaseShadowTextureUnit();
     osg::Uniform* penumbraDepthTextureSampler = new osg::Uniform("osgShadow_penumbraDepthTexture", (int)baseShadowTextureUnit);
-    osg::Uniform* penumbraColorTextureSampler = new osg::Uniform("osgShadow_penumbraColorTexture", (int)baseShadowTextureUnit+2);
     osg::Uniform* umbraTextureSampler = new osg::Uniform("osgShadow_umbraDepthTexture", (int)(baseShadowTextureUnit+1));
     _uniformList.push_back(penumbraDepthTextureSampler);
-    _uniformList.push_back(penumbraColorTextureSampler);
     _uniformList.push_back(umbraTextureSampler);
     
-    _ambientBiasUniform = new osg::Uniform("osgShadow_ambientBias",_ambientBias);
+    _ambientBiasUniform = new osg::Uniform("osgShadow_ambientBias", _ambientBias);
     _uniformList.push_back(_ambientBiasUniform.get());
     
     _umbraDistanceUniform = new osg::Uniform(osg::Uniform::FLOAT, "osgShadow_umbraDistance");
@@ -152,6 +143,10 @@ namespace OpenFrames
 
     _sizeRatioUniform = new osg::Uniform(osg::Uniform::FLOAT, "osgShadow_sizeRatio");
     _uniformList.push_back(_sizeRatioUniform.get());
+    
+    const osg::Vec2s& textureSize = _shadowedScene->getShadowSettings()->getTextureSize();
+    _texelSizeUniform = new osg::Uniform("osgShadow_texelSize", osg::Vec2(1.0/textureSize.x(), 1.0/textureSize.y()));
+    _uniformList.push_back(_texelSizeUniform.get());
   }
   
   void FocalPointShadowMap::createShaders()
@@ -163,14 +158,14 @@ namespace OpenFrames
       if(vertex_shader.valid())
       {
         vertex_shader->setName("shadowpassvert");
-        _shaderListShadowPass.push_back(vertex_shader);
+        //_shaderListShadowPass.push_back(vertex_shader);
       }
       
       osg::ref_ptr<osg::Shader> fragment_shader = osgDB::readRefShaderFile(osg::Shader::FRAGMENT, "Shaders/FocalPointShadowMap_Shadow.frag");
       if(fragment_shader.valid())
       {
         fragment_shader->setName("shadowpassfrag");
-        _shaderListShadowPass.push_back(fragment_shader);
+        //_shaderListShadowPass.push_back(fragment_shader);
       }
     }
     
@@ -220,18 +215,6 @@ namespace OpenFrames
       _texturePenumbraDepth->setWrap(osg::Texture2D::WRAP_T,osg::Texture2D::CLAMP_TO_BORDER);
       _texturePenumbraDepth->setBorderColor(osg::Vec4(1.0f,1.0f,1.0f,1.0f));
       
-      _texturePenumbraColor = new osg::Texture2D;
-      _texturePenumbraColor->setTextureSize(textureSize.x(), textureSize.y());
-      _texturePenumbraColor->setInternalFormat(GL_RG32F);
-      _texturePenumbraColor->setSourceFormat(GL_RG);
-      _texturePenumbraColor->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR);
-      _texturePenumbraColor->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
-      
-      // The shadow depth comparison should pass (i.e. not shadowed) if point is outside the penumbra texture
-      _texturePenumbraColor->setWrap(osg::Texture2D::WRAP_S,osg::Texture2D::CLAMP_TO_BORDER);
-      _texturePenumbraColor->setWrap(osg::Texture2D::WRAP_T,osg::Texture2D::CLAMP_TO_BORDER);
-      _texturePenumbraColor->setBorderColor(osg::Vec4(1.0f,1.0f,1.0f,1.0f));
-      
       _textureUmbraDepth = new osg::Texture2D;
       _textureUmbraDepth->setTextureSize(textureSize.x(), textureSize.y());
       _textureUmbraDepth->setInternalFormat(GL_DEPTH_COMPONENT);
@@ -253,15 +236,13 @@ namespace OpenFrames
       _cameraPenumbra = new osg::Camera;
       _cameraPenumbra->setReferenceFrame(osg::Camera::ABSOLUTE_RF_INHERIT_VIEWPOINT);
       _cameraPenumbra->setCullCallback(new CameraCullCallback(this));
-      _cameraPenumbra->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      _cameraPenumbra->setClearColor(osg::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+      _cameraPenumbra->setClearMask(GL_DEPTH_BUFFER_BIT);
       _cameraPenumbra->setClearDepth(1.0); // Penumbra wants to know closest depth, so initialize to farthest depth
       _cameraPenumbra->setComputeNearFarMode(osg::Camera::DO_NOT_COMPUTE_NEAR_FAR);
       _cameraPenumbra->setViewport(0, 0, textureSize.x(), textureSize.y());
       _cameraPenumbra->setRenderOrder(osg::Camera::PRE_RENDER); // Render before main camera
       _cameraPenumbra->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT); // Use OpenGL FBO
       _cameraPenumbra->attach(osg::Camera::DEPTH_BUFFER, _texturePenumbraDepth.get()); // Use texture as depth buffer
-      _cameraPenumbra->attach(osg::Camera::COLOR_BUFFER0, _texturePenumbraColor.get()); // Use texture as color buffer
       
       osg::StateSet* stateset = _cameraPenumbra->getOrCreateStateSet();
       
@@ -289,7 +270,6 @@ namespace OpenFrames
       _cameraUmbra->setReferenceFrame(osg::Camera::ABSOLUTE_RF_INHERIT_VIEWPOINT);
       _cameraUmbra->setCullCallback(new CameraCullCallback(this));
       _cameraUmbra->setClearMask(GL_DEPTH_BUFFER_BIT);
-      _cameraUmbra->setClearColor(osg::Vec4(1.0f,1.0f,1.0f,1.0f));
       _cameraUmbra->setClearDepth(0.0); // Umbra wants to know farthest depth, so initialize to closest depth
       _cameraUmbra->setComputeNearFarMode(osg::Camera::DO_NOT_COMPUTE_NEAR_FAR);
       _cameraUmbra->setViewport(0, 0, textureSize.x(), textureSize.y());
@@ -339,12 +319,6 @@ namespace OpenFrames
       _stateset->setTextureMode(baseShadowTextureUnit, GL_TEXTURE_GEN_T, osg::StateAttribute::ON);
       _stateset->setTextureMode(baseShadowTextureUnit, GL_TEXTURE_GEN_R, osg::StateAttribute::ON);
       _stateset->setTextureMode(baseShadowTextureUnit, GL_TEXTURE_GEN_Q, osg::StateAttribute::ON);
-      
-      _stateset->setTextureAttributeAndModes(baseShadowTextureUnit+2, _texturePenumbraColor.get(),osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-      _stateset->setTextureMode(baseShadowTextureUnit+2, GL_TEXTURE_GEN_S, osg::StateAttribute::ON);
-      _stateset->setTextureMode(baseShadowTextureUnit+2, GL_TEXTURE_GEN_T, osg::StateAttribute::ON);
-      _stateset->setTextureMode(baseShadowTextureUnit+2, GL_TEXTURE_GEN_R, osg::StateAttribute::ON);
-      _stateset->setTextureMode(baseShadowTextureUnit+2, GL_TEXTURE_GEN_Q, osg::StateAttribute::ON);
       
       _stateset->setTextureAttributeAndModes(baseShadowTextureUnit+1, _textureUmbraDepth.get(),osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
       _stateset->setTextureMode(baseShadowTextureUnit+1, GL_TEXTURE_GEN_S, osg::StateAttribute::ON);
@@ -646,13 +620,13 @@ namespace OpenFrames
   ////////////////////////////////////////////////////////////////////////////////
   osg::ref_ptr<osg::Camera> FocalPointShadowMap::makeDebugHUD()
   {
-    osg::Texture2D *displayTexture = _texturePenumbraColor;
+    osg::Texture2D *displayTexture = _texturePenumbraDepth;
     
     // Make sure we attach initialized texture to HUD
     if( displayTexture == nullptr )
     {
       init();
-      displayTexture = _texturePenumbraColor;
+      displayTexture = _texturePenumbraDepth;
     }
     
     osg::ref_ptr<osg::Camera> camera = new osg::Camera;
@@ -680,7 +654,7 @@ namespace OpenFrames
     osg::Geometry *geometry = osg::createTexturedQuadGeometry(osg::Vec3(), osg::Vec3(size.x(), 0, 0), osg::Vec3(0, size.y(), 0));
     geode->addDrawable( geometry );
     
-    //geometry->setDrawCallback(new DrawableDrawWithDepthShadowComparisonOffCallback(displayTexture));
+    geometry->setDrawCallback(new DrawableDrawWithDepthShadowComparisonOffCallback(displayTexture));
     
     osg::StateSet* stateset = geode->getOrCreateStateSet();
     
@@ -691,7 +665,7 @@ namespace OpenFrames
     
     //shader for correct display
     osg::ref_ptr<osg::Program> program = new osg::Program;
-//    stateset->setAttribute(program.get());
+    stateset->setAttribute(program.get());
     osg::Shader* fragment_shader = new osg::Shader(osg::Shader::FRAGMENT, fragmentShaderSource_debugHUD);
     program->addShader(fragment_shader);
     
