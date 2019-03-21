@@ -137,6 +137,12 @@ namespace OpenFrames
     
     _umbraDistanceUniform = new osg::Uniform(osg::Uniform::FLOAT, "osgShadow_umbraDistance");
     _uniformList.push_back(_umbraDistanceUniform.get());
+    
+    _umbraZNearFarInvUniform = new osg::Uniform(osg::Uniform::FLOAT_VEC2, "osgShadow_umbraZNearFarInv");
+    _uniformList.push_back(_umbraZNearFarInvUniform.get());
+    
+    _umbraZFarLightRatioUniform = new osg::Uniform(osg::Uniform::FLOAT, "osgShadow_umbraZFarLightRatio");
+    _uniformList.push_back(_umbraZFarLightRatioUniform.get());
 
     _lightDistanceUniform = new osg::Uniform(osg::Uniform::FLOAT, "osgShadow_lightDistance");
     _uniformList.push_back(_lightDistanceUniform.get());
@@ -424,7 +430,7 @@ namespace OpenFrames
     const osg::Light* selectedLight = 0;
     osg::Vec4d lightPos;
     
-    //MR testing giving a specific light
+    // Find desired light in scene, which must exist either within or before the shadowed scene in the scenegraph
     int desiredLightNum = _shadowedScene->getShadowSettings()->getLightNum();
     osgUtil::PositionalStateContainer::AttrMatrixList& aml = orig_rs->getPositionalStateContainer()->getAttrMatrixList();
     for(osgUtil::PositionalStateContainer::AttrMatrixList::iterator itr = aml.begin();
@@ -492,8 +498,10 @@ namespace OpenFrames
         double umbraZFar  = umbraDistance + bbRadius;
         double umbraFOV = 2.0*std::asin(bbRadius / umbraDistance);
         
+        _umbraZFarLightRatioUniform->set((float)(umbraZFar/lightDistance));
         _lightDistanceUniform->set((float)lightDistance);
         _umbraDistanceUniform->set((float)umbraDistance);
+        _umbraZNearFarInvUniform->set(osg::Vec2(1.0/umbraZNear, 1.0/umbraZFar));
         _sizeRatioUniform->set((float)(bbRadius/_lightSize));
 
         _cameraUmbra->setViewMatrixAsLookAt(bb.center() + (lightToCenter * umbraDistance), bb.center(), computeOrthogonalVector(-lightToCenter));
