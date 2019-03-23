@@ -628,13 +628,13 @@ namespace OpenFrames
   ////////////////////////////////////////////////////////////////////////////////
   osg::ref_ptr<osg::Camera> FocalPointShadowMap::makeDebugHUD()
   {
-    osg::Texture2D *displayTexture = _texturePenumbraDepth;
+    osg::Texture2D *displayTexture = _textureUmbraDepth;
     
     // Make sure we attach initialized texture to HUD
     if( displayTexture == nullptr )
     {
       init();
-      displayTexture = _texturePenumbraDepth;
+      displayTexture = _textureUmbraDepth;
     }
     
     osg::ref_ptr<osg::Camera> camera = new osg::Camera;
