@@ -140,9 +140,6 @@ namespace OpenFrames
     
     _umbraZNearFarInvUniform = new osg::Uniform(osg::Uniform::FLOAT_VEC2, "osgShadow_umbraZNearFarInv");
     _uniformList.push_back(_umbraZNearFarInvUniform.get());
-    
-    _umbraZFarLightRatioUniform = new osg::Uniform(osg::Uniform::FLOAT, "osgShadow_umbraZFarLightRatio");
-    _uniformList.push_back(_umbraZFarLightRatioUniform.get());
 
     _lightDistanceUniform = new osg::Uniform(osg::Uniform::FLOAT, "osgShadow_lightDistance");
     _uniformList.push_back(_lightDistanceUniform.get());
@@ -498,7 +495,6 @@ namespace OpenFrames
         double umbraZFar  = umbraDistance + bbRadius;
         double umbraFOV = 2.0*std::asin(bbRadius / umbraDistance);
         
-        _umbraZFarLightRatioUniform->set((float)(umbraZFar/lightDistance));
         _lightDistanceUniform->set((float)lightDistance);
         _umbraDistanceUniform->set((float)umbraDistance);
         _umbraZNearFarInvUniform->set(osg::Vec2(1.0/umbraZNear, 1.0/umbraZFar));

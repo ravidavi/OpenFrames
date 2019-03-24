@@ -6,7 +6,6 @@ uniform sampler2D osgShadow_umbraDepthTexture;
 uniform vec2  osgShadow_ambientBias;
 uniform float osgShadow_umbraDistance;       // Distance from umbral focal point to center of shadowing body
 uniform vec2  osgShadow_umbraZNearFarInv;    // Inverse of umbra near and far planes
-//uniform float osgShadow_umbraZFarLightRatio; // Ratio of umbra far plane to light distance
 uniform float osgShadow_lightDistance;       // Distance from shadowing body center to light center
 uniform float osgShadow_sizeRatio;           // Ratio of shadowing body radius to light radius
 uniform vec2  osgShadow_texelSize;           // Size of each texel in normalized device coordinates (NDC)
@@ -97,6 +96,7 @@ float BlockerDistance(sampler2D depthTex, vec4 texCoord, vec3 coverageCircle)
   }
   
   if(numBlockers == 0) return -1.0;
+  else if (numBlockers == numBlockerSearchSamples) return -2.0;
   else return Depth2Distance(avgBlockerDepth / float(numBlockers));
 
 }
@@ -108,7 +108,7 @@ float Visibility_ModifiedPCSS(sampler2D depthTex, vec4 texCoord, vec3 coverageCi
 {
   vec2 center = coverageCircle.xy; // Extract shadow coverage circle center
   float radius = coverageCircle.z; // Extract shadow coverage circle radius
-  int numPoints = 32;
+  int numPoints = 16;
   
   float visibility = 0.0;
   
@@ -121,7 +121,7 @@ float Visibility_ModifiedPCSS(sampler2D depthTex, vec4 texCoord, vec3 coverageCi
     vec2 offset = VogelDiskSample(i, numPoints, phi) * radius;
     sampleTexCoord.xy = center + offset;
     
-#if 0
+#if 1
     //visibility += shadow2D(depthTex, sampleTexCoord).r;
     float depth = texture2D(depthTex, sampleTexCoord.xy).r;
     visibility += ((depth == 0.0) || (depth <= sampleTexCoord.z)) ? 1.0 : 0.0;
@@ -230,8 +230,8 @@ void main(void)
   //float uVisibility = Visibility_PCF(osgShadow_umbraDepthTexture, uTexCoord);
   vec3 uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, 1.0/osgShadow_umbraZNearFarInv.y, osgShadow_umbraDistance + osgShadow_lightDistance);
   float blockerDistance = BlockerDistance(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle);
-  vec4 uVisibility = vec4(1.0);
-  if(blockerDistance != -1.0)
+  vec4 uVisibility = (blockerDistance == -2.0) ? vec4(0.0) : vec4(1.0);
+  if(blockerDistance >= 0.0)
   {
     uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, blockerDistance, osgShadow_umbraDistance + osgShadow_lightDistance);
     uVisibility = vec4(Visibility_ModifiedPCSS(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle));
