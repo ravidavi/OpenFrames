@@ -1,13 +1,17 @@
 // Fragment shader when there is a base texture
 //
+// Use GLSL 1.20 (OpenGL 2.1)
+#version 120
+
 uniform sampler2D osgShadow_baseTexture;
-uniform sampler2DShadow osgShadow_penumbraDepthTexture;
+uniform sampler2D osgShadow_penumbraDepthTexture;
 uniform sampler2D osgShadow_umbraDepthTexture;
 uniform vec2  osgShadow_ambientBias;
 uniform float osgShadow_umbraDistance;       // Distance from umbral focal point to center of shadowing body
 uniform vec2  osgShadow_umbraZNearFarInv;    // Inverse of umbra near and far planes
+uniform float osgShadow_penumbraDistance;    // Distance from penumbral focal point to center of shadowing body
+uniform vec2  osgShadow_penumbraZNearFarInv; // Inverse of penumbra near and far planes
 uniform float osgShadow_lightDistance;       // Distance from shadowing body center to light center
-uniform float osgShadow_sizeRatio;           // Ratio of shadowing body radius to light radius
 uniform vec2  osgShadow_texelSize;           // Size of each texel in normalized device coordinates (NDC)
 
 #define PI  3.14159265359
@@ -32,47 +36,51 @@ vec2 VogelDiskSample(int sampleIndex, int samplesCount, float phi)
   return vec2(r * sin(theta), r * cos(theta));
 }
 
-float Distance2Depth(float dist)
+float Distance2Depth(float dist, vec2 zNearFarInv)
 {
-  return (1.0/dist - osgShadow_umbraZNearFarInv.x)/(osgShadow_umbraZNearFarInv.y - osgShadow_umbraZNearFarInv.x);
+  return (1.0/dist - zNearFarInv.x)/(zNearFarInv.y - zNearFarInv.x);
 }
 
-float Depth2Distance(float depth)
+float Depth2Distance(float depth, vec2 zNearFarInv)
 {
-  float distinv = depth*(osgShadow_umbraZNearFarInv.y - osgShadow_umbraZNearFarInv.x) + osgShadow_umbraZNearFarInv.x;
+  float distinv = depth*(zNearFarInv.y - zNearFarInv.x) + zNearFarInv.x;
   return 1.0/distinv;
 }
 
-// Compute center and radius of shadow coverage circle for given texture coordinate and depth
+// Compute center and radius of shadow coverage circle for given texture coordinate and test plane
 // TODO: Should this be converted to elliptical form?
+// NOTE: Distances are signed and increase from umbra/penumbra focal point towards light
 // - texture coordinate (x,y) in NDC coordinates [-1,+1]
-// - depth is actual depth distance from umbra focal point, assumed <= far plane distance
+// - fragDist/planeDist/lightDist are actual depth distances from focal point
+// - planeSign is +1.0 for umbra (faces towards light), -1.0 for penumbra (faces away from light)
 // + Returns vec3 = [vec2(center point), float(radius)] in texture coordinates [0, 1]
-vec3 ShadowCoverageCircle(vec2 uTexCoordNDC, float fragDepth, float blockerDepth, float lightDepth)
+vec3 ShadowCoverageCircle(vec2 texCoordNDC, float fragDist, float planeDist, float lightDist, float planeSign)
 {
-  // Ratio of fragment distance to blocker distance
-  float zF_zBlocker = fragDepth / blockerDepth;
+  // Ratio of fragment distance to test plane distance
+  float zF_zP = fragDist / planeDist;
+  float zFabs_zP = abs(fragDist) / planeDist;
 
   // Ratio of fragment distance to light distance
-  float zF_zL = fragDepth / lightDepth;
+  float zF_zL = fragDist / lightDist;
+  float zFabs_zL = abs(zF_zL); // Assumes lightDist > 0, which is true for our coordinate system
   
   // Distance to upper and lower shadow coverage texture coordinates
-  float dist = length(uTexCoordNDC.xy);
-  float coeff = (1.0 - zF_zBlocker)/(1.0 - zF_zL);
-  float CoverageDistUpper = dist*zF_zBlocker + coeff*(1.0 - dist*zF_zL);
-  float CoverageDistLower = -(-dist*zF_zBlocker + coeff*(1.0 + dist*zF_zL));
+  float dist = (fragDist == 0.0) ? 0.0 : length(texCoordNDC.xy);
+  float coeff = (1.0 - zF_zP)/(1.0 - zF_zL);
+  float CoverageDistUpper = planeSign*(dist*zFabs_zP + coeff*(1.0 - dist*zFabs_zL));
+  float CoverageDistLower = -planeSign*(-dist*zFabs_zP + coeff*(1.0 + dist*zFabs_zL));
   
   // Distance to center of shadow coverage circle
   float CoverageDistCenter = 0.5 * (CoverageDistUpper + CoverageDistLower);
   
   // Shadow coverage center and radius
-  vec2 dir = (dist == 0.0) ? vec2(1.0, 0.0) : normalize(uTexCoordNDC.xy);
+  vec2 dir = (dist == 0.0) ? vec2(1.0, 0.0) : normalize(texCoordNDC.xy);
   vec2 center = CoverageDistCenter * dir * 0.5 + 0.5; // [-1,1] NDC -> [0,1] texcoords
   float radius = (CoverageDistUpper - CoverageDistCenter)*0.5; // NDC -> texcoords radius compression
   return vec3(center, radius);
 }
 
-float BlockerDistance(sampler2D depthTex, vec4 texCoord, vec3 coverageCircle)
+vec2 BlockerDistance(sampler2D depthTex, vec4 texCoord, vec3 coverageCircle, vec2 zNearFarInv, float planeSign)
 {
   int numBlockerSearchSamples = 8;
   int numBlockers = 0;
@@ -81,99 +89,61 @@ float BlockerDistance(sampler2D depthTex, vec4 texCoord, vec3 coverageCircle)
   float radius = coverageCircle.z; // Extract shadow coverage circle radius
   float phi = random(texCoord.xy)*TWOPI;
   vec3 sampleTexCoord = texCoord.xyz;
+  float depth;
   
-  for (int i = 0; i < numBlockerSearchSamples; ++i)
+  // Include depth at the fragment since that is guaranteed knowledge
+  depth = texture2D(depthTex, texCoord.xy).r;
+  if ((depth != (0.5 - planeSign*0.5)) && (planeSign*depth > planeSign*sampleTexCoord.z))
   {
-    vec2 offset = VogelDiskSample(i, numBlockerSearchSamples, phi) * radius;
+    ++numBlockers;
+    avgBlockerDepth += depth;
+  }
+  
+  for (int i = 1; i < numBlockerSearchSamples; ++i)
+  {
+    // Get sample coordinates
+    vec2 offset = VogelDiskSample(i-1, numBlockerSearchSamples-1, phi) * radius;
     sampleTexCoord.xy = center + offset;
     
-    float depth = texture2D(depthTex, sampleTexCoord.xy).r;
-    if ((depth != 0.0) && (depth > sampleTexCoord.z))
+    // Lookup sample depth and compare it to fragment depth
+    depth = texture2D(depthTex, sampleTexCoord.xy).r;
+    if ((depth != (0.5 - planeSign*0.5)) && (planeSign*depth > planeSign*sampleTexCoord.z))
     {
       ++numBlockers;
       avgBlockerDepth += depth;
     }
   }
   
-  if(numBlockers == 0) return -1.0;
-  else if (numBlockers == numBlockerSearchSamples) return -2.0;
-  else return Depth2Distance(avgBlockerDepth / float(numBlockers));
-
+  if(numBlockers == 0) return vec2(-1.0, numBlockerSearchSamples);
+  else if (numBlockers == numBlockerSearchSamples) return vec2(-2.0, 0.0);
+  else return vec2(Depth2Distance(avgBlockerDepth / float(numBlockers), zNearFarInv), float(numBlockerSearchSamples - numBlockers));
 }
 
 // Compute visibility of given texture coordinate subject to given shadow coverage circle
 // - depthTex: depth texture
 // - texCoord: texture coordinates [0, 1]
-float Visibility_ModifiedPCSS(sampler2D depthTex, vec4 texCoord, vec3 coverageCircle)
+vec2 Visibility_ModifiedPCSS(sampler2D depthTex, vec4 texCoord, vec3 coverageCircle, float planeSign)
 {
   vec2 center = coverageCircle.xy; // Extract shadow coverage circle center
   float radius = coverageCircle.z; // Extract shadow coverage circle radius
-  int numPoints = 16;
+  int numSamples = 8;
   
   float visibility = 0.0;
   
   vec3 sampleTexCoord = texCoord.xyz;
   float phi = random(texCoord.xy)*TWOPI;
-  
+
   // Iterate over all sample points
-  for(int i = 0; i < numPoints; ++i)
+  for(int i = 0; i < numSamples; ++i)
   {
-    vec2 offset = VogelDiskSample(i, numPoints, phi) * radius;
+    vec2 offset = VogelDiskSample(i, numSamples, phi) * radius;
     sampleTexCoord.xy = center + offset;
     
-#if 1
-    //visibility += shadow2D(depthTex, sampleTexCoord).r;
     float depth = texture2D(depthTex, sampleTexCoord.xy).r;
-    visibility += ((depth == 0.0) || (depth <= sampleTexCoord.z)) ? 1.0 : 0.0;
-    
-#else
-    // TODO: Use approximation for this, maybe paraboloid or right cone centered at fragment
-    //       and with radius to lower coverage point
-
-    vec2 dF = center - texCoord.xy; // Vec from frag to circle center
-    vec2 dSample = dF + offset;     // Vec from frag to current sample point
-    float dFLen = length(dF);
-    float dSampleLen = length(dSample);
-    vec2 dFDir = (dFLen == 0.0) ? vec2(1.0, 0.0) : normalize(dF);
-    vec2 dSampleDir = (dSampleLen == 0.0) ? vec2(1.0, 0.0) : normalize(dSample);
-    
-    // Compute ratio of frag->sample and frag->circle_edge distances
-    // This is used to adjust the depth value used during testing
-    float ca = dot(dFDir, dSampleDir);
-    float dist = dFLen*ca + sqrt(dFLen*dFLen*(ca*ca - 1.0) + radius*radius);
-    dist = clamp(dist, 0.00001, 2.0*radius);
-    float ratio = clamp(dSampleLen/dist, 0.0, 1.0);
-    
-    // Interpolate minimum depth between fragment and coverage circle (at far plane = 1.0)
-    dist = mix(texCoord.w, 1.0/osgShadow_umbraZNearFarInv.y, ratio);
-    sampleTexCoord.z = Distance2Depth(dist);
-    
-    //visibility += shadow2D(depthTex, sampleTexCoord).r;
-    float depth = texture2D(depthTex, sampleTexCoord.xy).r;
-    visibility += ((depth == 0.0) || (depth <= sampleTexCoord.z)) ? 1.0 : 0.0;
-#endif
+    visibility += ((depth == (0.5 - planeSign*0.5)) || (planeSign*depth <= planeSign*sampleTexCoord.z)) ? 1.0 : 0.0;
   }
   
-  //visibility += shadow2D(depthTex, texCoord.xyz).r;
-  //float maxDepth = texture2D(depthTex, texCoord.xy).r;
-  //visibility += ((maxDepth == 0.0) || (maxDepth <= texCoord.z)) ? 1.0 : 0.0;
-  //++numPoints;
-  
-  return visibility / float(numPoints);
-}
-
-float Visibility_PCF(sampler2DShadow depthTex, vec4 texCoord)
-{
-  const int maxPointID = 2;
-  const float numPoints = 2.0*float(maxPointID) + 1.0;
-  float visibility = 0.0;
-  for(int x = -maxPointID; x <= maxPointID; ++x){
-    for(int y = -maxPointID; y <= maxPointID; ++y){
-      vec2 off = 1.0*vec2(x,y) * osgShadow_texelSize;
-      visibility += shadow2D(depthTex, texCoord.xyz + vec3(off, 0.0)).r;
-    }
-  }
-  return visibility / (numPoints * numPoints);
+  return vec2(visibility, float(numSamples));
 }
 
 void main(void)
@@ -189,60 +159,46 @@ void main(void)
   vec2 pTexCoordNDC = pTexCoord.xy * 2.0 - 1.0;   // [0, 1] -> [-1, 1]
   vec2 uTexCoordNDC = uTexCoord.xy * 2.0 - 1.0;   // [0, 1] -> [-1, 1]
 
-#if 0
-  float uDistance = max(-uTexCoord.w, 0.0);    // z-distance from umbra focal point to fragment
-  float pDistance = max(-pTexCoord.w, 0.0);    // z-distance from penumbra focal point to fragment
-  float pRatio = length(pTexCoordNDC);  // Assumes circular light due to implicit divide by 1
-  float uRatio = length(uTexCoordNDC);  // TODO: For square light divide by distance to square edge
-  
-  // Compute amount of guaranteed visible light in umbra/antumbra
-  // This is always zero in umbra, and asymptotically increases with distance in antumbra
-  float uBlockedLight = osgShadow_sizeRatio * (uDistance + osgShadow_umbraDistance + osgShadow_lightDistance) / (uDistance + osgShadow_umbraDistance);
-  float uMinVisibility = 1.0 - uBlockedLight*uBlockedLight;
-  
-  // Determine the minimum amount of light this fragment is guaranteed to see based on whether
-  // it is in penumbra, umbra, or antumbra. Visibility is in range [uMinVisibility, 1.0]
-  float lightMinVisibility = 1.0;  // Assume full light visibility unless computed otherwise
-  uRatio = max(uRatio, 1.0);  // Anything less than 1 will use uMinVisibility anyway
-  if(pTexCoord.w > 0.0) lightMinVisibility = pRatio * (uRatio - 1.0) / (uRatio - pRatio);
-  lightMinVisibility = clamp(lightMinVisibility, 0.0, 1.0);
-  lightMinVisibility = uMinVisibility + lightMinVisibility*(1.0 - uMinVisibility);
-  
   // In antumbra the umbra texture lookup is reversed, so reverse texcoords preemptively
-  if(uTexCoord.w < 0.0) uTexCoord.xyz = -uTexCoord.xyz + vec3(1.0, 1.0, 0.0);
-  
-  // Lookup umbral and penumbral visibility from their texture maps
-  float uVisibility = 0.0, pVisibility = 0.0;
-  //pVisibility = shadow2D(osgShadow_penumbraDepthTexture, pTexCoord.xyz).r;
-  //uVisibility = shadow2D(osgShadow_umbraDepthTexture, uTexCoord.xyz).r;
-  uVisibility = uVisibility_PCF();
-  pVisibility = pVisibility_PCF();
-  
-  // Compute fragment color
-  float minVisibility = osgShadow_ambientBias.x + lightMinVisibility * osgShadow_ambientBias.y;
-  float shadowedVisibility = (1.0 - lightMinVisibility) * 0.5 * (uVisibility + pVisibility) * osgShadow_ambientBias.y;
-  gl_FragColor = color * (minVisibility + shadowedVisibility);
-
-#else
-  // In antumbra the umbra texture lookup is reversed, so reverse texcoords preemptively
-  if(uTexCoord.w < 0.0) uTexCoord.xyz = -uTexCoord.xyz + vec3(1.0, 1.0, 0.0);
-  
-  //float uVisibility = Visibility_PCF(osgShadow_umbraDepthTexture, uTexCoord);
-  vec3 uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, 1.0/osgShadow_umbraZNearFarInv.y, osgShadow_umbraDistance + osgShadow_lightDistance);
-  float blockerDistance = BlockerDistance(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle);
-  vec4 uVisibility = (blockerDistance == -2.0) ? vec4(0.0) : vec4(1.0);
-  if(blockerDistance >= 0.0)
+  if(uTexCoord.w < 0.0)
   {
-    uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, blockerDistance, osgShadow_umbraDistance + osgShadow_lightDistance);
-    uVisibility = vec4(Visibility_ModifiedPCSS(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle));
+    uTexCoord.xyz = -uTexCoord.xyz + vec3(1.0, 1.0, 0.0);
+    uTexCoordNDC *= -1.0;
+  }
+
+  // Umbra blocker search (use umbra far plane)
+  vec3 uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, 1.0/osgShadow_umbraZNearFarInv.y, osgShadow_lightDistance + osgShadow_umbraDistance, 1.0);
+  vec2 uBlockerDistance = BlockerDistance(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle, osgShadow_umbraZNearFarInv, 1.0);
+  
+  // Umbra shadowing
+  vec4 uVisibility = (uBlockerDistance.x == -2.0) ? vec4(0.0) : vec4(1.0);
+  if(uBlockerDistance.x >= 0.0)
+  {
+    uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, uBlockerDistance.x, osgShadow_lightDistance + osgShadow_umbraDistance, 1.0);
+    vec2 visibility = Visibility_ModifiedPCSS(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle, 1.0);
+    uVisibility = vec4((visibility.x + uBlockerDistance.y)/(visibility.y + uBlockerDistance.y));
   }
   
-  //vec4 pVisibility = vec4(Visibility_PCF(osgShadow_penumbraDepthTexture, pTexCoord));
-  vec4 pVisibility = uVisibility;
+  // Penumbra blocker search (use penumbra near plane and adjust for z increasing towards light)
+  vec3 pCoverageCircle = ShadowCoverageCircle(pTexCoordNDC, -pTexCoord.w, -1.0/osgShadow_penumbraZNearFarInv.x, osgShadow_lightDistance - osgShadow_penumbraDistance, -1.0);
+  vec2 pBlockerDistance = BlockerDistance(osgShadow_penumbraDepthTexture, pTexCoord, pCoverageCircle, osgShadow_penumbraZNearFarInv, -1.0);
+  
+  // Penumbra shadowing
+  vec4 pVisibility = (pBlockerDistance.x == -2.0) ? vec4(0.0) : vec4(1.0);
+  if(pBlockerDistance.x >= 0.0)
+  {
+    pCoverageCircle = ShadowCoverageCircle(pTexCoordNDC, -pTexCoord.w, -pBlockerDistance.x, osgShadow_lightDistance - osgShadow_penumbraDistance, -1.0);
+    vec2 visibility = Visibility_ModifiedPCSS(osgShadow_penumbraDepthTexture, pTexCoord, pCoverageCircle, -1.0);
+    pVisibility = vec4((visibility.x + pBlockerDistance.y)/(visibility.y + pBlockerDistance.y));
+  }
+  
+  //uVisibility.g = 1.0; // Umbra shadow in green
+  //pVisibility.r = 1.0; // Penumbra shadow in red
+  
+  //uVisibility = pVisibility;
+  //pVisibility = uVisibility;
   
   float minVisibility = osgShadow_ambientBias.x;
   vec4 shadowedVisibility = 0.5 * (uVisibility + pVisibility) * osgShadow_ambientBias.y;
   gl_FragColor = color * (minVisibility + shadowedVisibility);
-  
-#endif
 }

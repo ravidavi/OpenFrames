@@ -127,8 +127,9 @@ namespace OpenFrames
     osg::ref_ptr<osg::Uniform>      _ambientBiasUniform;
     osg::ref_ptr<osg::Uniform>      _umbraDistanceUniform;
     osg::ref_ptr<osg::Uniform>      _umbraZNearFarInvUniform;
+    osg::ref_ptr<osg::Uniform>      _penumbraDistanceUniform;
+    osg::ref_ptr<osg::Uniform>      _penumbraZNearFarInvUniform;
     osg::ref_ptr<osg::Uniform>      _lightDistanceUniform;
-    osg::ref_ptr<osg::Uniform>      _sizeRatioUniform;
     osg::ref_ptr<osg::Uniform>      _texelSizeUniform;
     UniformList                     _uniformList;
     ShaderList                      _shaderList;

@@ -52,7 +52,7 @@ static const char fragmentShaderSource_debugHUD[] =
     "{ \n"
     "   vec4 texResult = texture2D(osgShadow_shadowTexture, gl_TexCoord[0].st ); \n"
     "   float value = texResult.r; \n"
-    "   gl_FragColor = vec4( value, value, value, 0.8 ); \n"
+    "   gl_FragColor = vec4( value, value, value, 0.6 ); \n"
     "} \n";
 
 namespace OpenFrames
@@ -140,12 +140,15 @@ namespace OpenFrames
     
     _umbraZNearFarInvUniform = new osg::Uniform(osg::Uniform::FLOAT_VEC2, "osgShadow_umbraZNearFarInv");
     _uniformList.push_back(_umbraZNearFarInvUniform.get());
+    
+    _penumbraDistanceUniform = new osg::Uniform(osg::Uniform::FLOAT, "osgShadow_penumbraDistance");
+    _uniformList.push_back(_penumbraDistanceUniform.get());
+    
+    _penumbraZNearFarInvUniform = new osg::Uniform(osg::Uniform::FLOAT_VEC2, "osgShadow_penumbraZNearFarInv");
+    _uniformList.push_back(_penumbraZNearFarInvUniform.get());
 
     _lightDistanceUniform = new osg::Uniform(osg::Uniform::FLOAT, "osgShadow_lightDistance");
     _uniformList.push_back(_lightDistanceUniform.get());
-
-    _sizeRatioUniform = new osg::Uniform(osg::Uniform::FLOAT, "osgShadow_sizeRatio");
-    _uniformList.push_back(_sizeRatioUniform.get());
     
     const osg::Vec2s& textureSize = _shadowedScene->getShadowSettings()->getTextureSize();
     _texelSizeUniform = new osg::Uniform("osgShadow_texelSize", osg::Vec2(1.0/textureSize.x(), 1.0/textureSize.y()));
@@ -482,11 +485,16 @@ namespace OpenFrames
         double lightDistance = lightToCenter.normalize();
         double bbRadius = bb.radius();
         
+        _lightDistanceUniform->set((float)lightDistance);
+
         double penumbraDistance = lightDistance / (_lightSize/bbRadius + 1.0);
         double penumbraZNear = penumbraDistance - bbRadius;
         double penumbraZFar  = penumbraDistance + bbRadius;
         double penumbraFOV = 2.0*std::asin(bbRadius / penumbraDistance);
 
+        _penumbraDistanceUniform->set((float)penumbraDistance);
+        _penumbraZNearFarInvUniform->set(osg::Vec2(1.0/penumbraZNear, 1.0/penumbraZFar));
+        
         _cameraPenumbra->setViewMatrixAsLookAt(bb.center() - (lightToCenter * penumbraDistance), bb.center(), computeOrthogonalVector(lightToCenter));
         _cameraPenumbra->setProjectionMatrixAsPerspective(penumbraFOV * 180.0/osg::PI, 1.0, penumbraZNear, penumbraZFar);
         
@@ -495,10 +503,8 @@ namespace OpenFrames
         double umbraZFar  = umbraDistance + bbRadius;
         double umbraFOV = 2.0*std::asin(bbRadius / umbraDistance);
         
-        _lightDistanceUniform->set((float)lightDistance);
         _umbraDistanceUniform->set((float)umbraDistance);
         _umbraZNearFarInvUniform->set(osg::Vec2(1.0/umbraZNear, 1.0/umbraZFar));
-        _sizeRatioUniform->set((float)(bbRadius/_lightSize));
 
         _cameraUmbra->setViewMatrixAsLookAt(bb.center() + (lightToCenter * umbraDistance), bb.center(), computeOrthogonalVector(-lightToCenter));
         _cameraUmbra->setProjectionMatrixAsPerspective(umbraFOV * 180.0/osg::PI, 1.0, umbraZNear, umbraZFar);
@@ -624,13 +630,13 @@ namespace OpenFrames
   ////////////////////////////////////////////////////////////////////////////////
   osg::ref_ptr<osg::Camera> FocalPointShadowMap::makeDebugHUD()
   {
-    osg::Texture2D *displayTexture = _textureUmbraDepth;
+    osg::Texture2D *displayTexture = _texturePenumbraDepth;
     
     // Make sure we attach initialized texture to HUD
     if( displayTexture == nullptr )
     {
       init();
-      displayTexture = _textureUmbraDepth;
+      displayTexture = _texturePenumbraDepth;
     }
     
     osg::ref_ptr<osg::Camera> camera = new osg::Camera;

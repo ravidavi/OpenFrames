@@ -48,7 +48,9 @@ public:
     {
       if(ea->getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
       {
-        const double zoomRate = 0.001;
+        double zoomRate = 0.001;
+        if(ea->getModKeyMask() && osgGA::GUIEventAdapter::MODKEY_SHIFT) zoomRate *= 0.1;
+        
         if(ea->getKey() == osgGA::GUIEventAdapter::KEY_Up)
         {
           osg::Vec3d pos = _pat->getPosition();
@@ -87,14 +89,14 @@ int main()
   //shadowSettings->setDebugDraw(true);
   //shadowSettings->setShadowMapProjectionHint(osgShadow::ShadowSettings::ORTHOGRAPHIC_SHADOW_MAP);
   //shadowSettings->setMultipleShadowMapHint(osgShadow::ShadowSettings::CASCADED);
-  int texSize = 1024;
+  int texSize = 512;
   shadowSettings->setTextureSize(osg::Vec2s(texSize, texSize));
   //shadowSettings->setLightNum(0);
   //osgShadow::ShadowMap *sm = new osgShadow::ShadowMap;
   OpenFrames::FocalPointShadowMap *fpsm = new OpenFrames::FocalPointShadowMap;
   fpsm->setLightSize(r_sun);
   fpsm->setAmbientBias(osg::Vec2(0.0, 1.0));
-  fpsm->setPolygonOffset(osg::Vec2(-1, -1));
+  fpsm->setPolygonOffset(osg::Vec2(-0.5, -0.5));
   shadowedScene->setShadowTechnique(fpsm);
   
   //osgShadow::SoftShadowMap *ssm = new osgShadow::SoftShadowMap;
@@ -108,6 +110,8 @@ int main()
   light->setDiffuse(osg::Vec4(4.0, 4.0, 4.0, 1.0));
   light->setSpecular(osg::Vec4(0.8, 0.8, 0.8, 1.0));
   
+  double offset = 2.386;
+
   osg::Node* model;
   model = osgDB::readNodeFile("Models/CSHP_DV_257_01_______00343.obj");
   //model = osgDB::readNodeFile("Models/ESA_Rosetta_OSIRIS_67P_SHAP2P.obj");
@@ -119,7 +123,8 @@ int main()
     osg::Vec3 centerBase(0.0, 0.0, 0.0f);
     
     osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-    //pat->setAttitude(osg::Quat(osg::PI/2.0 - 0.001, osg::Vec3d(0, 1, 0)));
+    pat->setPosition(osg::Vec3d(offset - 0.005, 0, 0));
+    pat->setAttitude(osg::Quat(osg::PI/2.0 - 0.2, osg::Vec3d(0, 1, 0)));
     
     osg::Geometry *plane = osg::createTexturedQuadGeometry(centerBase-widthVec*0.5f-heightVec*0.5f, widthVec, heightVec );
     pat->addChild(plane);
@@ -136,8 +141,6 @@ int main()
   model->getOrCreateStateSet()->setAttributeAndModes(mat);
   
   double scale = 0.00001;
-  double offset = 2.386;
-  //offset = 0.01;
   osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
   pat->setScale(osg::Vec3d(scale, scale, scale));
   pat->setPosition(osg::Vec3d(offset, 0, 0));
@@ -188,7 +191,7 @@ int main()
     
     osg::ref_ptr<osg::Camera> smDebugHUD = fpsm->makeDebugHUD();
     smDebugHUD->setGraphicsContext(gc);
-    smDebugHUD->setViewport(new osg::Viewport(0, 0, 200, 200));
+    smDebugHUD->setViewport(new osg::Viewport(0, 0, 400, 400));
     //smDebugHUD->setRenderOrder(osg::Camera::POST_RENDER, hudCamera->getRenderOrderNum() + 1);
     //hudCamera->setNodeMask(0x0);
     //smDebugHUD->setClearColor(osg::Vec4(1, 0, 0, 1));
