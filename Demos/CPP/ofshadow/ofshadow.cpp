@@ -80,6 +80,7 @@ int main()
 {
   const double r_sun = 695508.0;
   const double AU = 1.496e8;
+  double lightDist = 1.0*AU;
   
   // Shadowing properties
   osgShadow::ShadowedScene *shadowedScene = new osgShadow::ShadowedScene;
@@ -105,7 +106,7 @@ int main()
   osg::LightSource* lightSource = new osg::LightSource;
   osg::Light* light = lightSource->getLight();
   light->setName("My Light");
-  light->setPosition(osg::Vec4(0.1*AU, 0.0, 0.0, 1.0));
+  light->setPosition(osg::Vec4(lightDist, 0.0, 0.0, 1.0));
   light->setAmbient(osg::Vec4(0.0, 0.0, 0.0, 1.0));
   light->setDiffuse(osg::Vec4(4.0, 4.0, 4.0, 1.0));
   light->setSpecular(osg::Vec4(0.8, 0.8, 0.8, 1.0));
@@ -169,8 +170,33 @@ int main()
   shadowedScene->addChild(pat);
   shadowedScene->addChild(lightSource);
   
+  osg::Group *root = new osg::Group;
+  root->addChild(shadowedScene);
+  {
+    osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
+    pat->setPosition(osg::Vec3d(10.0, 0, 0));
+    
+    osg::ShapeDrawable* sphereSD = new osg::ShapeDrawable;
+    sphereSD->setName("Light");
+    sphereSD->setUseDisplayList(false);
+    sphereSD->setUseVertexBufferObjects(true);
+    sphereSD->getOrCreateStateSet(); // Will be used for textures and modes
+    osg::Sphere* sphere = new osg::Sphere;
+    sphere->setRadius(r_sun*10.0/lightDist);
+    sphereSD->setShape(sphere);
+    sphereSD->setColor(osg::Vec4(1, 1, 0, 1));
+    
+    osg::Geode* geode = new osg::Geode;
+    geode->addDrawable(sphereSD);
+    pat->addChild(geode);
+    pat->getOrCreateStateSet()->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
+    root->addChild(pat);
+  }
+  
   osgViewer::Viewer viewer;
-  viewer.setSceneData(shadowedScene);
+  viewer.setSceneData(root);
+  
+  viewer.getCamera()->setNearFarRatio(0.00001);
   
   osgGA::TrackballManipulator* tb = new osgGA::TrackballManipulator;
   tb->setHomePosition(osg::Vec3d(offset + 2.0*model2->getBound()._radius*scale, 0.0, 0.0), osg::Vec3d(offset, 0, 0), osg::Vec3d(0, 0, -1));

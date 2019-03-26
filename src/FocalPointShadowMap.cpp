@@ -52,7 +52,7 @@ static const char fragmentShaderSource_debugHUD[] =
     "{ \n"
     "   vec4 texResult = texture2D(osgShadow_shadowTexture, gl_TexCoord[0].st ); \n"
     "   float value = texResult.r; \n"
-    "   gl_FragColor = vec4( value, value, value, 0.6 ); \n"
+    "   gl_FragColor = vec4( value, value, value, 1.0 ); \n"
     "} \n";
 
 namespace OpenFrames
@@ -651,8 +651,7 @@ namespace OpenFrames
     camera->setViewMatrix(osg::Matrix::identity());
     
     // only clear the depth buffer
-    camera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    camera->setClearColor(osg::Vec4(0.2f, 0.3f, 0.5f, 0.2f));
+    camera->setClearMask(GL_DEPTH_BUFFER_BIT);
     
     // draw subgraph after main camera view.
     camera->setRenderOrder(osg::Camera::POST_RENDER);
