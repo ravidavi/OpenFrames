@@ -82,27 +82,19 @@ vec3 ShadowCoverageCircle(vec2 texCoordNDC, float fragDist, float planeDist, flo
 
 vec2 BlockerDistance(sampler2D depthTex, vec4 texCoord, vec3 coverageCircle, vec2 zNearFarInv, float planeSign)
 {
-  int numBlockerSearchSamples = 8;
+  int numBlockerSearchSamples = 4;
   int numBlockers = 0;
   float avgBlockerDepth = 0.0;
   vec2 center = coverageCircle.xy; // Extract shadow coverage circle center
   float radius = coverageCircle.z; // Extract shadow coverage circle radius
-  float phi = random(texCoord.xy)*TWOPI;
+  float phi = random(coverageCircle.xy)*TWOPI;
   vec3 sampleTexCoord = texCoord.xyz;
   float depth;
   
-  // Include depth at the fragment since that is guaranteed knowledge
-  depth = texture2D(depthTex, texCoord.xy).r;
-  if ((depth != (0.5 - planeSign*0.5)) && (planeSign*depth > planeSign*sampleTexCoord.z))
-  {
-    ++numBlockers;
-    avgBlockerDepth += depth;
-  }
-  
-  for (int i = 1; i < numBlockerSearchSamples; ++i)
+  for (int i = 0; i < numBlockerSearchSamples; ++i)
   {
     // Get sample coordinates
-    vec2 offset = VogelDiskSample(i-1, numBlockerSearchSamples-1, phi) * radius;
+    vec2 offset = VogelDiskSample(i, numBlockerSearchSamples, phi) * radius;
     sampleTexCoord.xy = center + offset;
     
     // Lookup sample depth and compare it to fragment depth
@@ -116,7 +108,7 @@ vec2 BlockerDistance(sampler2D depthTex, vec4 texCoord, vec3 coverageCircle, vec
   
   if(numBlockers == 0) return vec2(-1.0, numBlockerSearchSamples);
   else if (numBlockers == numBlockerSearchSamples) return vec2(-2.0, 0.0);
-  else return vec2(Depth2Distance(avgBlockerDepth / float(numBlockers), zNearFarInv), float(numBlockerSearchSamples - numBlockers));
+  else return vec2(Depth2Distance(avgBlockerDepth / numBlockers, zNearFarInv), numBlockerSearchSamples - numBlockers);
 }
 
 // Compute visibility of given texture coordinate subject to given shadow coverage circle
@@ -126,12 +118,12 @@ vec2 Visibility_ModifiedPCSS(sampler2D depthTex, vec4 texCoord, vec3 coverageCir
 {
   vec2 center = coverageCircle.xy; // Extract shadow coverage circle center
   float radius = coverageCircle.z; // Extract shadow coverage circle radius
-  int numSamples = 8;
+  int numSamples = 16;
   
-  float visibility = 0.0;
+  float blockers = 0.0;
   
   vec3 sampleTexCoord = texCoord.xyz;
-  float phi = random(texCoord.xy)*TWOPI;
+  float phi = random(coverageCircle.xy)*TWOPI;
 
   // Iterate over all sample points
   for(int i = 0; i < numSamples; ++i)
@@ -140,10 +132,10 @@ vec2 Visibility_ModifiedPCSS(sampler2D depthTex, vec4 texCoord, vec3 coverageCir
     sampleTexCoord.xy = center + offset;
     
     float depth = texture2D(depthTex, sampleTexCoord.xy).r;
-    visibility += ((depth == (0.5 - planeSign*0.5)) || (planeSign*depth <= planeSign*sampleTexCoord.z)) ? 1.0 : 0.0;
+    blockers += ((depth != (0.5 - planeSign*0.5)) && (planeSign*depth > planeSign*sampleTexCoord.z)) ? 1.0 : 0.0;
   }
   
-  return vec2(visibility, float(numSamples));
+  return vec2(numSamples-blockers, numSamples);
 }
 
 void main(void)
