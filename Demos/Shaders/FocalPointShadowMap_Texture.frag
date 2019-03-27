@@ -135,24 +135,36 @@ void main(void)
   vec3 uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, 1.0/osgShadow_umbraZNearFarInv.y, osgShadow_lightDistance + osgShadow_umbraDistance, 1.0);
   vec2 uBlockers = SearchBlockers(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle, osgShadow_umbraZNearFarInv, 1.0, numBlockerSamples);
   
-  // Compute umbra shadowing if there are any blockers
-  vec4 uVisibility = vec4(1.0);
-  if(uBlockers.y > 0.0)
-  {
-    uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, uBlockers.x, osgShadow_lightDistance + osgShadow_umbraDistance, 1.0);
-    vec2 uShadows = SearchBlockers(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle, osgShadow_umbraZNearFarInv, 1.0, numShadowSamples);
-    uVisibility = vec4(1.0 - uShadows.y/numShadowSamples); // TODO: Add blocker info when computing visibility
-  }
-  
   // Penumbra blocker search (using penumbra near plane and adjusting for z increasing towards light)
   vec3 pCoverageCircle = ShadowCoverageCircle(pTexCoordNDC, -pTexCoord.w, -1.0/osgShadow_penumbraZNearFarInv.x, osgShadow_lightDistance - osgShadow_penumbraDistance, -1.0);
   vec2 pBlockers = SearchBlockers(osgShadow_penumbraDepthTexture, pTexCoord, pCoverageCircle, osgShadow_penumbraZNearFarInv, -1.0, numBlockerSamples);
   
+  // Adjust umbra blocker distance based on info from penumbra blocker search
+  float uBlockerDistanceFromPenumbra = (osgShadow_umbraDistance + osgShadow_penumbraDistance) - pBlockers.x;
+  vec2 uBlockersAdjusted = vec2(uBlockers.x*uBlockers.y + uBlockerDistanceFromPenumbra*pBlockers.y, uBlockers.y + pBlockers.y);
+  uBlockersAdjusted.x /= uBlockersAdjusted.y;
+  //uBlockersAdjusted = uBlockers;
+  
+  // Adjust penumbra blocker distance based on info from umbra blocker search
+  float pBlockerDistanceFromUmbra = (osgShadow_umbraDistance + osgShadow_penumbraDistance) - uBlockers.x;
+  vec2 pBlockersAdjusted = vec2(pBlockers.x*pBlockers.y + pBlockerDistanceFromUmbra*uBlockers.y, uBlockers.y + pBlockers.y);
+  pBlockersAdjusted.x /= pBlockersAdjusted.y;
+  //pBlockersAdjusted = pBlockers;
+  
+  // Compute umbra shadowing if there are any blockers
+  vec4 uVisibility = vec4(1.0);
+  if(uBlockersAdjusted.y > 0.0)
+  {
+    uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, uBlockersAdjusted.x, osgShadow_lightDistance + osgShadow_umbraDistance, 1.0);
+    vec2 uShadows = SearchBlockers(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle, osgShadow_umbraZNearFarInv, 1.0, numShadowSamples);
+    uVisibility = vec4(1.0 - uShadows.y/numShadowSamples); // TODO: Add blocker info when computing visibility
+  }
+  
   // Compute penumbra shadowing if there are any blockers
   vec4 pVisibility = vec4(1.0);
-  if(pBlockers.y > 0.0)
+  if(pBlockersAdjusted.y > 0.0)
   {
-    pCoverageCircle = ShadowCoverageCircle(pTexCoordNDC, -pTexCoord.w, -pBlockers.x, osgShadow_lightDistance - osgShadow_penumbraDistance, -1.0);
+    pCoverageCircle = ShadowCoverageCircle(pTexCoordNDC, -pTexCoord.w, -pBlockersAdjusted.x, osgShadow_lightDistance - osgShadow_penumbraDistance, -1.0);
     vec2 pShadows = SearchBlockers(osgShadow_penumbraDepthTexture, pTexCoord, pCoverageCircle, osgShadow_penumbraZNearFarInv, -1.0, numShadowSamples);
     pVisibility = vec4(1.0 - pShadows.y/numShadowSamples); // TODO: Add blocker info when computing visibility
   }
