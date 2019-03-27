@@ -80,62 +80,32 @@ vec3 ShadowCoverageCircle(vec2 texCoordNDC, float fragDist, float planeDist, flo
   return vec3(center, radius);
 }
 
-vec2 BlockerDistance(sampler2D depthTex, vec4 texCoord, vec3 coverageCircle, vec2 zNearFarInv, float planeSign)
+vec2 SearchBlockers(sampler2D depthTex, vec4 texCoord, vec3 coverageCircle, vec2 zNearFarInv, float planeSign, int numSearchSamples)
 {
-  int numBlockerSearchSamples = 4;
-  int numBlockers = 0;
-  float avgBlockerDepth = 0.0;
-  vec2 center = coverageCircle.xy; // Extract shadow coverage circle center
-  float radius = coverageCircle.z; // Extract shadow coverage circle radius
   float phi = random(coverageCircle.xy)*TWOPI;
   vec3 sampleTexCoord = texCoord.xyz;
+  float clearDepth = 0.5 - planeSign*0.5; // Depth value if there is no blocker
+  int numBlockers = 0;
+  float avgBlockerDepth = 0.0;
   float depth;
   
-  for (int i = 0; i < numBlockerSearchSamples; ++i)
+  for (int i = 0; i < numSearchSamples; ++i)
   {
     // Get sample coordinates
-    vec2 offset = VogelDiskSample(i, numBlockerSearchSamples, phi) * radius;
-    sampleTexCoord.xy = center + offset;
+    vec2 offset = VogelDiskSample(i, numSearchSamples, phi) * coverageCircle.z;
+    sampleTexCoord.xy = coverageCircle.xy + offset;
     
     // Lookup sample depth and compare it to fragment depth
     depth = texture2D(depthTex, sampleTexCoord.xy).r;
-    if ((depth != (0.5 - planeSign*0.5)) && (planeSign*depth > planeSign*sampleTexCoord.z))
+    if ((depth != clearDepth) && (planeSign*depth > planeSign*sampleTexCoord.z))
     {
       ++numBlockers;
       avgBlockerDepth += depth;
     }
   }
   
-  if(numBlockers == 0) return vec2(-1.0, numBlockerSearchSamples);
-  else if (numBlockers == numBlockerSearchSamples) return vec2(-2.0, 0.0);
-  else return vec2(Depth2Distance(avgBlockerDepth / numBlockers, zNearFarInv), numBlockerSearchSamples - numBlockers);
-}
-
-// Compute visibility of given texture coordinate subject to given shadow coverage circle
-// - depthTex: depth texture
-// - texCoord: texture coordinates [0, 1]
-vec2 Visibility_ModifiedPCSS(sampler2D depthTex, vec4 texCoord, vec3 coverageCircle, float planeSign)
-{
-  vec2 center = coverageCircle.xy; // Extract shadow coverage circle center
-  float radius = coverageCircle.z; // Extract shadow coverage circle radius
-  int numSamples = 16;
-  
-  float blockers = 0.0;
-  
-  vec3 sampleTexCoord = texCoord.xyz;
-  float phi = random(coverageCircle.xy)*TWOPI;
-
-  // Iterate over all sample points
-  for(int i = 0; i < numSamples; ++i)
-  {
-    vec2 offset = VogelDiskSample(i, numSamples, phi) * radius;
-    sampleTexCoord.xy = center + offset;
-    
-    float depth = texture2D(depthTex, sampleTexCoord.xy).r;
-    blockers += ((depth != (0.5 - planeSign*0.5)) && (planeSign*depth > planeSign*sampleTexCoord.z)) ? 1.0 : 0.0;
-  }
-  
-  return vec2(numSamples-blockers, numSamples);
+  avgBlockerDepth /= max(numBlockers, 1.0);
+  return vec2(Depth2Distance(avgBlockerDepth, zNearFarInv), numBlockers);
 }
 
 void main(void)
@@ -158,30 +128,33 @@ void main(void)
     uTexCoordNDC *= -1.0;
   }
 
-  // Umbra blocker search (use umbra far plane)
-  vec3 uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, 1.0/osgShadow_umbraZNearFarInv.y, osgShadow_lightDistance + osgShadow_umbraDistance, 1.0);
-  vec2 uBlockerDistance = BlockerDistance(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle, osgShadow_umbraZNearFarInv, 1.0);
+  int numBlockerSamples = 4;
+  int numShadowSamples = 16;
   
-  // Umbra shadowing
-  vec4 uVisibility = (uBlockerDistance.x == -2.0) ? vec4(0.0) : vec4(1.0);
-  if(uBlockerDistance.x >= 0.0)
+  // Umbra blocker search (using umbra far plane)
+  vec3 uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, 1.0/osgShadow_umbraZNearFarInv.y, osgShadow_lightDistance + osgShadow_umbraDistance, 1.0);
+  vec2 uBlockers = SearchBlockers(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle, osgShadow_umbraZNearFarInv, 1.0, numBlockerSamples);
+  
+  // Compute umbra shadowing if there are any blockers
+  vec4 uVisibility = vec4(1.0);
+  if(uBlockers.y > 0.0)
   {
-    uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, uBlockerDistance.x, osgShadow_lightDistance + osgShadow_umbraDistance, 1.0);
-    vec2 visibility = Visibility_ModifiedPCSS(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle, 1.0);
-    uVisibility = vec4((visibility.x + uBlockerDistance.y)/(visibility.y + uBlockerDistance.y));
+    uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, uBlockers.x, osgShadow_lightDistance + osgShadow_umbraDistance, 1.0);
+    vec2 uShadows = SearchBlockers(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle, osgShadow_umbraZNearFarInv, 1.0, numShadowSamples);
+    uVisibility = vec4(1.0 - uShadows.y/numShadowSamples); // TODO: Add blocker info when computing visibility
   }
   
-  // Penumbra blocker search (use penumbra near plane and adjust for z increasing towards light)
+  // Penumbra blocker search (using penumbra near plane and adjusting for z increasing towards light)
   vec3 pCoverageCircle = ShadowCoverageCircle(pTexCoordNDC, -pTexCoord.w, -1.0/osgShadow_penumbraZNearFarInv.x, osgShadow_lightDistance - osgShadow_penumbraDistance, -1.0);
-  vec2 pBlockerDistance = BlockerDistance(osgShadow_penumbraDepthTexture, pTexCoord, pCoverageCircle, osgShadow_penumbraZNearFarInv, -1.0);
+  vec2 pBlockers = SearchBlockers(osgShadow_penumbraDepthTexture, pTexCoord, pCoverageCircle, osgShadow_penumbraZNearFarInv, -1.0, numBlockerSamples);
   
-  // Penumbra shadowing
-  vec4 pVisibility = (pBlockerDistance.x == -2.0) ? vec4(0.0) : vec4(1.0);
-  if(pBlockerDistance.x >= 0.0)
+  // Compute penumbra shadowing if there are any blockers
+  vec4 pVisibility = vec4(1.0);
+  if(pBlockers.y > 0.0)
   {
-    pCoverageCircle = ShadowCoverageCircle(pTexCoordNDC, -pTexCoord.w, -pBlockerDistance.x, osgShadow_lightDistance - osgShadow_penumbraDistance, -1.0);
-    vec2 visibility = Visibility_ModifiedPCSS(osgShadow_penumbraDepthTexture, pTexCoord, pCoverageCircle, -1.0);
-    pVisibility = vec4((visibility.x + pBlockerDistance.y)/(visibility.y + pBlockerDistance.y));
+    pCoverageCircle = ShadowCoverageCircle(pTexCoordNDC, -pTexCoord.w, -pBlockers.x, osgShadow_lightDistance - osgShadow_penumbraDistance, -1.0);
+    vec2 pShadows = SearchBlockers(osgShadow_penumbraDepthTexture, pTexCoord, pCoverageCircle, osgShadow_penumbraZNearFarInv, -1.0, numShadowSamples);
+    pVisibility = vec4(1.0 - pShadows.y/numShadowSamples); // TODO: Add blocker info when computing visibility
   }
   
   //uVisibility.g = 1.0; // Umbra shadow in green
