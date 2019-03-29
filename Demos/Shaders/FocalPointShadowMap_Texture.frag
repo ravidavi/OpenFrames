@@ -129,29 +129,32 @@ void main(void)
     uTexCoordNDC *= -1.0;
   }
 
-  const int numBlockerSamples = 8;
+  const int numBlockerSamples = 4;
   const int numShadowSamples = 8;
-  float ratio = 0.75;
   
   // Umbra blocker search (using umbra far plane)
-  vec3 uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, mix(1.0/osgShadow_umbraZNearFarInv.y, uTexCoord.w, ratio), osgShadow_lightDistance + osgShadow_umbraDistance, 1.0);
+  float uBlockerDistGuess = Depth2Distance(texture2D(osgShadow_umbraDepthTexture, uTexCoord.xy).r, osgShadow_umbraZNearFarInv);
+  uBlockerDistGuess = max(uBlockerDistGuess, uTexCoord.w);
+  uBlockerDistGuess = min(uBlockerDistGuess, 1.0/osgShadow_umbraZNearFarInv.y);
+  vec3 uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, uBlockerDistGuess, osgShadow_lightDistance + osgShadow_umbraDistance, 1.0);
   vec2 uBlockers = SearchBlockers(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle, osgShadow_umbraZNearFarInv, 1.0, numBlockerSamples);
   
   // Penumbra blocker search (using penumbra near plane and adjusting for z increasing towards light)
-  vec3 pCoverageCircle = ShadowCoverageCircle(pTexCoordNDC, -pTexCoord.w, mix(-1.0/osgShadow_penumbraZNearFarInv.x, -pTexCoord.w, ratio), osgShadow_lightDistance - osgShadow_penumbraDistance, -1.0);
+  float pBlockerDistGuess = Depth2Distance(texture2D(osgShadow_penumbraDepthTexture, pTexCoord.xy).r, osgShadow_penumbraZNearFarInv);
+  pBlockerDistGuess = min(pBlockerDistGuess, pTexCoord.w);
+  pBlockerDistGuess = max(pBlockerDistGuess, 1.0/osgShadow_penumbraZNearFarInv.x);
+  vec3 pCoverageCircle = ShadowCoverageCircle(pTexCoordNDC, -pTexCoord.w, -pBlockerDistGuess, osgShadow_lightDistance - osgShadow_penumbraDistance, -1.0);
   vec2 pBlockers = SearchBlockers(osgShadow_penumbraDepthTexture, pTexCoord, pCoverageCircle, osgShadow_penumbraZNearFarInv, -1.0, numBlockerSamples);
   
   // Adjust umbra blocker distance based on info from penumbra blocker search
   float uBlockerDistanceFromPenumbra = (osgShadow_umbraDistance + osgShadow_penumbraDistance) - pBlockers.x;
   vec2 uBlockersAdjusted = vec2(uBlockers.x*uBlockers.y + uBlockerDistanceFromPenumbra*pBlockers.y, uBlockers.y + pBlockers.y);
   uBlockersAdjusted.x /= max(uBlockersAdjusted.y, 1.0);
-  //uBlockersAdjusted = uBlockers;
   
   // Adjust penumbra blocker distance based on info from umbra blocker search
   float pBlockerDistanceFromUmbra = (osgShadow_umbraDistance + osgShadow_penumbraDistance) - uBlockers.x;
   vec2 pBlockersAdjusted = vec2(pBlockers.x*pBlockers.y + pBlockerDistanceFromUmbra*uBlockers.y, uBlockers.y + pBlockers.y);
   pBlockersAdjusted.x /= max(pBlockersAdjusted.y, 1.0);
-  //pBlockersAdjusted = pBlockers;
   
   // Compute umbra shadowing if there are any blockers
   float uVisibility = 1.0;
@@ -159,7 +162,7 @@ void main(void)
   {
     uCoverageCircle = ShadowCoverageCircle(uTexCoordNDC, uTexCoord.w, uBlockersAdjusted.x, osgShadow_lightDistance + osgShadow_umbraDistance, 1.0);
     vec2 uShadows = SearchBlockers(osgShadow_umbraDepthTexture, uTexCoord, uCoverageCircle, osgShadow_umbraZNearFarInv, 1.0, numShadowSamples);
-    uVisibility = 1.0 - uShadows.y/numShadowSamples; // TODO: Add blocker info when computing visibility
+    uVisibility = 1.0 - (uShadows.y+uBlockersAdjusted.y)/(numShadowSamples+2.0*numBlockerSamples);
   }
   
   // Compute penumbra shadowing if there are any blockers
@@ -168,14 +171,15 @@ void main(void)
   {
     pCoverageCircle = ShadowCoverageCircle(pTexCoordNDC, -pTexCoord.w, -pBlockersAdjusted.x, osgShadow_lightDistance - osgShadow_penumbraDistance, -1.0);
     vec2 pShadows = SearchBlockers(osgShadow_penumbraDepthTexture, pTexCoord, pCoverageCircle, osgShadow_penumbraZNearFarInv, -1.0, numShadowSamples);
-    pVisibility = 1.0 - pShadows.y/numShadowSamples; // TODO: Add blocker info when computing visibility
+    pVisibility = 1.0 - (pShadows.y+pBlockersAdjusted.y)/(numShadowSamples+2.0*numBlockerSamples);
   }
   
   //uVisibility = pVisibility;
   //pVisibility = uVisibility;
   
   float minVisibility = osgShadow_ambientBias.x;
-  float shadowedVisibility = 0.5 * (uVisibility + pVisibility) * osgShadow_ambientBias.y;
-  //if(shadowedVisibility >= 1.0/numShadowSamples) shadowedVisibility -= fwidth(shadowedVisibility);
+  float shadowedVisibility = 0.5 * (uVisibility + pVisibility);
+  if(shadowedVisibility == 1.0) shadowedVisibility -= 0.5*fwidth(shadowedVisibility);
+  shadowedVisibility *= osgShadow_ambientBias.y;
   gl_FragColor = color * (minVisibility + shadowedVisibility);
 }

@@ -80,7 +80,7 @@ int main()
 {
   const double r_sun = 695508.0;
   const double AU = 1.496e8;
-  double lightDist = 1.0*AU;
+  double lightDist = 0.1*AU;
   
   // Shadowing properties
   osgShadow::ShadowedScene *shadowedScene = new osgShadow::ShadowedScene;
@@ -114,8 +114,12 @@ int main()
   double offset = 2.386;
 
   osg::Node* model;
-  model = osgDB::readNodeFile("Models/CSHP_DV_257_01_______00343.obj");
-  //model = osgDB::readNodeFile("Models/ESA_Rosetta_OSIRIS_67P_SHAP2P.obj");
+  if(false)
+  {
+    model = osgDB::readNodeFile("Models/CSHP_DV_257_01_______00343.obj");
+    //model = osgDB::readNodeFile("Models/ESA_Rosetta_OSIRIS_67P_SHAP2P.obj");
+  }
+  else
   {
     float length = 3.0f;
     
@@ -124,12 +128,13 @@ int main()
     osg::Vec3 centerBase(0.0, 0.0, 0.0f);
     
     osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
+    pat->setName("Receiving Plane");
     pat->setPosition(osg::Vec3d(offset - 0.005, 0, 0));
-    pat->setAttitude(osg::Quat(osg::PI/2.0 - 0.2, osg::Vec3d(0, 1, 0)));
+    //pat->setAttitude(osg::Quat(osg::PI/2.0 - 0.2, osg::Vec3d(0, 1, 0)));
     
     osg::Geometry *plane = osg::createTexturedQuadGeometry(centerBase-widthVec*0.5f-heightVec*0.5f, widthVec, heightVec );
     pat->addChild(plane);
-    //model = pat;
+    model = pat;
   }
     
   model->setNodeMask(CastsShadowTraversalMask | ReceivesShadowTraversalMask);
@@ -174,7 +179,8 @@ int main()
   root->addChild(shadowedScene);
   {
     osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-    pat->setPosition(osg::Vec3d(10.0, 0, 0));
+    double lightSphereDist = 10.0;
+    pat->setPosition(osg::Vec3d(lightSphereDist, 0, 0));
     
     osg::ShapeDrawable* sphereSD = new osg::ShapeDrawable;
     sphereSD->setName("Light");
@@ -182,7 +188,7 @@ int main()
     sphereSD->setUseVertexBufferObjects(true);
     sphereSD->getOrCreateStateSet(); // Will be used for textures and modes
     osg::Sphere* sphere = new osg::Sphere;
-    sphere->setRadius(r_sun*10.0/lightDist);
+    sphere->setRadius(r_sun*lightSphereDist/lightDist);
     sphereSD->setShape(sphere);
     sphereSD->setColor(osg::Vec4(1, 1, 0, 1));
     
