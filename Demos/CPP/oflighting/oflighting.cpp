@@ -40,45 +40,45 @@ public:
     {
       if(ea->getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
       {
-        double delta = 1.0;
+        double delta = 10.0;
         if(ea->getModKeyMask() && osgGA::GUIEventAdapter::MODKEY_SHIFT) delta *= 0.1;
         
-        if(ea->getKey() == osgGA::GUIEventAdapter::KEY_Up)
+        if(ea->getKey() == '=' || ea->getKey() == '+')
         {
           osg::Vec3d pos;
           _model->getPosition(pos);
           _model->setPosition(pos + osg::Vec3d(delta, 0.0, 0.0));
           return true;
         }
-        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_Down)
+        else if(ea->getKey() == '-' || ea->getKey() == '_')
         {
           osg::Vec3d pos;
           _model->getPosition(pos);
           _model->setPosition(pos - osg::Vec3d(delta, 0.0, 0.0));
           return true;
         }
-        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_A)
+        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_Up)
         {
           osg::Vec3d pos;
           _model->getPosition(pos);
           _model->setPosition(pos - osg::Vec3d(0.0, 0.0, delta));
           return true;
         }
-        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_D)
+        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_Down)
         {
           osg::Vec3d pos;
           _model->getPosition(pos);
           _model->setPosition(pos + osg::Vec3d(0.0, 0.0, delta));
           return true;
         }
-        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_X)
+        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_Left)
         {
           osg::Vec3d pos;
           _model->getPosition(pos);
           _model->setPosition(pos - osg::Vec3d(0.0, delta, 0.0));
           return true;
         }
-        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_W)
+        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_Right)
         {
           osg::Vec3d pos;
           _model->getPosition(pos);
@@ -197,15 +197,16 @@ int main()
   root->addChild(shadowedSceneRoot);
   
   // Initialize shadowing info
+  OpenFrames::FocalPointShadowMap *fpsm;
   {
     osgShadow::ShadowedScene* shadowedScene = shadowedSceneRoot->getShadowedSceneRoot();
     osgShadow::ShadowSettings *shadowSettings = shadowedScene->getShadowSettings();
     shadowSettings->setReceivesShadowTraversalMask(ReceivesShadowTraversalMask);
     shadowSettings->setCastsShadowTraversalMask(CastsShadowTraversalMask);
-    int texSize = 1024;
+    int texSize = 2048;
     shadowSettings->setTextureSize(osg::Vec2s(texSize, texSize));
     
-    OpenFrames::FocalPointShadowMap *fpsm = new OpenFrames::FocalPointShadowMap;
+    fpsm = new OpenFrames::FocalPointShadowMap;
     fpsm->setLightSize(r_sun);
     fpsm->setAmbientBias(osg::Vec2(0.0, 1.0));
     fpsm->setPolygonOffset(osg::Vec2(-0.5, -0.5));
@@ -225,7 +226,7 @@ int main()
   double cgScale = 100.0;
   cg->setModelScale(cgScale, cgScale, cgScale);
   cg->getModel()->setNodeMask(CastsShadowTraversalMask | ReceivesShadowTraversalMask);
-  //cg->getModel()->setNodeMask(ReceivesShadowTraversalMask);
+  cg->getModel()->setNodeMask(ReceivesShadowTraversalMask);
   shadowedSceneRoot->addChild(cg);
 
   // Set comet material
@@ -244,8 +245,8 @@ int main()
   sc->showAxesLabels(ReferenceFrame::NO_AXES);
   sc->showNameLabel(false);
   sc->setModel("Models/OsirisRex-2013-comp.lwo");
-  sc->setPosition(-50.0, 0.0, 0.0);
-  sc->setAttitude(osg::Quat(-osg::PI/2.0, osg::Vec3(0.0, 1.0, 0.0)));
+  sc->setPosition(-cg->getBound()._radius, 0.0, 0.0);
+  sc->setAttitude(osg::Quat(osg::PI/2.0, osg::Vec3(0.0, 1.0, 0.0)));
   double scScale = 0.001;
   sc->setModelScale(scScale, scScale, scScale);
   sc->addDraggerCallback(nullptr);
@@ -301,6 +302,23 @@ int main()
   myWindow->getGridPosition(0, 0)->getSceneView()->addEventHandler(new MoveModelHandler(sc));
   
   myWindow->startThread(); // Start window animation
+  
+  // Add debug HUD for ShadowMap
+#if 0
+  while(!myWindow->isAnimating()) OpenThreads::Thread::YieldCurrentThread();
+  
+  {
+    OpenThreads::Thread::microSleep(500000);
+    osg::ref_ptr<osg::Camera> hudCam = myWindow->getGridPosition(0, 0)->getHUD();
+    osg::GraphicsContext* gc = hudCam->getGraphicsContext();
+    
+    osg::ref_ptr<osg::Camera> smDebugHUD = fpsm->makeDebugHUD();
+    smDebugHUD->setGraphicsContext(gc);
+    smDebugHUD->setViewport(new osg::Viewport(0, 0, 400, 400));
+    hudCam->addChild(smDebugHUD);
+  }
+#endif
+  
   myWindow->join(); // Wait for window animation to finish
   
   return 0;
