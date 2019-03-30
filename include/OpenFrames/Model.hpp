@@ -25,7 +25,7 @@
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Node>
 #include <osg/ref_ptr>
-#include <osgManipulator/TrackballDragger>
+#include <osgManipulator/Dragger>
 #include <string>
 
 namespace OpenFrames
@@ -105,6 +105,7 @@ namespace OpenFrames
     /** Enable model dragging. Call with NULL to set up dragger without
         installing a callback */
     void addDraggerCallback(osgManipulator::DraggerCallback* callback);
+    osgManipulator::Dragger* getDragger() const { return _dragger; }
     
     /** Inherited function to compute the bounds of the model */
     virtual const osg::BoundingSphere& getBound() const;
@@ -131,7 +132,7 @@ namespace OpenFrames
 	    but are still part of this frame. eg. ParticleSystems, etc... */
     osg::ref_ptr<osg::Geode> _extras;
     
-    osg::ref_ptr<osgManipulator::TrackballDragger> _dragger;
+    osg::ref_ptr<osgManipulator::Dragger> _dragger;
     osg::ref_ptr<osg::MatrixTransform> _draggerXform;
   };
 

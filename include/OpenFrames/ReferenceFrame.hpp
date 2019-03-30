@@ -30,6 +30,7 @@
 #include <osgText/Text>
 #include <osg/Referenced>
 #include <osg/ref_ptr>
+#include <osgShadow/ShadowedScene>
 
 #include <vector>
 #include <string>
@@ -430,6 +431,9 @@ class Trajectory;
    * \return The osg::LightSource, or NULL if it doesn't exist.
    */
   osg::LightSource* getLightSource() const;
+    
+    void setShadowedSceneRoot(bool isRoot);
+    osgShadow::ShadowedScene* getShadowedSceneRoot() const;
 
     /*
      * \brief Get the number of children.
@@ -572,6 +576,7 @@ class Trajectory;
 	mutable osg::BoundingSphere _bound; ///< Frame's bounding sphere
 
 	osg::ref_ptr<FrameTransform> _xform; ///< The transform that all contained objects will undergo
+    osg::ref_ptr<osgShadow::ShadowedScene> _shadowedSceneRoot;
 
   private:
     void _init( const std::string &name, const osg::Vec4& c );

@@ -22,6 +22,7 @@
 #include <osg/Geode>
 #include <osg/Shape>
 #include <osg/ShapeDrawable>
+#include <osgManipulator/TrackballDragger>
 #include <osgParticle/ParticleSystem>
 #include <osgDB/ReadFile>
 #include <iostream>
@@ -236,9 +237,11 @@ namespace OpenFrames
       _draggerXform = new osg::MatrixTransform;
       _xform->addChild(_draggerXform);
       
-      _dragger = new osgManipulator::TrackballDragger();
-      _dragger->setupDefaultGeometry();
-      _dragger->setAxisLineWidth(5.0);
+      osgManipulator::TrackballDragger* draggerTrackball = new osgManipulator::TrackballDragger();
+      draggerTrackball->setAxisLineWidth(5.0);
+      draggerTrackball->setupDefaultGeometry();
+      
+      _dragger = draggerTrackball;
       _xform->addChild(_dragger);
       const osg::BoundingSphere& bound = getBound();
       float scale = bound.radius();
@@ -310,7 +313,6 @@ namespace OpenFrames
       _transform->getMatrix().decompose(trans, rot, scale, rotSO);
       _modelXform->setPosition(trans);
       _modelXform->setAttitude(rot);
-      _modelXform->setScale(scale[0], scale[1], scale[2]);
     }
     
     return true;

@@ -228,7 +228,8 @@ void ReferenceFrame::setColor( const osg::Vec4 &color )
 
   osg::Group* ReferenceFrame::getGroup() const
   {
-    return (osg::Group*)_xform.get();
+    if(_shadowedSceneRoot == nullptr) return (osg::Group*)_xform.get();
+    else return (osg::Group*)_shadowedSceneRoot.get();
   }
 
 const osg::BoundingSphere& ReferenceFrame::getBound() const
@@ -545,6 +546,21 @@ osg::LightSource* ReferenceFrame::getLightSource() const
   }
   return NULL; // Light source doesn't exist
 }
+  
+  void ReferenceFrame::setShadowedSceneRoot(bool isRoot)
+  {
+    if(!isRoot) _shadowedSceneRoot = nullptr;
+    else if(_shadowedSceneRoot == nullptr)
+    {
+      _shadowedSceneRoot = new osgShadow::ShadowedScene;
+      _shadowedSceneRoot->addChild(_xform);
+    }
+  }
+  
+  osgShadow::ShadowedScene* ReferenceFrame::getShadowedSceneRoot() const
+  {
+    return _shadowedSceneRoot;
+  }
 
   void ReferenceFrame::createFrameString( std::string& str, std::string prefix ) const
   {

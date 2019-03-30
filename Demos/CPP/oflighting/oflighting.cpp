@@ -14,27 +14,67 @@
  limitations under the License.
  ***********************************/
 
+#include <OpenFrames/FocalPointShadowMap.hpp>
 #include <OpenFrames/Model.hpp>
 #include <OpenFrames/Sphere.hpp>
 #include <OpenFrames/WindowProxy.hpp>
+#include <osgDB/ReadFile>
 
 using namespace OpenFrames;
 
+static int ReceivesShadowTraversalMask = 0x1;
+static int CastsShadowTraversalMask = 0x2;
+
 int main()
 {
-  const double r_earth = 6.371;
-  const double r_moon = 1.737;
-  const double r_sun = 695.7;
-  const double d_sun = 149600;
+  const double r_earth = 6371.0;
+  const double r_moon = 1737.0;
+  const double r_sun = 695000.7;
+  const double d_sun = 149600000.0;
+  const double d_moon = 384400.0;
+  const double d_cg = 100000.0;
   
   // Create the interface that represents a window
-  osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(30, 30, 640, 480, 1, 1, false, false);
+  osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(30, 30, 1024, 768, 1, 1, false, false);
   
   // Create a ReferenceFrame for the root
   ReferenceFrame* root = new ReferenceFrame("Root");
   root->showAxes(ReferenceFrame::NO_AXES);
   root->showAxesLabels(ReferenceFrame::NO_AXES);
   root->showNameLabel(false);
+  
+  // Create a Sphere for the Sun
+  Sphere* sun = new Sphere("Sun");
+  sun->showAxes(ReferenceFrame::NO_AXES);
+  sun->showAxesLabels(ReferenceFrame::NO_AXES);
+  sun->showNameLabel(false);
+  sun->setTextureMap("Images/SunTexture.jpg");
+  sun->setRadius(r_sun);
+  sun->setPosition(-d_sun, 0.0, 0.0);
+  root->addChild(sun);
+  
+  // Set Sun material
+  // Sun has emission but no reflection
+  {
+    osg::Material* mat = new osg::Material;
+    mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0, 0, 0, 1));
+    mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(0, 0, 0, 1));
+    mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(0, 0, 0, 1));
+    mat->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4(1, 1, 1, 1));
+    sun->setMaterial(mat);
+  }
+  
+  // Make the Sun a light source
+  // By default this will use GL_LIGHT0 which overrides the global light
+  // If using multiple lights, call light->setLightNum(num) with unique light numbers
+  {
+    sun->setLightSourceEnabled(true);
+    osg::Light* sunLight = sun->getLightSource()->getLight();
+    sunLight->setPosition(osg::Vec4(0.0, 0.0, 0.0, 1.0)); // At center of Sun
+    sunLight->setAmbient(osg::Vec4(0.0, 0.0, 0.0, 1.0));
+    sunLight->setDiffuse(osg::Vec4(2.0, 2.0, 2.0, 1.0)); // Bright sun!
+    sunLight->setSpecular(osg::Vec4(0.8, 0.8, 0.8, 1.0));
+  }
   
   // Create a Sphere for the Earth
   Sphere* earth = new Sphere("Earth");
@@ -49,12 +89,14 @@ int main()
   
   // Set Earth material, which overrides any color set for the Sphere
   // Use diffuse but no ambient reflections (so dark side can show night texture)
-  osg::Material* mat = new osg::Material;
-  mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0.0, 0.0, 0.0, 1.0));
-  mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
-  mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(0.5, 0.5, 0.5, 1.0));
-  mat->setShininess(osg::Material::FRONT_AND_BACK, 100);
-  earth->setMaterial(mat);
+  {
+    osg::Material* mat = new osg::Material;
+    mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0.0, 0.0, 0.0, 1.0));
+    mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
+    mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(0.5, 0.5, 0.5, 1.0));
+    mat->setShininess(osg::Material::FRONT_AND_BACK, 100);
+    earth->setMaterial(mat);
+  }
   
   // Create a Sphere for the Moon
   Sphere* moon = new Sphere("Moon");
@@ -63,59 +105,83 @@ int main()
   moon->showNameLabel(false);
   moon->setTextureMap("Images/MoonTexture.bmp");
   moon->setRadius(r_moon);
-  moon->setPosition(10.0, -10.0, 0.0);
+  moon->setPosition(-d_moon, 0.0, 0.0);
   earth->addChild(moon);
   
   // Set Moon material
   // Use diffuse but no ambient reflections (dark side of Moon will be black)
-  mat = new osg::Material;
-  mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0.0, 0.0, 0.0, 1.0));
-  mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
-  moon->setMaterial(mat);
+  {
+    osg::Material* mat = new osg::Material;
+    mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0.0, 0.0, 0.0, 1.0));
+    mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
+    moon->setMaterial(mat);
+  }
   
-  // Create a Sphere for the Sun
-  Sphere* sun = new Sphere("Sun");
-  sun->showAxes(ReferenceFrame::NO_AXES);
-  sun->showAxesLabels(ReferenceFrame::NO_AXES);
-  sun->showNameLabel(false);
-  sun->setTextureMap("Images/SunTexture.jpg");
-  sun->setRadius(r_sun);
-  sun->setPosition(-d_sun, 0.0, 0.0);
-  root->addChild(sun);
+  // Create an empty ReferenceFrame to serve as the shadowed scene root
+  ReferenceFrame* shadowedSceneRoot = new ReferenceFrame("Shadow Scene Root");
+  shadowedSceneRoot->showAxes(ReferenceFrame::NO_AXES);
+  shadowedSceneRoot->showAxesLabels(ReferenceFrame::NO_AXES);
+  shadowedSceneRoot->showNameLabel(false);
+  shadowedSceneRoot->setShadowedSceneRoot(true);
+  shadowedSceneRoot->setPosition(0.0, 0.0, d_cg);
+  root->addChild(shadowedSceneRoot);
   
-  // Set Sun material
-  // Sun has emission but no reflection
-  mat = new osg::Material;
-  mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0, 0, 0, 1));
-  mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(0, 0, 0, 1));
-  mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(0, 0, 0, 1));
-  mat->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4(1, 1, 1, 1));
-  sun->setMaterial(mat);
-  
-  // Make the Sun a light source
-  // By default this will use GL_LIGHT0 which overrides the global light
-  // If using multiple lights, call light->setLightNum(num) with unique light numbers
-  sun->setLightSourceEnabled(true);
-  osg::Light* sunLight = sun->getLightSource()->getLight();
-  sunLight->setPosition(osg::Vec4(0.0, 0.0, 0.0, 1.0)); // At center of Sun
-  sunLight->setAmbient(osg::Vec4(0.4, 0.4, 0.4, 1.0));
-  sunLight->setDiffuse(osg::Vec4(2.0, 2.0, 2.0, 1.0)); // Bright sun!
-  sunLight->setSpecular(osg::Vec4(0.8, 0.8, 0.8, 1.0));
+  // Initialize shadowing info
+  {
+    osgShadow::ShadowedScene* shadowedScene = shadowedSceneRoot->getShadowedSceneRoot();
+    osgShadow::ShadowSettings *shadowSettings = shadowedScene->getShadowSettings();
+    shadowSettings->setReceivesShadowTraversalMask(ReceivesShadowTraversalMask);
+    shadowSettings->setCastsShadowTraversalMask(CastsShadowTraversalMask);
+    int texSize = 2048;
+    shadowSettings->setTextureSize(osg::Vec2s(texSize, texSize));
+    
+    OpenFrames::FocalPointShadowMap *fpsm = new OpenFrames::FocalPointShadowMap;
+    fpsm->setLightSize(r_sun);
+    fpsm->setAmbientBias(osg::Vec2(0.0, 1.0));
+    fpsm->setPolygonOffset(osg::Vec2(-0.5, -0.5));
+    shadowedScene->setShadowTechnique(fpsm);
+  }
   
   // Create a Model for the Comet
   Model* cg = new Model("67P_CG");
   cg->showAxes(ReferenceFrame::NO_AXES);
   cg->showAxesLabels(ReferenceFrame::NO_AXES);
   cg->showNameLabel(false);
-  cg->setModel("Models/Comet67P_CG.3ds");
-  cg->setPosition(100, 100, 100);
-  mat = new osg::Material;
-  mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0.0, 0.0, 0.0, 1.0));
-  mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(0.25, 0.25, 0.25, 1.0));
-  mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(0.1, 0.1, 0.2, 1.0));
-  mat->setShininess(osg::Material::FRONT_AND_BACK, 100);
-  cg->getModel()->getOrCreateStateSet()->setAttributeAndModes(mat);
-  earth->addChild(cg);
+  //cg->setModel("Models/Comet67P_CG.3ds");
+  //cg->setModel("Models/CSHP_DV_257_01_______00343.obj");
+  //cg->setModel("Models/halley.3ds");
+  //cg->setModel("Models/BennuRadarShape.obj");
+  cg->setModel("Models/Bennu_v20_200k.obj");
+  double cgScale = 100.0;
+  cg->setModelScale(cgScale, cgScale, cgScale);
+  cg->getModel()->setNodeMask(CastsShadowTraversalMask | ReceivesShadowTraversalMask);
+  //cg->getModel()->setNodeMask(ReceivesShadowTraversalMask);
+  shadowedSceneRoot->addChild(cg);
+
+  // Set comet material
+  {
+    osg::Material* mat = new osg::Material;
+    mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0.0, 0.0, 0.0, 1.0));
+    mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(0.25, 0.25, 0.25, 1.0));
+    mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(0.1, 0.1, 0.2, 1.0));
+    mat->setShininess(osg::Material::FRONT_AND_BACK, 100);
+    cg->getModel()->getOrCreateStateSet()->setAttributeAndModes(mat, osg::StateAttribute::ON);
+  }
+  
+  // Create a model for spacecraft near comet
+  Model* sc = new Model("SC");
+  sc->showAxes(ReferenceFrame::NO_AXES);
+  sc->showAxesLabels(ReferenceFrame::NO_AXES);
+  sc->showNameLabel(false);
+  sc->setModel("Models/OsirisRex-2013-comp.lwo");
+  sc->setPosition(-50.0, 0.0, 0.0);
+  sc->setAttitude(osg::Quat(-osg::PI/2.0, osg::Vec3(0.0, 1.0, 0.0)));
+  double scScale = 0.001;
+  sc->setModelScale(scScale, scScale, scScale);
+  sc->addDraggerCallback(nullptr);
+  sc->getDragger()->setNodeMask(ReceivesShadowTraversalMask);
+  sc->getModel()->setNodeMask(CastsShadowTraversalMask | ReceivesShadowTraversalMask);
+  shadowedSceneRoot->addChild(sc);
   
   // Create a manager to handle access to the scene
   FrameManager* fm = new FrameManager;
@@ -154,10 +220,12 @@ int main()
   View *viewMoon = new View(root, moon);
   View *viewSun = new View(root, sun);
   View *viewCG = new View(root, cg);
+  View *viewSC = new View(root, sc);
   myWindow->getGridPosition(0, 0)->addView(viewEarth);
   myWindow->getGridPosition(0, 0)->addView(viewMoon);
   myWindow->getGridPosition(0, 0)->addView(viewSun);
   myWindow->getGridPosition(0, 0)->addView(viewCG);
+  myWindow->getGridPosition(0, 0)->addView(viewSC);
   
   myWindow->startThread(); // Start window animation
   myWindow->join(); // Wait for window animation to finish
