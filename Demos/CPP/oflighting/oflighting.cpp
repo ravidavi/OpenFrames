@@ -19,11 +19,81 @@
 #include <OpenFrames/Sphere.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <osgDB/ReadFile>
+#include <osgGA/GUIEventHandler>
 
 using namespace OpenFrames;
 
 static int ReceivesShadowTraversalMask = 0x1;
 static int CastsShadowTraversalMask = 0x2;
+
+class MoveModelHandler : public osgGA::GUIEventHandler
+{
+public:
+  MoveModelHandler(Model *model)
+  : _model(model)
+  {}
+  
+  virtual bool handle(osgGA::Event* event, osg::Object* object, osg::NodeVisitor* nv)
+  {
+    osgGA::GUIEventAdapter* ea = event->asGUIEventAdapter();
+    if(ea)
+    {
+      if(ea->getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
+      {
+        double delta = 1.0;
+        if(ea->getModKeyMask() && osgGA::GUIEventAdapter::MODKEY_SHIFT) delta *= 0.1;
+        
+        if(ea->getKey() == osgGA::GUIEventAdapter::KEY_Up)
+        {
+          osg::Vec3d pos;
+          _model->getPosition(pos);
+          _model->setPosition(pos + osg::Vec3d(delta, 0.0, 0.0));
+          return true;
+        }
+        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_Down)
+        {
+          osg::Vec3d pos;
+          _model->getPosition(pos);
+          _model->setPosition(pos - osg::Vec3d(delta, 0.0, 0.0));
+          return true;
+        }
+        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_A)
+        {
+          osg::Vec3d pos;
+          _model->getPosition(pos);
+          _model->setPosition(pos - osg::Vec3d(0.0, 0.0, delta));
+          return true;
+        }
+        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_D)
+        {
+          osg::Vec3d pos;
+          _model->getPosition(pos);
+          _model->setPosition(pos + osg::Vec3d(0.0, 0.0, delta));
+          return true;
+        }
+        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_X)
+        {
+          osg::Vec3d pos;
+          _model->getPosition(pos);
+          _model->setPosition(pos - osg::Vec3d(0.0, delta, 0.0));
+          return true;
+        }
+        else if(ea->getKey() == osgGA::GUIEventAdapter::KEY_W)
+        {
+          osg::Vec3d pos;
+          _model->getPosition(pos);
+          _model->setPosition(pos + osg::Vec3d(0.0, delta, 0.0));
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }
+  
+protected:
+  Model* _model;
+};
 
 int main()
 {
@@ -132,7 +202,7 @@ int main()
     osgShadow::ShadowSettings *shadowSettings = shadowedScene->getShadowSettings();
     shadowSettings->setReceivesShadowTraversalMask(ReceivesShadowTraversalMask);
     shadowSettings->setCastsShadowTraversalMask(CastsShadowTraversalMask);
-    int texSize = 2048;
+    int texSize = 1024;
     shadowSettings->setTextureSize(osg::Vec2s(texSize, texSize));
     
     OpenFrames::FocalPointShadowMap *fpsm = new OpenFrames::FocalPointShadowMap;
@@ -226,6 +296,9 @@ int main()
   myWindow->getGridPosition(0, 0)->addView(viewSun);
   myWindow->getGridPosition(0, 0)->addView(viewCG);
   myWindow->getGridPosition(0, 0)->addView(viewSC);
+  
+  // Install event handler to move model
+  myWindow->getGridPosition(0, 0)->getSceneView()->addEventHandler(new MoveModelHandler(sc));
   
   myWindow->startThread(); // Start window animation
   myWindow->join(); // Wait for window animation to finish
