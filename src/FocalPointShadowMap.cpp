@@ -207,12 +207,11 @@ namespace OpenFrames
     
     // Set up shadow map textures
     {
+      // Create penumbra depth texture
       _texturePenumbraDepth = new osg::Texture2D;
       _texturePenumbraDepth->setTextureSize(textureSize.x(), textureSize.y());
       _texturePenumbraDepth->setInternalFormat(GL_DEPTH_COMPONENT);
-      _texturePenumbraDepth->setShadowComparison(true);
       _texturePenumbraDepth->setShadowCompareFunc(osg::Texture::LEQUAL); // Penumbra wants to know closest depth
-      _texturePenumbraDepth->setShadowTextureMode(osg::Texture2D::LUMINANCE);
       _texturePenumbraDepth->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR);
       _texturePenumbraDepth->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
       
@@ -221,12 +220,11 @@ namespace OpenFrames
       _texturePenumbraDepth->setWrap(osg::Texture2D::WRAP_T,osg::Texture2D::CLAMP_TO_BORDER);
       _texturePenumbraDepth->setBorderColor(osg::Vec4(1.0f,1.0f,1.0f,1.0f));
       
+      // Create umbra depth texture
       _textureUmbraDepth = new osg::Texture2D;
       _textureUmbraDepth->setTextureSize(textureSize.x(), textureSize.y());
       _textureUmbraDepth->setInternalFormat(GL_DEPTH_COMPONENT);
-      _textureUmbraDepth->setShadowComparison(true);
       _textureUmbraDepth->setShadowCompareFunc(osg::Texture::GEQUAL); // Umbra wants to know farthest depth
-      _textureUmbraDepth->setShadowTextureMode(osg::Texture2D::LUMINANCE);
       _textureUmbraDepth->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR);
       _textureUmbraDepth->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
       
