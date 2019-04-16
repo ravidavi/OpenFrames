@@ -82,10 +82,10 @@ vec4 ShadowCoverageCircle(vec2 texCoordNDC, float fragDist, float planeDist, flo
   
   // If part of coverage circle is outside the texture, then only search samples inside the texture
   // and attenuate using percentage of coverage circle inside texture
-  // This uses the circle-circle intersection area algorithm at:
+  // See D.Assencio, "The intersection area of two circles", 7/12/2017
   // https://diego.assencio.com/?index=8d6ca3d82151bad815f78addf9b5c1c6
   float r1 = 1.0;           // Radius of texture, assumes circular light
-  float r2 = radius;        // Radius of coverage circle
+  float r2 = max(radius, 0.001); // Radius of coverage circle
   float d = length(center); // Distance from texture center (at origin) to coverage circle center
   
   float A1 = PI;
@@ -182,7 +182,7 @@ void main(void)
   }
 
   const int numBlockerSamples = 4;
-  const int numShadowSamples = 8;
+  const int numShadowSamples = 4;
   
   // Umbra blocker search (using umbra far plane)
   float uBlockerDistGuess = Depth2Distance(texture2D(osgShadow_umbraDepthTexture, uTexCoord.xy).r, osgShadow_umbraZNearFarInv);
