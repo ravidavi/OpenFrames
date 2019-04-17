@@ -2,6 +2,7 @@
 //
 // Use GLSL 1.20 (OpenGL 2.1)
 #version 120
+#pragma import_defines (BASE_TEX_UNIT, PENUMBRA_TEX_UNIT, UMBRA_TEX_UNIT)
 
 uniform sampler2D osgShadow_baseTexture;
 uniform sampler2D osgShadow_penumbraDepthTexture;
@@ -84,30 +85,30 @@ vec4 ShadowCoverageCircle(vec2 texCoordNDC, float fragDist, float planeDist, flo
   // and attenuate using percentage of coverage circle inside texture
   // See D.Assencio, "The intersection area of two circles", 7/12/2017
   // https://diego.assencio.com/?index=8d6ca3d82151bad815f78addf9b5c1c6
-  float r1 = 1.0;           // Radius of texture, assumes circular light
-  float r2 = max(radius, 0.001); // Radius of coverage circle
-  float d = length(center); // Distance from texture center (at origin) to coverage circle center
+  const float r1 = 1.0;          // Radius of light within shadow texture (NDC), assumes circular light
+  float r2 = max(radius, 0.001); // Radius of coverage circle (NDC)
+  float d = length(center);      // Distance from texture center (at origin) to coverage circle center
   
-  float A1 = PI;
-  float A2 = PI*r2*r2;
+  const float r1_sq = 1.0;
+  float r2_sq = r2*r2;
+  float A2 = PI*r2_sq;
   
-  float Aintersect = 0.0;
-  if(d <= abs(r1 - r2)) Aintersect = min(A1, A2);
+  float Aratio = 0.0;
+  if(d <= abs(r1 - r2)) Aratio = min(r1_sq/r2_sq, 1.0);
   else if(d < r1 + r2)
   {
-    float r1_sq = 1.0;
-    float r2_sq = r2*r2;
     float d1 = (r1_sq - r2_sq + d*d)/(2.0*d);
     float d2 = d - d1;
-    Aintersect =  r1_sq*acos(d1/r1) - d1*sqrt(r1_sq - d1*d1);
-    Aintersect += r2_sq*acos(d2/r2) - d2*sqrt(r2_sq - d2*d2);
+    Aratio =  r1_sq*acos(d1/r1) - d1*sqrt(r1_sq - d1*d1);
+    Aratio += r2_sq*acos(d2/r2) - d2*sqrt(r2_sq - d2*d2);
+    Aratio /= A2;
   }
   
   // Convert center and radius from NDC [-1,1] -> texcoords [0, 1]
   center = center * 0.5 + 0.5;
   radius = radius * 0.5;
   
-  return vec4(center, radius, Aintersect/A2);
+  return vec4(center, radius, Aratio);
 }
 
 vec2 SearchBlockers(sampler2D depthTex, vec4 texCoord, vec4 coverageCircle, vec2 zNearFarInv, float planeSign, const int numSearchSamples)
@@ -164,11 +165,11 @@ void main(void)
   phi = random(gl_FragCoord.xy)*TWOPI;
   
   // Get base fragment color, which will be attenuated based on visible light
-  vec4 color = gl_Color * texture2D(osgShadow_baseTexture, gl_TexCoord[0].xy);
+  vec4 color = gl_Color * texture2D(osgShadow_baseTexture, gl_TexCoord[BASE_TEX_UNIT].xy);
   
   // TexCoords are in range [0, w], so recover NDC coordinates in range [-1, 1]
-  vec4 pTexCoord = gl_TexCoord[1];
-  vec4 uTexCoord = gl_TexCoord[2];
+  vec4 pTexCoord = gl_TexCoord[PENUMBRA_TEX_UNIT];
+  vec4 uTexCoord = gl_TexCoord[UMBRA_TEX_UNIT];
   pTexCoord.xyz = pTexCoord.xyz / pTexCoord.w; // [0, w] -> [0, 1]
   uTexCoord.xyz = uTexCoord.xyz / uTexCoord.w; // [0, w] -> [0, 1]
   vec2 pTexCoordNDC = pTexCoord.xy * 2.0 - 1.0;   // [0, 1] -> [-1, 1]
@@ -226,12 +227,12 @@ void main(void)
     pVisibility = 1.0 - (pShadows.y+pBlockersAdjusted.y)/(numShadowSamples+2.0*numBlockerSamples);
   }
   
-  //uVisibility = pVisibility;
-  //pVisibility = uVisibility;
-  
   uVisibility = 1.0 - uCoverageCircle.w + uCoverageCircle.w*uVisibility;
   pVisibility = 1.0 - pCoverageCircle.w + pCoverageCircle.w*pVisibility;
 
+  //uVisibility = pVisibility;
+  //pVisibility = uVisibility;
+  
   float minVisibility = osgShadow_ambientBias.x;
   float shadowedVisibility = 0.5 * (uVisibility + pVisibility);
   if(shadowedVisibility == 1.0) shadowedVisibility -= 0.5*fwidth(shadowedVisibility);

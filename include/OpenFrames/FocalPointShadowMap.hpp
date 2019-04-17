@@ -70,6 +70,9 @@ namespace OpenFrames
     /** Get the light size (assuming half-length of square area light) */
     const double& getLightSize() const { return _lightSize; }
     
+    void setSceneScale(const double& scale) { _sceneScale = scale; }
+    double getSceneScale() const { return _sceneScale; }
+    
     /** Add a shader to internal list, will be used instead of the default ones */
     inline void addShader(osg::Shader* shader) { _shaderList.push_back(shader); }
     
@@ -138,6 +141,7 @@ namespace OpenFrames
     osg::Vec2                       _ambientBias;
     unsigned int                    _baseTextureUnit;
     double                          _lightSize;
+    double                          _sceneScale;
   };
   
 }

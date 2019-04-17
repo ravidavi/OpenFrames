@@ -62,7 +62,8 @@ namespace OpenFrames
   _polyOffset(1.0,1.0),
   _ambientBias(0.5f,0.5f),
   _baseTextureUnit(0),
-  _lightSize(0.0)
+  _lightSize(0.0),
+  _sceneScale(1.0)
   {
   }
   
@@ -71,7 +72,8 @@ namespace OpenFrames
   _polyOffset(copy._polyOffset),
   _ambientBias(copy._ambientBias),
   _baseTextureUnit(copy._baseTextureUnit),
-  _lightSize(copy._lightSize)
+  _lightSize(copy._lightSize),
+  _sceneScale(copy._sceneScale)
   {
   }
   
@@ -311,6 +313,7 @@ namespace OpenFrames
       
       osg::Program* programShadowPass = new osg::Program;
       _cameraPenumbra->getOrCreateStateSet()->setAttribute(programShadowPass);
+      _cameraUmbra->getOrCreateStateSet()->setAttribute(programShadowPass);
       for(auto itr : _shaderListShadowPass)
       {
         programShadowPass->addShader(itr);
@@ -358,6 +361,13 @@ namespace OpenFrames
           ++itr)
       {
         _stateset->addUniform(itr->get());
+      }
+      
+      // Create shader composition defines for texture units
+      {
+        _stateset->setDefine("BASE_TEX_UNIT", std::to_string(_baseTextureUnit));
+        _stateset->setDefine("PENUMBRA_TEX_UNIT", std::to_string(baseShadowTextureUnit));
+        _stateset->setDefine("UMBRA_TEX_UNIT", std::to_string(baseShadowTextureUnit+1));
       }
       
       {
@@ -481,7 +491,7 @@ namespace OpenFrames
         osg::Vec3d lightPos3(lightPos.x(), lightPos.y(), lightPos.z());
         osg::Vec3d lightToCenter = bb.center() - lightPos3;
         double lightDistance = lightToCenter.normalize();
-        double bbRadius = bb.radius();
+        double bbRadius = bb.radius() * _sceneScale;
         
         _lightDistanceUniform->set((float)lightDistance);
 

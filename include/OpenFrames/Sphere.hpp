@@ -90,6 +90,8 @@ namespace OpenFrames
       _sphereXform->getScale(sx, sy, sz);
     }
     
+    FrameTransform* getSphereTransform() const { return _sphereXform; }
+    
     /** Set the filename of the texture to map onto the sphere. Consult the
      osg documentation to see which image filetypes are supported. */
     bool setTextureMap( const std::string &fname, unsigned int unit = 0, bool force_reload = false );

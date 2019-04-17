@@ -1,5 +1,5 @@
 /***********************************
- Copyright 2018 Ravishankar Mathur
+ Copyright 2019 Ravishankar Mathur
  
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -23,8 +23,12 @@
 
 using namespace OpenFrames;
 
-static int ReceivesShadowTraversalMask = 0x1;
-static int CastsShadowTraversalMask = 0x2;
+static int ReceivesShadowTraversalMask_earth = 0x1;
+static int CastsShadowTraversalMask_earth = 0x2;
+static int ReceivesShadowTraversalMask_comet = 0x1;
+static int CastsShadowTraversalMask_comet = 0x2;
+static unsigned int BaseShadowTexUnit_earth = 1;
+static unsigned int BaseShadowTexUnit_comet = 1;
 
 class MoveModelHandler : public osgGA::GUIEventHandler
 {
@@ -146,16 +150,44 @@ int main()
     sunLight->setSpecular(osg::Vec4(0.8, 0.8, 0.8, 1.0));
   }
   
+  // Create an empty ReferenceFrame to serve as the shadowed scene root for the comet
+  ReferenceFrame* shadowedSceneRoot_earth = new ReferenceFrame("Shadow Scene Root - Earth");
+  shadowedSceneRoot_earth->showAxes(ReferenceFrame::NO_AXES);
+  shadowedSceneRoot_earth->showAxesLabels(ReferenceFrame::NO_AXES);
+  shadowedSceneRoot_earth->showNameLabel(false);
+  shadowedSceneRoot_earth->setShadowedSceneRoot(true);
+  root->addChild(shadowedSceneRoot_earth);
+  
+  // Initialize shadowing info
+  OpenFrames::FocalPointShadowMap *fpsm_earth;
+  {
+    osgShadow::ShadowedScene* shadowedScene = shadowedSceneRoot_earth->getShadowedSceneRoot();
+    osgShadow::ShadowSettings *shadowSettings = shadowedScene->getShadowSettings();
+    shadowSettings->setReceivesShadowTraversalMask(ReceivesShadowTraversalMask_earth);
+    shadowSettings->setCastsShadowTraversalMask(CastsShadowTraversalMask_earth);
+    shadowSettings->setBaseShadowTextureUnit(BaseShadowTexUnit_earth);
+    int texSize = 1024;
+    shadowSettings->setTextureSize(osg::Vec2s(texSize, texSize));
+    
+    fpsm_earth = new OpenFrames::FocalPointShadowMap;
+    fpsm_earth->setLightSize(r_sun);
+    fpsm_earth->setAmbientBias(osg::Vec2(0.0, 1.0));
+    fpsm_earth->setPolygonOffset(osg::Vec2(-0.5, -0.5));
+    fpsm_earth->setSceneScale(1.0/std::sqrt(3.0));
+    shadowedScene->setShadowTechnique(fpsm_earth);
+  }
+  
   // Create a Sphere for the Earth
   Sphere* earth = new Sphere("Earth");
   earth->showAxes(ReferenceFrame::NO_AXES);
   earth->showAxesLabels(ReferenceFrame::NO_AXES);
   earth->showNameLabel(false);
   earth->setTextureMap("Images/land_shallow_topo_2048.jpg");
-  earth->setNightTextureMap("Images/land_ocean_ice_lights_2048.jpg");
+  //earth->setNightTextureMap("Images/land_ocean_ice_lights_2048.jpg");
   earth->setRadius(r_earth);
   earth->setAutoLOD(true);
-  root->addChild(earth);
+  earth->getSphereTransform()->setNodeMask(ReceivesShadowTraversalMask_earth);
+  shadowedSceneRoot_earth->addChild(earth);
   
   // Set Earth material, which overrides any color set for the Sphere
   // Use diffuse but no ambient reflections (so dark side can show night texture)
@@ -176,6 +208,7 @@ int main()
   moon->setTextureMap("Images/MoonTexture.bmp");
   moon->setRadius(r_moon);
   moon->setPosition(-d_moon, 0.0, 0.0);
+  moon->getSphereTransform()->setNodeMask(CastsShadowTraversalMask_earth | ReceivesShadowTraversalMask_earth);
   earth->addChild(moon);
   
   // Set Moon material
@@ -187,30 +220,31 @@ int main()
     moon->setMaterial(mat);
   }
   
-  // Create an empty ReferenceFrame to serve as the shadowed scene root
-  ReferenceFrame* shadowedSceneRoot = new ReferenceFrame("Shadow Scene Root");
-  shadowedSceneRoot->showAxes(ReferenceFrame::NO_AXES);
-  shadowedSceneRoot->showAxesLabels(ReferenceFrame::NO_AXES);
-  shadowedSceneRoot->showNameLabel(false);
-  shadowedSceneRoot->setShadowedSceneRoot(true);
-  shadowedSceneRoot->setPosition(0.0, 0.0, d_cg);
-  root->addChild(shadowedSceneRoot);
+  // Create an empty ReferenceFrame to serve as the shadowed scene root for the comet
+  ReferenceFrame* shadowedSceneRoot_comet = new ReferenceFrame("Shadow Scene Root - Comet");
+  shadowedSceneRoot_comet->showAxes(ReferenceFrame::NO_AXES);
+  shadowedSceneRoot_comet->showAxesLabels(ReferenceFrame::NO_AXES);
+  shadowedSceneRoot_comet->showNameLabel(false);
+  shadowedSceneRoot_comet->setShadowedSceneRoot(true);
+  shadowedSceneRoot_comet->setPosition(0.0, 0.0, d_cg);
+  root->addChild(shadowedSceneRoot_comet);
   
   // Initialize shadowing info
-  OpenFrames::FocalPointShadowMap *fpsm;
+  OpenFrames::FocalPointShadowMap *fpsm_comet;
   {
-    osgShadow::ShadowedScene* shadowedScene = shadowedSceneRoot->getShadowedSceneRoot();
+    osgShadow::ShadowedScene* shadowedScene = shadowedSceneRoot_comet->getShadowedSceneRoot();
     osgShadow::ShadowSettings *shadowSettings = shadowedScene->getShadowSettings();
-    shadowSettings->setReceivesShadowTraversalMask(ReceivesShadowTraversalMask);
-    shadowSettings->setCastsShadowTraversalMask(CastsShadowTraversalMask);
-    int texSize = 2048;
+    shadowSettings->setReceivesShadowTraversalMask(ReceivesShadowTraversalMask_comet);
+    shadowSettings->setCastsShadowTraversalMask(CastsShadowTraversalMask_comet);
+    shadowSettings->setBaseShadowTextureUnit(BaseShadowTexUnit_comet);
+    int texSize = 1024;
     shadowSettings->setTextureSize(osg::Vec2s(texSize, texSize));
     
-    fpsm = new OpenFrames::FocalPointShadowMap;
-    fpsm->setLightSize(r_sun);
-    fpsm->setAmbientBias(osg::Vec2(0.0, 1.0));
-    fpsm->setPolygonOffset(osg::Vec2(-0.5, -0.5));
-    shadowedScene->setShadowTechnique(fpsm);
+    fpsm_comet = new OpenFrames::FocalPointShadowMap;
+    fpsm_comet->setLightSize(r_sun);
+    fpsm_comet->setAmbientBias(osg::Vec2(0.0, 1.0));
+    fpsm_comet->setPolygonOffset(osg::Vec2(-0.5, -0.5));
+    //shadowedScene->setShadowTechnique(fpsm_comet);
   }
   
   // Create a Model for the Comet
@@ -223,11 +257,11 @@ int main()
   //cg->setModel("Models/halley.3ds");
   //cg->setModel("Models/BennuRadarShape.obj");
   cg->setModel("Models/Bennu_v20_200k.obj");
-  double cgScale = 100.0;
+  double cgScale = 1000.0;
   cg->setModelScale(cgScale, cgScale, cgScale);
-  cg->getModel()->setNodeMask(CastsShadowTraversalMask | ReceivesShadowTraversalMask);
-  cg->getModel()->setNodeMask(ReceivesShadowTraversalMask);
-  shadowedSceneRoot->addChild(cg);
+  //cg->getModel()->setNodeMask(CastsShadowTraversalMask_comet | ReceivesShadowTraversalMask_comet);
+  cg->getModel()->setNodeMask(ReceivesShadowTraversalMask_comet);
+  shadowedSceneRoot_comet->addChild(cg);
 
   // Set comet material
   {
@@ -250,9 +284,9 @@ int main()
   double scScale = 0.001;
   sc->setModelScale(scScale, scScale, scScale);
   sc->addDraggerCallback(nullptr);
-  sc->getDragger()->setNodeMask(ReceivesShadowTraversalMask);
-  sc->getModel()->setNodeMask(CastsShadowTraversalMask | ReceivesShadowTraversalMask);
-  shadowedSceneRoot->addChild(sc);
+  sc->getDragger()->setNodeMask(ReceivesShadowTraversalMask_comet);
+  sc->getModel()->setNodeMask(CastsShadowTraversalMask_comet | ReceivesShadowTraversalMask_comet);
+  shadowedSceneRoot_comet->addChild(sc);
   
   // Create a manager to handle access to the scene
   FrameManager* fm = new FrameManager;
@@ -312,7 +346,7 @@ int main()
     osg::ref_ptr<osg::Camera> hudCam = myWindow->getGridPosition(0, 0)->getHUD();
     osg::GraphicsContext* gc = hudCam->getGraphicsContext();
     
-    osg::ref_ptr<osg::Camera> smDebugHUD = fpsm->makeDebugHUD();
+    osg::ref_ptr<osg::Camera> smDebugHUD = fpsm_earth->makeDebugHUD();
     smDebugHUD->setGraphicsContext(gc);
     smDebugHUD->setViewport(new osg::Viewport(0, 0, 400, 400));
     hudCam->addChild(smDebugHUD);
