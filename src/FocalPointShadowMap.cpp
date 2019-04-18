@@ -480,7 +480,7 @@ namespace OpenFrames
     {
       // get the bounds of the model.
       osg::ComputeBoundsVisitor cbbv(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN);
-      cbbv.setTraversalMask(getShadowedScene()->getCastsShadowTraversalMask());
+      cbbv.setTraversalMask(_shadowedScene->getCastsShadowTraversalMask());
       
       _shadowedScene->osg::Group::traverse(cbbv);
       

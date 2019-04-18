@@ -27,7 +27,7 @@ static int ReceivesShadowTraversalMask_earth = 0x1;
 static int CastsShadowTraversalMask_earth = 0x2;
 static int ReceivesShadowTraversalMask_comet = 0x1;
 static int CastsShadowTraversalMask_comet = 0x2;
-static unsigned int BaseShadowTexUnit_earth = 1;
+static unsigned int BaseShadowTexUnit_earth = 3;
 static unsigned int BaseShadowTexUnit_comet = 1;
 
 class MoveModelHandler : public osgGA::GUIEventHandler
@@ -183,7 +183,7 @@ int main()
   earth->showAxesLabels(ReferenceFrame::NO_AXES);
   earth->showNameLabel(false);
   earth->setTextureMap("Images/land_shallow_topo_2048.jpg");
-  //earth->setNightTextureMap("Images/land_ocean_ice_lights_2048.jpg");
+  earth->setNightTextureMap("Images/land_ocean_ice_lights_2048.jpg");
   earth->setRadius(r_earth);
   earth->setAutoLOD(true);
   earth->getSphereTransform()->setNodeMask(ReceivesShadowTraversalMask_earth);
@@ -244,7 +244,7 @@ int main()
     fpsm_comet->setLightSize(r_sun);
     fpsm_comet->setAmbientBias(osg::Vec2(0.0, 1.0));
     fpsm_comet->setPolygonOffset(osg::Vec2(-0.5, -0.5));
-    //shadowedScene->setShadowTechnique(fpsm_comet);
+    shadowedScene->setShadowTechnique(fpsm_comet);
   }
   
   // Create a Model for the Comet
