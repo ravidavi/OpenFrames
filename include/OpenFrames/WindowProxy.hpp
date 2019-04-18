@@ -183,6 +183,12 @@ namespace OpenFrames
      Only applies to non-embedded windows. For embedded windows, the window name
      should be set via the API used to create the window (Qt, wxWidgets, etc.) */
     void setWindowName(const std::string& name);
+    std::string getWindowName() const;
+    
+    /** Set the window's global background color, which applies for areas not covered by any RenderRectangle.
+     Generally this happens while a window is being resized and before the RenderRectangles know about the resize */
+    virtual void setWindowBackgroundColor(const osg::Vec3& color);
+    osg::Vec3 getWindowBackgroundColor() const;
     
     unsigned int getWindowWidth() const;
     unsigned int getWindowHeight() const;

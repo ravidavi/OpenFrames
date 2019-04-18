@@ -644,23 +644,28 @@ void OF_FCN(ofwin_setstereo)(unsigned int *row, unsigned int *col, bool *enable,
     }
 }
 
-void OF_FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col, 
-                                   float *r, float *g, float *b)
+void OF_FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col,
+                                      float *r, float *g, float *b)
 {
-	if(_objs->_currWinProxy)
-	{
-	  RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
-      if (rr) { 
-        rr->setBackgroundColor(*r, *g, *b);
-        _objs->_intVal = 0;
-      }
-      else {
-        _objs->_intVal = 1;
-      }
-	}
-    else {
-      _objs->_intVal = -2;
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      rr->setBackgroundColor(*r, *g, *b);
+      _objs->_intVal = 0;
     }
+    else if((*row == _objs->_currWinProxy->getNumRows()) && (*col == _objs->_currWinProxy->getNumCols()))
+    {
+      _objs->_currWinProxy->setWindowBackgroundColor(osg::Vec3(*r, *g, *b));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
 }
 
 void OF_FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col, OF_CHARARG(fname))

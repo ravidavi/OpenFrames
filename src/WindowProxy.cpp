@@ -559,15 +559,36 @@ namespace OpenFrames
   
   void WindowProxy::setWindowName(const std::string& name)
   {
-    // Ignore if in embedded window mode
-    if(_isEmbedded) return;
-    
     // If window exists, then directly set its name
-    else if(_window) _window->setWindowName(name);
+    if(_window) _window->setWindowName(name);
     
     // Otherwise set the name in the EmbeddedGraphics object, which will be used to initialize
     // the window when it is created
     else _embeddedGraphics->setWindowName(name);
+  }
+  
+  std::string WindowProxy::getWindowName() const
+  {
+    if(_window) return _window->getWindowName();
+    else return _embeddedGraphics->getWindowName();
+  }
+  
+  void WindowProxy::setWindowBackgroundColor(const osg::Vec3& color)
+  {
+    // If window exists, then directly set its color
+    if(_window) _window->setClearColor(osg::Vec4(color, 1.0));
+    
+    // Otherwise set the color in the EmbeddedGraphics object, which will be used to initialize
+    // the window when it is created
+    else _embeddedGraphics->setClearColor(osg::Vec4(color, 1.0));
+  }
+  
+  osg::Vec3 WindowProxy::getWindowBackgroundColor() const
+  {
+    osg::Vec4 clearColor;
+    if(_window) clearColor = _window->getClearColor();
+    else clearColor = _embeddedGraphics->getClearColor();
+    return osg::Vec3(clearColor[0], clearColor[1], clearColor[2]);
   }
   
   bool WindowProxy::setupWindow()
@@ -613,8 +634,8 @@ namespace OpenFrames
     
     if(_window.valid())
     {
-      // Set the default background color for the window
-      _window->setClearColor(osg::Vec4f(0.2f, 0.2f, 0.6f, 1.0f));
+      // Initialize background color for the window
+      _window->setClearColor(_embeddedGraphics->getClearColor());
       
       // Specify that we want to clear both color & depth buffers at every frame
       _window->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
