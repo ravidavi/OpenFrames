@@ -28,8 +28,9 @@
 %apply int* OUTPUT {int* val};
 %apply int* OUTPUT {int* valid};
 %apply bool* OUTPUT {bool* valid};
+%apply bool* OUTPUT {bool* isPaused};
 %apply int* OUTPUT {int* numchildren};
-%apply int* OUTPUT {double* retvar};
+%apply double* OUTPUT {double* retvar};
 
 // Blanket apply INPUT type handling to other pointers (except char *)
 %apply int* INPUT {int*};
@@ -37,6 +38,16 @@
 %apply bool* INPUT {bool*};
 %apply float* INPUT {float*};
 %apply double* INPUT {double*};
+
+// Function signatures where outputs are inputs elsewhere
+%apply double* OUTPUT {double* time};
+void ofwin_gettime(double *time);
+%ignore ofwin_gettime(double*);
+%clear double *time;
+%apply double* OUTPUT {double* tscale};
+void ofwin_gettimescale(double *tscale);
+%ignore ofwin_gettimescale(double*);
+%clear double *tscale;
 
 // Function signatures for functions with conflicting parameter names
 void offrame_getposition(double* retvar, double* retvar, double* retvar);
