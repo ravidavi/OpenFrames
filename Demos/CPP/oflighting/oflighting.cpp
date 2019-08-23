@@ -45,7 +45,7 @@ public:
       if(ea->getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
       {
         double delta = 10.0;
-        if(ea->getModKeyMask() && osgGA::GUIEventAdapter::MODKEY_SHIFT) delta *= 0.1;
+        if(ea->getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_SHIFT) delta *= 0.1;
         
         if(ea->getKey() == '=' || ea->getKey() == '+')
         {

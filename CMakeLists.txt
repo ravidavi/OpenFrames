@@ -1,4 +1,11 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.5.2)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10.3)
+
+# Specify minimum supported OSX version
+IF(APPLE)
+  SET(CMAKE_OSX_DEPLOYMENT_TARGET 10.13 CACHE STRING
+    "Minimum OSX version to target for deployment (at runtime). Set to empty string to target current MacOS version.")
+ENDIF()
+
 PROJECT(OpenFrames)
 
 # Set where to find extra CMake modules
