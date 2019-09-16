@@ -315,9 +315,9 @@ void ReferenceFrame::showAxesLabels(unsigned int labels)
   {
     bool xexists = (_xAxis->getVector()->getNodeMask() == enabled);
 
-    if (headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
-    if (bodyRadius <= 0.0) bodyRadius = 0.05*len;
-    if (headRadius <= 0.0) headRadius = 0.1*len;
+    if (headRatio < 0.0 || headRatio > 1.0) headRatio = 0.3;
+    if (bodyRadius < 0.0) bodyRadius = 0.05*len;
+    if (headRadius < 0.0) headRadius = 0.1*len;
 
     _xAxis->setBasePosition(base);
     _xAxis->setLength((1.0-headRatio)*len, headRatio*len);

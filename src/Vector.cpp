@@ -74,7 +74,7 @@ Vector::~Vector() { }
 /** Set the length of the vector */
 void Vector::setLength( const double &body, const double &head )
 {
-	if((body <= 0.0) || (head <= 0.0)) return;
+	if((body < 0.0) || (head < 0.0)) return;
 
 	// Set up size of vector's body and head
 	_body->setHeight(body);
@@ -97,7 +97,7 @@ double Vector::getTotalLength() const
 /** Set the radius of the vector */
 void Vector::setRadius( const double &body, const double &head )
 {
-	if((body <= 0.0) || (head <= 0.0)) return;
+	if((body < 0.0) || (head < 0.0)) return;
 
 	_body->setRadius(body);
 	_head->setRadius(head);
