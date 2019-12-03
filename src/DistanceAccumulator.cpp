@@ -79,7 +79,8 @@ namespace OpenFrames
   
   void DistanceAccumulator::pushDistancePair(double zNear, double zFar)
   {
-    if(zFar > _minZNear) // Make sure some of drawable is visible
+    // Make sure drawable is visible
+    if(std::isfinite(zNear) && std::isfinite(zFar) && (zFar > _minZNear))
     {
       if(zNear < _minZNear) zNear = _minZNear;
       
