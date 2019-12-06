@@ -194,6 +194,11 @@ namespace OpenFrames
     unsigned int getWindowHeight() const;
     
     bool isEmbedded() const { return _isEmbedded; }
+
+    /** Set the key used to toggle between fullscreen and windowed mode. Defaults to 'f'.
+        Use key = 0 to to disable keypress fullscreen toggle.
+        Only applies for non-embedded windows. For embedded windows, use API-specific fullscreen functions. */
+    void setToggleFullscreenKey(int key);
     
     /** These functions should be called when keyboard/mouse input is
 	    recieved from your own Window Manager, or if you want to simulate
@@ -417,6 +422,9 @@ namespace OpenFrames
     
     /** The ScreenCaptureHandler takes a screenshot of this window */
     osg::ref_ptr<osgViewer::ScreenCaptureHandler> _screenCaptureHandler;
+
+    /** Allow user to switch between fullscreen and windowed mode */
+    osg::ref_ptr<osgViewer::WindowSizeHandler> _windowSizeHandler;
 
     FramerateLimiter _frameThrottle; // Controls animation framerate
 

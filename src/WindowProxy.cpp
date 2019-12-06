@@ -490,6 +490,8 @@ namespace OpenFrames
     _statsHandler = new osgViewer::StatsHandler;
     _screenCaptureHandler = new osgViewer::ScreenCaptureHandler;
     _screenCaptureHandler->setKeyEventToggleContinuousCapture(0); // Disable continuous capture
+    _windowSizeHandler = new osgViewer::WindowSizeHandler;
+    _windowSizeHandler->setChangeWindowedResolution(false); // Don't change windowed resolution
     
     setWindowName("OpenFrames Window");
     
@@ -709,6 +711,20 @@ namespace OpenFrames
     if(_window.valid()) return _window->getTraits()->height;
     else return 0;
   }
+
+  /** Set the key used for fullscreen toggle */
+  void WindowProxy::setToggleFullscreenKey(int key)
+  {
+     if (key == 0)
+     {
+        _windowSizeHandler->setToggleFullscreen(false);
+     }
+     else
+     {
+        _windowSizeHandler->setToggleFullscreen(true);
+        _windowSizeHandler->setKeyEventToggleFullscreen(key);
+     }
+  }
   
   /** Create a key pressed event */
   void WindowProxy::keyPress(int key)
@@ -919,6 +935,9 @@ namespace OpenFrames
       
       // Add the screen capture handler to this RenderRectangle
       currView->addEventHandler(_screenCaptureHandler);
+
+      // Add the fulscreen handler
+      if(!_isEmbedded) currView->addEventHandler(_windowSizeHandler);
       
       // Add the RenderRectangle's camera to the viewer
       _viewer->addView(currView);
