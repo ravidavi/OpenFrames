@@ -89,7 +89,11 @@ namespace OpenFrames
     
     /** Get the sky sphere, e.g. to set its transform */
     SkySphere* getSkySphere() const { return _skySphere.get(); }
-    
+
+    /** Get the background camera, e.g. to add a custom sky */
+    osg::Camera* getBackground() const { return _backCamera; }
+    VRCamera* getBackgroundVR() const { return _backCameraVR; }
+
     /** Set the background color. Only valid if no sky texture or stars are specified */
     void setBackgroundColor(float r, float g, float b);
     

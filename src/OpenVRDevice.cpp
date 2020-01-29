@@ -425,12 +425,12 @@ namespace OpenFrames
 
     // Get right eye projection. Using unit depth minimizes
     // precision losses in the projection matrix
-    proj = _vrSystem->GetProjectionMatrix(vr::Eye_Right, 1.0, 2.0);
+    proj = _vrSystem->GetProjectionMatrix(vr::Eye_Right, 0.01, 100.0);
     convertMatrix44(_rightEyeProj, proj);
 
     // Get left eye projection. Using unit depth minimizes
     // precision losses in the projection matrix
-    proj = _vrSystem->GetProjectionMatrix(vr::Eye_Left, 1.0, 2.0);
+    proj = _vrSystem->GetProjectionMatrix(vr::Eye_Left, 0.01, 100.0);
     convertMatrix44(_leftEyeProj, proj);
 
     // Center projection is average of right and left
