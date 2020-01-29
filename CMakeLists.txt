@@ -20,6 +20,8 @@ OPTION( OF_FORTRAN_MODULE "Compile Fortran Module" OFF )
 OPTION( OF_PYTHON_MODULE "Compile Python Module" OFF )
 OPTION( OF_QT_SUPPORT "Compile with Qt support" OFF )
 #OPTION( OF_USE_OSGEARTH "Enable osgEarth" OFF )
+OPTION( OF_USE_SILVERLINING "Enable SilverLining" OFF )
+OPTION( OF_USE_TRITON "Enable Triton" OFF )
 
 # Options for VR support
 SET( VR_OpenVR "OpenVR" )
@@ -153,6 +155,16 @@ IF( OF_QT_SUPPORT )
   IF( NOT Qt5_FOUND )
     MESSAGE("Qt5 not found: will not build Qt support or demos.")
   ENDIF()
+ENDIF()
+
+# Find SilverLining
+IF( OF_USE_SILVERLINING )
+  FIND_PACKAGE(SilverLining)
+ENDIF()
+
+# Find Triton
+IF( OF_USE_TRITON )
+  FIND_PACKAGE(Triton)
 ENDIF()
 
 # Go to the src directory and look for CMake instructions there
