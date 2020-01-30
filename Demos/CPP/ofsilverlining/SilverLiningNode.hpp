@@ -71,6 +71,9 @@ public:
   // Called internally to start SilverLining environment
   virtual bool initializeSilverLining(osg::RenderInfo& renderInfo);
 
+  // Called internally to update view location
+  virtual void updateLocation();
+
   // Called internally to update attached light according to SilverLining sky
   virtual void updateGlobalLight();
 

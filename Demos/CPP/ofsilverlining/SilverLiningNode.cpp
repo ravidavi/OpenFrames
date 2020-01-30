@@ -1,3 +1,4 @@
+#include <osg/CoordinateSystemNode>
 #include <osg/Depth>
 #include <osgDB/FileNameUtils>
 #include <osgUtil/CullVisitor>
@@ -15,24 +16,29 @@ SilverLiningNode::SkyDrawable::SkyDrawable( const SkyDrawable& copy, const osg::
 
 void SilverLiningNode::SkyDrawable::drawImplementation( osg::RenderInfo& renderInfo ) const
 {
-    renderInfo.getState()->disableAllVertexArrays();
+  // Get the current camera's parameters
+  osg::Camera* camera = renderInfo.getCurrentCamera();
+  double fovy, ar, zNear, zFar;
+  camera->getProjectionMatrixAsPerspective(fovy, ar, zNear, zFar);
+  double skyboxSize = zFar < 100000.0 ? zFar : 100000.0;
 
-    // Initialize SilverLining if needed
-    _silverLining->initializeSilverLining( renderInfo );
+  renderInfo.getState()->disableAllVertexArrays();
 
-    // Draw the SilverLining skybox
-    const bool drawSky = true;
-    const bool geocentricMode = false;
-    const double skyboxDimension = 0.0;
-    const bool drawStars = true;
-    const bool clearDepth = false;
-    const bool drawSunAndMoon = true;
-    _silverLining->atmosphere()->DrawSky(drawSky, geocentricMode, skyboxDimension, drawStars, clearDepth, drawSunAndMoon);
+  // Initialize SilverLining if needed
+  _silverLining->initializeSilverLining(renderInfo);
 
-    renderInfo.getState()->dirtyAllVertexArrays();
-    renderInfo.getState()->dirtyAllAttributes();
-    renderInfo.getState()->setLastAppliedProgramObject(0L);
-    renderInfo.getState()->apply();
+  // Draw the SilverLining skybox
+  const bool drawSky = true;
+  const bool geocentricMode = true;
+  const bool drawStars = true;
+  const bool clearDepth = false;
+  const bool drawSunAndMoon = true;
+  _silverLining->atmosphere()->DrawSky(drawSky, geocentricMode, skyboxSize, drawStars, clearDepth, drawSunAndMoon);
+
+  renderInfo.getState()->dirtyAllVertexArrays();
+  renderInfo.getState()->dirtyAllAttributes();
+  renderInfo.getState()->setLastAppliedProgramObject(0L);
+  renderInfo.getState()->apply();
 }
 
 osg::BoundingBox SilverLiningNode::SkyDrawable::computeBoundingBox() const
@@ -86,7 +92,7 @@ void SilverLiningNode::CloudDrawable::drawImplementation( osg::RenderInfo& rende
   const bool drawClouds = true;
   const bool drawPrecipitation = true;
   const bool enableDepthTest = true;
-  const bool geocentricMode = false;
+  const bool geocentricMode = true;
   _silverLining->atmosphere()->DrawObjects(drawClouds, drawPrecipitation, enableDepthTest, 0.0f, false, 0, true, true, true, geocentricMode);
 
   renderInfo.getState()->dirtyAllVertexArrays();
@@ -115,7 +121,6 @@ bool SilverLiningNode::AtmosphereUpdater::run(osg::Object* object, osg::Object* 
   if (silverLining && nv) {
     if (nv->getVisitorType() == osg::NodeVisitor::UPDATE_VISITOR) {
       if (silverLining->isAtmosphereValid()) {
-        silverLining->updateGlobalLight();
         silverLining->skyDrawable()->dirtyBound();
         silverLining->cloudDrawable()->dirtyBound();
       }
@@ -126,6 +131,9 @@ bool SilverLiningNode::AtmosphereUpdater::run(osg::Object* object, osg::Object* 
         osgUtil::CullVisitor* cv = nv->asCullVisitor();
         silverLining->atmosphere()->SetCameraMatrix(cv->getModelViewMatrix()->ptr());
         silverLining->atmosphere()->SetProjectionMatrix(cv->getProjectionMatrix()->ptr());
+
+        silverLining->updateLocation();
+        silverLining->updateGlobalLight();
       }
     }
   }
@@ -191,13 +199,43 @@ bool SilverLiningNode::initializeSilverLining( osg::RenderInfo& renderInfo )
   return true;
 }
 
+void SilverLiningNode::updateLocation()
+{
+  if (!_initialized) return;
+  
+  // Get new local orientation
+  osg::Vec3d up = _cameraPos;
+  up.normalize();
+  osg::Vec3d north = osg::Vec3d(0, 0, 1);
+  osg::Vec3d east = north ^ up;
+  if (east.length2() <= 1.0e-6) east = osg::Vec3d(1, 0, 0);
+  else east.normalize();
+
+  _atmosphere->SetUpVector(up.x(), up.y(), up.z());
+  _atmosphere->SetRightVector(east.x(), east.y(), east.z());
+
+  // Compute lat/lon/alt with osg's EllipsoidModel
+  // Ideally this would come from osgEarth or whatever Earth model is being used
+  osg::EllipsoidModel earthEllipsoid;
+  double lat, lon, alt;
+  earthEllipsoid.convertXYZToLatLongHeight(_cameraPos.x(), _cameraPos.y(), _cameraPos.z(), lat, lon, alt);
+  lat = osg::RadiansToDegrees(lat);
+  lon = osg::RadiansToDegrees(lon);
+
+  SilverLining::Location loc;
+  loc.SetAltitude(alt);
+  loc.SetLatitude(lat);
+  loc.SetLongitude(lon);
+  _atmosphere->GetConditions()->SetLocation(loc);
+}
+
 void SilverLiningNode::updateGlobalLight()
 {
   if (_initialized && _light.valid()) {
     float ra, ga, ba, rd, gd, bd, x, y, z;
     _atmosphere->GetAmbientColor(&ra, &ga, &ba);
     _atmosphere->GetSunOrMoonColor(&rd, &gd, &bd);
-    _atmosphere->GetSunOrMoonPosition(&x, &y, &z);
+    _atmosphere->GetSunOrMoonPositionGeographic(&x, &y, &z);
 
     _light->setAmbient(osg::Vec4(ra, ga, ba, 1.0f));
     _light->setDiffuse(osg::Vec4(rd, gd, bd, 1.0f));

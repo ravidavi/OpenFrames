@@ -1,3 +1,4 @@
+#include <OpenFrames/Model.hpp>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/VRUtils.hpp>
 #include <OpenFrames/WindowProxy.hpp>
@@ -24,14 +25,14 @@ public:
 
   virtual void createAtmosphereData(osg::RenderInfo& renderInfo)
   {
-    // Set our location (change this to your own latitude and longitude)
+    // Set our location (will be changed dynamically with viewpoint)
     SilverLining::Location loc;
     loc.SetAltitude(0.0);
     loc.SetLatitude(39.0);
     loc.SetLongitude(-76.8);
     _atmosphere->GetConditions()->SetLocation(loc);
 
-    // Set the time to noon in PST
+    // Set the time to local time
     SilverLining::LocalTime t;
     t.SetFromSystemTime();
     //t.SetHour(15.0);
@@ -78,6 +79,8 @@ int StartOSGViewer(int argc, char** argv)
 
   osgViewer::Viewer viewer;
   viewer.getCamera()->setClearMask(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);  // No need for OSG to clear the color buffer now
+  viewer.getCamera()->setNearFarRatio(0.00001);
+  viewer.getCamera()->setCullingMode(osg::CullSettings::NO_CULLING);
   viewer.addEventHandler(new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()));
   viewer.addEventHandler(new osgViewer::StatsHandler);
   viewer.addEventHandler(new osgViewer::WindowSizeHandler);
@@ -112,8 +115,15 @@ int StartOFViewer(int argc, char** argv)
   // Remaining options are unrecognized
   arguments.reportRemainingOptionsAsUnrecognized();
 
-  osg::Node* model = osgDB::readNodeFiles(arguments);
-  if (!model) model = osgDB::readNodeFile("lz.osg");
+  // Get model filename
+  std::vector<std::string> files;
+  for (int pos = 1; pos < arguments.argc(); ++pos)
+  {
+    if (arguments.isString(pos))
+    {
+      files.push_back(arguments[pos]);
+    }
+  }
 
   // Create the window interface
   unsigned int x = 30, y = 30;
@@ -125,15 +135,16 @@ int StartOFViewer(int argc, char** argv)
   myWindow->setWorldUnitsPerMeter(worldUnitsPerMeter);
   myWindow->setWorldUnitsPerMeterLimits(1.0, DBL_MAX);
 
-  // Create the root frame that will hold all specified models
-  osg::ref_ptr<OpenFrames::ReferenceFrame> rootFrame = new OpenFrames::ReferenceFrame("Root");
-  //rootFrame->showAxes(OpenFrames::ReferenceFrame::NO_AXES);
-  rootFrame->showAxesLabels(OpenFrames::ReferenceFrame::NO_AXES);
-  rootFrame->showNameLabel(false);
+  // Load the first available model from the command line
+  OpenFrames::Model *theModel = new OpenFrames::Model("Model", 0.5, 0.5, 0.5, 0.9);
+  for (int i = 0; i < files.size(); ++i)
+  {
+    if (theModel->setModel(files[i])) break;
+  }
 
   // Create a frame manager to handle the scene
   osg::ref_ptr<OpenFrames::FrameManager> fm = new OpenFrames::FrameManager;
-  fm->setFrame(rootFrame);
+  fm->setFrame(theModel);
 
   // Set up the scene
   myWindow->setScene(fm, 0, 0);
