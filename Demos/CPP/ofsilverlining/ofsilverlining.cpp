@@ -34,8 +34,8 @@ public:
 
     // Set the time to local time
     SilverLining::LocalTime t;
-    t.SetFromSystemTime();
-    //t.SetHour(15.0);
+    t.SetFromSystemTime(); // Use this to set time based on actual current time
+    //t.SetHour(15.0);     // Use this to set a specified time & time zone
     //t.SetTimeZone(EST);
     _atmosphere->GetConditions()->SetTime(t);
 
@@ -80,7 +80,6 @@ int StartOSGViewer(int argc, char** argv)
   osgViewer::Viewer viewer;
   viewer.getCamera()->setClearMask(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);  // No need for OSG to clear the color buffer now
   viewer.getCamera()->setNearFarRatio(0.00001);
-  viewer.getCamera()->setCullingMode(osg::CullSettings::NO_CULLING);
   viewer.addEventHandler(new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()));
   viewer.addEventHandler(new osgViewer::StatsHandler);
   viewer.addEventHandler(new osgViewer::WindowSizeHandler);

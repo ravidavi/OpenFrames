@@ -72,11 +72,16 @@ namespace OpenFrames
     
     // Create the Camera that will draw background elements
     _backCamera = new osg::Camera;
-    _backCamera->setName("Background");
+    _backCamera->setName("Back");
     
     // If using VR, then create a stereo VR camera for background elements
     // MSAA isn't needed here since background elements are only point stars and images
-    if (_useVR) _backCameraVR = new VRCamera(_vrTextureBuffer.get(), _ovrDevice.get(), -1, VRCamera::STEREO, false);
+    if (_useVR)
+    {
+      _backCameraVR = new VRCamera(_vrTextureBuffer.get(), _ovrDevice.get(), -1, VRCamera::STEREO, false);
+      _backCameraVR->getCamera(0)->setName("BackVR0");
+      _backCameraVR->getCamera(1)->setName("BackVR1");
+    }
 
     // Create the Camera that will mirror the VR scene to the window
     _mirrorCamera = new osg::Camera;
@@ -226,7 +231,7 @@ namespace OpenFrames
       _mirrorCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
       _mirrorCamera->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
       _mirrorCamera->setAllowEventFocus(false);
-      _mirrorCamera->setRenderOrder(osg::Camera::POST_RENDER, 100); // Render just before HUD
+      _mirrorCamera->setRenderOrder(osg::Camera::POST_RENDER, 9); // Render before HUD and StatsHandler
       _mirrorCamera->setStateSet(ss);
       _mirrorCamera->setViewMatrix(osg::Matrix::identity());
       _mirrorCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));

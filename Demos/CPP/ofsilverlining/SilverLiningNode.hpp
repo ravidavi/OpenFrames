@@ -44,10 +44,11 @@ class SilverLiningNode : public osg::Geode
 public:
   SilverLiningNode(const char* licenseUser = NULL, const char* licenseKey = NULL);
   SilverLiningNode(const SilverLiningNode& copy, const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
-  META_Node(osg, SilverLiningNode)
+  META_Node(osg, SilverLiningNode);
 
-    osg::Drawable* skyDrawable() { return _sky.get(); }
+  osg::Drawable* skyDrawable() { return _sky.get(); }
   const osg::Drawable* skyDrawable() const { return _sky.get(); }
+
   osg::Drawable* cloudDrawable() { return _cloud.get(); }
   const osg::Drawable* cloudDrawable() const { return _cloud.get(); }
 
@@ -64,6 +65,9 @@ public:
 
   void setCameraPosition(const osg::Vec3d& pos) { _cameraPos = pos; }
   const osg::Vec3d& getCameraPosition() const { return _cameraPos; }
+
+  void setSkyBoxSize(const double& size) { _skyBoxSize = size; }
+  double getSkyBoxSize() const { return _skyBoxSize; }
 
   // You must derive this method to create your atmosphere data at creation
   virtual void createAtmosphereData(osg::RenderInfo& renderInfo) {}
@@ -86,6 +90,7 @@ protected:
   SilverLining::Atmosphere* _atmosphere;
   std::string _resourcePath;
   osg::Vec3d _cameraPos;
+  double _skyBoxSize;
   bool _initialized;
 };
 
