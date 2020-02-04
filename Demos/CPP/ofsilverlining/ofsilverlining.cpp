@@ -56,6 +56,8 @@ public:
   }
 };
 
+/** IGNORE THIS FUNCTION, IT IS HERE FOR TESTING AND WILL BE REMOVED LATER
+    USE THE StartOFViewer function below. */
 int StartOSGViewer(int argc, char** argv)
 {
   osg::ArgumentParser arguments(&argc, argv);
@@ -88,6 +90,7 @@ int StartOSGViewer(int argc, char** argv)
   return viewer.run();
 }
 
+/* Create the OpenFrames viewer and scene, and animate*/
 int StartOFViewer(int argc, char** argv)
 {
   // Parse user inputs
@@ -174,6 +177,6 @@ int StartOFViewer(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-  //return StartOSGViewer(argc, argv);
+  //return StartOSGViewer(argc, argv); // IGNORE THIS, IT IS HERE FOR TESTING AND WILL BE REMOVED LATER
   return StartOFViewer(argc, argv);
 }

@@ -66,6 +66,9 @@ public:
   void setCameraPosition(const osg::Vec3d& pos) { _cameraPos = pos; }
   const osg::Vec3d& getCameraPosition() const { return _cameraPos; }
 
+  void setCamera(osg::Camera* cam) { _camera = cam; }
+  osg::Camera* getCamera() const { return _camera; }
+
   void setSkyBoxSize(const double& size) { _skyBoxSize = size; }
   double getSkyBoxSize() const { return _skyBoxSize; }
 
@@ -90,6 +93,7 @@ protected:
   SilverLining::Atmosphere* _atmosphere;
   std::string _resourcePath;
   osg::Vec3d _cameraPos;
+  osg::Camera* _camera;
   double _skyBoxSize;
   bool _initialized;
 };

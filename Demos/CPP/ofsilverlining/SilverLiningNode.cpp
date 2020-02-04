@@ -18,6 +18,7 @@ void SilverLiningNode::SkyDrawable::drawImplementation( osg::RenderInfo& renderI
 {
   // Get the current camera's parameters
   osg::Camera* camera = renderInfo.getCurrentCamera();
+  _silverLining->setCamera(camera);
   double fovy, ar, zNear, zFar;
   camera->getProjectionMatrixAsPerspective(fovy, ar, zNear, zFar);
   _silverLining->setSkyBoxSize(zFar < 100000.0 ? zFar : 100000.0);
@@ -54,12 +55,20 @@ osg::BoundingBox SilverLiningNode::SkyDrawable::computeBoundingBox() const
     osg::BoundingBox skyBoundBox;
     if ( !_silverLining->isAtmosphereValid() ) return skyBoundBox;
 
+    // Get skybox size
     SilverLining::Atmosphere* atmosphere = _silverLining->atmosphere();
     double skyboxSize = _silverLining->getSkyBoxSize();
     if (skyboxSize == 0.0) skyboxSize = 1000.0;
 
+    // Get skybox bounds assuming it is centered on the eye
     osg::Vec3d radiusVec = osg::Vec3d(skyboxSize, skyboxSize, skyboxSize) * 0.5;
-    const osg::Vec3d& camPos = _silverLining->getCameraPosition();
+    osg::Vec3d camPos = _silverLining->getCameraPosition();
+    if (_silverLining->getCamera())
+    {
+      osg::Vec3f eye, center, up;
+      _silverLining->getCamera()->getViewMatrixAsLookAt(eye, center, up);
+      camPos = osg::Vec3d(eye.x(), eye.y(), eye.z());
+    }
     skyBoundBox.set( camPos-radiusVec, camPos+radiusVec );
 
     bool hasLimb = atmosphere->GetConfigOptionBoolean("enable-atmosphere-from-space");
@@ -67,11 +76,10 @@ osg::BoundingBox SilverLiningNode::SkyDrawable::computeBoundingBox() const
       // Compute bounds of atmospheric limb centered at (0,0,0)
       double earthRadius = atmosphere->GetConfigOptionDouble("earth-radius-meters-equatorial");
       double atmosphereHeight = earthRadius + atmosphere->GetConfigOptionDouble("atmosphere-height");
-      double atmosphereThickness = atmosphere->GetConfigOptionDouble("atmosphere-scale-height-meters") + earthRadius;
 
       osg::BoundingBox atmosphereBox;
-      osg::Vec3d atmMin(-atmosphereThickness, -atmosphereThickness, -atmosphereThickness);
-      osg::Vec3d atmMax(atmosphereThickness, atmosphereThickness, atmosphereThickness);
+      osg::Vec3d atmMin(-atmosphereHeight, -atmosphereHeight, -atmosphereHeight);
+      osg::Vec3d atmMax(atmosphereHeight, atmosphereHeight, atmosphereHeight);
       atmosphereBox.set(atmMin, atmMax);
       skyBoundBox.expandBy(atmosphereBox);
     }
@@ -148,7 +156,7 @@ bool SilverLiningNode::AtmosphereUpdater::run(osg::Object* object, osg::Object* 
 /* SilverLiningNode */
 
 SilverLiningNode::SilverLiningNode( const char* licenseUser, const char* licenseKey )
-    :   _initialized(false), _skyBoxSize(0.0)
+    :   _initialized(false), _camera(nullptr), _skyBoxSize(0.0)
 {
   // Draw sky before everything else
   _sky = new SkyDrawable(this);
@@ -180,7 +188,8 @@ SilverLiningNode::SilverLiningNode( const char* licenseUser, const char* license
 SilverLiningNode::SilverLiningNode(const SilverLiningNode& copy, const osg::CopyOp& copyop)
   : osg::Geode(copy, copyop), _sky(copy._sky), _cloud(copy._cloud), _light(copy._light),
   _atmosphere(copy._atmosphere), _resourcePath(copy._resourcePath),
-  _cameraPos(copy._cameraPos), _initialized(copy._initialized)
+  _cameraPos(copy._cameraPos), _camera(copy._camera), _skyBoxSize(copy._skyBoxSize), 
+  _initialized(copy._initialized)
 {}
 
 bool SilverLiningNode::initializeSilverLining( osg::RenderInfo& renderInfo )

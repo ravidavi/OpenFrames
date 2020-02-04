@@ -174,7 +174,7 @@ namespace OpenFrames
       _hudCamera->setViewMatrix(osg::Matrix::identity());
       _hudCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));
       _hudCamera->setProjectionResizePolicy(osg::Camera::FIXED); // Resizing should not affect projection matrix
-      _hudCamera->addChild(_depthPartitioner->getCallback()->getStatsGeode()); // Set up Depth Partitioner stats text
+      //_hudCamera->addChild(_depthPartitioner->getCallback()->getStatsGeode()); // Set up Depth Partitioner stats text
       _sceneView->addSlave(_hudCamera, false);
       
       // Set up background camera render properties
@@ -201,7 +201,6 @@ namespace OpenFrames
         _backCameraVR->addSlaveCamerasToView(_sceneView, false);
         
         // Clear the color buffer since this camera draws before everything else
-        //_backCameraVR->setClearMask(0);
         _backCameraVR->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         
         // Set the per-eye projection matrices
@@ -217,7 +216,6 @@ namespace OpenFrames
         // We will set the view and projection matrices ourselves
         _backCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
         _backCamera->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-        //_backCamera->setClearMask(0);
         _backCamera->setAllowEventFocus(false);
         _backCamera->setRenderOrder(osg::Camera::PRE_RENDER, -1); // Render before other cameras
         _backCamera->setStateSet(ss);
