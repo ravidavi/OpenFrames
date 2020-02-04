@@ -6,12 +6,13 @@
 
 /* SilverLiningNode::SkyDrawable */
 
-SilverLiningNode::SkyDrawable::SkyDrawable( SilverLiningNode* s )
-    :   _silverLining(s)
+SilverLiningNode::SkyDrawable::SkyDrawable(SilverLiningNode* s)
+  : _silverLining(s), _drawStars(true), _drawSunMoon(true)
 {}
 
-SilverLiningNode::SkyDrawable::SkyDrawable( const SkyDrawable& copy, const osg::CopyOp& copyop )
-    :   osg::Drawable(copy, copyop), _silverLining(copy._silverLining)
+SilverLiningNode::SkyDrawable::SkyDrawable(const SkyDrawable& copy, const osg::CopyOp& copyop)
+  : osg::Drawable(copy, copyop), _silverLining(copy._silverLining),
+  _drawStars(copy._drawStars), _drawSunMoon(copy._drawSunMoon)
 {}
 
 void SilverLiningNode::SkyDrawable::drawImplementation( osg::RenderInfo& renderInfo ) const
@@ -39,10 +40,8 @@ void SilverLiningNode::SkyDrawable::drawImplementation( osg::RenderInfo& renderI
   const bool drawSky = true;
   const bool geocentricMode = true;
   double skyBoxSize = _silverLining->getSkyBoxSize();
-  const bool drawStars = true;
   const bool clearDepth = false;
-  const bool drawSunAndMoon = true;
-  _silverLining->atmosphere()->DrawSky(drawSky, geocentricMode, skyBoxSize, drawStars, clearDepth, drawSunAndMoon, renderInfo.getCurrentCamera());
+  _silverLining->atmosphere()->DrawSky(drawSky, geocentricMode, skyBoxSize, _drawStars, clearDepth, _drawSunMoon, renderInfo.getCurrentCamera());
 
   renderInfo.getState()->dirtyAllVertexArrays();
   renderInfo.getState()->dirtyAllAttributes();

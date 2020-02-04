@@ -14,10 +14,20 @@ class SilverLiningNode : public osg::Geode
 
     SkyDrawable(SilverLiningNode* s = NULL);
     SkyDrawable(const SkyDrawable& copy, const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
-    META_Object(osg, SkyDrawable)
+    META_Object(osg, SkyDrawable);
+
+    void setDrawStars(bool draw) { _drawStars = draw; }
+    bool getDrawStars() const { return _drawStars; }
+
+    void setDrawSunMoon(bool draw) { _drawSunMoon = draw; }
+    bool getDrawSunMoon() const { return _drawSunMoon; }
 
   protected:
     SilverLiningNode* _silverLining;
+
+    // Draw stars, Sun, and Moon
+    bool _drawStars;
+    bool _drawSunMoon;
   };
 
   class CloudDrawable : public osg::Drawable
@@ -46,11 +56,11 @@ public:
   SilverLiningNode(const SilverLiningNode& copy, const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
   META_Node(osg, SilverLiningNode);
 
-  osg::Drawable* skyDrawable() { return _sky.get(); }
-  const osg::Drawable* skyDrawable() const { return _sky.get(); }
+  SkyDrawable* skyDrawable() { return _sky.get(); }
+  const SkyDrawable* skyDrawable() const { return _sky.get(); }
 
-  osg::Drawable* cloudDrawable() { return _cloud.get(); }
-  const osg::Drawable* cloudDrawable() const { return _cloud.get(); }
+  CloudDrawable* cloudDrawable() { return _cloud.get(); }
+  const CloudDrawable* cloudDrawable() const { return _cloud.get(); }
 
   SilverLining::Atmosphere* atmosphere() { return _atmosphere; }
   const SilverLining::Atmosphere* atmosphere() const { return _atmosphere; }
