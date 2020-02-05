@@ -30,6 +30,7 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     MarkerArtist.cpp
     Model.cpp
     OpenVRDevice_Common.cpp
+    PolyhedralCone.cpp
     RadialPlane.cpp
     ReferenceFrame.cpp
     RenderRectangle.cpp
