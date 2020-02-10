@@ -147,6 +147,27 @@ int StartOFViewer(int argc, char** argv)
     if (theModel->setModel(files[i])) break;
   }
 
+  // Create a ReferenceFrame that will be attached to the ground
+  OpenFrames::ReferenceFrame *est = new OpenFrames::ReferenceFrame("Emergent", 1.0, 1.0, 1.0, 0.9);
+  est->setXLabel("East");
+  est->setYLabel("North");
+  est->setZLabel("Up");
+  theModel->addChild(est); // Assumes theModel is Earth in meters (e.g. osgEarth)
+
+  // Compute location and topocentric orientation of Emergent HQ with osg's EllipsoidModel
+  osg::EllipsoidModel earthEllipsoid;
+  double lat_EST = osg::DegreesToRadians(39.103731);
+  double lon_EST = osg::DegreesToRadians(-76.869185);
+  double alt_EST = 70.0; // Meters above sea level
+  osg::Matrixd transform_EST; // Position and orientation of Emergent HQ
+  earthEllipsoid.computeLocalToWorldTransformFromLatLongHeight(lat_EST, lon_EST, alt_EST, transform_EST);
+  est->setPosition(transform_EST.getTrans());
+  est->setAttitude(transform_EST.getRotate());
+
+  // Create a view for Emergent
+  OpenFrames::View *estView = new OpenFrames::View(theModel, est);
+  myWindow->getGridPosition(0, 0)->addView(estView);
+
   // Create a frame manager to handle the scene
   osg::ref_ptr<OpenFrames::FrameManager> fm = new OpenFrames::FrameManager;
   fm->setFrame(theModel);
