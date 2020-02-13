@@ -32,7 +32,7 @@ namespace OpenFrames
    * \brief ReferenceFrame for drawing a polyhedral cone.
    *
    * A type of ReferenceFrame that draws a polyhedral cone, which is a finitely-generated cone
-   *  *with specified clock and cone angles. The cone
+   *  *with specified clock and cone angles.
    */
   class OF_EXPORT PolyhedralCone : public ReferenceFrame
   {
@@ -46,13 +46,23 @@ namespace OpenFrames
     virtual bool getContentsShown() const;
 
     /** Set/get the clock and cone angles. */
-    void setAngles(const osg::Vec3d& clockAngles, const osg::Vec3d& coneAngles);
-    void getAngles(osg::Vec3d& clockAngles, osg::Vec3d& coneAngles) const;
+    typedef std::vector<double> AngleArray;
+    void setAngles(const AngleArray& clockAngles, const AngleArray& coneAngles);
+    const AngleArray& getClockAngles() const { return _clockAngles; }
+    const AngleArray& getConeAngles() const { return _coneAngles; }
+
+    /** Set/get the cone principal axis length */
+    void setLength(const double& length);
+    double getLength() const;
 
     /** Set the color of the plane */
     void setConeColor(const osg::Vec4 &color);
     void setConeColor(float r, float g, float b, float a = 1.0);
-    const osg::Vec4& getConeColor() const { return (*_planeColor)[0]; }
+    const osg::Vec4& getConeColor() const { return (*_coneColor)[0]; }
+  
+    /** Define cone axis in local coordinate system
+     Cone axis points from apex towards base */
+    void setConeAxis(const osg::Vec3d& axis);
 
     /** Inherited from ReferenceFrame. */
     virtual const osg::BoundingSphere& getBound() const;
@@ -64,33 +74,26 @@ namespace OpenFrames
     virtual ~PolyhedralCone();
 
     void init();
-    void createPlane();
-    void addCell(const osg::Vec2d v[], unsigned int nV);
+    void createCone();
 
-    double _radius;           // Radius of plane
-    double _radialSpacing;    // Distance between radial circles
-    double _longitudeSpacing; // Angular distance between longitude lines
+    AngleArray _clockAngles; // List of mask clock angles
+    AngleArray _coneAngles;  // List of mask cone angles
 
-    osg::ref_ptr<osg::Geode> _planeGeode;  // Node to hold plane geometry
-    osg::ref_ptr<osg::Geode> _linesGeode;  // Node to hold lines geometry
+    // Transform that scales cone to its desired length
+    // and points it in the desired direction
+    osg::ref_ptr<osg::PositionAttitudeTransform> _coneTransform;
     
-    // Geometry objects that draw each of the overlaid lines
-    osg::ref_ptr<osg::Geometry> _linesGeom;
-    osg::ref_ptr<osg::Geometry> _lonGeom; // For 0 degree longitude line
+    // Node to hold cone geometry
+    osg::ref_ptr<osg::Geode> _coneGeode;
+    
+    // Geometry object that draw each triangle of the cone
+    osg::ref_ptr<osg::Geometry> _coneGeom;
 
-    // Array of points that define the plane and the lines
-    osg::ref_ptr<osg::Vec2dArray> _lineVertices;
-    osg::ref_ptr<osg::Vec2dArray> _planeVertices;
+    // Array of points that define the cone
+    osg::ref_ptr<osg::Vec3dArray> _coneVertices;
 
-    // Arrays that define plane and line colors
-    osg::ref_ptr<osg::Vec4Array> _lineColor;
-    osg::ref_ptr<osg::Vec4Array> _planeColor;
-
-    // Array defining normals
-    osg::ref_ptr<osg::Vec3Array> _normals;
-
-    // Level of Detail for cells that make up the plane tesselation
-    unsigned int _planeLOD;
+    // Cone colors
+    osg::ref_ptr<osg::Vec4Array> _coneColor;
   };
 
 } // !namespace OpenFrames
