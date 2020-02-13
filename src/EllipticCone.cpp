@@ -14,43 +14,43 @@
    limitations under the License.
 ***********************************/
 
-/** \file RightCone.cpp
- * RightCone class function definitions.
+/** \file EllipticCone.cpp
+ * EllipticCone class function definitions.
  */
 
-#include <OpenFrames/RightCone.hpp>
+#include <OpenFrames/EllipticCone.hpp>
 
 namespace OpenFrames
 {
   
-RightCone::RightCone(const std::string &name)
+EllipticCone::EllipticCone(const std::string &name)
 : PolyhedralCone(name)
 {
   init();
 }
 
-RightCone::RightCone(const std::string &name, float r, float g, float b, float a)
+EllipticCone::EllipticCone(const std::string &name, float r, float g, float b, float a)
 : PolyhedralCone(name, r, g, b, a)
 {
   init();
 }
 
-RightCone::~RightCone() {}
+EllipticCone::~EllipticCone() {}
 
-void RightCone::setPrimaryAngles(const double& a, const double& b)
+void EllipticCone::setPrimaryAngles(const double& a, const double& b)
 {
   _a = a;
   _b = b;
-  createRightCone();
+  createEllipticCone();
 }
 
-void RightCone::init()
+void EllipticCone::init()
 {
   setPrimaryAngles(osg::DegreesToRadians(60.0), osg::DegreesToRadians(30.0));
   setDrawMode(SIDES | BASE_OUTLINE);
 }
 
-void RightCone::createRightCone()
+void EllipticCone::createEllipticCone()
 {
   AngleArray clockAngles, coneAngles;
   const double epsilon = 1.0e-6; // Precision tolerance

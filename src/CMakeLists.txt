@@ -20,6 +20,7 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     DescendantTracker.cpp
     DistanceAccumulator.cpp
     DrawableTrajectory.cpp
+    EllipticCone.cpp
     FocalPointShadowMap.cpp
     FramePathVerifier.cpp
     FramePointer.cpp
@@ -32,9 +33,9 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     OpenVRDevice_Common.cpp
     PolyhedralCone.cpp
     RadialPlane.cpp
+    RectangularCone.cpp
     ReferenceFrame.cpp
     RenderRectangle.cpp
-    RightCone.cpp
     SegmentArtist.cpp
     SkySphere.cpp
     Sphere.cpp

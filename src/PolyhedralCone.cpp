@@ -89,7 +89,6 @@ void PolyhedralCone::init()
   // Create a geometry for the cone sides, edges, and base
   _sideGeom = new osg::Geometry;
   _edgeGeom = new osg::Geometry;
-  _baseGeom = new osg::Geometry;
   _baseOutlineGeom = new osg::Geometry;
   
   // Use VBOs
@@ -97,8 +96,6 @@ void PolyhedralCone::init()
   _sideGeom->setUseVertexBufferObjects(true);
   _edgeGeom->setUseDisplayList(false);
   _edgeGeom->setUseVertexBufferObjects(true);
-  _baseGeom->setUseDisplayList(false);
-  _baseGeom->setUseVertexBufferObjects(true);
   _baseOutlineGeom->setUseDisplayList(false);
   _baseOutlineGeom->setUseVertexBufferObjects(true);
 
@@ -118,15 +115,12 @@ void PolyhedralCone::init()
   _sideGeom->setColorArray(_coneColor.get(), osg::Array::BIND_OVERALL);
   _edgeGeom->setVertexArray(_edgeVertices.get());
   _edgeGeom->setColorArray(_lineColor.get(), osg::Array::BIND_OVERALL);
-  _baseGeom->setVertexArray(_baseVertices.get());
-  _baseGeom->setColorArray(_coneColor.get(), osg::Array::BIND_OVERALL);
   _baseOutlineGeom->setVertexArray(_baseVertices.get());
   _baseOutlineGeom->setColorArray(_lineColor.get(), osg::Array::BIND_OVERALL);
 
   // Attach the drawables to the main geode.
   _coneGeode->addDrawable(_sideGeom);
   _coneGeode->addDrawable(_edgeGeom);
-  _coneGeode->addDrawable(_baseGeom);
   _coneGeode->addDrawable(_baseOutlineGeom);
 
   // Create a transform that will handle scaling the cone
@@ -205,9 +199,6 @@ void PolyhedralCone::setDrawMode(unsigned int drawMode)
   if(drawMode & EDGES) _edgeGeom->setNodeMask(~0x0);
   else _edgeGeom->setNodeMask(0x0);
 
-  if(drawMode & BASE) _baseGeom->setNodeMask(~0x0);
-  else _baseGeom->setNodeMask(0x0);
-
   if(drawMode & BASE_OUTLINE) _baseOutlineGeom->setNodeMask(~0x0);
   else _baseOutlineGeom->setNodeMask(0x0);
 }
@@ -218,7 +209,6 @@ unsigned int PolyhedralCone::getDrawMode() const
 
   if(_sideGeom->getNodeMask()) nodeMask |= SIDES;
   if(_edgeGeom->getNodeMask()) nodeMask |= EDGES;
-  if(_baseGeom->getNodeMask()) nodeMask |= BASE;
   if(_baseOutlineGeom->getNodeMask()) nodeMask |= BASE_OUTLINE;
 
   return nodeMask;
@@ -241,7 +231,6 @@ void PolyhedralCone::createCone()
 	// Prepare geometries for new vertices that will be computed
   _sideGeom->removePrimitiveSet(0, _sideGeom->getNumPrimitiveSets());
   _edgeGeom->removePrimitiveSet(0, _edgeGeom->getNumPrimitiveSets());
-  _baseGeom->removePrimitiveSet(0, _baseGeom->getNumPrimitiveSets());
   _baseOutlineGeom->removePrimitiveSet(0, _baseOutlineGeom->getNumPrimitiveSets());
 
 	// Initialize vertices
@@ -292,7 +281,6 @@ void PolyhedralCone::createCone()
   _sideGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::TRIANGLE_FAN, 0, _sideVertices->size()));
   _edgeGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, _edgeVertices->size()));
   _baseOutlineGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_LOOP, 0, _baseVertices->size()));
-  _baseGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POLYGON, 0, _baseVertices->size()));
 
   // Indicate that data has changed and should be re-rendered
   _sideVertices->dirty();

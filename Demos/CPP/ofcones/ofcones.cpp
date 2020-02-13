@@ -14,8 +14,9 @@
  limitations under the License.
  ***********************************/
 
+#include <OpenFrames/EllipticCone.hpp>
 #include <OpenFrames/PolyhedralCone.hpp>
-#include <OpenFrames/RightCone.hpp>
+#include <OpenFrames/RectangularCone.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 
 using namespace OpenFrames;
@@ -31,7 +32,7 @@ int main()
   // Create a custom cone (where we specify clock & cone angles)
   {
     PolyhedralCone* customCone = new PolyhedralCone("Custom Cone");
-    customCone->setPosition(-5.0, 0.0, 0.0);
+    customCone->setPosition(-10.0, 0.0, 0.0);
     customCone->setConeColor(0.5, 0.5, 0.5, 0.5);
     customCone->setConeLength(5.0);
     root->addChild(customCone);
@@ -56,14 +57,24 @@ int main()
     customCone->setVertexAngles(clockAngles, coneAngles);
   }
 
-  // Create a right cone with specified semimajor/semiminor angles
+  // Create an elliptic cone with specified semimajor/semiminor half-angles
   {
-    RightCone *rightCone = new RightCone("Right Cone");
-    rightCone->setPosition(5.0, 0.0, 0.0);
-    rightCone->setConeColor(0.1, 0.5, 0.6, 0.5);
-    rightCone->setConeLength(5.0);
-    rightCone->setPrimaryAngles(osg::DegreesToRadians(60.0), osg::DegreesToRadians(45.0));
-    root->addChild(rightCone);
+    EllipticCone *ellipticCone = new EllipticCone("Elliptic Cone");
+    ellipticCone->setPosition(10.0, 0.0, 0.0);
+    ellipticCone->setConeColor(0.1, 0.5, 0.6, 0.5);
+    ellipticCone->setConeLength(5.0);
+    ellipticCone->setPrimaryAngles(osg::DegreesToRadians(45.0), osg::DegreesToRadians(20.0));
+    root->addChild(ellipticCone);
+  }
+
+  // Create a rectangular cone with specified x/y half-angles
+  {
+    RectangularCone *rectangularCone = new RectangularCone("Rectangular Cone");
+    rectangularCone->setPosition(0, 0, 10.0);
+    rectangularCone->setConeColor(0.1, 0.5, 0.6, 0.5);
+    rectangularCone->setConeLength(5.0);
+    rectangularCone->setPrimaryAngles(osg::DegreesToRadians(45.0), osg::DegreesToRadians(20.0));
+    root->addChild(rectangularCone);
   }
   
   // Create a manager to handle access to the scene

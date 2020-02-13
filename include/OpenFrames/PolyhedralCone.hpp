@@ -75,10 +75,9 @@ namespace OpenFrames
       NONE = 0,
       SIDES = 1,
       EDGES = 2,
-      BASE = 4,
       BASE_OUTLINE = 8,
       DEFAULT = SIDES | EDGES | BASE_OUTLINE,
-      ALL = SIDES | EDGES | BASE | BASE_OUTLINE,
+      ALL = SIDES | EDGES | BASE_OUTLINE,
     };
 
     // Select components of cone that should be drawn
@@ -110,7 +109,6 @@ namespace OpenFrames
     // Geometry objects that draw the cone and its outlines
     osg::ref_ptr<osg::Geometry> _sideGeom;
     osg::ref_ptr<osg::Geometry> _edgeGeom;
-    osg::ref_ptr<osg::Geometry> _baseGeom;
     osg::ref_ptr<osg::Geometry> _baseOutlineGeom;
 
     // Array of points that define the cone

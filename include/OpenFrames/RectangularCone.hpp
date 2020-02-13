@@ -14,12 +14,12 @@
    limitations under the License.
 ***********************************/
 
-/** \file RightCone.hpp
- * Declaration of RightCone class
+/** \file RectangularCone.hpp
+ * Declaration of RectangularCone class
  */
 
-#ifndef _OF_RIGHTCONE_
-#define _OF_RIGHTCONE_
+#ifndef _OF_RECTANGULARCONE_
+#define _OF_RECTANGULARCONE_
 
 #include <OpenFrames/Export.h>
 #include <OpenFrames/PolyhedralCone.hpp>
@@ -27,31 +27,31 @@
 namespace OpenFrames
 {
   /**
-   * \class RightCone
+   * \class RectangularCone
    *
-   * \brief ReferenceFrame for drawing a right cone
+   * \brief ReferenceFrame for drawing an elliptic cone
    *
-   * A type of PolyhedralCone that draws a right cone, with variable semimajor and semiminor angles.
+   * A type of PolyhedralCone that draws an elliptic cone, with variable x and y angles.
    */
-  class OF_EXPORT RightCone : public PolyhedralCone
+  class OF_EXPORT RectangularCone : public PolyhedralCone
   {
   public:
-    RightCone( const std::string &name );
-    RightCone( const std::string &name, float r, float g, float b, float a = 1.0 );
+    RectangularCone( const std::string &name );
+    RectangularCone( const std::string &name, float r, float g, float b, float a = 1.0 );
 
-    /** Set/get semimajor/semiminor angles */
-    void setPrimaryAngles(const double& a, const double& b);
+    /** Set/get x and y half-angles */
+    void setPrimaryAngles(const double& x, const double& y);
 
     /// Inherited
-    virtual std::string frameInfo() const { return "RightCone"; }
+    virtual std::string frameInfo() const { return "RectangularCone"; }
 
   protected:
-    virtual ~RightCone();
+    virtual ~RectangularCone();
 
     void init();
-    void createRightCone();
+    void createRectangularCone();
 
-    double _a, _b; // Semimajor (a) and Semiminor (b) axes
+    double _x, _y; // Angles along x and y axes
   };
 
 } // !namespace OpenFrames
