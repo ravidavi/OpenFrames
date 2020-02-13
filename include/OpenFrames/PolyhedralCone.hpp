@@ -18,8 +18,8 @@
  * Declaration of PolyhedralCone class
  */
 
-#ifndef _OF_RADIALPLANE_
-#define _OF_RADIALPLANE_
+#ifndef _OF_POLYHEDRALCONE_
+#define _OF_POLYHEDRALCONE_
 
 #include <OpenFrames/Export.h>
 #include <OpenFrames/ReferenceFrame.hpp>

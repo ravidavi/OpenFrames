@@ -91,9 +91,6 @@ namespace OpenFrames
 	osg::ref_ptr<osg::Vec4Array> _lineColor;
 	osg::ref_ptr<osg::Vec4Array> _planeColor;
 
-	// Array defining normals
-	osg::ref_ptr<osg::Vec3Array> _normals;
-
 	// Level of Detail for cells that make up the plane tesselation
 	unsigned int _planeLOD;
   };

@@ -15,7 +15,7 @@
 ***********************************/
 
 /** \file PolyhedralCone.cpp
- * PolyhedralCone-class function definitions.
+ * PolyhedralCone class function definitions.
  */
 
 #include <OpenFrames/PolyhedralCone.hpp>

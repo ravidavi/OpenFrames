@@ -15,6 +15,7 @@
  ***********************************/
 
 #include <OpenFrames/PolyhedralCone.hpp>
+#include <OpenFrames/RightCone.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 
 using namespace OpenFrames;
@@ -53,6 +54,16 @@ int main()
       osg::DegreesToRadians(30.0),
     };
     customCone->setVertexAngles(clockAngles, coneAngles);
+  }
+
+  // Create a right cone with specified semimajor/semiminor angles
+  {
+    RightCone *rightCone = new RightCone("Right Cone");
+    rightCone->setPosition(5.0, 0.0, 0.0);
+    rightCone->setConeColor(0.1, 0.5, 0.6, 0.5);
+    rightCone->setConeLength(5.0);
+    rightCone->setPrimaryAngles(osg::DegreesToRadians(60.0), osg::DegreesToRadians(45.0));
+    root->addChild(rightCone);
   }
   
   // Create a manager to handle access to the scene

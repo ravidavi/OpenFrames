@@ -34,6 +34,7 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     RadialPlane.cpp
     ReferenceFrame.cpp
     RenderRectangle.cpp
+    RightCone.cpp
     SegmentArtist.cpp
     SkySphere.cpp
     Sphere.cpp
