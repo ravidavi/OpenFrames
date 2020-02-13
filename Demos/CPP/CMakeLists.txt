@@ -1,4 +1,5 @@
 ADD_SUBDIRECTORY("ofcinterface")
+ADD_SUBDIRECTORY("ofcones")
 ADD_SUBDIRECTORY("ofeditstate")
 ADD_SUBDIRECTORY("ofjitter")
 ADD_SUBDIRECTORY("oflighting")
