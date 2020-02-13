@@ -86,30 +86,50 @@ void PolyhedralCone::init()
 	osg::PolygonOffset *offset = new osg::PolygonOffset(1, 1);
 	coneSS->setAttributeAndModes(offset);
 
-	// Create a geometry drawable for the radial circles & longitudinal
-	// lines, and another one for the 0-degree longitude line.
-	// Note that the geometry drawables for the actual plane itself
-	// will be created and set up on the fly.
-	_coneGeom = new osg::Geometry;
+	// Create a geometry for the cone sides, edges, and base
+	_sideGeom = new osg::Geometry;
+  _edgeGeom = new osg::Geometry;
+  _baseGeom = new osg::Geometry;
+  _baseOutlineGeom = new osg::Geometry;
   
   // Use VBOs
-  _coneGeom->setUseDisplayList(false);
-  _coneGeom->setUseVertexBufferObjects(true);
+  _sideGeom->setUseDisplayList(false);
+  _sideGeom->setUseVertexBufferObjects(true);
+  _edgeGeom->setUseDisplayList(false);
+  _edgeGeom->setUseVertexBufferObjects(true);
+  _baseGeom->setUseDisplayList(false);
+  _baseGeom->setUseVertexBufferObjects(true);
+  _baseOutlineGeom->setUseDisplayList(false);
+  _baseOutlineGeom->setUseVertexBufferObjects(true);
 
 	// Create the arrays for the vertex data
-	_coneVertices = new osg::Vec3dArray;
+  _sideVertices = new osg::Vec3dArray;
+  _edgeVertices = new osg::Vec3dArray;
+  _baseVertices = new osg::Vec3dArray;
 
 	// Create the color vectors
-	_coneColor = new osg::Vec4Array(1);
+  _coneColor = new osg::Vec4Array(1);
+  _lineColor = new osg::Vec4Array(1);
 
 	// Bind the vertex and color data
-	_coneGeom->setVertexArray(_coneVertices.get());
-	_coneGeom->setColorArray(_coneColor.get());
-	_coneGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
+	_sideGeom->setVertexArray(_sideVertices.get());
+	_sideGeom->setColorArray(_coneColor.get());
+	_sideGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
+  _edgeGeom->setVertexArray(_edgeVertices.get());
+  _edgeGeom->setColorArray(_lineColor.get());
+  _edgeGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
+  _baseGeom->setVertexArray(_baseVertices.get());
+  _baseGeom->setColorArray(_coneColor.get());
+  _baseGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
+  _baseOutlineGeom->setVertexArray(_baseVertices.get());
+  _baseOutlineGeom->setColorArray(_lineColor.get());
+  _baseOutlineGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
 
-	// Attach the drawables to the main geode. The plane geometries will
-	// be added to the main geode on the fly.
-  _coneGeode->addDrawable(_coneGeom);
+	// Attach the drawables to the main geode.
+  _coneGeode->addDrawable(_sideGeom);
+  _coneGeode->addDrawable(_edgeGeom);
+  _coneGeode->addDrawable(_baseGeom);
+  _coneGeode->addDrawable(_baseOutlineGeom);
 
   // Create a transform that will handle scaling the cone
   _coneTransform = new osg::PositionAttitudeTransform;
@@ -131,11 +151,14 @@ void PolyhedralCone::init()
     osg::DegreesToRadians(45.0),
     osg::DegreesToRadians(45.0)
   };
-	setAngles(clockAngles, coneAngles);
-	setConeColor(1.0, 1.0, 1.0, 0.2);
+	setVertexAngles(clockAngles, coneAngles);
+
+	setConeColor(getColor());
+  setLineColor(getColor());
+  setDrawMode(DEFAULT);
 }
 
-void PolyhedralCone::setAngles(const AngleArray& clockAngles, const AngleArray& coneAngles)
+void PolyhedralCone::setVertexAngles(const AngleArray& clockAngles, const AngleArray& coneAngles)
 {
   // Check for duplicate angles
   if((clockAngles == _clockAngles) && (coneAngles == _coneAngles)) return;
@@ -165,9 +188,42 @@ void PolyhedralCone::setConeColor(const osg::Vec4 &color)
   _coneColor->dirty();
 }
 
-void PolyhedralCone::setConeColor(float r, float g, float b, float a)
+void PolyhedralCone::setLineColor(const osg::Vec4 &color)
 {
-  setConeColor(osg::Vec4(r, g, b, a));
+  // Set color of the longitude lines & radial circles
+  (*_lineColor)[0] = color;
+  _lineColor->dirty();
+}
+
+void PolyhedralCone::setConeAxis(const osg::Vec3d& axis)
+{
+}
+
+void PolyhedralCone::setDrawMode(unsigned int drawMode)
+{
+  if(drawMode & SIDES) _sideGeom->setNodeMask(~0x0);
+  else _sideGeom->setNodeMask(0x0);
+
+  if(drawMode & EDGES) _edgeGeom->setNodeMask(~0x0);
+  else _edgeGeom->setNodeMask(0x0);
+
+  if(drawMode & BASE) _baseGeom->setNodeMask(~0x0);
+  else _baseGeom->setNodeMask(0x0);
+
+  if(drawMode & BASE_OUTLINE) _baseOutlineGeom->setNodeMask(~0x0);
+  else _baseOutlineGeom->setNodeMask(0x0);
+}
+
+unsigned int PolyhedralCone::getDrawMode() const
+{
+  unsigned int nodeMask = NONE;
+
+  if(_sideGeom->getNodeMask()) nodeMask |= SIDES;
+  if(_edgeGeom->getNodeMask()) nodeMask |= EDGES;
+  if(_baseGeom->getNodeMask()) nodeMask |= BASE;
+  if(_baseOutlineGeom->getNodeMask()) nodeMask |= BASE_OUTLINE;
+
+  return nodeMask;
 }
 
 const osg::BoundingSphere& PolyhedralCone::getBound() const
@@ -184,35 +240,55 @@ const osg::BoundingSphere& PolyhedralCone::getBound() const
 
 void PolyhedralCone::createCone()
 {
-	const double epsilon = 1.0e-6; // Precision tolerance
-	const double step = osg::PI/180.0; // Step size for radial circles
-	double max = 2.0*osg::PI - epsilon;
-
 	// Prepare geometries for new vertices that will be computed
-	_coneGeom->removePrimitiveSet(0, _coneGeom->getNumPrimitiveSets());
+  _sideGeom->removePrimitiveSet(0, _sideGeom->getNumPrimitiveSets());
+  _edgeGeom->removePrimitiveSet(0, _edgeGeom->getNumPrimitiveSets());
+  _baseGeom->removePrimitiveSet(0, _baseGeom->getNumPrimitiveSets());
+  _baseOutlineGeom->removePrimitiveSet(0, _baseOutlineGeom->getNumPrimitiveSets());
 
-	// Initialize cone apex vertex
-	_coneVertices->clear();
-  _coneVertices->push_back(osg::Vec3d(0, 0, 0));
+	// Initialize vertices
+	_sideVertices->clear();
+  _edgeVertices->clear();
+  _baseVertices->clear();
+
+  _sideVertices->push_back(osg::Vec3d(0, 0, 0)); // Add cone apex
 
 	// Add vertices corresponding to each clock/cone angle
   // Vertices lie alone the z=1 plane, and are scaled with the
   // cone's PositionAttitudeTransform
+  osg::Vec3d vertex(0, 0, 1.0);
   for(int i = 0; i < _clockAngles.size(); ++i)
   {
     double clockAngle = _clockAngles[i];
     double coneAngle = _coneAngles[i];
-    double z = 1.0;
-    double l = z*std::tan(coneAngle);
-    double x = l*std::cos(clockAngle);
-    double y = l*std::sin(clockAngle);
-    _coneVertices->push_back(osg::Vec3d(x, y, z));
+
+    double l = vertex.z()*std::tan(coneAngle);
+    vertex.x() = l*std::cos(clockAngle);
+    vertex.y() = l*std::sin(clockAngle);
+
+    // Side vertex
+    _sideVertices->push_back(vertex);
+
+    // Edge line from apex to vertex
+    _edgeVertices->push_back(osg::Vec3d());
+    _edgeVertices->push_back(vertex);
+
+    // Base vertex
+    _baseVertices->push_back(vertex);
   }
+
+  // Repeat first point to close the cone
+  _sideVertices->push_back((*_sideVertices)[1]);
   
-  _coneGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::TRIANGLE_FAN, 0, _coneVertices->size()));
+  _sideGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::TRIANGLE_FAN, 0, _sideVertices->size()));
+  _edgeGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, _edgeVertices->size()));
+  _baseOutlineGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_LOOP, 0, _baseVertices->size()));
+  _baseGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POLYGON, 0, _baseVertices->size()));
 
   // Indicate that data has changed and should be re-rendered
-  _coneVertices->dirty();
+  _sideVertices->dirty();
+  _edgeVertices->dirty();
+  _baseVertices->dirty();
 }
 
 } // !namespace OpenFrames

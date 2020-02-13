@@ -23,6 +23,7 @@
 
 #include <OpenFrames/Export.h>
 #include <OpenFrames/ReferenceFrame.hpp>
+#include <osg/PositionAttitudeTransform>
 
 namespace OpenFrames
 {
@@ -47,22 +48,42 @@ namespace OpenFrames
 
     /** Set/get the clock and cone angles. */
     typedef std::vector<double> AngleArray;
-    void setAngles(const AngleArray& clockAngles, const AngleArray& coneAngles);
+    void setVertexAngles(const AngleArray& clockAngles, const AngleArray& coneAngles);
     const AngleArray& getClockAngles() const { return _clockAngles; }
     const AngleArray& getConeAngles() const { return _coneAngles; }
 
     /** Set/get the cone principal axis length */
-    void setLength(const double& length);
-    double getLength() const;
+    void setConeLength(const double& length) { _coneTransform->setScale(osg::Vec3d(length,length,length)); }
+    double getConeLength() const { return _coneTransform->getScale().x(); }
 
-    /** Set the color of the plane */
+    /** Set the color of the cone faces */
     void setConeColor(const osg::Vec4 &color);
-    void setConeColor(float r, float g, float b, float a = 1.0);
+    void setConeColor(float r, float g, float b, float a = 1.0) { setConeColor(osg::Vec4(r, g, b, a)); }
     const osg::Vec4& getConeColor() const { return (*_coneColor)[0]; }
+
+    /** Set the color of the cone lines */
+    void setLineColor(const osg::Vec4 &color);
+    void setLineColor(float r, float g, float b, float a = 1.0) { setLineColor(osg::Vec4(r, g, b, a));}
+    const osg::Vec4& getLineColor() const { return (*_lineColor)[0]; }
   
     /** Define cone axis in local coordinate system
      Cone axis points from apex towards base */
     void setConeAxis(const osg::Vec3d& axis);
+
+    enum DrawMode
+    {
+      NONE = 0,
+      SIDES = 1,
+      EDGES = 2,
+      BASE = 4,
+      BASE_OUTLINE = 8,
+      DEFAULT = SIDES | EDGES | BASE_OUTLINE,
+      ALL = SIDES | EDGES | BASE | BASE_OUTLINE,
+    };
+
+    // Select components of cone that should be drawn
+    void setDrawMode(unsigned int drawMode);
+    unsigned int getDrawMode() const;
 
     /** Inherited from ReferenceFrame. */
     virtual const osg::BoundingSphere& getBound() const;
@@ -86,14 +107,20 @@ namespace OpenFrames
     // Node to hold cone geometry
     osg::ref_ptr<osg::Geode> _coneGeode;
     
-    // Geometry object that draw each triangle of the cone
-    osg::ref_ptr<osg::Geometry> _coneGeom;
+    // Geometry objects that draw the cone and its outlines
+    osg::ref_ptr<osg::Geometry> _sideGeom;
+    osg::ref_ptr<osg::Geometry> _edgeGeom;
+    osg::ref_ptr<osg::Geometry> _baseGeom;
+    osg::ref_ptr<osg::Geometry> _baseOutlineGeom;
 
     // Array of points that define the cone
-    osg::ref_ptr<osg::Vec3dArray> _coneVertices;
+    osg::ref_ptr<osg::Vec3dArray> _sideVertices;
+    osg::ref_ptr<osg::Vec3dArray> _edgeVertices;
+    osg::ref_ptr<osg::Vec3dArray> _baseVertices;
 
     // Cone colors
     osg::ref_ptr<osg::Vec4Array> _coneColor;
+    osg::ref_ptr<osg::Vec4Array> _lineColor;
   };
 
 } // !namespace OpenFrames
