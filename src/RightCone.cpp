@@ -54,7 +54,7 @@ void RightCone::createRightCone()
 {
   AngleArray clockAngles, coneAngles;
   const double epsilon = 1.0e-6; // Precision tolerance
-  const double step = osg::PI / 180.0; // Step size for radial circles
+  const double step = osg::PI / 60.0;
   double maxAngle = 2.0*osg::PI - epsilon;
 
   // Need better vertex spacing
