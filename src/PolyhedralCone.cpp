@@ -161,16 +161,6 @@ void PolyhedralCone::setVertexAngles(const AngleArray& clockAngles, const AngleA
   _clockAngles = clockAngles;
   _coneAngles = coneAngles;
   createCone();
-  
-  /*
-	if((_radius != radius) && (radius > 0.0))
-	{
-	  _radius = radius;
-	  moveXAxis(osg::Vec3(radius, 0, 0), 0.5*radius);
-	  moveYAxis(osg::Vec3(0, radius, 0), 0.5*radius);
-	  moveZAxis(osg::Vec3(0, 0, radius), 0.5*radius);
-	}
-   */
 }
 
 void PolyhedralCone::setConeColor(const osg::Vec4 &color)
@@ -185,10 +175,6 @@ void PolyhedralCone::setLineColor(const osg::Vec4 &color)
   // Set color of the longitude lines & radial circles
   (*_lineColor)[0] = color;
   _lineColor->dirty();
-}
-
-void PolyhedralCone::setConeAxis(const osg::Vec3d& axis)
-{
 }
 
 void PolyhedralCone::setDrawMode(unsigned int drawMode)

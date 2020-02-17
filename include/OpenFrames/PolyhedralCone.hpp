@@ -65,10 +65,6 @@ namespace OpenFrames
     void setLineColor(const osg::Vec4 &color);
     void setLineColor(float r, float g, float b, float a = 1.0) { setLineColor(osg::Vec4(r, g, b, a));}
     const osg::Vec4& getLineColor() const { return (*_lineColor)[0]; }
-  
-    /** Define cone axis in local coordinate system
-     Cone axis points from apex towards base */
-    void setConeAxis(const osg::Vec3d& axis);
 
     enum DrawMode
     {
