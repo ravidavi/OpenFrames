@@ -54,8 +54,12 @@ void RectangularCone::createRectangularCone()
 {
   AngleArray clockAngles, coneAngles;
 
-  double cone = std::sqrt(_x*_x + _y*_y);
-  double clock = std::atan(_y / _x);
+  // Get clock & cone angles of the corners of the rectangle
+  // Assume that width & height angles are less than 90-degrees
+  double xlen = std::tan(_x);
+  double ylen = std::tan(_y);
+  double cone = std::atan(std::sqrt(xlen*xlen + ylen*ylen));
+  double clock = std::atan(ylen / xlen);
 
   clockAngles = { clock, osg::PI - clock, osg::PI + clock, -clock };
   coneAngles = { cone, cone, cone, cone };
