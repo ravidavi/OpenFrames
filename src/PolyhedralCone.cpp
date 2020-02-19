@@ -161,16 +161,6 @@ void PolyhedralCone::setVertexAngles(const AngleArray& clockAngles, const AngleA
   _clockAngles = clockAngles;
   _coneAngles = coneAngles;
   createCone();
-  
-  /*
-	if((_radius != radius) && (radius > 0.0))
-	{
-	  _radius = radius;
-	  moveXAxis(osg::Vec3(radius, 0, 0), 0.5*radius);
-	  moveYAxis(osg::Vec3(0, radius, 0), 0.5*radius);
-	  moveZAxis(osg::Vec3(0, 0, radius), 0.5*radius);
-	}
-   */
 }
 
 void PolyhedralCone::setConeColor(const osg::Vec4 &color)
@@ -185,10 +175,6 @@ void PolyhedralCone::setLineColor(const osg::Vec4 &color)
   // Set color of the longitude lines & radial circles
   (*_lineColor)[0] = color;
   _lineColor->dirty();
-}
-
-void PolyhedralCone::setConeAxis(const osg::Vec3d& axis)
-{
 }
 
 void PolyhedralCone::setDrawMode(unsigned int drawMode)
@@ -234,7 +220,7 @@ void PolyhedralCone::createCone()
   _baseOutlineGeom->removePrimitiveSet(0, _baseOutlineGeom->getNumPrimitiveSets());
 
 	// Initialize vertices
-	_sideVertices->clear();
+  _sideVertices->clear();
   _sideNormals->clear();
   _edgeVertices->clear();
   _baseVertices->clear();
@@ -242,18 +228,19 @@ void PolyhedralCone::createCone()
   _sideVertices->push_back(osg::Vec3d(0, 0, 0)); // Add cone apex
   _sideNormals->push_back(osg::Vec3d(0, 0, -1)); // Cone apex normal points down
 
-	// Add vertices corresponding to each clock/cone angle
+  // Add vertices corresponding to each clock/cone angle
   // Vertices lie alone the z=1 plane, and are scaled with the
   // cone's PositionAttitudeTransform
-  osg::Vec3d zVec(0, 0, 1); // z unit vector
-  osg::Vec3d vertex(0, 0, 1.0); // Each vertex is unit length in z direction
+  osg::Vec3d zVec(0, 0, -1); // -z unit vector
+  osg::Vec3d vertex(0, 0, -1); // Each vertex is unit length in -z direction
   osg::Vec3d normal, v_plane;
+  double clockAngle, coneAngle, l;
   for(int i = 0; i < _clockAngles.size(); ++i)
   {
-    double clockAngle = _clockAngles[i];
-    double coneAngle = _coneAngles[i];
+    clockAngle = _clockAngles[i];
+    coneAngle = _coneAngles[i];
 
-    double l = vertex.z()*std::tan(coneAngle);
+    l = std::abs(vertex.z())*std::tan(coneAngle);
     vertex.x() = l*std::cos(clockAngle);
     vertex.y() = l*std::sin(clockAngle);
 
