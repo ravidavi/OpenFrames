@@ -28,14 +28,21 @@ int main()
   
   // Create a ReferenceFrame for the root
   ReferenceFrame* root = new ReferenceFrame("Root");
+  OpenFrames::View *view = new OpenFrames::View(root, root);
+  myWindow->getGridPosition(0, 0)->addView(view);
+  view->setDefaultViewDistance(15.0);
+  view->resetView();
 
   // Create a custom cone (where we specify clock & cone angles)
   {
     PolyhedralCone* customCone = new PolyhedralCone("Custom Cone");
-    customCone->setPosition(-10.0, 0.0, 0.0);
     customCone->setConeColor(0.5, 0.5, 0.5, 0.5);
     customCone->setConeLength(5.0);
     root->addChild(customCone);
+    OpenFrames::View *view = new OpenFrames::View(root, customCone);
+    myWindow->getGridPosition(0, 0)->addView(view);
+    view->setDefaultViewDistance(10.0);
+    view->resetView();
 
     // Set some clock/cone angles for the custom cone
     PolyhedralCone::AngleArray clockAngles =
@@ -55,16 +62,39 @@ int main()
       osg::DegreesToRadians(30.0),
     };
     customCone->setVertexAngles(clockAngles, coneAngles);
+
+    // Place apex at desired location and point boresight in desired direction
+    // Vectors are relative to the parent object's reference frame
+    osg::Vec3d origin(-10, 0, 0);   // Cone apex location
+    osg::Vec3d direction(0, 0, 1);  // Cone boresight direction
+    osg::Vec3d up(1, 0, 0);         // Cone +Y axis
+    osg::Matrixd mat;
+    mat.makeLookAt(osg::Vec3d(), direction, up);
+    customCone->setPosition(origin);
+    customCone->setAttitude(mat.getRotate().inverse());
   }
 
   // Create an elliptic cone with specified semimajor/semiminor half-angles
   {
     EllipticCone *ellipticCone = new EllipticCone("Elliptic Cone");
-    ellipticCone->setPosition(10.0, 0.0, 0.0);
     ellipticCone->setConeColor(0.1, 0.5, 0.6, 0.5);
     ellipticCone->setConeLength(5.0);
     ellipticCone->setPrimaryAngles(osg::DegreesToRadians(45.0), osg::DegreesToRadians(20.0));
     root->addChild(ellipticCone);
+    OpenFrames::View *view = new OpenFrames::View(root, ellipticCone);
+    myWindow->getGridPosition(0, 0)->addView(view);
+    view->setDefaultViewDistance(10.0);
+    view->resetView();
+
+    // Place apex at desired location and point boresight in desired direction
+    // Vectors are relative to the parent object's reference frame
+    osg::Vec3d origin(10, 0, 0);   // Cone apex location
+    osg::Vec3d direction(0, 1, 0); // Cone boresight direction
+    osg::Vec3d up(1, 0, 1);        // Cone +Y axis 
+    osg::Matrixd mat;
+    mat.makeLookAt(osg::Vec3d(), direction, up);
+    ellipticCone->setPosition(origin);
+    ellipticCone->setAttitude(mat.getRotate().inverse());
   }
 
   // Create a rectangular cone with specified x/y half-angles
@@ -83,8 +113,6 @@ int main()
   
   // Add the scene to the window
   myWindow->setScene(fm, 0, 0);
-  myWindow->getGridPosition(0, 0)->getCurrentView()->setDefaultViewDistance(10.0);
-  myWindow->getGridPosition(0, 0)->getCurrentView()->resetView();
   
   myWindow->startThread(); // Start window animation
   myWindow->join(); // Wait for window animation to finish
