@@ -141,6 +141,20 @@ namespace OpenFrames
      be auto-computed. */
     void setDefaultViewDistance(double distance) { _defaultViewDistance = distance; }
     double getDefaultViewDistance() const { return _defaultViewDistance; }
+    
+    /** Directly set the Trackball's default view orientation using eye, center, up vectors.
+     All vectors are defined relative to the view frame (see view definition parameters)
+     NOTE: This overrides the default view distance. */
+    void setDefaultViewParameters(osg::Vec3d eye, osg::Vec3d center, osg::Vec3d up)
+    {
+      _defaultEye = eye;
+      _defaultCenter = center;
+      _defaultUp = up;
+    }
+    void clearDefaultViewParameters()
+    {
+      _defaultEye = _defaultCenter = _defaultUp = osg::Vec3d(0.0, 0.0, 0.0);
+    }
 
     /** Get or set the trackball manipulator */
     FollowingTrackball* getTrackball() const { return _trackball.get(); }
@@ -202,6 +216,9 @@ namespace OpenFrames
 
     /** Default distance at which to view the frame. */
     double _defaultViewDistance;
+    
+    /** Default view parameters */
+    osg::Vec3d _defaultEye, _defaultCenter, _defaultUp;
 
     /** The transform for user interactivity. */
     osg::ref_ptr<FollowingTrackball> _trackball;

@@ -73,9 +73,10 @@ namespace OpenFrames
   /*******************************************************/
   void FollowingTrackball::resetState()
   {
-    _homeEye.set(0.0, -1.0, 0.0);
-    _homeCenter.set(0.0, 0.0, 0.0);
-    _homeUp.set(0.0, 0.0, 1.0);
+    osg::Vec3d eye(0.0, -1.0, 0.0);
+    osg::Vec3d center(0.0, 0.0, 0.0);
+    osg::Vec3d up(0.0, 0.0, 1.0);
+    setHomePosition(eye, center, up);
     home(0.0);
   }
 
@@ -231,6 +232,9 @@ namespace OpenFrames
     // Set the default view distance to be auto computed
     _defaultViewDistance = 0.0;
     
+    // Set the default view parameters to be unused
+    clearDefaultViewParameters();
+    
     // Set up the projection matrix
     _projType = PERSPECTIVE;
     setPerspective(45.0, 640.0/480.0);
@@ -259,32 +263,41 @@ namespace OpenFrames
     // First let trackball reset its internal state
     _trackball->resetState();
     
-    // Get the bounding sphere of the frame we're looking at.
-    osg::BoundingSphere bs;
-    if(_xform->isValid())
-      bs = _xform->getOrigin()->getBound();
-    
-    // Set default distance if needed
-    if(_defaultViewDistance > 0.0) bs._radius = _defaultViewDistance;
-    else if(bs._radius <= 0.0) bs._radius = 1;
-    
-    // Compute view distance based on bounding sphere size and field of view
-    double dist = 2.0*bs._radius; // Default
-    if (_projType == PERSPECTIVE)
+    if(_defaultUp.length() != 0.0)
     {
-      double fovy, ratio;
-      getPerspective(fovy, ratio); // Get projection vertical fov and aspect ratio (width/height)
-      fovy = (fovy/2.0) * (osg::PI/180.0); // Trig calculations require radians and half-angle
+      // Set the trackball's home position
+      _trackball->setHomePosition(_defaultEye, _defaultCenter, _defaultUp);
+    }
+    else
+    {
+      // Get the bounding sphere of the frame we're looking at.
+      osg::BoundingSphere bs;
+      if(_xform->isValid())
+        bs = _xform->getOrigin()->getBound();
       
-      // Trig time! Compute camera distance such that fov is tangent to bounding sphere
-      double fovx = std::atan(ratio*std::tan(fovy)); // Compute horizontal fov
-      dist = bs._radius / std::sin(std::min(fovy, fovx));
+      // Set default distance if needed
+      if(_defaultViewDistance > 0.0) bs._radius = _defaultViewDistance;
+      else if(bs._radius <= 0.0) bs._radius = 1;
+      
+      // Compute view distance based on bounding sphere size and field of view
+      double dist = 2.0*bs._radius; // Default
+      if (_projType == PERSPECTIVE)
+      {
+        double fovy, ratio;
+        getPerspective(fovy, ratio); // Get projection vertical fov and aspect ratio (width/height)
+        fovy = (fovy/2.0) * (osg::PI/180.0); // Trig calculations require radians and half-angle
+        
+        // Trig time! Compute camera distance such that fov is tangent to bounding sphere
+        double fovx = std::atan(ratio*std::tan(fovy)); // Compute horizontal fov
+        dist = bs._radius / std::sin(std::min(fovy, fovx));
+      }
+      
+      // Set the trackball's home position
+      _trackball->setHomePosition(bs._center+osg::Vec3(0.0, -dist, 0.0),
+                                  bs._center, osg::Vec3(0.0, 0.0, 1.0));
     }
     
-    // Set the trackball's home position
-    _trackball->setHomePosition(bs._center+osg::Vec3(0.0, -dist, 0.0),
-                                bs._center, osg::Vec3(0.0, 0.0, 1.0));
-    _trackball->home(0.0); // Tell trackball to reset
+    _trackball->home(0.0); // Tell trackball to reset to its home position
   }
   
   /*******************************************************/
