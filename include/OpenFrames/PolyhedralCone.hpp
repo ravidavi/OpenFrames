@@ -112,9 +112,6 @@ namespace OpenFrames
     osg::ref_ptr<osg::Vec3dArray> _edgeVertices;
     osg::ref_ptr<osg::Vec3dArray> _baseVertices;
 
-    // Side normals
-    osg::ref_ptr<osg::Vec3dArray> _sideNormals;
-
     // Cone colors
     osg::ref_ptr<osg::Vec4Array> _coneColor;
     osg::ref_ptr<osg::Vec4Array> _lineColor;

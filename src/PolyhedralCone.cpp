@@ -78,11 +78,10 @@ void PolyhedralCone::init()
   depth->setWriteMask(false);
   coneSS->setAttributeAndModes(depth);
 
-  // Rescale normals since we use scale to size the cone
-  coneSS->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+  // Disable lighting
+  coneSS->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
-  // Make sure that the cone is always drawn behind overlaid lines by
-  // offsetting it slightly. See glPolygonOffset man page.
+  // Make sure that the cone surface is always drawn behind edge lines
   osg::PolygonOffset *offset = new osg::PolygonOffset(1, 1);
   coneSS->setAttributeAndModes(offset);
 
@@ -101,7 +100,6 @@ void PolyhedralCone::init()
 
   // Create the arrays for the vertex data
   _sideVertices = new osg::Vec3dArray;
-  _sideNormals = new osg::Vec3dArray;
   _edgeVertices = new osg::Vec3dArray;
   _baseVertices = new osg::Vec3dArray;
 
@@ -111,7 +109,6 @@ void PolyhedralCone::init()
 
   // Bind the vertex and color data
   _sideGeom->setVertexArray(_sideVertices.get());
-  _sideGeom->setNormalArray(_sideNormals.get(), osg::Array::BIND_PER_VERTEX);
   _sideGeom->setColorArray(_coneColor.get(), osg::Array::BIND_OVERALL);
   _edgeGeom->setVertexArray(_edgeVertices.get());
   _edgeGeom->setColorArray(_lineColor.get(), osg::Array::BIND_OVERALL);
@@ -221,37 +218,30 @@ void PolyhedralCone::createCone()
 
 	// Initialize vertices
   _sideVertices->clear();
-  _sideNormals->clear();
   _edgeVertices->clear();
   _baseVertices->clear();
 
-  _sideVertices->push_back(osg::Vec3d(0, 0, 0)); // Add cone apex
-  _sideNormals->push_back(osg::Vec3d(0, 0, -1)); // Cone apex normal points down
+  osg::Vec3d coneDir(0, 0, -1); // Cone boresight direction
+  osg::Vec3d vertex(coneDir);   // Each vertex is unit length in boresight direction
+
+  _sideVertices->push_back(osg::Vec3d()); // Cone apex at origin
 
   // Add vertices corresponding to each clock/cone angle
-  // Vertices lie alone the z=1 plane, and are scaled with the
+  // Vertices lie in a unit-distance plane, and are scaled with the
   // cone's PositionAttitudeTransform
-  osg::Vec3d zVec(0, 0, -1); // -z unit vector
-  osg::Vec3d vertex(0, 0, -1); // Each vertex is unit length in -z direction
-  osg::Vec3d normal, v_plane;
-  double clockAngle, coneAngle, l;
+
+  double clockAngle, coneAngle, len;
   for(int i = 0; i < _clockAngles.size(); ++i)
   {
     clockAngle = _clockAngles[i];
     coneAngle = _coneAngles[i];
 
-    l = std::abs(vertex.z())*std::tan(coneAngle);
-    vertex.x() = l*std::cos(clockAngle);
-    vertex.y() = l*std::sin(clockAngle);
+    len = std::abs(vertex.z())*std::tan(coneAngle);
+    vertex.x() = len*std::cos(clockAngle);
+    vertex.y() = len*std::sin(clockAngle);
 
     // Side vertex
     _sideVertices->push_back(vertex);
-
-    // Side normal
-    v_plane = vertex ^ zVec;
-    normal = vertex ^ v_plane;
-    normal.normalize();
-    _sideNormals->push_back(normal);
 
     // Edge line from apex to vertex
     _edgeVertices->push_back(osg::Vec3d());
@@ -263,7 +253,6 @@ void PolyhedralCone::createCone()
 
   // Repeat first point to close the cone
   _sideVertices->push_back((*_sideVertices)[1]);
-  _sideNormals->push_back((*_sideNormals)[1]);
   
   _sideGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::TRIANGLE_FAN, 0, _sideVertices->size()));
   _edgeGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, _edgeVertices->size()));
@@ -271,7 +260,6 @@ void PolyhedralCone::createCone()
 
   // Indicate that data has changed and should be re-rendered
   _sideVertices->dirty();
-  _sideNormals->dirty();
   _edgeVertices->dirty();
   _baseVertices->dirty();
 }
