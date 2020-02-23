@@ -28,7 +28,7 @@
 using namespace OpenFrames;
 
 const double pathRadius = 100.0;
-WindowProxy *theWindow;
+osg::ref_ptr<WindowProxy> theWindow;
 
 /** The function called when the user presses a key */
 void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
@@ -64,11 +64,7 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
  **/
 int main()
 {
-  // Create a window
-  osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(30, 30, 1024, 768, 1, 1, false);
-  myWindow->setKeyPressCallback(KeyPressCallback); // Specify keypress callback
-  theWindow = myWindow;
-
+  // Create the root frame
   ReferenceFrame* root = new ReferenceFrame("root");
   root->moveXAxis(osg::Vec3d(), pathRadius / 2.0);
   root->moveYAxis(osg::Vec3d(), pathRadius / 2.0);
@@ -118,22 +114,27 @@ int main()
   Model *cessnafire = new Model("cessna");
   cessnafire->setModel("cessna.osg");
   cessnafire->getTransform()->setUpdateCallback(new TrajectoryFollower(traj));
+  cessnafire->setModelAttitude(osg::Quat(osg::PI, osg::Vec3d(0, 0, 1))); // Model faces in -Y direction
   root->addChild(cessnafire);
   
+  // Create a window
+  theWindow = new WindowProxy(30, 30, 1024, 768, 1, 1, false);
+  theWindow->setKeyPressCallback(KeyPressCallback); // Specify keypress callback
+
   // View the model
   View *view = new View(root, cessnafire);
-  myWindow->getGridPosition(0, 0)->addView(view);
+  theWindow->getGridPosition(0, 0)->addView(view);
 
   // Create a manager to handle access to the scene
   FrameManager* fm = new FrameManager;
   fm->setFrame(root);
   
   // Add the scene to the window
-  myWindow->setScene(fm, 0, 0);
-  myWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0); // Black background
+  theWindow->setScene(fm, 0, 0);
+  theWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0); // Black background
   
-  myWindow->startThread(); // Start window animation
-  myWindow->join(); // Wait for window animation to finish
+  theWindow->startThread(); // Start window animation
+  theWindow->join(); // Wait for window animation to finish
   
   return 0;
 }
