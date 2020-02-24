@@ -23,7 +23,10 @@
 #include <OpenFrames/Trajectory.hpp>
 #include <OpenFrames/TrajectoryFollower.hpp>
 #include <OpenFrames/WindowProxy.hpp>
+
 #include <osg/Math>
+
+#include <osgParticle/FireEffect>
 
 using namespace OpenFrames;
 
@@ -59,6 +62,24 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
   }
 }
 
+void createParticleEffects(Model *model)
+{
+  // Create nice effects
+  osgParticle::FireEffect *fire = new osgParticle::FireEffect(osg::Vec3(), 10.0, 1.0);
+  osg::Group* effectsGroup = new osg::Group;
+  effectsGroup->addChild(fire);
+
+  // We'll handle adding the effect's particle system to scene graph ourselves
+  // Necessary since the model moves w.r.t the root node
+  fire->setUseLocalParticleSystem(false);
+  
+  // Add effect next to model so the particles will be emmitted from the correct location
+  model->getTransform()->addChild(effectsGroup);
+
+  // Add particle system above model so particles live in the "world"
+  model->getExtras()->addDrawable(fire->getParticleSystem());
+}
+
 /** 
  Demonstrates using OSG's particle system with a model in OpenFrames
  **/
@@ -77,15 +98,14 @@ int main()
   drawtraj->showAxesLabels(ReferenceFrame::NO_AXES);
   drawtraj->showNameLabel(false);
   root->addChild(drawtraj);
-  
+
   // Create a circular trajectory that the model will follow
   osg::ref_ptr<Trajectory> traj = new Trajectory;
   {
-    // Each trajectory is 1/numtraj1 of the full circle
     double pos[3];
     osg::Quat att;
     double rmag = 100.0;
-    const double eps = 1.0e-14;
+    const double eps = 1.0e-10;
     for(double t = 0.0; t <= 2.0*osg::PI + eps; t += osg::PI / 90.0)
     {
       // Compute position along circle
@@ -103,7 +123,7 @@ int main()
     }
 
     // Create a CurveArtist for the trajectory. By default the CurveArtist
-    // will use plot the trajectory's x/y/z positions.
+    // will plot the trajectory's x/y/z positions.
     CurveArtist *ca = new CurveArtist(traj);
     ca->setWidth(2.0); // Line width for the trajectory
     ca->setColor(1, 0, 0);
@@ -111,18 +131,23 @@ int main()
   }
 
   // Load the model and have it follow the trajectory
-  Model *cessnafire = new Model("cessna");
-  cessnafire->setModel("cessna.osg");
-  cessnafire->getTransform()->setUpdateCallback(new TrajectoryFollower(traj));
-  cessnafire->setModelAttitude(osg::Quat(osg::PI, osg::Vec3d(0, 0, 1))); // Model faces in -Y direction
-  root->addChild(cessnafire);
+  Model *cessna = new Model("cessna");
+  {
+    cessna->setModel("cessna.osg");
+    cessna->getTransform()->setUpdateCallback(new TrajectoryFollower(traj));
+    cessna->setModelAttitude(osg::Quat(osg::PI, osg::Vec3d(0, 0, 1))); // Model faces in -Y direction
+    root->addChild(cessna);
+  }
+
+  // Create particle effects on the model
+  createParticleEffects(cessna);
   
   // Create a window
   theWindow = new WindowProxy(30, 30, 1024, 768, 1, 1, false);
   theWindow->setKeyPressCallback(KeyPressCallback); // Specify keypress callback
 
   // View the model
-  View *view = new View(root, cessnafire);
+  View *view = new View(root, cessna);
   theWindow->getGridPosition(0, 0)->addView(view);
 
   // Create a manager to handle access to the scene
