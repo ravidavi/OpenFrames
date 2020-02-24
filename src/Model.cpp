@@ -59,10 +59,11 @@ namespace OpenFrames
   
   void Model::init()
   {
-    _group = new osg::Group;
     _extras = new osg::Geode;
     _extras->setName(_name + " extras");
+    _group = new osg::Group;
     _group->addChild(_xform.get());
+    _group->addChild(_extras.get());
     _modelXform = new FrameTransform;
   }
   
@@ -93,7 +94,6 @@ namespace OpenFrames
       _model = NULL;
       
       // Remove existing ParticleSystems
-      _group->removeChild(_extras.get());
       _extras->removeDrawables(0, _extras->getNumDrawables());
       
       // No filename given, so just reset axes and quit
@@ -150,10 +150,6 @@ namespace OpenFrames
           }
         }
       }
-      
-      // If ParticleSystems exist, add them to the group
-      if(_extras->getNumDrawables() > 0)
-        _group->addChild(_extras.get());
     }
 
     // If the model is an osgVolume tile then add a volume above it
@@ -208,9 +204,6 @@ namespace OpenFrames
       {
         _extras->addDrawable(otherExtras->getDrawable(i));
       }
-      
-      // If extras exist, add them to the group
-      _group->addChild(_extras.get());
     }
     
     return true;

@@ -41,7 +41,7 @@ int main()
     root->addChild(customCone);
     OpenFrames::View *view = new OpenFrames::View(root, customCone);
     myWindow->getGridPosition(0, 0)->addView(view);
-    view->setDefaultViewDistance(10.0);
+    view->setDefaultViewParameters(osg::Vec3d(0, 0, 5.0), osg::Vec3d(), osg::Vec3(0, 1.0, 0));
     view->resetView();
 
     // Set some clock/cone angles for the custom cone
@@ -83,7 +83,7 @@ int main()
     root->addChild(ellipticCone);
     OpenFrames::View *view = new OpenFrames::View(root, ellipticCone);
     myWindow->getGridPosition(0, 0)->addView(view);
-    view->setDefaultViewDistance(10.0);
+    view->setDefaultViewParameters(osg::Vec3d(0, 0, 5.0), osg::Vec3d(), osg::Vec3(0, 1.0, 0));
     view->resetView();
 
     // Place apex at desired location and point boresight in desired direction

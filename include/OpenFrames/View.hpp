@@ -145,11 +145,17 @@ namespace OpenFrames
     /** Directly set the Trackball's default view orientation using eye, center, up vectors.
      All vectors are defined relative to the view frame (see view definition parameters)
      NOTE: This overrides the default view distance. */
-    void setDefaultViewParameters(osg::Vec3d eye, osg::Vec3d center, osg::Vec3d up)
+    void setDefaultViewParameters(const osg::Vec3d& eye, const osg::Vec3d& center, const osg::Vec3d& up)
     {
       _defaultEye = eye;
       _defaultCenter = center;
       _defaultUp = up;
+    }
+    void getDefaultViewParameters(osg::Vec3d& eye, osg::Vec3d& center, osg::Vec3d& up) const
+    {
+       eye = _defaultEye;
+       center = _defaultCenter;
+       up = _defaultUp;
     }
     void clearDefaultViewParameters()
     {
