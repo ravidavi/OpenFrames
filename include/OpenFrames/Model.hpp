@@ -46,10 +46,14 @@ namespace OpenFrames
     Model( const std::string &name, const osg::Vec4 &color );
     Model( const std::string &name , float r, float g, float b, float a = 1.0 );
     
+    // Show/hide this frame's contents, e.g. everything a frame shows (excluding axes, labels, and children)
+    virtual void showContents(bool showContents);
+    virtual bool getContentsShown() const;
+
     /** We will maintain our own osg::Group, because loaded models might have
-     ParticleSystems or other things which need to reside in world space.
-	    Therefore, our group will contain the ReferenceFrame's transform as
-	    well as any ParticleSystems and other such things. */
+    ParticleSystems or other things which need to reside in world space.
+    Therefore, our group will contain the ReferenceFrame's transform as
+    well as any ParticleSystems and other such things. */
     virtual osg::Group* getGroup() const;
     
     /** Set the model that should be displayed */
