@@ -57,14 +57,34 @@ namespace OpenFrames
   
   Model::~Model() { }
   
+  void Model::showContents(bool showContents)
+  {
+    if(showContents)
+    {
+      _modelXform->setNodeMask(~0x0);
+      _extras->setNodeMask(~0x0);
+    }
+    else
+    {
+      _modelXform->setNodeMask(0x0);
+      _extras->setNodeMask(0x0);
+    }
+  }
+
+  bool Model::getContentsShown() const
+  {
+    return ((_modelXform->getNodeMask() != 0x0) || (_extras->getNodeMask() != 0x0));
+  }
+
   void Model::init()
   {
+    _modelXform = new FrameTransform;
+    _xform->addChild(_modelXform);
     _extras = new osg::Geode;
     _extras->setName(_name + " extras");
     _group = new osg::Group;
     _group->addChild(_xform.get());
     _group->addChild(_extras.get());
-    _modelXform = new FrameTransform;
   }
   
   osg::Group* Model::getGroup() const
@@ -89,7 +109,6 @@ namespace OpenFrames
     if((filename.length() == 0) || (newModel != NULL))
     {
       // Remove current model
-      _xform->removeChild(_modelXform.get());
       _modelXform->removeChild(_model.get());
       _model = NULL;
       
@@ -167,7 +186,6 @@ namespace OpenFrames
     
     // Add the new model to this frame
     _modelXform->addChild(_model.get());
-    _xform->addChild(_modelXform.get());
     
     // Rescale normals in case we want to scale the model
     if(rescaleNormals) _model->getOrCreateStateSet()->setMode( GL_RESCALE_NORMAL, osg::StateAttribute::ON );
@@ -189,7 +207,6 @@ namespace OpenFrames
     
     // Add the new model to this frame
     _modelXform->addChild(_model.get());
-    _xform->addChild(_modelXform.get());
     
     // Set the model pivot at its geometric center, so that scales/rotations will make sense.
     osg::Vec3d center = _model->getBound()._center;
