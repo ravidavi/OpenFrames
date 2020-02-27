@@ -32,6 +32,10 @@ using namespace OpenFrames;
 
 const double pathRadius = 100.0;
 osg::ref_ptr<WindowProxy> theWindow;
+Model* theModel;
+
+void createParticleEffects(Model *model);
+void freezeParticleEffects(Model *model, bool shouldFreeze);
 
 /** The function called when the user presses a key */
 void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
@@ -39,7 +43,9 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
   // Pause/unpause animation
   if(*key == 'p')
   {
-    theWindow->pauseTime(!theWindow->isTimePaused());
+    bool shouldPause = !theWindow->isTimePaused();
+    theWindow->pauseTime(shouldPause);
+    freezeParticleEffects(theModel, shouldPause);
   }
   
   // Reset time to epoch. All ReferenceFrames that are following
@@ -47,6 +53,8 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
   else if(*key == 'r')
   {
     theWindow->setTime(0.0);
+    theWindow->getViewer()->getFrameStamp()->setSimulationTime(0.0); // Needed to properly reset particle systems
+    createParticleEffects(theModel);
   }
   
   // Speed up time
@@ -62,8 +70,25 @@ void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col,
   }
 }
 
+void freezeParticleEffects(Model *model, bool shouldFreeze)
+{
+  for(int i = 0; i < model->getExtras()->getNumChildren(); ++i)
+  {
+    osgParticle::ParticleEffect* effect = dynamic_cast<osgParticle::ParticleEffect*>(model->getExtras()->getDrawable(i));
+    if(effect) effect->getParticleSystem()->setFrozen(shouldFreeze);
+  }
+}
+
 void createParticleEffects(Model *model)
 {
+  // Remove existing effects
+  for(int i = model->getTransform()->getNumChildren() - 1; i >= 0; --i)
+  {
+    osgParticle::ParticleEffect* effect = dynamic_cast<osgParticle::ParticleEffect*>(model->getTransform()->getChild(i));
+    if(effect) model->getTransform()->removeChild(i);
+  }
+  model->getExtras()->removeChildren(0, model->getExtras()->getNumChildren());
+
   osg::Vec3d pos(8.0, 10.0, -3.0); // Position of right engine
   float scale = 5.0;
   float intensity = 1.0;
@@ -97,13 +122,6 @@ void createParticleEffects(Model *model)
   // Set wind for smoke trail (m/s in the global reference frame)
   smoke->setWind(osg::Vec3(0, 10, 0));
 
-  // Group all effects
-  osg::Group* effectsGroup = new osg::Group;
-  effectsGroup->addChild(fire);
-  effectsGroup->addChild(smoke);
-  effectsGroup->addChild(explosion);
-  effectsGroup->addChild(explosionDebris);
-
   // We'll handle adding the effect's particle system to scene graph ourselves
   // Necessary since the model moves w.r.t the root node
   fire->setUseLocalParticleSystem(false);
@@ -112,7 +130,10 @@ void createParticleEffects(Model *model)
   explosionDebris->setUseLocalParticleSystem(false);
   
   // Add effects next to model so the particles will be emmitted from the correct location
-  model->getTransform()->addChild(effectsGroup);
+  model->getTransform()->addChild(fire);
+  model->getTransform()->addChild(smoke);
+  model->getTransform()->addChild(explosion);
+  model->getTransform()->addChild(explosionDebris);
 
   // Add particle systems above model so particles are independent after being emitted
   model->getExtras()->addDrawable(fire->getParticleSystem());
@@ -174,6 +195,7 @@ int main()
   // Load the model and have it follow the trajectory
   Model *cessna = new Model("cessna");
   {
+    theModel = cessna;
     cessna->setModel("cessna.osg");
     cessna->getTransform()->setUpdateCallback(new TrajectoryFollower(traj));
     cessna->setModelAttitude(osg::Quat(osg::PI, osg::Vec3d(0, 0, 1))); // Model faces in -Y direction
