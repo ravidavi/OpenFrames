@@ -1,5 +1,5 @@
 /***********************************
- Copyright 2019 Ravishankar Mathur
+ Copyright 2020 Ravishankar Mathur
  
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -273,7 +273,8 @@ namespace OpenFrames
                           osg::Matrix::translate(-(bound.center())));
       _dragger->setHandleEvents(true);
       _dragger->setActivationModKeyMask(osgGA::GUIEventAdapter::MODKEY_CTRL);
-      
+      _dragger->setActivationKeyEvent(osgGA::GUIEventAdapter::KEY_Control_L);
+
       ModelDraggerTransformCallback* draggerCallback = new ModelDraggerTransformCallback(_modelXform.get(), _draggerXform.get());
       _dragger->addDraggerCallback(draggerCallback);
     }
