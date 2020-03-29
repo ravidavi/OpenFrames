@@ -1,3 +1,7 @@
+IF( NOT ${OF_USE_SILVERLINING} )
+  RETURN()
+ENDIF()
+
 # Specify that we should look for headers locally
 INCLUDE_DIRECTORIES(${OpenFrames_SOURCE_DIR}/include ${OPENSCENEGRAPH_INCLUDE_DIRS})
 
