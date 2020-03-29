@@ -273,7 +273,8 @@ namespace OpenFrames
                           osg::Matrix::translate(-(bound.center())));
       _dragger->setHandleEvents(true);
       _dragger->setActivationModKeyMask(osgGA::GUIEventAdapter::MODKEY_CTRL);
-      
+      _dragger->setActivationKeyEvent(osgGA::GUIEventAdapter::KEY_Control_L);
+
       ModelDraggerTransformCallback* draggerCallback = new ModelDraggerTransformCallback(_modelXform.get(), _draggerXform.get());
       _dragger->addDraggerCallback(draggerCallback);
     }
