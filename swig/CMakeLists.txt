@@ -64,20 +64,20 @@ IF(OF_PYTHON_MODULE)
   IF(UNIX)
     IF(APPLE)
       SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOFInterfaceC_REAL_NAME} PROPERTIES INSTALL_RPATH
-      "@loader_path/;@loader_path/../plugins/;@loader_path/../plugins/proprietary/"
+      "@loader_path/"
       )
       IF( OF_FORTRAN_MODULE )
         SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOFInterfaceIFORT_REAL_NAME} PROPERTIES INSTALL_RPATH
-        "@loader_path/;@loader_path/../plugins/;@loader_path/../plugins/proprietary/"
+        "@loader_path/"
         )
       ENDIF( OF_FORTRAN_MODULE )
     ELSE()
       SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOFInterfaceC_REAL_NAME} PROPERTIES INSTALL_RPATH
-      "\$ORIGIN/;\$ORIGIN/../plugins/;\$ORIGIN/../plugins/proprietary/"
+      "\$ORIGIN/"
       )
       IF( OF_FORTRAN_MODULE )
         SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOFInterfaceIFORT_REAL_NAME} PROPERTIES INSTALL_RPATH
-        "\$ORIGIN/;\$ORIGIN/../plugins/;\$ORIGIN/../plugins/proprietary/"
+        "\$ORIGIN/"
         )
       ENDIF( OF_FORTRAN_MODULE )
     ENDIF()

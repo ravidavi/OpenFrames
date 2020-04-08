@@ -53,7 +53,7 @@ class Window(QWindow):
 
         self._window_proxy_id = id
 
-        ofwin_createproxy(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT, nrow, ncol, True, self._window_proxy_id, False)
+        ofwin_createproxy(0, 0, int(DEFAULT_WIDTH*self.devicePixelRatio()), int(DEFAULT_HEIGHT*self.devicePixelRatio()), nrow, ncol, True, self._window_proxy_id, False)
         ofwin_setmakecurrentfunction(self.make_current)
         ofwin_setupdatecontextfunction(self.make_current)
         ofwin_setswapbuffersfunction(self.swap_buffers)
@@ -68,7 +68,7 @@ class Window(QWindow):
             ofwin_activate(self._window_proxy_id)
             ofwin_start()
             if self._saved_size is not None:
-                ofwin_resizewindow(0, 0, self._saved_size.width(), self._saved_size.height())
+                ofwin_resizewindow(0, 0, int(self._saved_size.width()*self.devicePixelRatio()), int(self._saved_size.height()*self.devicePixelRatio()))
                 self._saved_size = None
 
     def hideEvent(self, event):
@@ -89,7 +89,7 @@ class Window(QWindow):
         """
         ofwin_activate(self._window_proxy_id)
         if ofwin_isrunning() == 1:
-            ofwin_resizewindow(0, 0, event.size().width(), event.size().height())
+            ofwin_resizewindow(0, 0, int(event.size().width()*self.devicePixelRatio()), int(event.size().height()*self.devicePixelRatio()))
         else:
             self._saved_size = event.size()
 
@@ -102,7 +102,7 @@ class Window(QWindow):
         if ofwin_isrunning() == 1:
             button = Window._map_qt_button_to_of_button(event.button())
             if button != 0:
-                ofwin_buttonpress(event.x(), event.y(), button)
+                ofwin_buttonpress(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()), button)
 
     def mouseReleaseEvent(self, event):
         """
@@ -113,7 +113,7 @@ class Window(QWindow):
         if ofwin_isrunning() == 1:
             button = Window._map_qt_button_to_of_button(event.button())
             if button != 0:
-                ofwin_buttonrelease(event.x(), event.y(), button)
+                ofwin_buttonrelease(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()), button)
 
     def mouseMoveEvent(self, event):
         """
@@ -122,7 +122,7 @@ class Window(QWindow):
         """
         ofwin_activate(self._window_proxy_id)
         if ofwin_isrunning() == 1:
-            ofwin_mousemotion(event.x(), event.y())
+            ofwin_mousemotion(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()))
 
     def keyPressEvent(self, event):
         """
@@ -250,7 +250,7 @@ class Widget(QWidget):
         """
         super().__init__()
 
-        self._size_hint = QSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)
+        self._size_hint = QSize(DEFAULT_WIDTH*self.devicePixelRatio(), DEFAULT_HEIGHT*self.devicePixelRatio())
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         window = window_type()
         container = QWidget.createWindowContainer(window, self)
