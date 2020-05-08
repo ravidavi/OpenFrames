@@ -31,8 +31,7 @@
 namespace OpenFrames
 {
 
-/** The AttenuateUpdater tells a MarkerArtist to recompute its marker
-    attenuation parameters during the update traversal. */
+/** Updates a MarkerArtist's internal geometry when its target Trajectory changes. */
 class MarkerArtistUpdateCallback : public osg::Callback
 {
 public:
@@ -512,6 +511,15 @@ _intermediateDirection(START), _dataValid(true), _dataZero(true), _attenuationDi
   osg::PointSprite *sprite = new osg::PointSprite();
   ss->setTextureAttributeAndModes(0, sprite);
 
+  // Assume marker may have transparency
+  ss->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+
+  // Set up alpha blending for marker
+  osg::BlendFunc *fn = new osg::BlendFunc();
+  fn->setFunction(osg::BlendFunc::SRC_ALPHA,
+    osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+  ss->setAttributeAndModes(fn);
+
   // Install fragment shader to draw the marker
   _fragShader = new osg::Shader(osg::Shader::FRAGMENT);
   _program->addShader(_fragShader);
@@ -654,48 +662,39 @@ void MarkerArtist::setMarkerSize(unsigned int size)
 
 bool MarkerArtist::setMarkerImage(const std::string &fname)
 {
-        // Remove any existing marker image
-	if(fname.length() == 0) 
-	{
-          resetMarkerShader();
-          return true;
-	}
+  // Remove any existing marker image
+  if(fname.length() == 0)
+  {
+    resetMarkerShader();
+    return true;
+  }
 
-        // Load image from file
-	osg::Image *image = osgDB::readImageFile(fname);
-	if(image)
-	{
-          osg::StateSet *ss = getOrCreateStateSet();
+  // Load image from file
+  osg::Image *image = osgDB::readImageFile(fname);
+  if(image)
+  {
+    osg::StateSet *ss = getOrCreateStateSet();
 
-	  // Specify texture to use for point sprite
-	  osg::Texture2D *tex = new osg::Texture2D(image);
-	  ss->setTextureAttributeAndModes(0, tex);
+    // Specify texture to use for point sprite
+    osg::Texture2D *tex = new osg::Texture2D(image);
+    ss->setTextureAttributeAndModes(0, tex);
 
-          // Assume texture may have transparency
-          ss->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+    // Fragment shader to draw the marker texture
+    _fragShader->setShaderSource(FragSource_Texture);
 
-          // Set up alpha blending for marker texture
-          osg::BlendFunc *fn = new osg::BlendFunc();
-          fn->setFunction(osg::BlendFunc::SRC_ALPHA, 
-              osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
-          ss->setAttributeAndModes(fn);
-
-          // Fragment shader to draw the marker texture
-          _fragShader->setShaderSource(FragSource_Texture);
-
-	  return true;
-	}
-	else
-	{
-	  std::cerr<< "OpenFrames::MarkerArtist ERROR: Image file \'" << fname << "\' could not be found!" << std::endl;
-	  return false; // Image was not found
-	}
+    return true;
+  }
+  else
+  {
+    OSG_WARN << "OpenFrames::MarkerArtist ERROR: Image file \'" << fname << "\' could not be found!" << std::endl;
+    return false; // Image was not found
+  }
 }
 
 bool MarkerArtist::setMarkerShader(const std::string &fname)
 {
   // Reset shader
-  if (fname.length() == 0)
+  if(fname.length() == 0)
   {
     resetMarkerShader();
     return true;
@@ -704,20 +703,9 @@ bool MarkerArtist::setMarkerShader(const std::string &fname)
   // Load shader source from file
   std::string fullFile = osgDB::findDataFile(fname);
   bool success = _fragShader->loadShaderSourceFromFile(fullFile);
-  if (success)
+  if(!success)
   {
-    osg::StateSet *ss = getOrCreateStateSet();
-
-    // Remove existing image texture and blend function
-    ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
-    ss->removeAttribute(osg::StateAttribute::BLENDFUNC);
-
-    // Assume opaque marker
-    ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
-  }
-  else
-  {
-    std::cerr << "OpenFrames::MarkerArtist ERROR: Shader file \'" << fname << "\' not properly loaded!" << std::endl;
+    OSG_WARN << "OpenFrames::MarkerArtist ERROR: Shader file \'" << fname << "\' not properly loaded!" << std::endl;
     return false;
   }
 
@@ -857,12 +845,8 @@ void MarkerArtist::resetMarkerShader()
 {
   osg::StateSet *ss = getOrCreateStateSet();
 
-  // Remove existing image texture and blending
+  // Remove existing image texture
   ss->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
-  ss->removeAttribute(osg::StateAttribute::BLENDFUNC);
-
-  // Assume opaque marker
-  ss->setRenderingHint(osg::StateSet::OPAQUE_BIN);
 
   // Default to circular point marker
   _fragShader->setShaderSource(FragSource_Disk);
