@@ -11,7 +11,7 @@ win_id = 1
 fm_id = 2
 frame_name = "Origin"
 
-ofwin_createproxy(50, 50, 800, 600, 1, 1, False, win_id)
+ofwin_createproxy(50, 50, 800, 600, 1, 1, False, win_id, False)
 
 ofcoordaxes_create(frame_name)
 
