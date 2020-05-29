@@ -29,17 +29,15 @@ class CLSUpdateCallback : public osg::Callback
 {
 public:
   CLSUpdateCallback()
-    : mNumSegments(0)
+    : mNumSegments(0), mCallback(nullptr)
   {}
 
   unsigned int mNumSegments;
+  osg::ref_ptr<CustomLineSegments::Callback> mCallback;
 
   virtual bool run(osg::Object* object, osg::Object* data)
   {
-    // Get the current time
-    osg::NodeVisitor* nv = data->asNodeVisitor();
-    double currRefTime = nv->getFrameStamp()->getReferenceTime();
-    double currSimTime = nv->getFrameStamp()->getSimulationTime();
+    if(!mCallback || (mNumSegments == 0)) return true;
 
     // Get the arrays that hold vertex data
     // Note that all object types are known, since this callback is only added to a Geode object
@@ -55,17 +53,20 @@ public:
     _colors->resize(numVertices);
     _drawArrays->setCount(numVertices);
 
-    // Update array data
-    // TODO: Update this with callback
-    for(unsigned int i = 0; i < numVertices; ++i)
+    // Invoke callback to update array data
+    const osg::FrameStamp* fs = data->asNodeVisitor()->getFrameStamp();
+    mCallback->mFrameTime = fs->getReferenceTime();
+    mCallback->mSimTime = fs->getSimulationTime();
+    unsigned int iBase, iNext;
+    for(unsigned int i = 0; i < mNumSegments; ++i)
     {
-      double val = (double)i / (double)numVertices;
-      if(i % 2 == 0)
-        (*_vertices)[i] = osg::Vec3(cos(val), sin(val), 0.0);
-      else
-        (*_vertices)[i] = (*_vertices)[i - 1] * 2.0;
-
-      (*_colors)[i] = osg::Vec4(1, 1, 1, 1);
+      iBase = 2 * i;
+      iNext = iBase + 1;
+      osg::Vec3 &posA = (*_vertices)[iBase];
+      osg::Vec3 &posB = (*_vertices)[iNext];
+      osg::Vec4 &colorA = (*_colors)[iBase];
+      osg::Vec4 &colorB = (*_colors)[iNext];
+      mCallback->getSegmentData(i, posA, colorA, posB, colorB);
     }
 
     // Indicate that arrays have been updated
@@ -74,7 +75,7 @@ public:
     _drawArrays->dirty();
     _geom->dirtyBound();
 
-    // Continue traversing as needed
+    // Continue traversing callbacks
     return traverse(object, data);
   }
 };
@@ -225,7 +226,13 @@ static const char *CLS_FragSource = {
 
     return true;
   }
-  
+
+  void CustomLineSegments::setLineSegmentCallback(Callback *cb)
+  {
+    CLSUpdateCallback *clsCallback = static_cast<CLSUpdateCallback*>(_geode->getUpdateCallback());
+    clsCallback->mCallback = cb;
+  }
+
   const osg::BoundingSphere& CustomLineSegments::getBound() const
   {
     osg::BoundingSphere bs = _geode->getBound();

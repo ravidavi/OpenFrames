@@ -59,6 +59,27 @@ namespace OpenFrames
 
     // Set fragment shader file for segment lines
     bool setLineShader(const std::string &fname);
+
+    // Callback that computes vertex positions and colors for each line segment
+    // Subclass this to implement your callback
+    class Callback : public osg::Referenced
+    {
+    public:
+      Callback() {}
+
+      // Required callback function
+      virtual void getSegmentData(const unsigned int &segID, osg::Vec3 &posA, osg::Vec4 &colorA, osg::Vec3 &posB, osg::Vec4 &colorB) = 0;
+
+      // Parameters available to the callback
+      double mFrameTime; // Frame time (i.e. wall clock time)
+      double mSimTime;   // Simulation time
+
+    protected:
+      virtual ~Callback() {}
+    };
+
+    void setLineSegmentCallback(Callback *cb);
+
      
     /** Inherited from ReferenceFrame. */
     virtual const osg::BoundingSphere& getBound() const;
