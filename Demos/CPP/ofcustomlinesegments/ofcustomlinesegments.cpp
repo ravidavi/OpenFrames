@@ -19,49 +19,14 @@
  **/
 
 #include <OpenFrames/CustomLineSegments.hpp>
-#include <OpenFrames/CurveArtist.hpp>
-#include <OpenFrames/DrawableTrajectory.hpp>
 #include <OpenFrames/FrameManager.hpp>
 #include <OpenFrames/FrameTransform.hpp>
-#include <OpenFrames/MarkerArtist.hpp>
 #include <OpenFrames/Trajectory.hpp>
 #include <OpenFrames/TrajectoryFollower.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <osg/Math>
 
 using namespace OpenFrames;
-
-ReferenceFrame *root;
-WindowProxy *theWindow;
-
-/** The function called when the user presses a key */
-void KeyPressCallback(unsigned int *winID, unsigned int *row, unsigned int *col, int *key)
-{
-  // Pause/unpause animation
-  if(*key == 'p')
-  {
-    theWindow->pauseTime(!theWindow->isTimePaused());
-  }
-  
-  // Reset time to epoch. All ReferenceFrames that are following
-  // a Trajectory will return to their starting positions.
-  else if(*key == 'r')
-  {
-    theWindow->setTime(0.0);
-  }
-  
-  // Speed up time
-  else if((*key == '+') || (*key == '='))
-  {
-    theWindow->setTimeScale(theWindow->getTimeScale() + 0.01);
-  }
-  
-  // Slow down time
-  else if((*key == '-') || (*key == '_'))
-  {
-    theWindow->setTimeScale(theWindow->getTimeScale() - 0.01);
-  }
-}
 
 /** Callback that dynamicall computes the line segment vertex data */
 class LineSegmentCallback : public CustomLineSegments::Callback
@@ -94,25 +59,27 @@ public:
   // Add a pair of ReferenceFrames that will have a line segment drawn between them
   void addSegment(ReferenceFrame *frameA, ReferenceFrame *frameB)
   {
+    // Make sure this callback's data is not being used
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(mMutex);
+
     _framePairs.push_back(FramePair(frameA, frameB));
   }
 
 protected:
   virtual ~LineSegmentCallback() {}
 
+  // A frame pair is two ReferenceFrames that should have a line drawn between them
   typedef std::pair<ReferenceFrame*, ReferenceFrame*> FramePair;
-  std::vector<FramePair> _framePairs;
+  std::vector<FramePair> _framePairs; // List of frame pairs
 };
 
 int main()
 {
   // Create the interface that represents a window
   osg::ref_ptr<WindowProxy> myWindow = new WindowProxy(30, 30, 1024, 768, 1, 1, false);
-  myWindow->setKeyPressCallback(KeyPressCallback); // Specify keypress callback
-  theWindow = myWindow;
   
   // Create a root ReferenceFrame
-  root = new ReferenceFrame("drawtraj", 1, 0, 0, 0.9);
+  ReferenceFrame *root = new ReferenceFrame("drawtraj", 1, 0, 0, 0.9);
   root->showAxes(ReferenceFrame::NO_AXES);
   root->showAxesLabels(ReferenceFrame::NO_AXES);
   root->showNameLabel(false);
@@ -126,10 +93,10 @@ int main()
   const double eps = 1.0e-14;
   for(double t = 0.0; t <= 2.0*osg::PI + eps; t += osg::PI / 90.0)
   {
-    // Compute position along circle
+    // Compute position along circle centered at (0, 0, -2)
     pos[0] = rmag * cos(t);
     pos[1] = 0.0;
-    pos[2] = rmag * sin(t);
+    pos[2] = rmag * sin(t) - 2.0;
 
     // Add position
     traj1->addTime(t);
@@ -159,7 +126,7 @@ int main()
     traj2->addTime(5.0);
     traj2->addPosition(rmag + 1.0, 0.0, 4.0);
   }
-  { // Third point same as first
+  { // Repeat first point
     traj2->addTime(7.0);
     traj2->addPosition(rmag + 1.0, 0.0, 0.0);
   }
@@ -187,7 +154,7 @@ int main()
     traj3->addTime(3.0);
     traj3->addPosition(-5.0, 0.0, rmag + 1.0);
   }
-  { // Third point same as first
+  { // Repeat first point
     traj3->addTime(5.0);
     traj3->addPosition(0.0, 0.0, rmag + 1.0);
   }
@@ -216,6 +183,7 @@ int main()
   cls->setLineShader("Shaders/Line_Pulse.frag");
   cls->showAxes(ReferenceFrame::NO_AXES);
   cls->showAxesLabels(ReferenceFrame::NO_AXES);
+  cls->showNameLabel(false);
   root->addChild(cls);
 
   // Create a manager to handle access to the scene
@@ -225,7 +193,9 @@ int main()
   // Add the scene to the window
   myWindow->setScene(fm, 0, 0);
   myWindow->getGridPosition(0, 0)->setBackgroundColor(0, 0, 0); // Black background
-  
+  myWindow->getGridPosition(0, 0)->getCurrentView()->setDefaultViewDistance(4.0);
+  myWindow->getGridPosition(0, 0)->getCurrentView()->resetView();
+
   myWindow->startThread(); // Start window animation
   myWindow->join(); // Wait for window animation to finish
   

@@ -37,45 +37,53 @@ public:
 
   virtual bool run(osg::Object* object, osg::Object* data)
   {
-    if(!mCallback) return true;
-    unsigned int numSegments = mCallback->getNumSegments();
-    if(numSegments == 0) return true;
-
-    // Get the arrays that hold vertex data
-    // Note that all object types are known, since this callback is only added to a Geode object
-    osg::Geode *_geode = static_cast<osg::Geode*>(object);
-    osg::Geometry *_geom = _geode->getDrawable(0)->asGeometry();
-    osg::Vec3Array *_vertices = static_cast<osg::Vec3Array*>(_geom->getVertexArray());
-    osg::Vec4Array *_colors = static_cast<osg::Vec4Array*>(_geom->getColorArray());
-    osg::DrawArrays *_drawArrays = static_cast<osg::DrawArrays*>(_geom->getPrimitiveSet(0));
-
-    // Resize arrays in preparation for updating data
-    unsigned int numVertices = 2 * numSegments;
-    _vertices->resize(numVertices);
-    _colors->resize(numVertices);
-    _drawArrays->setCount(numVertices);
-
-    // Invoke callback to update array data
-    const osg::FrameStamp* fs = data->asNodeVisitor()->getFrameStamp();
-    mCallback->mFrameTime = fs->getReferenceTime();
-    mCallback->mSimTime = fs->getSimulationTime();
-    unsigned int iBase, iNext;
-    for(unsigned int i = 0; i < numSegments; ++i)
+    if(mCallback)
     {
-      iBase = 2 * i;
-      iNext = iBase + 1;
-      osg::Vec3 &posA = (*_vertices)[iBase];
-      osg::Vec3 &posB = (*_vertices)[iNext];
-      osg::Vec4 &colorA = (*_colors)[iBase];
-      osg::Vec4 &colorB = (*_colors)[iNext];
-      mCallback->getSegmentData(i, posA, colorA, posB, colorB);
-    }
+      // Get the arrays that hold vertex data
+      // Note that all object types are known, since this callback is only added to a Geode object
+      osg::Geode *geode = static_cast<osg::Geode*>(object);
+      osg::Geometry *geom = geode->getDrawable(0)->asGeometry();
+      osg::Vec3Array *vertices = static_cast<osg::Vec3Array*>(geom->getVertexArray());
+      osg::Vec4Array *colors = static_cast<osg::Vec4Array*>(geom->getColorArray());
+      osg::DrawArrays *drawArrays = static_cast<osg::DrawArrays*>(geom->getPrimitiveSet(0));
 
-    // Indicate that arrays have been updated
-    _vertices->dirty();
-    _colors->dirty();
-    _drawArrays->dirty();
-    _geom->dirtyBound();
+      // Update callback with with latest times
+      const osg::FrameStamp* fs = data->asNodeVisitor()->getFrameStamp();
+      mCallback->mFrameTime = fs->getReferenceTime();
+      mCallback->mSimTime = fs->getSimulationTime();
+
+      // Make sure sensitive callback data is not changed
+      mCallback->mMutex.lock();
+
+      // Resize arrays in preparation for updating data
+      unsigned int numSegments = mCallback->getNumSegments();
+      unsigned int numVertices = 2 * numSegments;
+      vertices->resize(numVertices);
+      colors->resize(numVertices);
+      drawArrays->setCount(numVertices);
+
+      // Invoke callback to update array data
+      unsigned int iBase, iNext;
+      for(unsigned int i = 0; i < numSegments; ++i)
+      {
+        iBase = 2 * i;
+        iNext = iBase + 1;
+        osg::Vec3 &posA = (*vertices)[iBase];
+        osg::Vec3 &posB = (*vertices)[iNext];
+        osg::Vec4 &colorA = (*colors)[iBase];
+        osg::Vec4 &colorB = (*colors)[iNext];
+        mCallback->getSegmentData(i, posA, colorA, posB, colorB);
+      }
+
+      // Allow sensitive callback data to be changed
+      mCallback->mMutex.unlock();
+
+      // Indicate that arrays have been updated
+      vertices->dirty();
+      colors->dirty();
+      drawArrays->dirty();
+      geom->dirtyBound();
+    }
 
     // Continue traversing callbacks
     return traverse(object, data);

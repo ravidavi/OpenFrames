@@ -25,6 +25,7 @@
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Geode>
 #include <osg/LineWidth>
+#include <OpenThreads/Mutex>
 
 namespace OpenFrames
 {
@@ -72,6 +73,9 @@ namespace OpenFrames
       // Parameters available to the callback
       double mFrameTime; // Frame time (i.e. wall clock time)
       double mSimTime;   // Simulation time
+
+      // Mutex used to protect sensitive callback resources
+      OpenThreads::Mutex mMutex;
 
     protected:
       virtual ~Callback() {}
