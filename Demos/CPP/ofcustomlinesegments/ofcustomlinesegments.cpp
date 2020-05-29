@@ -157,7 +157,11 @@ int main()
   }
   { // Second point above first
     traj2->addTime(5.0);
-    traj2->addPosition(rmag + 1.0, 0.0, 5.0);
+    traj2->addPosition(rmag + 1.0, 0.0, 4.0);
+  }
+  { // Third point same as first
+    traj2->addTime(7.0);
+    traj2->addPosition(rmag + 1.0, 0.0, 0.0);
   }
 
   // Follow the trajectory (by default in LOOP mode)
@@ -170,12 +174,41 @@ int main()
   frame2->showAxesLabels(ReferenceFrame::NO_AXES);
   frame2->getTransform()->setUpdateCallback(tf2);
   root->addChild(frame2);
+
+  /***************
+  Frame 3: Horizontal trajectory
+  */
+  osg::ref_ptr<Trajectory> traj3 = new Trajectory;
+  { // First point along z-axis
+    traj3->addTime(0.0);
+    traj3->addPosition(0.0, 0.0, rmag + 1.0);
+  }
+  { // Second point left of first
+    traj3->addTime(3.0);
+    traj3->addPosition(-5.0, 0.0, rmag + 1.0);
+  }
+  { // Third point same as first
+    traj3->addTime(5.0);
+    traj3->addPosition(0.0, 0.0, rmag + 1.0);
+  }
+
+  // Follow the trajectory (by default in LOOP mode)
+  TrajectoryFollower *tf3 = new TrajectoryFollower(traj3);
+
+  // Create a frame to follow the trajectory
+  Sphere *frame3 = new Sphere("Horizontal", 0, 0, 1, 1);
+  frame3->setRadius(0.1);
+  frame3->showAxes(ReferenceFrame::NO_AXES);
+  frame3->showAxesLabels(ReferenceFrame::NO_AXES);
+  frame3->getTransform()->setUpdateCallback(tf3);
+  root->addChild(frame3);
   
   /***************
   Line segments between frames
   */
   LineSegmentCallback *lsCallback = new LineSegmentCallback;
   lsCallback->addSegment(frame1, frame2); // Segment between frames 1 and 2
+  lsCallback->addSegment(frame2, frame3); // Segment between frames 2 and 3
 
   CustomLineSegments *cls = new CustomLineSegments("CustomLineSegment", 1, 1, 1, 1);
   cls->setLineSegmentCallback(lsCallback);
