@@ -19,13 +19,6 @@
  */
 
 #include <OpenFrames/CustomLineSegments.hpp>
-#include <osg/Geode>
-#include <osg/PolygonOffset>
-#include <osg/Shape>
-#include <osg/Texture2D>
-#include <osg/TexEnvCombine>
-#include <osgDB/ReadFile>
-#include <osgUtil/CullVisitor>
 
 namespace OpenFrames
 {
@@ -35,8 +28,10 @@ class CLSUpdateCallback : public osg::Callback
 {
 public:
   CLSUpdateCallback()
-    : _numSegments(10)
+    : mNumSegments(0)
   {}
+
+  unsigned int mNumSegments;
 
   virtual bool run(osg::Object* object, osg::Object* data)
   {
@@ -54,14 +49,14 @@ public:
     osg::DrawArrays *_drawArrays = static_cast<osg::DrawArrays*>(_geom->getPrimitiveSet(0));
 
     // Resize arrays in preparation for updating data
-    int numVertices = 2 * _numSegments;
+    unsigned int numVertices = 2 * mNumSegments;
     _vertices->resize(numVertices);
     _colors->resize(numVertices);
     _drawArrays->setCount(numVertices);
 
     // Update array data
     // TODO: Update this with callback
-    for(int i = 0; i < numVertices; ++i)
+    for(unsigned int i = 0; i < numVertices; ++i)
     {
       double val = (double)i / (double)numVertices;
       if(i % 2 == 0)
@@ -81,14 +76,12 @@ public:
     // Continue traversing as needed
     return traverse(object, data);
   }
-
-private:
-  int _numSegments;
 };
 
 // Implement vertex shader to pass through vertex id
 static const char *CLS_VertSource = {
   "#version 120\n"
+  "#extension GL_EXT_gpu_shader4 : enable\n"
 
   "uniform mat4 osg_ModelViewProjectionMatrix;\n"
   "varying float vertexPos;\n"
@@ -99,8 +92,7 @@ static const char *CLS_VertSource = {
   // interpolated between successive pairs of vertices
   "  gl_Position = osg_ModelViewProjectionMatrix*gl_Vertex;\n"
   "  gl_FrontColor = gl_Color;\n"
-  //"  vertexPos = mod(gl_VertexID, 2);\n"
-  "  vertexPos = 0.0;\n" // TODO: Replace this with gl_VertexID
+  "  vertexPos = mod(gl_VertexID, 2);\n"
   "}\n"
 };
 
@@ -178,6 +170,10 @@ static const char *CLS_FragSource = {
     _segmentGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, 0));
     _geode->addDrawable(_segmentGeom);
 
+    // Initialize line properties
+    _lineWidth = new osg::LineWidth;
+    ss->setAttribute(_lineWidth.get());
+
     _geode->setUpdateCallback(new CLSUpdateCallback());
   }
 
@@ -190,6 +186,23 @@ static const char *CLS_FragSource = {
   bool CustomLineSegments::getContentsShown() const
   {
     return (_geode->getNodeMask() != 0x0);
+  }
+
+  void CustomLineSegments::setNumSegments(unsigned int numSegments)
+  {
+    CLSUpdateCallback *clsCallback = static_cast<CLSUpdateCallback*>(_geode->getUpdateCallback());
+    clsCallback->mNumSegments = numSegments;
+  }
+
+  unsigned int CustomLineSegments::getNumSegments() const
+  {
+    CLSUpdateCallback *clsCallback = static_cast<CLSUpdateCallback*>(_geode->getUpdateCallback());
+    return clsCallback->mNumSegments;
+  }
+
+  void CustomLineSegments::setLineWidth(float width)
+  {
+    if(width > 0.0) _lineWidth->setWidth(width);
   }
   
   const osg::BoundingSphere& CustomLineSegments::getBound() const

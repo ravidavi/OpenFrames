@@ -24,8 +24,7 @@
 #include <OpenFrames/Export.h>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Geode>
-#include <osg/Material>
-#include <string>
+#include <osg/LineWidth>
 
 namespace OpenFrames
 {
@@ -49,6 +48,14 @@ namespace OpenFrames
     // Inherited from ReferenceFrame
     virtual void showContents(bool showContents);
     virtual bool getContentsShown() const;
+
+    // Set number of line segments to draw
+    void setNumSegments(unsigned int numSegments);
+    unsigned int getNumSegments() const;
+
+    // Set segment line width
+    void setLineWidth(float width);
+    float getLineWidth() const { return _lineWidth->getWidth(); }
      
     /** Inherited from ReferenceFrame. */
     virtual const osg::BoundingSphere& getBound() const;
@@ -61,6 +68,7 @@ namespace OpenFrames
         
     osg::ref_ptr<osg::Geode> _geode;
     osg::ref_ptr<osg::Geometry> _segmentGeom;
+    osg::ref_ptr<osg::LineWidth> _lineWidth;
     
   private:
     void _init();
