@@ -19,6 +19,7 @@
  */
 
 #include <OpenFrames/CustomLineSegments.hpp>
+#include <osgDB/FileUtils>
 
 namespace OpenFrames
 {
@@ -81,10 +82,10 @@ public:
 // Implement vertex shader to pass through vertex id
 static const char *CLS_VertSource = {
   "#version 120\n"
-  "#extension GL_EXT_gpu_shader4 : enable\n"
+  "#extension GL_EXT_gpu_shader4 : enable\n" // Enables gl_VertexID in GLSL 120
 
   "uniform mat4 osg_ModelViewProjectionMatrix;\n"
-  "varying float vertexPos;\n"
+  "varying float vertexLocation;\n"
 
   "void main(void)\n"
   "{\n"
@@ -92,15 +93,13 @@ static const char *CLS_VertSource = {
   // interpolated between successive pairs of vertices
   "  gl_Position = osg_ModelViewProjectionMatrix*gl_Vertex;\n"
   "  gl_FrontColor = gl_Color;\n"
-  "  vertexPos = mod(gl_VertexID, 2);\n"
+  "  vertexLocation = mod(gl_VertexID, 2);\n"
   "}\n"
 };
 
 // Implement frament shader to pass through color (basic shaded line)
 static const char *CLS_FragSource = {
   "#version 120\n"
-
-  "varying float vertexPos;\n"
 
   "void main(void)\n"
   "{\n"
@@ -143,12 +142,12 @@ static const char *CLS_FragSource = {
     // Create shaders
     osg::Shader *vertShader = new osg::Shader(osg::Shader::VERTEX, CLS_VertSource);
     vertShader->setName("CLS Vertex Shader");
-    osg::Shader *fragShader = new osg::Shader(osg::Shader::FRAGMENT, CLS_FragSource);
-    fragShader->setName("CLS Fragment Shader");
+    _fragShader = new osg::Shader(osg::Shader::FRAGMENT, CLS_FragSource);
+    _fragShader->setName("CLS Fragment Shader");
     osg::Program *program = new osg::Program;
     program->setName("CLS Shader Program");
     program->addShader(vertShader);
-    program->addShader(fragShader);
+    program->addShader(_fragShader);
     ss->setAttribute(program);
 
     // Create the node that will contain the line segments
@@ -203,6 +202,28 @@ static const char *CLS_FragSource = {
   void CustomLineSegments::setLineWidth(float width)
   {
     if(width > 0.0) _lineWidth->setWidth(width);
+  }
+
+  bool CustomLineSegments::setLineShader(const std::string &fname)
+  {
+    // Reset shader
+    if(fname.length() == 0)
+    {
+      _fragShader->setShaderSource(CLS_FragSource);
+    }
+    else
+    {
+      // Load shader source from file
+      std::string fullFile = osgDB::findDataFile(fname);
+      bool success = _fragShader->loadShaderSourceFromFile(fullFile);
+      if(!success)
+      {
+        OSG_WARN << "OpenFrames::CustomLineSegments ERROR: Shader file \'" << fname << "\' not properly loaded!" << std::endl;
+        return false;
+      }
+    }
+
+    return true;
   }
   
   const osg::BoundingSphere& CustomLineSegments::getBound() const

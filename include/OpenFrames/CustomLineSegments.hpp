@@ -56,6 +56,9 @@ namespace OpenFrames
     // Set segment line width
     void setLineWidth(float width);
     float getLineWidth() const { return _lineWidth->getWidth(); }
+
+    // Set fragment shader file for segment lines
+    bool setLineShader(const std::string &fname);
      
     /** Inherited from ReferenceFrame. */
     virtual const osg::BoundingSphere& getBound() const;
@@ -69,6 +72,7 @@ namespace OpenFrames
     osg::ref_ptr<osg::Geode> _geode;
     osg::ref_ptr<osg::Geometry> _segmentGeom;
     osg::ref_ptr<osg::LineWidth> _lineWidth;
+    osg::ref_ptr<osg::Shader> _fragShader; // Line fragment shader
     
   private:
     void _init();
