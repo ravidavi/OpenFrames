@@ -19,6 +19,7 @@
  */
 
 #include <OpenFrames/SkySphere.hpp>
+#include <osg/BlendEquation>
 #include <osg/BlendFunc>
 #include <osg/PointSprite>
 #include <osgDB/FileUtils>
@@ -61,13 +62,14 @@ static const char *OFSkySphere_FragSource = {
   // Move origin to point center, with extents [-0.5, 0.5]
   "  v = gl_PointCoord - vec2(0.5);\n"
 
-  // Fragment gets star color
-  "  gl_FragColor = gl_Color;\n"
-
   // Fragment alpha is based on distance from point center
   // Fades alpha = 1 -> 0 starting at half of point radius
   "  alpha = mix(x, y, length(v));\n"
   "  alpha = clamp(alpha, 0.0, 1.0);\n"
+
+  // Modulate star color by fragment alpha so that star blends
+  // nicely with background sky color
+  "  gl_FragColor.rgb = gl_Color.rgb * alpha;\n"
   "  gl_FragColor.a = alpha;\n"
   "}\n"
 };
@@ -97,6 +99,11 @@ void SkySphere::_init()
   // Make sure Sphere follows the eye
   getTransform()->setFollowEye(true);
 
+  // Blend stars and sky texture against background by using the brighter of the two
+  // This works because star colors have already been alpha-modulated in frag shader
+  osg::BlendEquation *beq = new osg::BlendEquation(osg::BlendEquation::RGBA_MAX);
+  getTransform()->getOrCreateStateSet()->setAttributeAndModes(beq);
+
   // Create new StateSet to specify star-specific OpenGL properties
   osg::StateSet *ss = new osg::StateSet();
 
@@ -113,17 +120,13 @@ void SkySphere::_init()
   // Set up point sprite
   osg::PointSprite *sprite = new osg::PointSprite();
   ss->setTextureAttributeAndModes(0, sprite);
-
-  // Set additive blending for stars
-  osg::BlendFunc *fn = new osg::BlendFunc();
-  fn->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE);
-  ss->setAttributeAndModes(fn);
-
+  
   // Create the geode that will contain all star bins, and add it directly to
   // this frame's transform. This allows the stars to be drawn in this reference
   // frame, while the textured sphere has its own sub-transform (see Sphere::_sphereXform)
   _starGeode = new osg::Geode;
   _starGeode->setName(_name + "_StarBins");
+  _starGeode->setStateSet(ss);
   _xform->addChild(_starGeode);
   
   // Create star bins (osg::Geometries) that will hold sets of stars
@@ -131,7 +134,6 @@ void SkySphere::_init()
   {
     _starBinGeoms[i] = new osg::Geometry;
     _starBinGeoms[i]->setName("StarFieldDrawable"+std::to_string(i));
-    _starBinGeoms[i]->setStateSet(ss);
     _starBinGeoms[i]->setUseDisplayList(false);
     _starBinGeoms[i]->setUseVertexBufferObjects(true);
     _starBinGeoms[i]->getOrCreateVertexBufferObject()->setUsage(GL_STATIC_DRAW);

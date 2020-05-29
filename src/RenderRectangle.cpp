@@ -72,11 +72,16 @@ namespace OpenFrames
     
     // Create the Camera that will draw background elements
     _backCamera = new osg::Camera;
-    _backCamera->setName("Background");
+    _backCamera->setName("Back");
     
     // If using VR, then create a stereo VR camera for background elements
     // MSAA isn't needed here since background elements are only point stars and images
-    if (_useVR) _backCameraVR = new VRCamera(_vrTextureBuffer.get(), _ovrDevice.get(), -1, VRCamera::STEREO, false);
+    if (_useVR)
+    {
+      _backCameraVR = new VRCamera(_vrTextureBuffer.get(), _ovrDevice.get(), -1, VRCamera::STEREO, false);
+      _backCameraVR->getCamera(0)->setName("BackVR0");
+      _backCameraVR->getCamera(1)->setName("BackVR1");
+    }
 
     // Create the Camera that will mirror the VR scene to the window
     _mirrorCamera = new osg::Camera;
@@ -140,7 +145,9 @@ namespace OpenFrames
     virtual void updateSlave(osg::View& view, osg::View::Slave& slave)
     {
       slave._camera->setViewMatrix(view.getCamera()->getViewMatrix());
-      slave._camera->setProjectionMatrix(view.getCamera()->getProjectionMatrix());
+      osg::Matrixd projMat = view.getCamera()->getProjectionMatrix();
+      OpenFrames::updateProjectionMatrix(projMat, 0.1, 30000);
+      slave._camera->setProjectionMatrix(projMat);
       slave.updateSlaveImplementation(view);
     }
   };
@@ -186,6 +193,8 @@ namespace OpenFrames
 
           // We will compute the view and projection matrices ourselves
           cam->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+
+          cam->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
         }
 
         // Add VR cameras as slaves, and tell them not to use the master camera's scene
@@ -210,6 +219,7 @@ namespace OpenFrames
         _backCamera->setAllowEventFocus(false);
         _backCamera->setRenderOrder(osg::Camera::PRE_RENDER, -1); // Render before other cameras
         _backCamera->setStateSet(ss);
+        _backCamera->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
         _sceneView->addSlave(_backCamera, false);
         osg::View::Slave *slave = _sceneView->findSlaveForCamera(_backCamera);
         slave->_updateSlaveCallback = new BackCameraSlaveCallback; // Sets view & projection matrices
@@ -219,7 +229,7 @@ namespace OpenFrames
       _mirrorCamera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
       _mirrorCamera->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
       _mirrorCamera->setAllowEventFocus(false);
-      _mirrorCamera->setRenderOrder(osg::Camera::POST_RENDER, 100); // Render just before HUD
+      _mirrorCamera->setRenderOrder(osg::Camera::POST_RENDER, 9); // Render before HUD and StatsHandler
       _mirrorCamera->setStateSet(ss);
       _mirrorCamera->setViewMatrix(osg::Matrix::identity());
       _mirrorCamera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));
