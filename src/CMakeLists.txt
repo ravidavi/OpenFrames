@@ -16,6 +16,7 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     ${OF_HEADER_PATH}/OpenFrames/Export.h
     CoordinateAxes.cpp
     CurveArtist.cpp
+    CustomLineSegments.cpp
     DepthPartitioner.cpp
     DescendantTracker.cpp
     DistanceAccumulator.cpp
