@@ -19,6 +19,7 @@
  */
 
 #include <OpenFrames/CustomLineSegments.hpp>
+#include <osg/BlendFunc>
 #include <osgDB/FileUtils>
 
 namespace OpenFrames
@@ -29,15 +30,16 @@ class CLSUpdateCallback : public osg::Callback
 {
 public:
   CLSUpdateCallback()
-    : mNumSegments(0), mCallback(nullptr)
+    : mCallback(nullptr)
   {}
 
-  unsigned int mNumSegments;
   osg::ref_ptr<CustomLineSegments::Callback> mCallback;
 
   virtual bool run(osg::Object* object, osg::Object* data)
   {
-    if(!mCallback || (mNumSegments == 0)) return true;
+    if(!mCallback) return true;
+    unsigned int numSegments = mCallback->getNumSegments();
+    if(numSegments == 0) return true;
 
     // Get the arrays that hold vertex data
     // Note that all object types are known, since this callback is only added to a Geode object
@@ -48,7 +50,7 @@ public:
     osg::DrawArrays *_drawArrays = static_cast<osg::DrawArrays*>(_geom->getPrimitiveSet(0));
 
     // Resize arrays in preparation for updating data
-    unsigned int numVertices = 2 * mNumSegments;
+    unsigned int numVertices = 2 * numSegments;
     _vertices->resize(numVertices);
     _colors->resize(numVertices);
     _drawArrays->setCount(numVertices);
@@ -58,7 +60,7 @@ public:
     mCallback->mFrameTime = fs->getReferenceTime();
     mCallback->mSimTime = fs->getSimulationTime();
     unsigned int iBase, iNext;
-    for(unsigned int i = 0; i < mNumSegments; ++i)
+    for(unsigned int i = 0; i < numSegments; ++i)
     {
       iBase = 2 * i;
       iNext = iBase + 1;
@@ -151,6 +153,15 @@ static const char *CLS_FragSource = {
     program->addShader(_fragShader);
     ss->setAttribute(program);
 
+    // Line width
+    _lineWidth = new osg::LineWidth;
+    ss->setAttribute(_lineWidth.get());
+
+    // Set up alpha blending
+    osg::BlendFunc *fn = new osg::BlendFunc();
+    fn->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+    ss->setAttributeAndModes(fn);
+
     // Create the node that will contain the line segments
     _geode = new osg::Geode;
     _geode->setName(_name);
@@ -170,10 +181,6 @@ static const char *CLS_FragSource = {
     _segmentGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, 0));
     _geode->addDrawable(_segmentGeom);
 
-    // Initialize line properties
-    _lineWidth = new osg::LineWidth;
-    ss->setAttribute(_lineWidth.get());
-
     _geode->setUpdateCallback(new CLSUpdateCallback());
   }
 
@@ -186,18 +193,6 @@ static const char *CLS_FragSource = {
   bool CustomLineSegments::getContentsShown() const
   {
     return (_geode->getNodeMask() != 0x0);
-  }
-
-  void CustomLineSegments::setNumSegments(unsigned int numSegments)
-  {
-    CLSUpdateCallback *clsCallback = static_cast<CLSUpdateCallback*>(_geode->getUpdateCallback());
-    clsCallback->mNumSegments = numSegments;
-  }
-
-  unsigned int CustomLineSegments::getNumSegments() const
-  {
-    CLSUpdateCallback *clsCallback = static_cast<CLSUpdateCallback*>(_geode->getUpdateCallback());
-    return clsCallback->mNumSegments;
   }
 
   void CustomLineSegments::setLineWidth(float width)

@@ -204,6 +204,9 @@ class Trajectory;
     inline void getPosition( osg::Vec3d &pos ) const
     { _xform->getPosition(pos); }
 
+    inline const osg::Vec3d& getPosition() const
+    { return _xform->getPosition(); }
+
     /*
      * \brief Set the orientation of this frame.
      *

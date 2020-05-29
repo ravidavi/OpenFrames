@@ -72,6 +72,12 @@ void FrameTransform::getPosition(osg::Vec3d &pos) const
   else pos = _position;
 }
 
+const osg::Vec3d& FrameTransform::getPosition() const
+{
+  if(_disabled) return osg::Vec3d();
+  else return _position;
+}
+
 void FrameTransform::setAttitude(const double &rx, const double &ry,
 				const double &rz, const double &angle)
 {

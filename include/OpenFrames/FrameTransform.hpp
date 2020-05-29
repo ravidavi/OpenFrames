@@ -62,6 +62,7 @@ namespace OpenFrames
   void setPosition(const osg::Vec3d &pos);
 	void getPosition(double &x, double &y, double &z) const;
   void getPosition(osg::Vec3d &pos) const;
+  const osg::Vec3d& getPosition() const;
 
 	// Set attitude (orientation) wrt parent frame. Note that this is
 	// a quaternion (qx, qy, qx, qw).

@@ -49,10 +49,6 @@ namespace OpenFrames
     virtual void showContents(bool showContents);
     virtual bool getContentsShown() const;
 
-    // Set number of line segments to draw
-    void setNumSegments(unsigned int numSegments);
-    unsigned int getNumSegments() const;
-
     // Set segment line width
     void setLineWidth(float width);
     float getLineWidth() const { return _lineWidth->getWidth(); }
@@ -67,8 +63,11 @@ namespace OpenFrames
     public:
       Callback() {}
 
-      // Required callback function
-      virtual void getSegmentData(const unsigned int &segID, osg::Vec3 &posA, osg::Vec4 &colorA, osg::Vec3 &posB, osg::Vec4 &colorB) = 0;
+      // Get number of segments that should be rendered
+      virtual unsigned int getNumSegments() const = 0;
+
+      // Get data for one segment
+      virtual void getSegmentData(const unsigned int &segID, osg::Vec3 &posA, osg::Vec4 &colorA, osg::Vec3 &posB, osg::Vec4 &colorB) const = 0;
 
       // Parameters available to the callback
       double mFrameTime; // Frame time (i.e. wall clock time)
@@ -80,7 +79,6 @@ namespace OpenFrames
 
     void setLineSegmentCallback(Callback *cb);
 
-     
     /** Inherited from ReferenceFrame. */
     virtual const osg::BoundingSphere& getBound() const;
 

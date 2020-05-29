@@ -69,32 +69,32 @@ class LineSegmentCallback : public CustomLineSegments::Callback
 public:
   LineSegmentCallback() {}
 
-  // Required callback function
-  virtual void getSegmentData(const unsigned int &segID, osg::Vec3 &posA, osg::Vec4 &colorA, osg::Vec3 &posB, osg::Vec4 &colorB)
+  // Required: get number of segments
+  virtual unsigned int getNumSegments() const
   {
-    ReferenceFrame *frameA = _framePairs[segID].first;
-    ReferenceFrame *frameB = _framePairs[segID].second;
+    return _framePairs.size();
+  }
 
-    osg::Vec3d posAd, posBd;
-    frameA->getPosition(posAd);
-    frameB->getPosition(posBd);
-    posA.set(posAd);
-    posB.set(posBd);
+  // Required: get data for given segment
+  virtual void getSegmentData(const unsigned int &segID, osg::Vec3 &posA, osg::Vec4 &colorA, osg::Vec3 &posB, osg::Vec4 &colorB) const
+  {
+    // Vertex A corresponds to Frame A
+    ReferenceFrame *frameA = _framePairs[segID].first;
+    posA.set(frameA->getPosition());
     colorA = frameA->getColor();
-    colorA.a() = 0.1;
+    colorA.a() = 0.4; // Make line color slightly transparent
+
+    // Vertex B corresponds to Frame B
+    ReferenceFrame *frameB = _framePairs[segID].second;
+    posB.set(frameB->getPosition());
     colorB = frameB->getColor();
-    colorB.a() = 0.1;
+    colorB.a() = 0.4; // Make line color slightly transparent
   }
 
   // Add a pair of ReferenceFrames that will have a line segment drawn between them
-  void addFramePair(ReferenceFrame *frameA, ReferenceFrame *frameB)
+  void addSegment(ReferenceFrame *frameA, ReferenceFrame *frameB)
   {
     _framePairs.push_back(FramePair(frameA, frameB));
-  }
-
-  unsigned int getNumFramePairs() const
-  {
-    return _framePairs.size();
   }
 
 protected:
@@ -175,11 +175,10 @@ int main()
   Line segments between frames
   */
   LineSegmentCallback *lsCallback = new LineSegmentCallback;
-  lsCallback->addFramePair(frame1, frame2); // Segment between frames 1 and 2
+  lsCallback->addSegment(frame1, frame2); // Segment between frames 1 and 2
 
   CustomLineSegments *cls = new CustomLineSegments("CustomLineSegment", 1, 1, 1, 1);
   cls->setLineSegmentCallback(lsCallback);
-  cls->setNumSegments(lsCallback->getNumFramePairs());
   cls->setLineWidth(2.0);
   cls->setLineShader("Shaders/Line_Pulse.frag");
   cls->showAxes(ReferenceFrame::NO_AXES);
