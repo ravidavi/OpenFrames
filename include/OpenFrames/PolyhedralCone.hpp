@@ -71,14 +71,17 @@ namespace OpenFrames
       NONE = 0,
       SIDES = 1,
       EDGES = 2,
-      BASE_OUTLINE = 8,
+      BASE_OUTLINE = 4,
       DEFAULT = SIDES | EDGES | BASE_OUTLINE,
       ALL = SIDES | EDGES | BASE_OUTLINE,
     };
 
-    // Select components of cone that should be drawn
+    /// Select components of cone that should be drawn
     void setDrawMode(unsigned int drawMode);
     unsigned int getDrawMode() const;
+
+    /// Compute visibility of point from this cone
+    virtual bool isVisible(osg::Vec3d point) const { return false; }
 
     /** Inherited from ReferenceFrame. */
     virtual const osg::BoundingSphere& getBound() const;
