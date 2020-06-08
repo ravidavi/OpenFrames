@@ -81,7 +81,7 @@ namespace OpenFrames
     unsigned int getDrawMode() const;
 
     /// Compute visibility of point from this cone
-    virtual bool isVisible(osg::Vec3d point) const { return false; }
+    virtual bool isVisible(osg::Vec3d point, const double& minDistance = 0.0, const double& maxDistance = std::numeric_limits<double>::max()) const { return false; }
 
     /** Inherited from ReferenceFrame. */
     virtual const osg::BoundingSphere& getBound() const;

@@ -50,7 +50,7 @@ public:
       // Since visibility won't change every frame, we track previous visiblity and only change
       // the sensor color if target visibility changes. This prevents unnecessary viz processing.
       PolyhedralCone *sensor = static_cast<PolyhedralCone*>(_sensor->getOrigin());
-      bool isVisible = sensor->isVisible(targetVec);
+      bool isVisible = sensor->isVisible(targetVec, 0, 10.0); // Only check visibility to max distance of 10
       if(isVisible && !_wasVisible)
       {
         sensor->setConeColor(1.0, 0.5, 0.6, 0.5);

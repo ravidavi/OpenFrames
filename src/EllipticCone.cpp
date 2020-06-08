@@ -72,12 +72,12 @@ void EllipticCone::createEllipticCone()
   setVertexAngles(clockAngles, coneAngles);
 }
 
-bool EllipticCone::isVisible(osg::Vec3d point) const
+bool EllipticCone::isVisible(osg::Vec3d point, const double& minDistance, const double& maxDistance) const
 {
-  // Cone points along -z axis, so a point with z>0 is behind the cone
-  if(point.z() > 0.0) return false;
+  // Make sure point is within distance limits, noting that cone points along -z axis
+  if((-point.z() < minDistance) || (-point.z() > maxDistance)) return false;
 
-  // Cone apex is at the origin, so a point at the origin is always visible by the cone
+  // Cone apex is at the origin and is visible by the cone (prevents divide by zero later)
   if(point.length2() == 0.0) return true;
 
   // Scale point to have distance (z component) of 1
