@@ -28,7 +28,7 @@
 
 using namespace OpenFrames;
 
-/** Callback that dynamicall computes the line segment vertex data */
+/** Callback that dynamically computes the line segment vertex data */
 class LineSegmentCallback : public CustomLineSegments::Callback
 {
 public:

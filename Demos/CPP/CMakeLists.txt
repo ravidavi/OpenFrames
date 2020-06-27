@@ -1,5 +1,6 @@
 ADD_SUBDIRECTORY("ofcinterface")
 ADD_SUBDIRECTORY("ofcones")
+ADD_SUBDIRECTORY("ofconevisibility")
 ADD_SUBDIRECTORY("ofcustomlinesegments")
 ADD_SUBDIRECTORY("ofeditstate")
 ADD_SUBDIRECTORY("ofjitter")
