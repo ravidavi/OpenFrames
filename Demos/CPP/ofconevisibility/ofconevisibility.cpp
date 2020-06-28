@@ -22,7 +22,8 @@
 #include <OpenFrames/TrajectoryFollower.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 
-#include <osgUtil/LineSegmentIntersector>
+#include <osg/CoordinateSystemNode>
+#include <osgUtil/RayIntersector>
 
 using namespace OpenFrames;
 
@@ -33,8 +34,8 @@ public:
   LineSegmentCallback(OpenFrames::ReferenceFrame* root)
     : _root(root)
   {
-    _lsIntersector = new osgUtil::LineSegmentIntersector(osg::Vec3d(), osg::Vec3d());
-    _iv.setIntersector(_lsIntersector);
+    _rayIntersector = new osgUtil::RayIntersector();
+    _iv.setIntersector(_rayIntersector);
     _iv.setTraversalMask(~0x1);
   }
 
@@ -82,13 +83,13 @@ public:
     {
       // Create intersection test from start to end points
       _iv.reset();
-      _lsIntersector->setStart(startWorld);
-      _lsIntersector->setEnd(endWorld);
+      _rayIntersector->setStart(startWorld);
+      _rayIntersector->setDirection(endWorld - startWorld);
 
       // Test for intersection and set segment endpoint accordingly
       _root->getGroup()->accept(_iv);
-      osgUtil::LineSegmentIntersector::Intersection intersection = _lsIntersector->getFirstIntersection();
-      if(intersection.ratio == -1) posB = posA;
+      osgUtil::RayIntersector::Intersection intersection = _rayIntersector->getFirstIntersection();
+      if(intersection.distance == -1) posB = posA;
       else posB = intersection.getWorldIntersectPoint();
     }
     else
@@ -113,7 +114,7 @@ protected:
   std::vector<FrameData> _frameData; // List of frame data
 
   // Intersection test
-  osg::ref_ptr<osgUtil::LineSegmentIntersector> _lsIntersector;
+  osg::ref_ptr<osgUtil::RayIntersector> _rayIntersector;
   mutable osgUtil::IntersectionVisitor _iv;
 };
 
@@ -162,7 +163,7 @@ int main()
     blocker->setRadius(3.0);
     blocker->showAxes(ReferenceFrame::NO_AXES);
     blocker->showAxesLabels(ReferenceFrame::NO_AXES);
-    blocker->setPosition(0, 5, 0);
+    blocker->setPosition(-1, 5, 0);
     root->addChild(blocker);
   }
 
@@ -178,7 +179,7 @@ int main()
     {
       // Compute position that will enter the elliptical cone
       pos[0] = rmag * cos(t) + 8;
-      pos[1] = 10.0;
+      pos[1] = 20.0;
       pos[2] = rmag * sin(t) - 2.0;
 
       // Add position
@@ -194,7 +195,8 @@ int main()
     target->showAxes(ReferenceFrame::NO_AXES);
     target->showAxesLabels(ReferenceFrame::NO_AXES);
     target->showNameLabel(false);
-    target->getTransform()->setUpdateCallback(tf1);
+    target->setPosition(3, 10, -3); // For cases when update callback is commented out
+    target->getTransform()->setUpdateCallback(tf1); // Comment out to use constant position above
     root->addChild(target);
 
     OpenFrames::View *view = new OpenFrames::View(root, target);
@@ -205,7 +207,10 @@ int main()
   Line segments between frames
   */
   LineSegmentCallback *lsCallback = new LineSegmentCallback(root);
+  osg::EllipsoidModel ellipsoidModel;
   lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(2, 0, 0)); // Segment between sensor and target
+  lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(0, 2, 0)); // Segment between sensor and target
+  lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(0, 0, 2)); // Segment between sensor and target
 
   CustomLineSegments *cls = new CustomLineSegments("CustomLineSegment", 1, 1, 1, 1);
   cls->setLineSegmentCallback(lsCallback);
