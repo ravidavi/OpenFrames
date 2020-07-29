@@ -38,6 +38,7 @@ ADD_LIBRARY(${LIB_NAME} SHARED
     ReferenceFrame.cpp
     RenderRectangle.cpp
     SegmentArtist.cpp
+    SensorVisibilityCallback.cpp
     SkySphere.cpp
     Sphere.cpp
     SubtreeTracker.cpp
