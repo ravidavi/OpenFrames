@@ -16,7 +16,9 @@ namespace OpenFrames
     /**
     * \class SensorVisibilityCallback
     *
-    * \brief Computes the visibility of a ReferenceFrame from a PolyhedralCone
+    * \brief Computes the visibility of a ReferenceFrame from a PolyhedralCone using a 
+    * CustomLineSegment. It is intended to be set as the LineSegmentCallback for a
+    * CustomLineSegments object.
     *
     * This class is used to determine if a point in a ReferenceFrame is visible from a
     * PolyhedralCone. If the ReferenceFrame is within the PolyhedralCone, a line segment
