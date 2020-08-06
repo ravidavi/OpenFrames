@@ -3,6 +3,7 @@
  */
 
 #include <OpenFrames/SensorVisibilityCallback.hpp>
+#include <iostream>
 
 namespace OpenFrames
 {
@@ -32,7 +33,7 @@ void SensorVisibilityCallback::getSegmentData(const unsigned int &segID, osg::Ve
     posA = startWorld;
     ReferenceFrame *frameA = frameAXform->getOrigin();
     colorA = frameA->getColor();
-    colorA.a() = 0.4; // Make line color slightly transparent
+    // colorA.a() = 0.4; // Make line color slightly transparent
 
     // Vertex B corresponds to Frame B (the target)
     TransformAccumulator *frameBXform = std::get<1>(_frameData[segID]);
@@ -41,7 +42,7 @@ void SensorVisibilityCallback::getSegmentData(const unsigned int &segID, osg::Ve
     osg::Vec3d endLocal = std::get<3>(_frameData[segID]);
     osg::Vec3d endWorld = matLocalToWorld_B.preMult(endLocal);    
     colorB = frameB->getColor();
-    colorB.a() = 0.4; // Make line color slightly transparent
+    // colorB.a() = 0.4; // Make line color slightly transparent
 
     // Test whether point B is in sensor A's FOV
     PolyhedralCone *sensor = dynamic_cast<PolyhedralCone*>(frameA);     // frameA is guaranteed to be a PolyhedralCone because it is enforced by addSegment()
@@ -51,7 +52,8 @@ void SensorVisibilityCallback::getSegmentData(const unsigned int &segID, osg::Ve
         // Get vector to target's origin in sensor's space
         osg::Vec3d targetVec = osg::Matrixd::inverse(matLocalToWorld_A).preMult(endWorld);
 
-        isVisible = sensor->isVisible(targetVec);
+        // isVisible = sensor->isVisible(targetVec);
+        isVisible = sensor->isVisible(targetVec, 0, sensor->getConeLength());
     } 
 
     IntersectionData newIntersectionData;
@@ -79,13 +81,17 @@ void SensorVisibilityCallback::getSegmentData(const unsigned int &segID, osg::Ve
             posB = intersection.getWorldIntersectPoint();
             newIntersectionData.position = intersection.getLocalIntersectPoint();
             // Get the normal of the surface at the intersection point:
-            osg::Vec3 normal = intersection.getLocalIntersectNormal();
+            osg::Vec3 normal = intersection.getWorldIntersectNormal();
             normal.normalize();
             // Get the direction of the vector from posA to posB:
-            directionVector = posB - posA;
+            directionVector = posB - posA;       // original
             directionVector.normalize();
             // the angle of incidence is the inverse cosine of the dot product of the two vectors
-            newIntersectionData.angleOfIncidence = acos(directionVector * normal);
+            newIntersectionData.angleOfIncidence = acos(directionVector * normal);      // original
+            // if the angle of incidence is greater than 90 degrees, fix it:
+            if (newIntersectionData.angleOfIncidence > osg::PI_2) {
+                newIntersectionData.angleOfIncidence = osg::PI - newIntersectionData.angleOfIncidence;
+            }
         }
     } else {
         posB = posA; // Otherwise set line segment to zero length
@@ -113,6 +119,7 @@ int SensorVisibilityCallback::getSegmentID(PolyhedralCone *frameA, ReferenceFram
     FrameData frameDataForSegment{new TransformAccumulator(_root, frameA), new TransformAccumulator(_root, frameB), posA, posB};
     for (int i = 0; i < _frameData.size(); i++) {
         // Check if all components of the new FrameData match all of the components of an existing FrameData in the _frameData vector
+        // FIXME: Need to check for origin also
         if ( (std::get<0>(_frameData[i])->getRoot() == std::get<0>(frameDataForSegment)->getRoot()) &&
              (std::get<1>(_frameData[i])->getRoot() == std::get<1>(frameDataForSegment)->getRoot()) &&
              (std::get<2>(_frameData[i]) == std::get<2>(frameDataForSegment)) &&
@@ -123,6 +130,17 @@ int SensorVisibilityCallback::getSegmentID(PolyhedralCone *frameA, ReferenceFram
     }
     return -1;    // no matching segment in the _frameData vector
 }
+
+PolyhedralCone* SensorVisibilityCallback::getSegmentFrameA(const unsigned int &segID) 
+{
+    return dynamic_cast<PolyhedralCone*>((std::get<0>(_frameData[segID]))->getOrigin());
+}
+
+ReferenceFrame* SensorVisibilityCallback::getSegmentFrameB(const unsigned int &segID)
+{
+    return (std::get<1>(_frameData[segID]))->getOrigin();
+}
+
 
 osg::Vec3 SensorVisibilityCallback::getIntersectionPosition(const unsigned int &segID)
 {

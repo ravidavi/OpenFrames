@@ -41,6 +41,10 @@ namespace OpenFrames
 
         int getSegmentID(PolyhedralCone *frameA, ReferenceFrame *frameB, const osg::Vec3d &posA, const osg::Vec3d &posB);
 
+        PolyhedralCone* getSegmentFrameA(const unsigned int &segID);
+
+        ReferenceFrame* getSegmentFrameB(const unsigned int &segID);
+
         osg::Vec3 getIntersectionPosition(const unsigned int &segID);
 
         float getIntersectionAngle(const unsigned int &segID);
@@ -61,7 +65,7 @@ namespace OpenFrames
         struct IntersectionData
         {
             osg::Vec3 position;         // position at which the line segment intersects with frameB in the local frame
-            float angleOfIncidence;     // angle of incidence where the line segment intersects at frameB
+            float angleOfIncidence;     // angle of incidence (in radians) where the line segment intersects at frameB
         } ;
         mutable std::vector<IntersectionData> _intersectionData;
 
