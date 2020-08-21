@@ -16,6 +16,7 @@
 
 #include <OpenFrames/CustomLineSegments.hpp>
 #include <OpenFrames/EllipticCone.hpp>
+#include <OpenFrames/Model.hpp>
 #include <OpenFrames/PolyhedralCone.hpp>
 #include <OpenFrames/RectangularCone.hpp>
 #include <OpenFrames/Trajectory.hpp>
@@ -158,18 +159,22 @@ int main()
   }
 
   // Create a sphere that will block the cone's view
-  Sphere *blocker = new Sphere("Blocker", 0, 1, 0, 1);
+  //Sphere *blocker = new Sphere("Blocker", 0, 1, 0, 1);
+  Model *blocker = new Model("Blocker", 0, 1, 0, 1);
   {
-    blocker->setRadius(3.0);
+    //blocker->setRadius(3.0);
+    blocker->setModel("osgEarth/earthmap.earth");
+    blocker->setModelScale(0.000001, 0.000001, 0.000001);
     blocker->showAxes(ReferenceFrame::NO_AXES);
     blocker->showAxesLabels(ReferenceFrame::NO_AXES);
-    blocker->setPosition(-1, 5, 0);
+    blocker->setPosition(-3, 10, 0);
     root->addChild(blocker);
   }
 
   // Create a target sphere that will move through the scene 
   // The target's color will change based on cone visibility
-  Sphere *target = new Sphere("Target", 1, 0, 0, 1);
+  //Sphere *target = new Sphere("Target", 1, 0, 0, 1);
+  Model *target = new Model("Target", 1, 0, 0, 1);
   {
     osg::ref_ptr<Trajectory> traj1 = new Trajectory;
     double pos[3];
@@ -191,7 +196,9 @@ int main()
     TrajectoryFollower *tf1 = new TrajectoryFollower(traj1);
 
     // Tell sphere to follow trajectory
-    target->setRadius(2.0);
+    //target->setRadius(2.0);
+    target->setModel("C:/Users/ravid/Desktop/GMAT_Scripts/moon_lro_localelevation.earth");
+    target->setModelScale(0.000001, 0.000001, 0.000001);
     target->showAxes(ReferenceFrame::NO_AXES);
     target->showAxesLabels(ReferenceFrame::NO_AXES);
     target->showNameLabel(false);
@@ -208,9 +215,9 @@ int main()
   */
   LineSegmentCallback *lsCallback = new LineSegmentCallback(root);
   osg::EllipsoidModel ellipsoidModel;
-  lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(2, 0, 0)); // Segment between sensor and target
-  lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(0, 2, 0)); // Segment between sensor and target
-  lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(0, 0, 2)); // Segment between sensor and target
+  lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(1, 0, 0)); // Segment between sensor and target
+  lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(0, 1, 0)); // Segment between sensor and target
+  lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(0, 0, 1)); // Segment between sensor and target
 
   CustomLineSegments *cls = new CustomLineSegments("CustomLineSegment", 1, 1, 1, 1);
   cls->setLineSegmentCallback(lsCallback);
