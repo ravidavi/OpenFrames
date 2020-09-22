@@ -48,6 +48,7 @@ namespace OpenFrames
   class FrameManager;
   class WindowProxy;
   
+#ifndef SWIG // Don't wrap this class with SWIG
   /**
    * \class EmbeddedGraphics
    *
@@ -107,6 +108,7 @@ namespace OpenFrames
     WindowProxy *_window; // Pointer to the WindowProxy that represents the window
     bool _realized; // Whether this context has been realized
   };
+#endif // ifndef SWIG
 
   /**
    * \class WindowEventHandler

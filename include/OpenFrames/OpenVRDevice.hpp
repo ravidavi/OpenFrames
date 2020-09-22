@@ -67,7 +67,7 @@ namespace OpenFrames
    *
    * This class wraps OpenVR events in an OSG-compatible event adapter.
    */
-  class OpenVREvent : public osgGA::GUIEventAdapter
+  class OF_EXPORT OpenVREvent : public osgGA::GUIEventAdapter
   {
   public:
     OpenVREvent();
@@ -349,7 +349,7 @@ namespace OpenFrames
    * \brief Polls for OpenVR events and stores them in its OSG event queue.
    *
    */
-  class OpenVREventDevice : public osgGA::Device
+  class OF_EXPORT OpenVREventDevice : public osgGA::Device
   {
   public:
     OpenVREventDevice(OpenVRDevice *ovrDevice)
@@ -373,7 +373,7 @@ namespace OpenFrames
    * This struct-class computes per-eye view matrices without changing the projection matrix. This
    * should be attached as a slave update callback to each VR camera.
    */
-  struct OpenVRSlaveCallback : public osg::View::Slave::UpdateSlaveCallback
+  struct OF_EXPORT OpenVRSlaveCallback : public osg::View::Slave::UpdateSlaveCallback
   {
     enum CameraType
     {
@@ -505,7 +505,7 @@ namespace OpenFrames
    * This class submit eye textures to OpenVR and should be attached as a swapbuffers
    * callback to a graphics context.
    */
-  struct OpenVRSwapBuffers : public osg::GraphicsContext::SwapCallback
+  struct OF_EXPORT OpenVRSwapBuffers : public osg::GraphicsContext::SwapCallback
   {
   public:
     OpenVRSwapBuffers(OpenVRDevice *ovrDevice, VRTextureBuffer *texBuffer);
