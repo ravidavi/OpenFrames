@@ -71,4 +71,29 @@ void EllipticCone::createEllipticCone()
 
   setVertexAngles(clockAngles, coneAngles);
 }
+
+bool EllipticCone::isVisible(osg::Vec3d point, const double& minDistance, const double& maxDistance) const
+{
+  // Make sure point is within distance limits, noting that cone points along -z axis
+  if((-point.z() < minDistance) || (-point.z() > maxDistance)) return false;
+
+  // Cone apex is at the origin and is visible by the cone (prevents divide by zero later)
+  if(point.length2() == 0.0) return true;
+
+  // Scale point to have distance (z component) of 1
+  point /= -point.z();
+
+  // Compute point clock & cone angles
+  double cone = std::atan(std::sqrt(point.x()*point.x() + point.y()*point.y()));
+  double clock = std::atan2(point.y(), point.x());
+
+  // Compute max cone angle at point's clock angle
+  double ca = std::cos(clock);
+  double sa = std::sin(clock);
+  double maxCone = _a * _b / std::sqrt(_b*_b*ca*ca + _a*_a*sa*sa);
+
+  if(cone <= maxCone) return true;
+  else return false;
+}
+
 } // !namespace OpenFrames

@@ -42,6 +42,9 @@ namespace OpenFrames
     /** Set/get semimajor/semiminor half-angles */
     void setPrimaryAngles(const double& a, const double& b);
 
+    /// Compute visibility of point from this cone
+    virtual bool isVisible(osg::Vec3d point, const double& minDistance = 0.0, const double& maxDistance = std::numeric_limits<double>::max()) const;
+
     /// Inherited
     virtual std::string frameInfo() const { return "EllipticCone"; }
 
