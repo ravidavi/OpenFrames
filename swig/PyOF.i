@@ -3,6 +3,11 @@
 %include "std_string.i"
 
 %{
+#include "osg/Export"
+
+#include "osg/Vec3d"
+#include "osg/Quat"
+
 #include "OpenThreads/Exports"
 #include "OpenThreads/Thread"
 
@@ -44,6 +49,41 @@
 #include "OpenFrames/VRUtils.hpp"
 #include "OpenFrames/WindowProxy.hpp"
 %}
+
+
+%include "cpointer.i"
+%pointer_class(double, doublep);
+
+%inline %{
+static osg::Vec3d osgVec3d(double x, double y, double z) {
+    return osg::Vec3d(x, y, z);
+}
+
+static void setOsgVec3d(osg::Vec3d &vec, int i, double val) {
+    vec[i] = val;
+}
+
+static double getOsgVec3d(const osg::Vec3d &vec, int i) {
+    return vec[i];
+}
+
+static osg::Quat osgQuat(double x, double y, double z, double w) {
+    return osg::Quat(x, y, z, w);
+}
+
+static void setOsgQuat(osg::Quat &quat, int i, double val) {
+    quat[i] = val;
+}
+
+static double getOsgQuat(const osg::Quat &quat, int i) {
+    return quat[i];
+}
+%}
+
+
+%include "std_vector.i"
+%template(AngleArray) std::vector<double>;
+
 
 %ignore *::cloneType;
 %ignore *::clone;
@@ -93,6 +133,6 @@
 %ignore OpenThreads::Thread::setProcessorAffinity;
 %ignore OpenThreads::GetNumberOfProcessors;
 %ignore OpenThreads::SetProcessorAffinityOfCurrentThread;
-%include "OpenThreads/Exports"
+%import "OpenThreads/Exports"
 %include "OpenThreads/Thread"
 %include "OpenFrames/WindowProxy.hpp"
