@@ -70,6 +70,52 @@
 %}
 
 
+// Code for function callbacks
+%pythoncode
+%{
+
+import ctypes
+
+# a ctypes callback prototype
+py_callback_uint_bool = ctypes.CFUNCTYPE(None, ctypes.c_uint, ctypes.c_bool)
+py_callback_uint = ctypes.CFUNCTYPE(None, ctypes.c_uint)
+
+%}
+
+// Typemaps for function callbacks
+%typemap(in) void (*fcn)(unsigned int*, bool*) {
+    $1 = (void (*)(unsigned int*, bool*))PyLong_AsVoidPtr($input);
+}
+%typemap(in) void (*fcn)(unsigned int*) {
+    $1 = (void (*)(unsigned int*))PyLong_AsVoidPtr($input);
+}
+
+// Rewrite Python wrapper functions that use callbacks:
+%feature("shadow") OpenFrames::WindowProxy::setMakeCurrentFunction %{
+def setMakeCurrentFunction(self, fcn):
+    f = py_callback_uint_bool(fcn)
+    fcn_p = ctypes.cast(f, ctypes.c_void_p).value
+    
+    return _PyOF.WindowProxy_setMakeCurrentFunction(self, fcn_p)
+%}
+
+%feature("shadow") OpenFrames::WindowProxy::setUpdateContextFunction %{
+def setUpdateContextFunction(self, fcn):
+    f = py_callback_uint_bool(fcn)
+    fcn_p = ctypes.cast(f, ctypes.c_void_p).value
+    
+    return _PyOF.WindowProxy_setUpdateContextFunction(self, fcn_p)
+%}
+
+%feature("shadow") OpenFrames::WindowProxy::setSwapBuffersFunction %{
+def setSwapBuffersFunction(self, fcn):
+    f = py_callback_uint(fcn)
+    fcn_p = ctypes.cast(f, ctypes.c_void_p).value
+    
+    return _PyOF.WindowProxy_setSwapBuffersFunction(self, fcn_p)
+%}
+
+
 %include "cpointer.i"
 %pointer_class(double, doublep);
 
