@@ -77,8 +77,11 @@
 import ctypes
 
 # a ctypes callback prototype
-py_callback_uint_bool = ctypes.CFUNCTYPE(None, ctypes.c_uint, ctypes.c_bool)
-py_callback_uint = ctypes.CFUNCTYPE(None, ctypes.c_uint)
+py_callback_uint_bool = ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_bool))
+py_callback_uint = ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_uint))
+py_keypress_callback = ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_int))
+py_mousemotion_callback = ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float))
+py_button_callback = ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_uint))
 
 %}
 
@@ -88,6 +91,15 @@ py_callback_uint = ctypes.CFUNCTYPE(None, ctypes.c_uint)
 }
 %typemap(in) void (*fcn)(unsigned int*) {
     $1 = (void (*)(unsigned int*))PyLong_AsVoidPtr($input);
+}
+%typemap(in) void (*fcn)(unsigned int*, unsigned int*, unsigned int*, int*) {
+    $1 = (void (*)(unsigned int*, unsigned int*, unsigned int*, int*))PyLong_AsVoidPtr($input);
+}
+%typemap(in) void (*fcn)(unsigned int*, unsigned int*, unsigned int*, float*, float*) {
+    $1 = (void (*)(unsigned int*, unsigned int*, unsigned int*, float*, float*))PyLong_AsVoidPtr($input);
+}
+%typemap(in) void (*fcn)(unsigned int*, unsigned int*, unsigned int*, unsigned int*) {
+    $1 = (void (*)(unsigned int*, unsigned int*, unsigned int*, unsigned int*))PyLong_AsVoidPtr($input);
 }
 
 // Rewrite Python wrapper functions that use callbacks:
@@ -113,6 +125,38 @@ def setSwapBuffersFunction(self, fcn):
     fcn_p = ctypes.cast(f, ctypes.c_void_p).value
     
     return _PyOF.WindowProxy_setSwapBuffersFunction(self, fcn_p)
+%}
+
+%feature("shadow") OpenFrames::WindowProxy::setKeyPressCallback %{
+def setKeyPressCallback(self, fcn):
+    f = py_keypress_callback(fcn)
+    fcn_p = ctypes.cast(f, ctypes.c_void_p).value
+    
+    return _PyOF.WindowProxy_setKeyPressCallback(self, fcn_p)
+%}
+
+%feature("shadow") OpenFrames::WindowProxy::setMouseMotionCallback %{
+def setMouseMotionCallback(self, fcn):
+    f = py_mousemotion_callback(fcn)
+    fcn_p = ctypes.cast(f, ctypes.c_void_p).value
+    
+    return _PyOF.WindowProxy_setMouseMotionCallback(self, fcn_p)
+%}
+
+%feature("shadow") OpenFrames::WindowProxy::setButtonPressCallback %{
+def setButtonPressCallback(self, fcn):
+    f = py_button_callback(fcn)
+    fcn_p = ctypes.cast(f, ctypes.c_void_p).value
+    
+    return _PyOF.WindowProxy_setButtonPressCallback(self, fcn_p)
+%}
+
+%feature("shadow") OpenFrames::WindowProxy::setButtonReleaseCallback %{
+def setButtonReleaseCallback(self, fcn):
+    f = py_button_callback(fcn)
+    fcn_p = ctypes.cast(f, ctypes.c_void_p).value
+    
+    return _PyOF.WindowProxy_setButtonReleaseCallback(self, fcn_p)
 %}
 
 
