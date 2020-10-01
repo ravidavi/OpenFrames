@@ -60,7 +60,9 @@ namespace OpenFrames
     
     unsigned int winID = _window->getID();
     bool success = false;
+    std::cout<< "OpenFrames::EmbeddedGraphics calling custom makeCurrent()" << std::endl;
     _makeCurrent(&winID, &success);	// Perform the custom MakeCurrent callback, and get its result
+    std::cout<< "OpenFrames::EmbeddedGraphics custom makeCurrent() returned success = " << success << std::endl;
     
     return success;
   }
