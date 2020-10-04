@@ -26,7 +26,7 @@ class Window(QWindow):
     _saved_size : QSize
         If a resize event occurs before WindowProxy is started, then the size is saved here so that it can be set when
         WindowProxy is started
-    _proxy_started_once : bool
+    _proxy_started : bool
         True after the first time that _of has been started
 
     """
@@ -190,7 +190,7 @@ class Window(QWindow):
 
 class OFQtGraphicsContextCallback(PyOF.GraphicsContextCallback):
     """
-    A QWindow for rendering of WindowProxy
+    A callback that interfaces OpenFrames with PyQt's OpenGL rendering context
 
     Attributes
     ----------
@@ -206,14 +206,12 @@ class OFQtGraphicsContextCallback(PyOF.GraphicsContextCallback):
 
     def swapBuffers(self):
         """
-        Swaps the buffer from _context to the surface of this window
+        Swaps the front/back rendering buffer
 
         """
         if self._context is not None:
             self._context.swapBuffers(self._surface)
-    
-    
-    # TODO call glGetError() to print any errors that may have occurred
+        
     def makeCurrent(self):
         """
         Makes _context current for the surface of this window
@@ -231,7 +229,6 @@ class OFQtGraphicsContextCallback(PyOF.GraphicsContextCallback):
             self._context.create()
             success = self._context.makeCurrent(self._surface)
             if success:
-                # self.initializeOpenGLFunctions()
                 self._context.doneCurrent()
             else:
                 return success
@@ -242,6 +239,16 @@ class OFQtGraphicsContextCallback(PyOF.GraphicsContextCallback):
         return success
     
     def updateContext(self):
+        """
+        Updates _context when it becomes invalid, e.g. when resizing the window
+
+        Returns
+        -------
+        bool
+            True if successful
+            False if an error occurs
+
+        """   
         return self.makeCurrent()
 
 class Widget(QWidget):

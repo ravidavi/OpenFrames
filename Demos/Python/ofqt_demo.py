@@ -34,8 +34,7 @@ class MyOFDemoWin1(PyQtOF.Window):
       root = PyOF.CoordinateAxes(self._ref_frame_name)
       
       # Create a manager to handle access to the scene
-      fm = PyOF.FrameManager();
-      fm.setFrame(root);
+      fm = PyOF.FrameManager(root);
       
       # Add the scene to the window
       self._window_proxy.setScene(fm, 0, 0);
@@ -85,10 +84,10 @@ if __name__ == '__main__':
     ex1.show()
     
     # Create second window
-    #ex2 = PyQtOF.Widget(MyOFDemoWin2)
-    #ex2.setWindowTitle('PyQt5 OpenFrames Window 2')
-    #ex2.setGeometry(100, 100, 1024, 768)
-    #ex2.show()
+    ex2 = PyQtOF.Widget(MyOFDemoWin2)
+    ex2.setWindowTitle('PyQt5 OpenFrames Window 2')
+    ex2.setGeometry(100, 100, 1024, 768)
+    ex2.show()
     
     # Start Qt application
     ret = app.exec_()
