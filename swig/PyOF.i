@@ -17,7 +17,10 @@
 // Note for developers: The destructors for the imported classes are protected
 // so users may receive a warning regarding memory leaks at runtime in Python
 
-%module ${SWIG_MODULE_NAME}
+%module(directors="1", threads="1") ${SWIG_MODULE_NAME}
+
+// Default to no multithread support. This will be overridden for specific classes.
+%nothread;
 
 %include "std_string.i"
 
@@ -159,6 +162,16 @@ def setButtonReleaseCallback(self, fcn):
     return _PyOF.WindowProxy_setButtonReleaseCallback(self, fcn_p)
 %}
 
+// OpenFrames::GraphicsContextCallback class allows Python-based GUI APIs
+// to be used with OpenFrames. It must be subclassed on the Python side,
+// so we use the SWIG director feature for this.
+%feature("director") OpenFrames::GraphicsContextCallback;
+
+// OpenFrames::GraphicsContextCallback class virtual methods will call
+// into Python through its GIL, so multithreaded support must be enabled.
+%thread OpenFrames::GraphicsContextCallback::makeCurrent;
+%thread OpenFrames::GraphicsContextCallback::updateContext;
+%thread OpenFrames::GraphicsContextCallback::swapBuffers;
 
 %include "cpointer.i"
 %pointer_class(double, doublep);
