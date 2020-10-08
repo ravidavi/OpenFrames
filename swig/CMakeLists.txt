@@ -89,15 +89,16 @@ IF(OF_PYTHON_MODULE)
   # Set RPATH to find shared libraries in default locations on Mac/Linux
   IF(UNIX)
     IF(APPLE)
+      SET(MAC_RPATHS "@loader_path/;@loader_path/../../lib/")
       SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOFInterfaceC_REAL_NAME} PROPERTIES INSTALL_RPATH
-      "@loader_path/"
+        "${MAC_RPATHS}"
       )
       SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOF_REAL_NAME} PROPERTIES INSTALL_RPATH
-      "@loader_path/"
+        "${MAC_RPATHS}"
       )
       IF( OF_FORTRAN_MODULE )
         SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOFInterfaceIFORT_REAL_NAME} PROPERTIES INSTALL_RPATH
-        "@loader_path/"
+          "${MAC_RPATHS}"
         )
       ENDIF( OF_FORTRAN_MODULE )
     ELSE()
