@@ -79,15 +79,16 @@ void SensorVisibilityCallback::getSegmentData(const unsigned int &segID, osg::Ve
             // Want to eventually change this so the line segment only has a real second endpoint when the ray intersects with the
             // desired object (frameB), not something between frameA and frameB
             posB = intersection.getWorldIntersectPoint();
+
             newIntersectionData.position = intersection.getLocalIntersectPoint();
             // Get the normal of the surface at the intersection point:
             osg::Vec3 normal = intersection.getWorldIntersectNormal();
             normal.normalize();
             // Get the direction of the vector from posA to posB:
-            directionVector = posB - posA;       // original
+            directionVector = posB - posA;
             directionVector.normalize();
-            // the angle of incidence is the inverse cosine of the dot product of the two vectors
-            newIntersectionData.angleOfIncidence = acos(directionVector * normal);      // original
+            // the angle of incidence is the inverse cosine of the dot product of the two vectors:
+            newIntersectionData.angleOfIncidence = acos(directionVector * normal);
             // if the angle of incidence is greater than 90 degrees, fix it:
             if (newIntersectionData.angleOfIncidence > osg::PI_2) {
                 newIntersectionData.angleOfIncidence = osg::PI - newIntersectionData.angleOfIncidence;
