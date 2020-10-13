@@ -7,8 +7,8 @@ Launches a demonstration of OpenFrames managed within a PyQt5 framework
 import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QSurfaceFormat
-import OpenFrames.PyQtOF as PyQtOF
-import OpenFrames.PyOF as PyOF
+import OpenFrames.PyQtOFInterfaceC as PyQtOF
+from OpenFrames.PyOFInterfaceC import *
 
 class MyOFDemoWin1(PyQtOF.Window):
     """
@@ -30,14 +30,12 @@ class MyOFDemoWin1(PyQtOF.Window):
 
       self._frame_manager_id = 1
       self._ref_frame_name = "CoordinateAxes"
-      
-      root = PyOF.CoordinateAxes(self._ref_frame_name)
-      
-      # Create a manager to handle access to the scene
-      fm = PyOF.FrameManager(root);
-      
-      # Add the scene to the window
-      self._window_proxy.setScene(fm, 0, 0);
+
+      ofcoordaxes_create(self._ref_frame_name)
+
+      offm_create(self._frame_manager_id)
+      offm_setframe()
+      ofwin_setscene(0, 0)
 
 class MyOFDemoWin2(PyQtOF.Window):
     """
@@ -60,13 +58,11 @@ class MyOFDemoWin2(PyQtOF.Window):
       self._frame_manager_id = 2
       self._ref_frame_name = "Sphere"
       
-      root = PyOF.Sphere(self._ref_frame_name)
+      ofsphere_create(self._ref_frame_name)
       
-      # Create a manager to handle access to the scene
-      fm = PyOF.FrameManager(root);
-      
-      # Add the scene to the window
-      self._window_proxy.setScene(fm, 0, 0);
+      offm_create(self._frame_manager_id)
+      offm_setframe()
+      ofwin_setscene(0, 0)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

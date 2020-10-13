@@ -32,7 +32,7 @@ namespace OpenFrames
   
   /** This is the GraphicsWindow that is used for embedded graphics */
   EmbeddedGraphics::EmbeddedGraphics(int x, int y, int width, int height, WindowProxy *window)
-  : _makeCurrent(NULL), _swapBuffers(NULL), _updateContext(NULL), _window(window), _realized(false)
+  : _gcCallback(nullptr), _makeCurrent(NULL), _swapBuffers(NULL), _updateContext(NULL), _window(window), _realized(false)
   {
     // Specify traits for this graphics context
     _traits = new GraphicsContext::Traits;
@@ -46,41 +46,60 @@ namespace OpenFrames
   
   bool EmbeddedGraphics::makeCurrentImplementation()
   {
-    if(_makeCurrent == NULL)
+    if(_gcCallback == nullptr)
     {
-      std::cerr<< "EmbeddedGraphics::makeCurrentImplementation() ERROR: Callback function makeCurrent() is not defined." << std::endl;
-      return false;
+      if(_makeCurrent == nullptr)
+      {
+        OSG_WARN<< "EmbeddedGraphics::makeCurrentImplementation() ERROR: Callback object or makeCurrent() function must be defined." << std::endl;
+        return false;
+      }
+      else if(_window == nullptr)
+      {
+        OSG_WARN<< "EmbeddedGraphics::makeCurrentImplementation() ERROR: WindowProxy must be defined if makeCurrent() function is used." << std::endl;
+        return false;
+      }
     }
     
-    if(_window == NULL)
-    {
-      std::cerr<< "EmbeddedGraphics::makeCurrentImplementation() ERROR: WindowProxy is not defined." << std::endl;
-      return false;
-    }
-    
-    unsigned int winID = _window->getID();
+    // Perform the makeCurrent callback
     bool success = false;
-    _makeCurrent(&winID, &success);	// Perform the custom MakeCurrent callback, and get its result
+    if(_gcCallback != nullptr) success = _gcCallback->makeCurrent();
+    else
+    {
+      unsigned int winID = _window->getID();
+      _makeCurrent(&winID, &success);
+    }
     
     return success;
   }
   
   void EmbeddedGraphics::swapBuffersImplementation()
   {
-    if(_swapBuffers == NULL)
+    if(_gcCallback == nullptr)
     {
-      std::cerr<< "EmbeddedGraphics::swapBuffersImplementation() ERROR: Callback function swapBuffers() is not defined." << std::endl;
-      return;
+      if(_swapBuffers == nullptr)
+      {
+        OSG_WARN<< "EmbeddedGraphics::swapBuffersImplementation() ERROR: Callback object or swapBuffers() function must be defined." << std::endl;
+        return;
+      }
+      else if(_window == nullptr)
+      {
+        OSG_WARN<< "EmbeddedGraphics::swapBuffersImplementation() ERROR: WindowProxy is not defined." << std::endl;
+        return;
+      }
     }
     
-    if(_window == NULL)
+    // Perform the custom SwapBuffers callback
+    if(_gcCallback != nullptr) _gcCallback->swapBuffers();
+    else
     {
-      std::cerr<< "EmbeddedGraphics::swapBuffersImplementation() ERROR: WindowProxy is not defined." << std::endl;
-      return;
+      unsigned int winID = _window->getID();
+      _swapBuffers(&winID);
     }
-    
-    unsigned int winID = _window->getID();
-    _swapBuffers(&winID); // Perform the custom SwapBuffers callback
+  }
+
+  void EmbeddedGraphics::setGraphicsContextCallback(GraphicsContextCallback *gcCallback)
+  {
+    _gcCallback = gcCallback;
   }
   
   void EmbeddedGraphics::setMakeCurrentFunction(void (*fcn)(unsigned int *winID, bool *success))
@@ -95,16 +114,15 @@ namespace OpenFrames
   
   bool EmbeddedGraphics::updateContextImplementation()
   {
-    if(_updateContext)
+    bool success = false;
+    if(_gcCallback != nullptr) success = _gcCallback->updateContext();
+    else if(_updateContext)
     {
       unsigned int winID = _window->getID();
-      bool success = false;
-      
-      // Perform the custom UpdateContext callback, and get its result
       _updateContext(&winID, &success);
-      return success;
     }
-    else return true;
+    
+    return success;
   }
   
   void EmbeddedGraphics::setSwapBuffersFunction(void (*fcn)(unsigned int *winID))
@@ -397,34 +415,34 @@ namespace OpenFrames
       
       if(!gc)
       {
-        std::cerr<< "OpenFrames::WindowProxy ERROR: GraphicsContext not valid" << std::endl;
+        OSG_WARN<< "OpenFrames::WindowProxy ERROR: GraphicsContext not valid" << std::endl;
         return;
       }
       
       // Get OpenGL version info
       char *glVersionString = (char*)glGetString(GL_VERSION);
       if(glVersionString == 0)
-        std::cerr<< "OpenFrames::WindowProxy ERROR in glGetString(GL_VERSION): " << std::endl;
+        OSG_WARN<< "OpenFrames::WindowProxy ERROR in glGetString(GL_VERSION): " << std::endl;
 
       // Get OpenGL renderer info
       char *glRendererString = (char*)glGetString(GL_RENDERER);
       if(glRendererString == 0)
-        std::cerr<< "OpenFrames::WindowProxy ERROR in glGetString(GL_RENDERER): " << std::endl;
+        OSG_WARN<< "OpenFrames::WindowProxy ERROR in glGetString(GL_RENDERER): " << std::endl;
       
       // Report OpenGL version and renderer info
       if(glVersionString && glRendererString)
       {
-        std::cout<< "OpenFrames renderer: " << glRendererString << ", version: " << glVersionString;
+        OSG_NOTICE<< "OpenFrames renderer: " << glRendererString << ", version: " << glVersionString;
         if(gc->getTraits()->samples > 0)
-          std::cout<< " with " << gc->getTraits()->samples << "x MSAA";
-        std::cout<< std::endl;
+          OSG_NOTICE<< " with " << gc->getTraits()->samples << "x MSAA";
+        OSG_NOTICE<< std::endl;
       }
       else
       {
         GLenum err = glGetError();
-        if(err == GL_INVALID_ENUM) std::cerr<< " GL_INVALID_ENUM, please ensure that a valid OpenGL context is current before starting the WindowProxy animation." << std::endl;
-        else if(err == GL_INVALID_OPERATION) std::cerr<< " GL_INVALID_OPERATION, please ensure that application is not already using OpenGL elsewhere." << std::endl;
-        else std::cerr<< "OpenGL error code " << err << std::endl;
+        if(err == GL_INVALID_ENUM) OSG_WARN<< " GL_INVALID_ENUM, please ensure that a valid OpenGL context is current before starting the WindowProxy animation." << std::endl;
+        else if(err == GL_INVALID_OPERATION) OSG_WARN<< " GL_INVALID_OPERATION, please ensure that application is not already using OpenGL elsewhere." << std::endl;
+        else OSG_WARN<< "OpenGL error code " << err << std::endl;
         return;
       }
       
@@ -555,7 +573,7 @@ namespace OpenFrames
   
   void WindowProxy::cancelCleanup()
   {
-    std::cout<< "WindowProxy::cancelCleanup()" << std::endl;
+    OSG_NOTICE<< "WindowProxy::cancelCleanup()" << std::endl;
     shutdown();
   }
   
@@ -988,6 +1006,11 @@ namespace OpenFrames
     if(row >= _nRow || col >= _nCol) return NULL; // Location out of bounds
     return _renderList[row*_nCol + col].get();
   }
+
+  void WindowProxy::setGraphicsContextCallback(GraphicsContextCallback *gcCallback)
+  {
+    _embeddedGraphics->setGraphicsContextCallback(gcCallback);
+  }
   
   void WindowProxy::setMakeCurrentFunction(void (*fcn)(unsigned int *winID, bool *success))
   {
@@ -1105,26 +1128,26 @@ namespace OpenFrames
   /** Print info about this window to std::cout */
   void WindowProxy::printInfo()
   {
-    std::cout<< "WindowProxy info:" << std::endl;
-    std::cout<< "\t Window ID: " << _winID << std::endl;
+    OSG_NOTICE<< "WindowProxy info:" << std::endl;
+    OSG_NOTICE<< "\t Window ID: " << _winID << std::endl;
     if(_window.valid()) 
     {
-      std::cout<< "\tContext ID: " << _window->getState()->getContextID() << std::endl;
+      OSG_NOTICE<< "\tContext ID: " << _window->getState()->getContextID() << std::endl;
     }
     else
     {
-      std::cout<< "No graphics window created yet" << std::endl;
+      OSG_NOTICE<< "No graphics window created yet" << std::endl;
     }
-    std::cout<< "\tGrid size: " << _nRow << " rows, " << _nCol << " columns" << std::endl;
+    OSG_NOTICE<< "\tGrid size: " << _nRow << " rows, " << _nCol << " columns" << std::endl;
     FrameManager *fm;
     for(unsigned int i = 0; i < _renderList.size(); ++i)
     {
       fm = _renderList[i]->getFrameManager();
       if(fm == NULL)
-        std::cout<< "\tRenderRectangle " << i << " has no FrameManager" << std::endl;
+        OSG_NOTICE<< "\tRenderRectangle " << i << " has no FrameManager" << std::endl;
       else
       {
-        std::cout<< "\tRenderRectangle " << i << " has FrameManager " << fm << std::endl;
+        OSG_NOTICE<< "\tRenderRectangle " << i << " has FrameManager " << fm << std::endl;
       }
     }
   }

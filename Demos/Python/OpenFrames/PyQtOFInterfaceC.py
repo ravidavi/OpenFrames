@@ -7,13 +7,12 @@ Qt Widgets for implementing OpenFrames
 from PyQt5.QtWidgets import QWidget, QGridLayout, QSizePolicy
 from PyQt5.QtGui import QWindow, QOpenGLContext
 from PyQt5.QtCore import Qt, QSize, QCoreApplication, QEventLoop
-#from .PyOFInterfaceC import *
-import OpenFrames.PyOF as PyOF
-import time
+from .PyOFInterfaceC import *
 
 
 DEFAULT_WIDTH = 320
 DEFAULT_HEIGHT = 240
+
 
 class Window(QWindow):
     """
@@ -21,12 +20,14 @@ class Window(QWindow):
 
     Attributes
     ----------
+    _context : QOpenGLContext
+        Context used to render the window contents
     _window_proxy_id : int
         The WindowProxy responsible for drawing
     _saved_size : QSize
         If a resize event occurs before WindowProxy is started, then the size is saved here so that it can be set when
         WindowProxy is started
-    _proxy_started : bool
+    _proxy_started_once : bool
         True after the first time that _of has been started
 
     """
@@ -45,16 +46,17 @@ class Window(QWindow):
 
         """
         super().__init__()
+        self._context = None
         self._proxy_started = False
         self._saved_size = None
         self.setSurfaceType(QWindow.OpenGLSurface)
 
         self._window_proxy_id = id
-        
-        self._window_proxy = PyOF.WindowProxy(0, 0, int(DEFAULT_WIDTH*self.devicePixelRatio()), int(DEFAULT_HEIGHT*self.devicePixelRatio()),  nrow, ncol, True, False)
-        self._window_proxy.setID(id)
-        self._gcCallback = OFQtGraphicsContextCallback(self)
-        self._window_proxy.setGraphicsContextCallback(self._gcCallback)
+
+        ofwin_createproxy(0, 0, int(DEFAULT_WIDTH*self.devicePixelRatio()), int(DEFAULT_HEIGHT*self.devicePixelRatio()), nrow, ncol, True, self._window_proxy_id, False)
+        ofwin_setmakecurrentfunction(self.make_current)
+        ofwin_setupdatecontextfunction(self.make_current)
+        ofwin_setswapbuffersfunction(self.swap_buffers)
 
     def exposeEvent(self, event):
         """
@@ -63,27 +65,21 @@ class Window(QWindow):
         """
         if not self._proxy_started:
             self._proxy_started = True
-            
-            ret = self._window_proxy.startThread();
-            while (not self._window_proxy.isAnimating() and not self._window_proxy.doneAnimating()):
-                QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
-                
-            if self._window_proxy.getAnimationState() == PyOF.WindowProxy.FAILED:
-                print('PyQtOF: could not start WindowProxy thread')
-                                                          
+            ofwin_activate(self._window_proxy_id)
+            ofwin_start()
             if self._saved_size is not None:
-                self._window_proxy.resizeWindow(0, 0, int(self._saved_size.width()*self.devicePixelRatio()), int(self._saved_size.height()*self.devicePixelRatio()));
+                ofwin_resizewindow(0, 0, int(self._saved_size.width()*self.devicePixelRatio()), int(self._saved_size.height()*self.devicePixelRatio()))
                 self._saved_size = None
-                
+
     def hideEvent(self, event):
         """
-        Overrides QWindow.hideEvent()
+        Overrides QWindow.exposeEvent()
 
         """
-        self._window_proxy.shutdown();
-        while self._window_proxy.isRunning():
+        ofwin_activate(self._window_proxy_id)
+        ofwin_signalstop()
+        while ofwin_isrunning() == 1:
             QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
-            
         self._proxy_started = False
 
     def resizeEvent(self, event):
@@ -91,9 +87,9 @@ class Window(QWindow):
         Overrides QWindow.resizeEvent()
 
         """
-        
-        if self._window_proxy.isRunning():
-            self._window_proxy.resizeWindow(0, 0, int(event.size().width()*self.devicePixelRatio()), int(event.size().height()*self.devicePixelRatio()))
+        ofwin_activate(self._window_proxy_id)
+        if ofwin_isrunning() == 1:
+            ofwin_resizewindow(0, 0, int(event.size().width()*self.devicePixelRatio()), int(event.size().height()*self.devicePixelRatio()))
         else:
             self._saved_size = event.size()
 
@@ -102,37 +98,76 @@ class Window(QWindow):
         Overrides QWindow.mousePressEvent()
 
         """
-        if self._window_proxy.isRunning():
+        ofwin_activate(self._window_proxy_id)
+        if ofwin_isrunning() == 1:
             button = Window._map_qt_button_to_of_button(event.button())
             if button != 0:
-                self._window_proxy.buttonPress(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()), button)
+                ofwin_buttonpress(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()), button)
 
     def mouseReleaseEvent(self, event):
         """
         Overrides QWindow.mouseReleaseEvent()
 
         """
-        if self._window_proxy.isRunning():
+        ofwin_activate(self._window_proxy_id)
+        if ofwin_isrunning() == 1:
             button = Window._map_qt_button_to_of_button(event.button())
             if button != 0:
-                self._window_proxy.buttonRelease(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()), button)
+                ofwin_buttonrelease(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()), button)
 
     def mouseMoveEvent(self, event):
         """
         Overrides QWindow.mouseMoveEvent()
 
         """
-        if self._window_proxy.isRunning():
-            self._window_proxy.mouseMotion(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()))
+        ofwin_activate(self._window_proxy_id)
+        if ofwin_isrunning() == 1:
+            ofwin_mousemotion(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()))
 
     def keyPressEvent(self, event):
         """
         Overrides QWindow.keyPressEvent()
 
         """
-        if self._window_proxy.isRunning():
+        ofwin_activate(self._window_proxy_id)
+        if ofwin_isrunning() == 1:
             key = Window._map_qt_key_event_to_osg_key(event)
-            self._window_proxy.keyPress(key)
+            ofwin_keypress(key)
+
+    # TODO call glGetError() to print any errors that may have occurred
+    def make_current(self):
+        """
+        Makes _context current for the surface of this window
+
+        Returns
+        -------
+        bool
+            True if successful
+            False if an error occurs
+
+        """
+        success = False
+        if self._context is None:
+            self._context = QOpenGLContext()
+            self._context.create()
+            success = self._context.makeCurrent(self)
+            if success:
+                # self.initializeOpenGLFunctions()
+                self._context.doneCurrent()
+            else:
+                return success
+        if self._context is not None:
+            success = self._context.makeCurrent(self)
+            # err = glGetError()
+        return success
+
+    def swap_buffers(self):
+        """
+        Swaps the buffer from _context to the surface of this window
+
+        """
+        if self._context is not None:
+            self._context.swapBuffers(self)
 
     @staticmethod
     def _map_qt_button_to_of_button(qt_button):
@@ -188,68 +223,6 @@ class Window(QWindow):
             key = event.key()
         return key
 
-class OFQtGraphicsContextCallback(PyOF.GraphicsContextCallback):
-    """
-    A callback that interfaces OpenFrames with PyQt's OpenGL rendering context
-
-    Attributes
-    ----------
-    _context : QOpenGLContext
-        Context used to render the window contents
-    _surface : QSurface
-        Surface (window) on which contents will be drawn
-    """
-    def __init__(self, surface):
-        super().__init__()
-        self._surface = surface
-        self._context = None
-
-    def swapBuffers(self):
-        """
-        Swaps the front/back rendering buffer
-
-        """
-        if self._context is not None:
-            self._context.swapBuffers(self._surface)
-        
-    def makeCurrent(self):
-        """
-        Makes _context current for the surface of this window
-
-        Returns
-        -------
-        bool
-            True if successful
-            False if an error occurs
-
-        """        
-        success = False
-        if self._context is None:
-            self._context = QOpenGLContext()
-            self._context.create()
-            success = self._context.makeCurrent(self._surface)
-            if success:
-                self._context.doneCurrent()
-            else:
-                return success
-        if self._context is not None:
-            success = self._context.makeCurrent(self._surface)
-            # err = glGetError()
-            
-        return success
-    
-    def updateContext(self):
-        """
-        Updates _context when it becomes invalid, e.g. when resizing the window
-
-        Returns
-        -------
-        bool
-            True if successful
-            False if an error occurs
-
-        """   
-        return self.makeCurrent()
 
 class Widget(QWidget):
     """

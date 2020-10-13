@@ -47,7 +47,20 @@ namespace OpenFrames
 {
   class FrameManager;
   class WindowProxy;
+
+  class OF_EXPORT GraphicsContextCallback
+  {
+  public:
+    GraphicsContextCallback() {}
+
+    virtual bool makeCurrent() { return false; }
+    virtual bool updateContext() { return false; }
+    virtual void swapBuffers() {}
+
+    virtual ~GraphicsContextCallback() {}
+  };
   
+#ifndef SWIG // Don't wrap this class with SWIG
   /**
    * \class EmbeddedGraphics
    *
@@ -61,7 +74,7 @@ namespace OpenFrames
   public:
     EmbeddedGraphics(int x, int y, int width, int height, WindowProxy *window);
     
-    virtual bool isSameKindAs(const Object* object) const { return dynamic_cast<const EmbeddedGraphics*>(object)!=0; }
+    virtual bool isSameKindAs(const osg::Object* object) const { return dynamic_cast<const EmbeddedGraphics*>(object)!=0; }
     virtual const char* libraryName() const { return "OpenFrames"; }
     virtual const char* className() const { return "EmbeddedGraphics"; }
     
@@ -73,6 +86,9 @@ namespace OpenFrames
     virtual bool makeCurrentImplementation();
     virtual void swapBuffersImplementation();
     
+    /** Set the callback class that is used for all graphics context management */
+    void setGraphicsContextCallback(GraphicsContextCallback *gcCallback);
+
     /** Callback function for making the OpenGL context current (so it can be drawn on) */
     void setMakeCurrentFunction(void (*fcn)(unsigned int *winID, bool *success));
     
@@ -99,7 +115,11 @@ namespace OpenFrames
   protected:
     virtual ~EmbeddedGraphics();
     
-    /** Context management callback functions. */
+    /** Context management callback class */
+    GraphicsContextCallback *_gcCallback;
+
+    /** Context management callback functions
+        Used for C-like languages that can't provide a callback class, e.g. Fortran */
     void (*_makeCurrent)(unsigned int *winID, bool *success);
     void (*_updateContext)(unsigned int *winID, bool *success);
     void (*_swapBuffers)(unsigned int *winID);
@@ -107,6 +127,7 @@ namespace OpenFrames
     WindowProxy *_window; // Pointer to the WindowProxy that represents the window
     bool _realized; // Whether this context has been realized
   };
+#endif // ifndef SWIG
 
   /**
    * \class WindowEventHandler
@@ -300,6 +321,9 @@ namespace OpenFrames
     /** Get the RenderRectangle used for the given grid position */
     RenderRectangle* getGridPosition(unsigned int row, unsigned int col);
     
+    /** Callback object for operating on the OpenGL context */
+    void setGraphicsContextCallback(GraphicsContextCallback *gcCallback);
+
     /** Callback function for making the OpenGL context current */
     void setMakeCurrentFunction(void (*fcn)(unsigned int *winID, bool *success));
     
