@@ -4,7 +4,7 @@ Simple PyOF example
 
 """
 
-import OpenFrames.PyOF as PyOF
+import OFInterfaces.PyOF as PyOF
 
 
 # Create a reference frame for the scene root
