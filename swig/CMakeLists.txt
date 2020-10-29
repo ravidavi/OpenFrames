@@ -51,7 +51,7 @@ IF(OF_PYTHON_MODULE)
   SET(SWIG_MODULE_NAME PyOF)
   CONFIGURE_FILE(configure_PyOF.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/configure_PyOF.cmake @ONLY)
   # Work around for Visual Studio where swig header dependencies are not properly detected
-  ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/PyOF.i COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_PyOF.cmake DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/PyOF.i ${OpenFrames_SOURCE_DIR}/include/OpenFrames/OF_Interface.h)
+  ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/PyOF.i COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_PyOF.cmake DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/PyOF.i)
   SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOF.i PROPERTY CPLUSPLUS ON)
   # On windows the _WIN64 is autodefined by the compiler cl.exe when using the Win64 toolchain
   IF(${CMAKE_SIZEOF_VOID_P} EQUAL 8)

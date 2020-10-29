@@ -170,6 +170,7 @@ ENDIF()
 # Go to the src directory and look for CMake instructions there
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(swig)
+ADD_SUBDIRECTORY(OFInterfaces)
 
 # Go to the test directory and look for CMake instructions there
 IF(OF_BUILD_DEMOS)
