@@ -172,6 +172,9 @@ IF( OF_USE_TRITON )
   FIND_PACKAGE(Triton)
 ENDIF()
 
+# OpenFrames interfaces should all be installed to a common directory
+SET(OF_INTERFACE_DIR "bin/OFInterfaces")
+
 # Go to the src directory and look for CMake instructions there
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(swig)
