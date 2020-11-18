@@ -7,8 +7,8 @@ Launches a demonstration of OpenFrames managed within a PyQt5 framework
 import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QSurfaceFormat
-import OpenFrames.PyQtOF as PyQtOF
-import OpenFrames.PyOF as PyOF
+import OFInterfaces.PyQtOF as PyQtOF
+import OFInterfaces.PyOF as PyOF
 
 class MyOFDemoWin1(PyQtOF.Window):
     """

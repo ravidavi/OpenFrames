@@ -18,7 +18,7 @@
 
 import math
 import numpy as np
-import OpenFrames.PyOF as PyOF
+import OFInterfaces.PyOF as PyOF
 
 
 def dcmToQuat(dcm):

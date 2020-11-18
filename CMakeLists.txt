@@ -74,14 +74,19 @@ IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   SET(CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/OpenFrames-${CMAKE_SYSTEM_NAME}-install" CACHE PATH "OpenFrames installation location" FORCE)
 ENDIF()
 
-# Additional Linux compile/link flags
-IF(UNIX AND NOT APPLE)
-  # Tell CMake Find* commands to search for lib64 paths on Linux
-  SET_PROPERTY(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
+# Additional compile/link flags
+IF(UNIX)
+  IF(APPLE)
+    # Silence pesky OSX/OpenGL deprecation warning
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGL_SILENCE_DEPRECATION")
+  ELSE()
+    # Tell CMake Find* commands to search for lib64 paths on Linux
+    SET_PROPERTY(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
 
-  # Generate link errors for undefined symbols
-  # This is enabled by default on OSX but not Linux
-  SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
+    # Generate link errors for undefined symbols
+    # This is enabled by default on OSX but not Linux
+    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
+  ENDIF()
 ENDIF()
 
 # Find OpenSceneGraph
@@ -167,9 +172,13 @@ IF( OF_USE_TRITON )
   FIND_PACKAGE(Triton)
 ENDIF()
 
+# OpenFrames interfaces should all be installed to a common directory
+SET(OF_INTERFACE_DIR "bin/OFInterfaces")
+
 # Go to the src directory and look for CMake instructions there
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(swig)
+ADD_SUBDIRECTORY(OFInterfaces)
 
 # Go to the test directory and look for CMake instructions there
 IF(OF_BUILD_DEMOS)

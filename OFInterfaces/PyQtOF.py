@@ -7,8 +7,7 @@ Qt Widgets for implementing OpenFrames
 from PyQt5.QtWidgets import QWidget, QGridLayout, QSizePolicy
 from PyQt5.QtGui import QWindow, QOpenGLContext
 from PyQt5.QtCore import Qt, QSize, QCoreApplication, QEventLoop
-#from .PyOFInterfaceC import *
-import OpenFrames.PyOF as PyOF
+from . import PyOF
 import time
 
 
