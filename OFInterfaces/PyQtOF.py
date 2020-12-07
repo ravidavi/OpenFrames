@@ -143,7 +143,7 @@ class OFWindow(QWindow):
 
         """
         if self._window_proxy.isRunning():
-            key = Window._map_qt_key_event_to_osg_key(event)
+            key = OFWindow._map_qt_key_event_to_osg_key(event)
             self._window_proxy.keyPress(key)
 
     @staticmethod
