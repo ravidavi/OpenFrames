@@ -91,12 +91,9 @@ class OFWindow(QWindow):
                     self._window_proxy.resizeWindow(0, 0, int(self._saved_size.width()*self.devicePixelRatio()), int(self._saved_size.height()*self.devicePixelRatio()));
                     self._saved_size = None
         
-        # TODO: This seems to crash OpenFrames, but should be implemented since rendering 
-        #       is not needed while the window is not exposed. LOOK INTO THIS.
-        # Disable rendering when window is not exposed        
-        #else:
-            #print('Pausing WindowProxy animation')
-            #self._window_proxy.pauseAnimation(True)
+        # Disable rendering when window is not exposed               
+        else:
+            self._window_proxy.pauseAnimation(True)
 
     def resizeEvent(self, event):
         """
