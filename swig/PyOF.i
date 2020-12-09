@@ -173,6 +173,9 @@ def setButtonReleaseCallback(self, fcn):
 %thread OpenFrames::GraphicsContextCallback::updateContext;
 %thread OpenFrames::GraphicsContextCallback::swapBuffers;
 
+// WindowProxy::pauseAnimation waits for the animation state
+%thread OpenFrames::WindowProxy::pauseAnimation;
+
 %include "cpointer.i"
 %pointer_class(double, doublep);
 
