@@ -8,20 +8,13 @@ IF(OF_PYTHON_MODULE)
   FIND_PACKAGE(SWIG REQUIRED)
   INCLUDE(${SWIG_USE_FILE})
 
-  FIND_PACKAGE(PythonLibs REQUIRED)
-  INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIR})
-  LINK_DIRECTORIES(${PYTHON_LIB_DIR})
+  FIND_PACKAGE(Python3 REQUIRED COMPONENTS Development)
 
-  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../include)
-  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-
-  IF(NOT PYTHON_DEBUG_LIBRARY)
-    # This preprocessor variable disables the automatic linking of pythonXY_d.lib to use the release version of python.lib
-    ADD_DEFINITIONS(-DSWIG_PYTHON_INTERPRETER_NO_DEBUG)
-    # With Visual Studio we need to turn off iterator debugging because we are linking against the release version of pythonXY.lib
-    IF(MSVC)
-      ADD_DEFINITIONS(-D_ITERATOR_DEBUG_LEVEL=0)
-    ENDIF()
+  # Disable automatic linking of pythonXY_d.lib to use the release version of python.lib
+  ADD_DEFINITIONS(-DSWIG_PYTHON_INTERPRETER_NO_DEBUG)
+  # With Visual Studio we need to turn off iterator debugging because we are linking against the release version of pythonXY.lib
+  IF(MSVC)
+    ADD_DEFINITIONS(-D_ITERATOR_DEBUG_LEVEL=0)
   ENDIF()
 
   ADD_CUSTOM_TARGET(PyOFInterface SOURCES PyOFInterface.i configure_PyOFInterface.cmake.in)
@@ -31,6 +24,7 @@ IF(OF_PYTHON_MODULE)
   # Work around for Visual Studio where swig header dependencies are not properly detected
   ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_PyOFInterfaceC.cmake DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/PyOFInterface.i ${OpenFrames_SOURCE_DIR}/include/OpenFrames/OF_Interface.h)
   SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i PROPERTY CPLUSPLUS ON)
+  SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i PROPERTY USE_TARGET_INCLUDE_DIRECTORIES ON)
   # On windows the _WIN64 is autodefined by the compiler cl.exe when using the Win64 toolchain
   IF(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
     SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i PROPERTY SWIG_FLAGS -D_WIN64 -DOF_EXPORT)
@@ -41,7 +35,7 @@ IF(OF_PYTHON_MODULE)
 
   # define Python bindings target
   SWIG_ADD_LIBRARY(PyOFInterfaceC LANGUAGE python SOURCES ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceC.i)
-  SWIG_LINK_LIBRARIES(PyOFInterfaceC ${PYTHON_LIBRARY} OpenFrames_Interface_C)
+  SWIG_LINK_LIBRARIES(PyOFInterfaceC Python3::Module OpenFrames_Interface_C)
   SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOFInterfaceC_REAL_NAME} PROPERTIES DEBUG_POSTFIX "")
 
 
@@ -53,6 +47,7 @@ IF(OF_PYTHON_MODULE)
   # Work around for Visual Studio where swig header dependencies are not properly detected
   ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/PyOF.i COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_PyOF.cmake DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/PyOF.i)
   SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOF.i PROPERTY CPLUSPLUS ON)
+  SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOF.i PROPERTY USE_TARGET_INCLUDE_DIRECTORIES ON)
   # On windows the _WIN64 is autodefined by the compiler cl.exe when using the Win64 toolchain
   IF(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
     SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOF.i PROPERTY SWIG_FLAGS -D_WIN64 -DOF_EXPORT)
@@ -63,7 +58,7 @@ IF(OF_PYTHON_MODULE)
 
   # define Python bindings target
   SWIG_ADD_LIBRARY(PyOF LANGUAGE python SOURCES ${CMAKE_CURRENT_BINARY_DIR}/PyOF.i)
-  SWIG_LINK_LIBRARIES(PyOF ${PYTHON_LIBRARY} OpenFrames ${OPENSCENEGRAPH_LIBRARIES})
+  SWIG_LINK_LIBRARIES(PyOF Python3::Module OpenFrames ${OPENSCENEGRAPH_LIBRARIES})
   SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOF_REAL_NAME} PROPERTIES DEBUG_POSTFIX "")
 
   IF( OF_FORTRAN_MODULE )
@@ -72,6 +67,7 @@ IF(OF_PYTHON_MODULE)
     # Work around for Visual Studio where swig header dependencies are not properly detected
     ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_PyOFInterfaceIFORT.cmake DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/PyOFInterface.i ${OpenFrames_SOURCE_DIR}/include/OpenFrames/OF_Interface.h)
     SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i PROPERTY CPLUSPLUS ON)
+    SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i USE_TARGET_INCLUDE_DIRECTORIES ON)
     # On windows the _WIN64 is autodefined by the compiler cl.exe when using the Win64 toolchain
     IF(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
       SET_PROPERTY(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i PROPERTY SWIG_FLAGS -D_WIN64 -DOF_EXPORT)
@@ -82,7 +78,7 @@ IF(OF_PYTHON_MODULE)
 
     # define Python bindings target
     SWIG_ADD_LIBRARY(PyOFInterfaceIFORT LANGUAGE python SOURCES ${CMAKE_CURRENT_BINARY_DIR}/PyOFInterfaceIFORT.i)
-    SWIG_LINK_LIBRARIES(PyOFInterfaceIFORT ${PYTHON_LIBRARY} OpenFrames_Interface_IFORT)
+    SWIG_LINK_LIBRARIES(PyOFInterfaceIFORT Python3::Module OpenFrames_Interface_IFORT)
     SET_TARGET_PROPERTIES(${SWIG_MODULE_PyOFInterfaceIFORT_REAL_NAME} PROPERTIES DEBUG_POSTFIX  "")
   ENDIF( OF_FORTRAN_MODULE )
 
