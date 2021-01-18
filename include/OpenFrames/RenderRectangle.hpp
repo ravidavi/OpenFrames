@@ -103,6 +103,7 @@ namespace OpenFrames
     /** Add/remove a view to the view list that can be iterated through */
     void addView(View *view);    // Adds view to the end of the view list
     void removeView(View *view); // Removes all instances of view
+    void removeView(unsigned int viewNum); // Removes specified view
     void removeAllViews();       // Clears entire view list
     
     /** Iterate through the view list */
@@ -113,8 +114,12 @@ namespace OpenFrames
     void selectView(View *view);
     void selectView(unsigned int newView);
     
+    /** Get a specific view */
+    View* getView(unsigned int viewNum) const;
+    unsigned int getNumViews() const { return _views.size(); }
+    
     /** Get the current View, or the default View if none have been set. */
-    View* getCurrentView();
+    View* getCurrentView() const;
     
     /** Apply the current View's projection matrix to the SceneView. */
     void applyCurrentViewProjection();

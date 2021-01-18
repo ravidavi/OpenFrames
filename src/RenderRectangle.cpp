@@ -513,6 +513,12 @@ namespace OpenFrames
     }
   }
   
+  void RenderRectangle::removeView(unsigned int viewNum)
+  {
+    if(viewNum < _views.size())
+      _views.erase(_views.begin() + viewNum);
+  }
+  
   void RenderRectangle::removeAllViews()
   {
     // Save each view's trackball
@@ -596,8 +602,14 @@ namespace OpenFrames
     _sceneView->setCameraManipulator(getCurrentView()->getTrackball());
     applyCurrentViewProjection();
   }
-  
-  View* RenderRectangle::getCurrentView()
+
+  View* RenderRectangle::getView(unsigned int viewNum) const
+  {
+    if(viewNum >= _views.size()) return nullptr;
+    else return _views[viewNum].get();
+  }
+
+  View* RenderRectangle::getCurrentView() const
   {
     if(_currView >= _views.size()) return _defaultView.get();
     else return _views[_currView].get();
