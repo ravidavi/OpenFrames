@@ -17,7 +17,7 @@
 // Note for developers: The destructors for the imported classes are protected
 // so users may receive a warning regarding memory leaks at runtime in Python
 
-%module(directors="1", threads="1") ${SWIG_MODULE_NAME}
+%module(directors="1", threads="1") PyOF
 
 // Default to no multithread support. This will be overridden for specific classes.
 %nothread;
