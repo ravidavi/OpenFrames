@@ -14,7 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ***********************************/
 
-%module PyOFInterface
+// This file is a template for multiple C-like OpenFrames interfaces
+// e.g. C, Intel Fortran, GNU Fortran
+// So we let CMake specify the actual module name via configure_file()
+%module ${SWIG_MODULE_NAME}
 
 %{
 #include "OpenFrames/OF_Interface.h"

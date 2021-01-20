@@ -79,8 +79,8 @@ ADD_LIBRARY(OpenFrames_Interface_C SHARED
   ${OF_HEADER_PATH}/OpenFrames/OF_Interface.h
   OF_Interface.cpp
   )
-TARGET_INCLUDE_DIRECTORIES(OpenFrames_Interface_C PUBLIC ${OF_HEADER_PATH})
-TARGET_LINK_LIBRARIES(OpenFrames_Interface_C PRIVATE OpenFrames)
+TARGET_INCLUDE_DIRECTORIES(OpenFrames_Interface_C PUBLIC ${OF_HEADER_PATH}) # Projects using OpenFrames_Interface_C need appropriate headers ...
+TARGET_LINK_LIBRARIES(OpenFrames_Interface_C PRIVATE OpenFrames) # ... but do not need OpenFrames libraries
 SET(ALL_TARGETS ${ALL_TARGETS} OpenFrames_Interface_C)
 
 # Specify dependencies for linking
@@ -99,7 +99,7 @@ IF(OF_USE_X11)
   TARGET_COMPILE_DEFINITIONS(OpenFrames_Interface_C PRIVATE OF_USE_X11)
 ENDIF()
 
-# The Fortran module project
+# Create Fortran interface library
 IF(OF_FORTRAN_MODULE)
   SET(CMAKE_Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/modules)
 
@@ -118,16 +118,15 @@ IF(OF_FORTRAN_MODULE)
     ${OF_HEADER_PATH}/OpenFrames/OF_Interface.h
     OF_Interface.cpp
     OpenFrames.f90
-    ) 
+    )
+  TARGET_INCLUDE_DIRECTORIES(${FORTINTERFACE_NAME} PUBLIC ${OF_HEADER_PATH}) # Projects using Fortran interface need appropriate headers ...
+  TARGET_LINK_LIBRARIES(${FORTINTERFACE_NAME} PRIVATE OpenFrames) # ... but do not need OpenFrames libraries
   SET(ALL_TARGETS ${ALL_TARGETS} ${FORTINTERFACE_NAME})
   
   # Specify calling conventions for Fortran
   SET_PROPERTY(TARGET ${FORTINTERFACE_NAME}
     APPEND PROPERTY COMPILE_DEFINITIONS ${CALL_TYPE}
     )
-
-  # Link to main OpenFrames lib
-  TARGET_LINK_LIBRARIES(${FORTINTERFACE_NAME} PRIVATE OpenFrames)
 
   # Additional includes/libs for X11
   IF(OF_USE_X11)
