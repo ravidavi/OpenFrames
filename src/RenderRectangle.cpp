@@ -516,7 +516,20 @@ namespace OpenFrames
   void RenderRectangle::removeView(unsigned int viewNum)
   {
     if(viewNum < _views.size())
-      _views.erase(_views.begin() + viewNum);
+    {
+      osg::ref_ptr<View> cv = getCurrentView(); // Save currently selected view
+      osg::ref_ptr<View> v_save = _views[viewNum]; // Save to make sure View doesn't get deallocated
+    
+      _views.erase(_views.begin() + viewNum); // Erase just the specified view
+      
+      // We erased the currently selected view, so select the first view
+      if(cv == v_save)
+      {
+        _currView = 0;
+        selectCurrentView(); // Will select first view (or default view if no stored views)
+      }
+      else selectView(cv); // Select what was already selected before
+    }
   }
   
   void RenderRectangle::removeAllViews()
