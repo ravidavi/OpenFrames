@@ -332,7 +332,10 @@ namespace OpenFrames
     // We're already using the given FrameManager
     if(_frameManager.get() == fm) return;
     
-    // Set a default view
+    // Remove old scene
+    if(_frameManager) _scene->removeChild(_frameManager->getData());
+    
+    // Set new scene and a default view
     if(fm == NULL)
     {
       _defaultView->setViewFrame(NULL, NULL);
