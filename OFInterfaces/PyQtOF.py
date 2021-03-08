@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Qt Widgets for implementing OpenFrames
+Qt Widgets to integrate OpenFrames
 
 """
 
@@ -8,8 +8,6 @@ from PyQt5.QtWidgets import QWidget, QGridLayout, QSizePolicy
 from PyQt5.QtGui import QWindow, QOpenGLContext
 from PyQt5.QtCore import Qt, QSize, QCoreApplication, QEventLoop
 from . import PyOF
-import time
-
 
 DEFAULT_WIDTH = 320
 DEFAULT_HEIGHT = 240
@@ -20,16 +18,14 @@ class OFWindow(QWindow):
 
     Attributes
     ----------
-    _window_proxy_id : int
-        The WindowProxy responsible for drawing
-    _saved_size : QSize
+    _savedSize : QSize
         If a resize event occurs before WindowProxy is started, then the size is saved here so that it can be set when
         WindowProxy is started
-    _proxy_started : bool
+    _proxyStarted : bool
         True after the first time that _of has been started
 
     """
-    def __init__(self, nrow=1, ncol=1, id=0):
+    def __init__(self, nrow=1, ncol=1):
         """
         Create an instance of OFWindow
 
@@ -39,32 +35,27 @@ class OFWindow(QWindow):
             Number of rows in WindowProxy grid, default = 1
         ncol : int, optional
             Number of columns in WindowProxy grid, default = 1
-        id : int, optional
-            Identifier for the WindowProxy (each WindowProxy should have a unique identifier), default = 0
 
         """
         super().__init__()
-        self._proxy_started = False
-        self._saved_size = None
+        self._proxyStarted = False
+        self._savedSize = None
         self.setSurfaceType(QWindow.OpenGLSurface)
-
-        self._window_proxy_id = id
         
-        self._window_proxy = PyOF.WindowProxy(0, 0, int(DEFAULT_WIDTH*self.devicePixelRatio()), int(DEFAULT_HEIGHT*self.devicePixelRatio()),  nrow, ncol, True, False)
-        self._window_proxy.setID(id)
+        self.windowProxy = PyOF.WindowProxy(0, 0, int(DEFAULT_WIDTH*self.devicePixelRatio()), int(DEFAULT_HEIGHT*self.devicePixelRatio()),  nrow, ncol, True, False)
         self._gcCallback = OFQtGraphicsContextCallback(self)
-        self._window_proxy.setGraphicsContextCallback(self._gcCallback)
+        self.windowProxy.setGraphicsContextCallback(self._gcCallback)
 
     def stopRendering(self):
         """
         Stop OpenFrames rendering
 
         """
-        self._window_proxy.shutdown();
-        while self._window_proxy.isRunning():
+        self.windowProxy.shutdown();
+        while self.windowProxy.isRunning():
             QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
             
-        self._proxy_started = False
+        self._proxyStarted = False
         
     def exposeEvent(self, event):
         """
@@ -75,25 +66,25 @@ class OFWindow(QWindow):
         
         # Enable rendering when window is exposed
         if self.isExposed():
-            self._window_proxy.pauseAnimation(False)
+            self.windowProxy.pauseAnimation(False)
 
-            if not self._proxy_started:
-                self._proxy_started = True
+            if not self._proxyStarted:
+                self._proxyStarted = True
                 
-                ret = self._window_proxy.startThread();
-                while (not self._window_proxy.isAnimating() and not self._window_proxy.doneAnimating()):
+                ret = self.windowProxy.startThread();
+                while (not self.windowProxy.isAnimating() and not self.windowProxy.doneAnimating()):
                     QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
                     
-                if self._window_proxy.getAnimationState() == PyOF.WindowProxy.FAILED:
+                if self.windowProxy.getAnimationState() == PyOF.WindowProxy.FAILED:
                     print('PyQtOF: could not start WindowProxy thread')
                                                               
-                if self._saved_size is not None:
-                    self._window_proxy.resizeWindow(0, 0, int(self._saved_size.width()*self.devicePixelRatio()), int(self._saved_size.height()*self.devicePixelRatio()));
-                    self._saved_size = None
+                if self._savedSize is not None:
+                    self.windowProxy.resizeWindow(0, 0, int(self._savedSize.width()*self.devicePixelRatio()), int(self._savedSize.height()*self.devicePixelRatio()));
+                    self._savedSize = None
         
         # Disable rendering when window is not exposed               
         else:
-            self._window_proxy.pauseAnimation(True)
+            self.windowProxy.pauseAnimation(True)
 
     def resizeEvent(self, event):
         """
@@ -101,47 +92,47 @@ class OFWindow(QWindow):
 
         """
         
-        if self._window_proxy.isRunning():
-            self._window_proxy.resizeWindow(0, 0, int(event.size().width()*self.devicePixelRatio()), int(event.size().height()*self.devicePixelRatio()))
+        if self.windowProxy.isRunning():
+            self.windowProxy.resizeWindow(0, 0, int(event.size().width()*self.devicePixelRatio()), int(event.size().height()*self.devicePixelRatio()))
         else:
-            self._saved_size = event.size()
+            self._savedSize = event.size()
 
     def mousePressEvent(self, event):
         """
         Overrides QWindow.mousePressEvent()
 
         """
-        if self._window_proxy.isRunning():
+        if self.windowProxy.isRunning():
             button = OFWindow._map_qt_button_to_of_button(event.button())
             if button != 0:
-                self._window_proxy.buttonPress(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()), button)
+                self.windowProxy.buttonPress(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()), button)
 
     def mouseReleaseEvent(self, event):
         """
         Overrides QWindow.mouseReleaseEvent()
 
         """
-        if self._window_proxy.isRunning():
+        if self.windowProxy.isRunning():
             button = OFWindow._map_qt_button_to_of_button(event.button())
             if button != 0:
-                self._window_proxy.buttonRelease(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()), button)
+                self.windowProxy.buttonRelease(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()), button)
 
     def mouseMoveEvent(self, event):
         """
         Overrides QWindow.mouseMoveEvent()
 
         """
-        if self._window_proxy.isRunning():
-            self._window_proxy.mouseMotion(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()))
+        if self.windowProxy.isRunning():
+            self.windowProxy.mouseMotion(int(event.x()*self.devicePixelRatio()), int(event.y()*self.devicePixelRatio()))
 
     def keyPressEvent(self, event):
         """
         Overrides QWindow.keyPressEvent()
 
         """
-        if self._window_proxy.isRunning():
+        if self.windowProxy.isRunning():
             key = OFWindow._map_qt_key_event_to_osg_key(event)
-            self._window_proxy.keyPress(key)
+            self.windowProxy.keyPress(key)
 
     @staticmethod
     def _map_qt_button_to_of_button(qt_button):
@@ -270,7 +261,7 @@ class OFWidget(QWidget):
 
     Attributes
     ----------
-    _size_hint : QSize
+    _sizeHint : QSize
         The hint that this widget provides to Qt for sizing
 
     """
@@ -286,7 +277,7 @@ class OFWidget(QWidget):
         """
         super().__init__()
 
-        self._size_hint = QSize(DEFAULT_WIDTH*self.devicePixelRatio(), DEFAULT_HEIGHT*self.devicePixelRatio())
+        self._sizeHint = QSize(DEFAULT_WIDTH*self.devicePixelRatio(), DEFAULT_HEIGHT*self.devicePixelRatio())
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.ofwindow = window_type()
         container = QWidget.createWindowContainer(self.ofwindow, self)
@@ -303,9 +294,9 @@ class OFWidget(QWidget):
             Size hint to Qt
 
         """
-        return self._size_hint
+        return self._sizeHint
 
-    def set_size_hint(self, width, height):
+    def setSizeHint(self, width, height):
         """
         TODO: Why is this here? It doesn't seem to do anything.
         Set the preferred size for this widget
@@ -325,11 +316,11 @@ class OFWidget(QWidget):
         [1] https://doc.qt.io/qt-5/qsizepolicy.html#Policy-enum
 
         """
-        self._size_hint.setWidth(width)
-        self._size_hint.setHeight(height)
+        self._sizeHint.setWidth(width*self.devicePixelRatio())
+        self._sizeHint.setHeight(height*self.devicePixelRatio())
  
     def closeEvent(self, event):
         self.stopRendering()
         
     def stopRendering(self):
-      self.ofwindow.stopRendering()
+        self.ofwindow.stopRendering()

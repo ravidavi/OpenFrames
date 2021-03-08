@@ -15,59 +15,41 @@ class MyOFDemoWin1(PyQtOF.OFWindow):
     Inherits PyQtOF.Window for a simple window showing only a Coordinate Axes
     This window is embedded in a tab widget (see below)
 
-    Attributes
-    ----------
-    _frame_manager_id : int
-        The FrameManager placed in the first grid location of the window proxy
-    _ref_frame_name : basestring
-        The name of the primary reference frame
-
     """
     def __init__(self):
       """
       Instantiate a window
       """
-      super().__init__(1, 1, 1) # 1x1 window with id 1
+      super().__init__(1, 1) # 1x1 window
 
-      self._frame_manager_id = 1
-      self._ref_frame_name = "CoordinateAxes"
-      
-      root = PyOF.CoordinateAxes(self._ref_frame_name)
+      # Create scene root
+      root = PyOF.CoordinateAxes("CoordinateAxes")
       
       # Create a manager to handle access to the scene
       fm = PyOF.FrameManager(root);
       
       # Add the scene to the window
-      self._window_proxy.setScene(fm, 0, 0);
+      self.windowProxy.setScene(fm, 0, 0);
 
 class MyOFDemoWin2(PyQtOF.OFWindow):
     """
     Inherits PyQtOF.Window for a simple standalone window showing only a Sphere
     
-    Attributes
-    ----------
-    _frame_manager_id : int
-    The FrameManager placed in the first grid location of the window proxy
-    _ref_frame_name : basestring
-    The name of the primary reference frame
-    
     """
     def __init__(self):
       """
       Instantiate a window
       """
-      super().__init__(1, 1, 2) # 1x1 window with id 2
+      super().__init__(1, 1) # 1x1 window
       
-      self._frame_manager_id = 2
-      self._ref_frame_name = "Sphere"
-      
-      root = PyOF.Sphere(self._ref_frame_name)
+      # Create scene root
+      root = PyOF.Sphere("Sphere")
       
       # Create a manager to handle access to the scene
       fm = PyOF.FrameManager(root);
       
       # Add the scene to the window
-      self._window_proxy.setScene(fm, 0, 0);
+      self.windowProxy.setScene(fm, 0, 0);
 
 class TabWindow(QWidget):
     """

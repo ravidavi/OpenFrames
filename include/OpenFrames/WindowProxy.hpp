@@ -396,7 +396,7 @@ namespace OpenFrames
     void printInfo();
 
     /** Capture a screenshot of this window. */
-    void captureWindow();
+    void captureWindow(bool waitForCapture = false);
 
     /** Set the screenshot filename and image type.
         The filename will be sequentially numbered with each successive screenshot. 

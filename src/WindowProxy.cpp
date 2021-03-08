@@ -1153,10 +1153,16 @@ namespace OpenFrames
   }
   
   /** Take a screenshot of this window */
-  void WindowProxy::captureWindow()
+  void WindowProxy::captureWindow(bool waitForCapture)
   {
     _screenCaptureHandler->setFramesToCapture(1);
     _screenCaptureHandler->startCapture();
+    
+    // Wait for capture to finish
+    while(waitForCapture && (_screenCaptureHandler->getFramesToCapture() > 0))
+    {
+      OpenThreads::Thread::YieldCurrentThread();
+    }
   }
   
   /** Set the window capture filename and type */
