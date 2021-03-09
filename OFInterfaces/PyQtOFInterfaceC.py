@@ -24,9 +24,6 @@ class Window(QWindow):
         Context used to render the window contents
     _window_proxy_id : int
         The WindowProxy responsible for drawing
-    _saved_size : QSize
-        If a resize event occurs before WindowProxy is started, then the size is saved here so that it can be set when
-        WindowProxy is started
     _proxy_started_once : bool
         True after the first time that _of has been started
 
@@ -48,7 +45,6 @@ class Window(QWindow):
         super().__init__()
         self._context = None
         self._proxy_started = False
-        self._saved_size = None
         self.setSurfaceType(QWindow.OpenGLSurface)
 
         self._window_proxy_id = id
@@ -58,29 +54,35 @@ class Window(QWindow):
         ofwin_setupdatecontextfunction(self.make_current)
         ofwin_setswapbuffersfunction(self.swap_buffers)
 
-    def exposeEvent(self, event):
+    def stopRendering(self):
         """
-        Overrides QWindow.exposeEvent()
-
-        """
-        if not self._proxy_started:
-            self._proxy_started = True
-            ofwin_activate(self._window_proxy_id)
-            ofwin_start()
-            if self._saved_size is not None:
-                ofwin_resizewindow(0, 0, int(self._saved_size.width()*self.devicePixelRatio()), int(self._saved_size.height()*self.devicePixelRatio()))
-                self._saved_size = None
-
-    def hideEvent(self, event):
-        """
-        Overrides QWindow.exposeEvent()
+        Stop OpenFrames rendering
 
         """
         ofwin_activate(self._window_proxy_id)
-        ofwin_signalstop()
-        while ofwin_isrunning() == 1:
-            QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
-        self._proxy_started = False
+        ofwin_stop()
+        self._proxyStarted = False
+        
+    def exposeEvent(self, event):
+        """
+        Overrides QWindow.exposeEvent()
+        Per QWindow documentation, rendering should be started/stopped based on this event.
+
+        """
+        
+        ofwin_activate(self._window_proxy_id)
+
+        # Enable rendering when window is exposed
+        if self.isExposed():
+            ofwin_pauseanimation(False)
+            
+            if not self._proxy_started:
+                self._proxy_started = True
+                ofwin_start()
+        
+        # Disable rendering when window is not exposed
+        else:
+            ofwin_pauseanimation(True)
 
     def resizeEvent(self, event):
         """
@@ -88,10 +90,7 @@ class Window(QWindow):
 
         """
         ofwin_activate(self._window_proxy_id)
-        if ofwin_isrunning() == 1:
-            ofwin_resizewindow(0, 0, int(event.size().width()*self.devicePixelRatio()), int(event.size().height()*self.devicePixelRatio()))
-        else:
-            self._saved_size = event.size()
+        ofwin_resizewindow(0, 0, int(event.size().width()*self.devicePixelRatio()), int(event.size().height()*self.devicePixelRatio()))
 
     def mousePressEvent(self, event):
         """
@@ -252,8 +251,8 @@ class Widget(QWidget):
 
         self._size_hint = QSize(DEFAULT_WIDTH*self.devicePixelRatio(), DEFAULT_HEIGHT*self.devicePixelRatio())
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        window = window_type()
-        container = QWidget.createWindowContainer(window, self)
+        self.ofwindow = window_type()
+        container = QWidget.createWindowContainer(self.ofwindow, self)
         self.setLayout(QGridLayout())
         self.layout().addWidget(container)
 
@@ -288,5 +287,11 @@ class Widget(QWidget):
         [1] https://doc.qt.io/qt-5/qsizepolicy.html#Policy-enum
 
         """
-        self._size_hint.setWidth(width)
-        self._size_hint.setHeight(height)
+        self._size_hint.setWidth(width*self.devicePixelRatio())
+        self._size_hint.setHeight(height*self.devicePixelRatio())
+        
+    def closeEvent(self, event):
+        self.stopRendering()
+        
+    def stopRendering(self):
+        self.ofwindow.stopRendering()

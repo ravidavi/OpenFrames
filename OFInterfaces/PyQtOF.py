@@ -18,9 +18,6 @@ class OFWindow(QWindow):
 
     Attributes
     ----------
-    _savedSize : QSize
-        If a resize event occurs before WindowProxy is started, then the size is saved here so that it can be set when
-        WindowProxy is started
     _proxyStarted : bool
         True after the first time that _of has been started
 
@@ -39,7 +36,6 @@ class OFWindow(QWindow):
         """
         super().__init__()
         self._proxyStarted = False
-        self._savedSize = None
         self.setSurfaceType(QWindow.OpenGLSurface)
         
         self.windowProxy = PyOF.WindowProxy(0, 0, int(DEFAULT_WIDTH*self.devicePixelRatio()), int(DEFAULT_HEIGHT*self.devicePixelRatio()),  nrow, ncol, True, False)
@@ -77,10 +73,6 @@ class OFWindow(QWindow):
                     
                 if self.windowProxy.getAnimationState() == PyOF.WindowProxy.FAILED:
                     print('PyQtOF: could not start WindowProxy thread')
-                                                              
-                if self._savedSize is not None:
-                    self.windowProxy.resizeWindow(0, 0, int(self._savedSize.width()*self.devicePixelRatio()), int(self._savedSize.height()*self.devicePixelRatio()));
-                    self._savedSize = None
         
         # Disable rendering when window is not exposed               
         else:
@@ -92,10 +84,7 @@ class OFWindow(QWindow):
 
         """
         
-        if self.windowProxy.isRunning():
-            self.windowProxy.resizeWindow(0, 0, int(event.size().width()*self.devicePixelRatio()), int(event.size().height()*self.devicePixelRatio()))
-        else:
-            self._savedSize = event.size()
+        self.windowProxy.resizeWindow(0, 0, int(event.size().width()*self.devicePixelRatio()), int(event.size().height()*self.devicePixelRatio()))
 
     def mousePressEvent(self, event):
         """

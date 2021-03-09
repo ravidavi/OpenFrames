@@ -86,6 +86,9 @@ namespace OpenFrames
     virtual bool makeCurrentImplementation();
     virtual void swapBuffersImplementation();
     
+    /** Set the graphics context geometry */
+    void setGeometry(int x, int y, int width, int height);
+    
     /** Set the callback class that is used for all graphics context management */
     void setGraphicsContextCallback(GraphicsContextCallback *gcCallback);
 

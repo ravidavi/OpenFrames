@@ -17,7 +17,10 @@ limitations under the License.
 // This file is a template for multiple C-like OpenFrames interfaces
 // e.g. C, Intel Fortran, GNU Fortran
 // So we let CMake specify the actual module name via configure_file()
-%module ${SWIG_MODULE_NAME}
+%module(threads="1") ${SWIG_MODULE_NAME}
+
+// Default to no multithread support. This will be overridden for specific classes.
+%nothread;
 
 %{
 #include "OpenFrames/OF_Interface.h"
@@ -81,6 +84,11 @@ void ofmodel_getmodelpivot(double* retvar, double* retvar, double* retvar);
 %ignore ofmodel_getmodelposition(double*, double*, double*);
 %ignore ofmodel_getmodelscale(double*, double*, double*);
 %ignore ofmodel_getmodelpivot(double*, double*, double*);
+
+// Some ofwin_* functions wait results, so make sure they don't
+// get blocked by the GIL by enabling multithreaded support
+%thread ofwin_stop;
+%thread ofwin_pauseanimation;
 
 // Include all interfaces in the header
 %include "OpenFrames/OF_Interface.h"

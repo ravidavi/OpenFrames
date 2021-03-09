@@ -36,10 +36,7 @@ namespace OpenFrames
   {
     // Specify traits for this graphics context
     _traits = new GraphicsContext::Traits;
-    _traits->x = x;
-    _traits->y = y;
-    _traits->width = width;
-    _traits->height = height;
+    setGeometry(x, y, width, height);
   }
   
   EmbeddedGraphics::~EmbeddedGraphics() {}
@@ -95,6 +92,14 @@ namespace OpenFrames
       unsigned int winID = _window->getID();
       _swapBuffers(&winID);
     }
+  }
+
+  void EmbeddedGraphics::setGeometry(int x, int y, int width, int height)
+  {
+    _traits->x = x;
+    _traits->y = y;
+    _traits->width = width;
+    _traits->height = height;
   }
 
   void EmbeddedGraphics::setGraphicsContextCallback(GraphicsContextCallback *gcCallback)
@@ -783,9 +788,17 @@ namespace OpenFrames
     if(width == 0) width = 1;
     if(height == 0) height = 1;
     
-    // Can this be changed to _window->setWindowRectangle()?
-    _window->resized(x, y, width, height);
-    _window->getEventQueue()->windowResize(x, y, width, height);
+    if(_window)
+    {
+      // Can this be changed to _window->setWindowRectangle()?
+      _window->resized(x, y, width, height);
+      _window->getEventQueue()->windowResize(x, y, width, height);
+    }
+    else
+    {
+      _embeddedGraphics->setGeometry(x, y, width, height);
+      setupGrid(width, height);
+    }
   }
   
   /** Resize each RenderRectangle's viewport (the on-screen area that it draws to). */
