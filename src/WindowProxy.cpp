@@ -445,9 +445,20 @@ namespace OpenFrames
       else
       {
         GLenum err = glGetError();
-        if(err == GL_INVALID_ENUM) OSG_WARN<< " GL_INVALID_ENUM, please ensure that a valid OpenGL context is current before starting the WindowProxy animation." << std::endl;
-        else if(err == GL_INVALID_OPERATION) OSG_WARN<< " GL_INVALID_OPERATION, please ensure that application is not already using OpenGL elsewhere." << std::endl;
-        else OSG_WARN<< "OpenGL error code " << err << std::endl;
+        
+        if(err == GL_INVALID_ENUM)
+        {
+          OSG_WARN<< " GL_INVALID_ENUM, please ensure that a valid OpenGL context is current before starting the WindowProxy animation." << std::endl;
+        }
+        else if(err == GL_INVALID_OPERATION)
+        {
+          OSG_WARN<< " GL_INVALID_OPERATION, please ensure that application is not already using OpenGL elsewhere." << std::endl;
+        }
+        else
+        {
+          OSG_WARN<< "OpenGL error code " << err << std::endl;
+        }
+        
         return;
       }
       
@@ -1157,7 +1168,9 @@ namespace OpenFrames
     {
       fm = _renderList[i]->getFrameManager();
       if(fm == NULL)
+      {
         OSG_NOTICE<< "\tRenderRectangle " << i << " has no FrameManager" << std::endl;
+      }
       else
       {
         OSG_NOTICE<< "\tRenderRectangle " << i << " has FrameManager " << fm << std::endl;
