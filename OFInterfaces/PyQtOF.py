@@ -19,7 +19,9 @@ class OFWindow(QWindow):
     Attributes
     ----------
     _proxyStarted : bool
-        True after the first time that _of has been started
+        True after the first time that the WindowProxy has been started
+    _autoPauseAnimation : bool
+        True if animation should be paused based on window visibility
 
     """
     def __init__(self, nrow=1, ncol=1):
@@ -41,6 +43,8 @@ class OFWindow(QWindow):
         self.windowProxy = PyOF.WindowProxy(0, 0, int(DEFAULT_WIDTH*self.devicePixelRatio()), int(DEFAULT_HEIGHT*self.devicePixelRatio()),  nrow, ncol, True, False)
         self._gcCallback = OFQtGraphicsContextCallback(self)
         self.windowProxy.setGraphicsContextCallback(self._gcCallback)
+        
+        self._autoPauseAnimation = True
 
     def stopRendering(self):
         """
@@ -62,7 +66,8 @@ class OFWindow(QWindow):
         
         # Enable rendering when window is exposed
         if self.isExposed():
-            self.windowProxy.pauseAnimation(False)
+            if self._autoPauseAnimation:
+                self.windowProxy.pauseAnimation(False)
 
             if not self._proxyStarted:
                 self._proxyStarted = True
@@ -76,7 +81,8 @@ class OFWindow(QWindow):
         
         # Disable rendering when window is not exposed               
         else:
-            self.windowProxy.pauseAnimation(True)
+            if self._autoPauseAnimation:
+                self.windowProxy.pauseAnimation(True)
 
     def resizeEvent(self, event):
         """
