@@ -57,11 +57,14 @@ namespace OpenFrames
     };
 
     SkySphere(const std::string &name);
+    
+    /// Copy properties of another SkySphere into this one
+    SkySphere& operator = (const SkySphere& rhs);
 
     ///
     /// Specify which elements to draw by combining elements of DrawMode
     void setDrawMode(unsigned int drawMode);
-    unsigned int getDrawMode();
+    unsigned int getDrawMode() const;
 
     ///
     /// Set the star catalog text file drawn as the starfield
@@ -81,8 +84,12 @@ namespace OpenFrames
     /// catalog, so sorting the catalog allows drawing brightest/dimmest
     /// stars first.
     /// Limits: minMag < maxMag AND numStars >= 1
-    bool setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int maxNumStars,
+    bool setStarData(const std::string &catalogName,
+                     float minMag, float maxMag, unsigned int maxNumStars,
                      float minPixSize, float maxPixSize, float minDimRatio);
+    void getStarData(std::string &catalogName,
+                     float &minMag, float &maxMag, unsigned int &maxNumStars,
+                     float &minPixSize, float &maxPixSize, float &minDimRatio);
 
     ///
     /// Convert a Star to a XYZ position, RGB color, and size (in color[3])

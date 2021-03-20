@@ -79,6 +79,30 @@ SkySphere::SkySphere(const std::string &name)
 {
   _init();
 }
+  
+SkySphere& SkySphere::operator = (const SkySphere& rhs)
+{
+  if(this != &rhs)
+  {
+    // Set the draw mode
+    setDrawMode(rhs.getDrawMode());
+    
+    // Set star data
+    setStarData(rhs._starCatalogFile,
+                rhs._minMag, rhs._maxMag, rhs._maxNumStars,
+                rhs._minPixSize, rhs._maxPixSize, rhs._minDimRatio);
+    
+    // Set background texture (assume texture unit zero for SkySphere)
+    setTextureMap(rhs.getTextureMap(0), 0);
+    
+    // Set sphere attitude
+    osg::Quat q;
+    rhs.getSphereAttitude(q);
+    setSphereAttitude(q);
+  }
+  
+  return *this;
+}
 
 SkySphere::~SkySphere() {}
 
@@ -163,7 +187,7 @@ void SkySphere::setDrawMode(unsigned int drawMode)
   _starGeode->setNodeMask(starMask);
 }
 
-unsigned int SkySphere::getDrawMode()
+unsigned int SkySphere::getDrawMode() const
 {
   // Check if textured Sphere is drawn
   unsigned int useTexture = _geode->getNodeMask() & TEXTURE;
@@ -175,7 +199,8 @@ unsigned int SkySphere::getDrawMode()
   return (useTexture + useStarfield);
 }
 
-bool SkySphere::setStarData(const std::string &catalogName, float minMag, float maxMag, unsigned int maxNumStars,
+bool SkySphere::setStarData(const std::string &catalogName,
+                            float minMag, float maxMag, unsigned int maxNumStars,
                             float minPixSize, float maxPixSize, float minDimRatio)
 {
   if((minMag > maxMag) || (maxNumStars == 0) || (minPixSize > maxPixSize) ||
@@ -188,6 +213,19 @@ bool SkySphere::setStarData(const std::string &catalogName, float minMag, float 
   _maxPixSize = maxPixSize;
   _minDimRatio = minDimRatio;
   return processStars();
+}
+
+void SkySphere::getStarData(std::string &catalogName,
+                            float &minMag, float &maxMag, unsigned int &maxNumStars,
+                            float &minPixSize, float &maxPixSize, float &minDimRatio)
+{
+  catalogName = _starCatalogFile;;
+  minMag = _minMag;
+  maxMag = _maxMag;
+  maxNumStars = _maxNumStars;
+  minPixSize = _minPixSize;
+  maxPixSize = _maxPixSize;
+  minDimRatio = _minDimRatio;
 }
 
 // Compute star's pixel size from its apparent magnitude

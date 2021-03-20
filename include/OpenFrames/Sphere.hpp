@@ -46,6 +46,8 @@ namespace OpenFrames
     Sphere( const std::string &name, const osg::Vec4 &color );
     Sphere( const std::string &name , float r, float g, float b, float a = 1.0 );
     
+    Sphere& operator = (const Sphere& rhs);
+    
     // Show/hide this frame's contents, e.g. everything a frame shows (excluding axes, labels, and children)
     // Inherited from ReferenceFrame
     virtual void showContents(bool showContents);
@@ -95,6 +97,7 @@ namespace OpenFrames
     /** Set the filename of the texture to map onto the sphere. Consult the
      osg documentation to see which image filetypes are supported. */
     bool setTextureMap( const std::string &fname, unsigned int unit = 0, bool force_reload = false );
+    std::string getTextureMap(unsigned int unit = 0) const;
     
     /** Set the texture environment for the specified texture unit. */
     bool setTexEnv(osg::StateAttribute* texenv, unsigned int unit);

@@ -265,6 +265,13 @@ namespace OpenFrames
     }
   }
   
+  std::string Sphere::getTextureMap(unsigned int unit) const
+  {
+    osg::StateSet* stateset = _sphereSD->getStateSet();
+    osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(stateset->getTextureAttribute(unit, osg::StateAttribute::TEXTURE));
+    return (texture ? texture->getImage()->getFileName() : "");
+  }
+  
   bool Sphere::setTexEnv(osg::StateAttribute* texenv, unsigned int unit)
   {
     if(texenv->getType() != osg::StateAttribute::TEXENV)

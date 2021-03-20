@@ -96,6 +96,7 @@ namespace OpenFrames
 
     /** Set the background color. Only valid if no sky texture or stars are specified */
     void setBackgroundColor(float r, float g, float b);
+    void getBackgroundColor(float& r, float& g, float& b);
     
     /** Enable/disable the automatic depth partitioner */
     void setDepthPartitioningEnabled(bool enable) {}

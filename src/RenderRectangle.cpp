@@ -456,6 +456,14 @@ namespace OpenFrames
     _sceneView->getCamera()->setClearColor(osg::Vec4(r, g, b, 1.0));
   }
   
+  void RenderRectangle::getBackgroundColor(float& r, float& g, float& b)
+  {
+    osg::Vec4 color = _sceneView->getCamera()->getClearColor();
+    r = color[0];
+    g = color[1];
+    b = color[2];
+  }
+  
   void RenderRectangle::addView(View *view)
   {
     if(view != NULL)
