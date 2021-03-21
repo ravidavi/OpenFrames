@@ -1197,4 +1197,15 @@ namespace OpenFrames
     _screenCaptureHandler->setCaptureOperation(new osgViewer::ScreenCaptureHandler::WriteToFile(fname, fext));
   }
   
+  /** Set a custom window capture operation */
+  void WindowProxy::setWindowCaptureOperation(osgViewer::ScreenCaptureHandler::CaptureOperation* captureOp)
+  {
+    _screenCaptureHandler->setCaptureOperation(captureOp);
+  }
+  
+  osgViewer::ScreenCaptureHandler::CaptureOperation* WindowProxy::getWindowCaptureOperation() const
+  {
+    return _screenCaptureHandler->getCaptureOperation();
+  }
+
 }

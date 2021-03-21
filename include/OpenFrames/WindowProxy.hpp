@@ -398,7 +398,8 @@ namespace OpenFrames
     /** Print info about this window to std::cout. */
     void printInfo();
 
-    /** Capture a screenshot of this window. */
+    /** Capture a screenshot of this window.
+        Optionally wait for the capture to finish before returning. */
     void captureWindow(bool waitForCapture = false);
 
     /** Set the screenshot filename and image type.
@@ -406,8 +407,16 @@ namespace OpenFrames
         Image types can be anything supported by OSG: jpg, png, bmp, tiff, etc. */
     void setWindowCaptureFile(const std::string& fname, const std::string& fext);
     
-    /** Set the key that triggers a screenshot.
-        Set key to 0 (zero) to disable keypress-based screenshots */
+    /** Set a custom window capture operation.
+        Overrides any existing capture operation or screenshot file. */
+    void setWindowCaptureOperation(osgViewer::ScreenCaptureHandler::CaptureOperation* captureOp);
+    
+    /** Get the currently-set capture operation.
+        NOTE: On OSG 3.6.5 this crashes if called before the first window capture is performed. */
+    osgViewer::ScreenCaptureHandler::CaptureOperation* getWindowCaptureOperation() const;
+    
+    /** Set the key that triggers a window capture.
+        Set key to 0 (zero) to disable keypress-based captures */
     void setWindowCaptureKey(int key)
     { _screenCaptureHandler->setKeyEventTakeScreenShot(key); }
     
