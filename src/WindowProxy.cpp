@@ -19,7 +19,6 @@
  */
 
 #include <OpenFrames/WindowProxy.hpp>
-#include <OpenFrames/FramerateLimiter.hpp>
 #include <OpenFrames/Utilities.hpp>
 #include <osg/GraphicsContext>
 #include <osg/PointSprite>
@@ -940,8 +939,7 @@ namespace OpenFrames
     _pauseAnimation = pause;
     
     // As long as animation is active, wait until animation state matches the desired state
-    FramerateLimiter pauseCheck(10.0);
-    while(isAnimating() && ((_animationState == PAUSED) != _pauseAnimation)) pauseCheck.frame();
+    while(isAnimating() && ((_animationState == PAUSED) != _pauseAnimation)) OpenThreads::Thread::YieldCurrentThread();
   }
   
   /** Add or remove RenderRectangles to the grid to make it the right size. */
@@ -1074,9 +1072,6 @@ namespace OpenFrames
     _viewer->setUseConfigureAffinity(false); // Already called configureAffinity
     _viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
     
-    // Controls the framerate while graphics are paused
-    FramerateLimiter pauseLimiter(10.0);
-    
     // Set the reference time
     _Tref = osg::Timer::instance()->tick();
     
@@ -1089,7 +1084,7 @@ namespace OpenFrames
       if(_pauseAnimation)
       {
         _animationState = PAUSED;
-        pauseLimiter.frame();
+        OpenThreads::Thread::YieldCurrentThread();
       }
       else
       {
