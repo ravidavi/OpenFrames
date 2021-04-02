@@ -88,6 +88,9 @@ namespace OpenFrames
 
     /// Inherited
     virtual std::string frameInfo() const { return "PolyhedralCone"; }
+    
+    /// Set up cone position/orientation to look in a specified direction
+    void makeConeLookAt(const osg::Vec3d& apex, const osg::Vec3d& dir, const osg::Vec3d& up);
 
   protected:
     virtual ~PolyhedralCone();

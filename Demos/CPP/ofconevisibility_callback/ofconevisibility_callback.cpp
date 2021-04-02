@@ -58,10 +58,7 @@ int main()
     osg::Vec3d origin(0, 0, 0);    // Cone apex location
     osg::Vec3d direction(0, 1, 0); // Cone boresight direction
     osg::Vec3d up(1, 0, 1);        // Cone +Y axis 
-    osg::Matrixd mat;
-    mat.makeLookAt(osg::Vec3d(), direction, up);
-    ellipticCone->setPosition(origin);
-    ellipticCone->setAttitude(mat.getRotate().inverse());
+    ellipticCone->makeConeLookAt(origin, direction, up);
   }
 
   // Create a sphere that will block the cone's view
@@ -114,7 +111,6 @@ int main()
   Line segments between frames
   */
   SensorVisibilityCallback *lsCallback = new SensorVisibilityCallback(root);
-  osg::EllipsoidModel ellipsoidModel;
   lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(2, 0, 0)); // Segment between sensor and target
   lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(0, 2, 0)); // Segment between sensor and target
   lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(0, 0, 2)); // Segment between sensor and target

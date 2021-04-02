@@ -33,7 +33,6 @@ void SensorVisibilityCallback::getSegmentData(const unsigned int &segID, osg::Ve
     posA = startWorld;
     ReferenceFrame *frameA = frameAXform->getOrigin();
     colorA = frameA->getColor();
-    // colorA.a() = 0.4; // Make line color slightly transparent
 
     // Vertex B corresponds to Frame B (the target)
     TransformAccumulator *frameBXform = std::get<1>(_frameData[segID]);
@@ -42,7 +41,6 @@ void SensorVisibilityCallback::getSegmentData(const unsigned int &segID, osg::Ve
     osg::Vec3d endLocal = std::get<3>(_frameData[segID]);
     osg::Vec3d endWorld = matLocalToWorld_B.preMult(endLocal);    
     colorB = frameB->getColor();
-    // colorB.a() = 0.4; // Make line color slightly transparent
 
     // Test whether point B is in sensor A's FOV
     PolyhedralCone *sensor = dynamic_cast<PolyhedralCone*>(frameA);     // frameA is guaranteed to be a PolyhedralCone because it is enforced by addSegment()
@@ -117,14 +115,12 @@ void SensorVisibilityCallback::addSegment(PolyhedralCone *frameA, ReferenceFrame
 
 int SensorVisibilityCallback::getSegmentID(PolyhedralCone *frameA, ReferenceFrame *frameB, const osg::Vec3d &posA, const osg::Vec3d &posB)
 {
-    FrameData frameDataForSegment{new TransformAccumulator(_root, frameA), new TransformAccumulator(_root, frameB), posA, posB};
+    // Check if the frames and positions match up with any existing frame data
     for (int i = 0; i < _frameData.size(); i++) {
-        // Check if all components of the new FrameData match all of the components of an existing FrameData in the _frameData vector
-        // FIXME: Need to check for origin also
-        if ( (std::get<0>(_frameData[i])->getRoot() == std::get<0>(frameDataForSegment)->getRoot()) &&
-             (std::get<1>(_frameData[i])->getRoot() == std::get<1>(frameDataForSegment)->getRoot()) &&
-             (std::get<2>(_frameData[i]) == std::get<2>(frameDataForSegment)) &&
-             (std::get<3>(_frameData[i]) == std::get<3>(frameDataForSegment)) )
+        if ( (std::get<0>(_frameData[i])->getOrigin() == frameA) &&
+             (std::get<1>(_frameData[i])->getOrigin() == frameB) &&
+             (std::get<2>(_frameData[i]) == posA) &&
+             (std::get<3>(_frameData[i]) == posB) )
         {
             return i;       // return the index of the matching FrameData
         }

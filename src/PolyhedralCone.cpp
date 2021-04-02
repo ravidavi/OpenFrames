@@ -209,6 +209,16 @@ const osg::BoundingSphere& PolyhedralCone::getBound() const
   return _bound;
 }
 
+void PolyhedralCone::makeConeLookAt(const osg::Vec3d& apex,
+                                    const osg::Vec3d& dir,
+                                    const osg::Vec3d& up)
+{
+  osg::Matrixd mat;
+  mat.makeLookAt(osg::Vec3d(), dir, up);
+  setPosition(apex);
+  setAttitude(mat.getRotate().inverse());
+}
+
 void PolyhedralCone::createCone()
 {
 	// Prepare geometries for new vertices that will be computed

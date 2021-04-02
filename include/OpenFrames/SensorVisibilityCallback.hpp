@@ -34,19 +34,25 @@ namespace OpenFrames
         SensorVisibilityCallback(OpenFrames::ReferenceFrame* root);
 
         virtual unsigned int getNumSegments() const;
-
+      
+        /// Inherited
+        /// Get endpoint and color data for segment with specified ID
         virtual void getSegmentData(const unsigned int &segID, osg::Vec3 &posA, osg::Vec4 &colorA, osg::Vec3 &posB, osg::Vec4 &colorB) const;
-
+      
+        /// Add a line segment from a PolyhedralCone to a ReferenceFrame
         void addSegment(PolyhedralCone *frameA, ReferenceFrame *frameB, const osg::Vec3d &posA, const osg::Vec3d &posB);
 
+        /// Get a specific line segment
         int getSegmentID(PolyhedralCone *frameA, ReferenceFrame *frameB, const osg::Vec3d &posA, const osg::Vec3d &posB);
 
+        /// Get the frame associated with the segment endpoints
         PolyhedralCone* getSegmentFrameA(const unsigned int &segID);
-
         ReferenceFrame* getSegmentFrameB(const unsigned int &segID);
 
+        /// Get the intersection point with the target frame
         osg::Vec3 getIntersectionPosition(const unsigned int &segID);
 
+        /// Get the angle between the segment and the local normal at the intersection point
         float getIntersectionAngle(const unsigned int &segID);
 
     protected:

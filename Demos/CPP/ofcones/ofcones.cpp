@@ -145,10 +145,7 @@ int main()
     osg::Vec3d origin(10, 0, 0);   // Cone apex location
     osg::Vec3d direction(0, 1, 0); // Cone boresight direction
     osg::Vec3d up(1, 0, 1);        // Cone +Y axis 
-    osg::Matrixd mat;
-    mat.makeLookAt(osg::Vec3d(), direction, up);
-    ellipticCone->setPosition(origin);
-    ellipticCone->setAttitude(mat.getRotate().inverse());
+    ellipticCone->makeConeLookAt(origin, direction, up);
 
     // Create a sphere that will move through the scene and change its color based on cone visibility
     osg::ref_ptr<Trajectory> traj1 = new Trajectory;
