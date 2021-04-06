@@ -41,6 +41,12 @@ namespace OpenFrames
       
         /// Add a line segment from a PolyhedralCone to a ReferenceFrame
         void addSegment(PolyhedralCone *frameA, ReferenceFrame *frameB, const osg::Vec3d &posA, const osg::Vec3d &posB);
+        
+        /// Set the min/max search distance from the sensor's origin
+        /// Provide max < min to use the sensor's length to compute max distance
+        /// Note that min & max can be negative, which denotes a point "behind" the sensor origin
+        void setMaxSensorDistance(const double& minDist, const double& maxDist) { _minDist = minDist; _maxDist = maxDist; }
+        void getMaxSensorDistance(double& minDist, double& maxDist) const { minDist = _minDist; maxDist = _maxDist; }
 
         /// Get a specific line segment
         int getSegmentID(PolyhedralCone *frameA, ReferenceFrame *frameB, const osg::Vec3d &posA, const osg::Vec3d &posB);
@@ -66,6 +72,9 @@ namespace OpenFrames
         // Intersection test
         osg::ref_ptr<osgUtil::RayIntersector> _rayIntersector;
         mutable osgUtil::IntersectionVisitor _iv;
+        
+        // Intersection search distance
+        double _minDist, _maxDist;
 
         // Intersection data
         struct IntersectionData
@@ -74,8 +83,6 @@ namespace OpenFrames
             float angleOfIncidence;     // angle of incidence (in radians) where the line segment intersects at frameB
         } ;
         mutable std::vector<IntersectionData> _intersectionData;
-
-
     };
 } // !namespace OpenFrames
 
