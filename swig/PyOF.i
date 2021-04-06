@@ -58,6 +58,7 @@
 #include "OpenFrames/ReferenceFrame.hpp"
 #include "OpenFrames/RenderRectangle.hpp"
 #include "OpenFrames/SegmentArtist.hpp"
+#include "OpenFrames/SensorVisibilityCallback.hpp"
 #include "OpenFrames/SkySphere.hpp"
 #include "OpenFrames/Sphere.hpp"
 #include "OpenFrames/SubtreeTracker.hpp"
@@ -244,7 +245,7 @@ static double getOsgQuat(const osg::Quat &quat, int i) {
 %include "OpenFrames/OpenVRDevice.hpp"
 %include "OpenFrames/RadialPlane.hpp"
 %include "OpenFrames/RectangularCone.hpp"
-
+%include "OpenFrames/SensorVisibilityCallback.hpp"
 %include "OpenFrames/Sphere.hpp" // Required for SkySphere
 %include "OpenFrames/SkySphere.hpp" // Required for RenderRectangle
 %include "OpenFrames/VRUtils.hpp" // Required for RenderRectangle
