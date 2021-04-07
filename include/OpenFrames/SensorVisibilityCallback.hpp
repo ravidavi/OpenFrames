@@ -88,6 +88,8 @@ namespace OpenFrames
         // Intersection data
         struct IntersectionData
         {
+            IntersectionData();
+            
             osg::Vec3 position;         // position at which the line segment intersects with frameB in the local frame
             float angleOfIncidence;     // angle of incidence (in radians) where the line segment intersects at frameB
         } ;

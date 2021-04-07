@@ -20,6 +20,7 @@ void SensorVisibilityCallback::ignoreReferenceFrame(OpenFrames::ReferenceFrame* 
 {
     if(frame)
     {
+        // Remove intersection mask bits from frame's mask
         osg::Node::NodeMask currMask = frame->getGroup()->getNodeMask();
         frame->getGroup()->setNodeMask(currMask & ~getIntersectionMask());
     }
@@ -50,55 +51,48 @@ void SensorVisibilityCallback::getSegmentData(const unsigned int &segID, osg::Ve
     osg::Vec3d endLocal = std::get<3>(_frameData[segID]);
     osg::Vec3d endWorld = matLocalToWorld_B.preMult(endLocal);    
     colorB = frameB->getColor();
-    
-    // Test whether target is in sensor's FOV
-    osg::Vec3d targetVec = osg::Matrixd::inverse(matLocalToWorld_A).preMult(endWorld); // Target point in sensor space
-    PolyhedralCone *sensor = static_cast<PolyhedralCone*>(frameA); // frameA is guaranteed to be a PolyhedralCone because it is enforced by addSegment()
-    bool isVisible = sensor->isVisible(targetVec, _minDist, (_maxDist < _minDist) ? sensor->getConeLength() : _maxDist);
 
+    // Create intersection test from start to end points
+    _iv.reset();
+    _rayIntersector->setStart(startWorld);
+    _rayIntersector->setDirection(endWorld - startWorld);
+
+    // Test for intersection and set segment endpoint accordingly
+    _root->getGroup()->accept(_iv);
+    osgUtil::RayIntersector::Intersection intersection = _rayIntersector->getFirstIntersection();
     IntersectionData newIntersectionData;
-    
-    // If visible from sensor then do intersection test
-    if (isVisible)
+    posB = posA; // Assume no intersection
+    if (intersection.distance != -1) // Check for intersection
     {
-        // Create intersection test from start to end points
-        _iv.reset();
-        _rayIntersector->setStart(startWorld);
-        _rayIntersector->setDirection(endWorld - startWorld);
+        // Want to eventually change this so the line segment only has a real second endpoint when the ray intersects with the
+        // desired object (frameB), not something between frameA and frameB
+        osg::Vec3 intWorld = intersection.getWorldIntersectPoint();
 
-        // Test for intersection and set segment endpoint accordingly
-        _root->getGroup()->accept(_iv);
-        osgUtil::RayIntersector::Intersection intersection = _rayIntersector->getFirstIntersection();
-        if (intersection.distance == -1) {
-            posB = posA;    // Set line segment to zero length because there's no intersection
-            // Set the intersection data to its default value which indicates no intersection:
-            newIntersectionData.position = osg::Vec3(INFINITY, INFINITY, INFINITY);
-            newIntersectionData.angleOfIncidence = INFINITY;
-        } else {
-            // Want to eventually change this so the line segment only has a real second endpoint when the ray intersects with the
-            // desired object (frameB), not something between frameA and frameB
-            posB = intersection.getWorldIntersectPoint();
-
+        // Test whether intersection is in sensor's FOV
+        bool isVisible = true;
+        PolyhedralCone *sensor = dynamic_cast<PolyhedralCone*>(frameA);
+        if (sensor)
+        {
+            osg::Vec3d intLocal = osg::Matrixd::inverse(matLocalToWorld_A).preMult(intWorld); // Intersection in sensor space
+            isVisible = sensor->isVisible(intLocal, _minDist, (_maxDist < _minDist) ? sensor->getConeLength() : _maxDist);
+        }
+        
+        // If intersection point is visible, compute statistics
+        if(isVisible)
+        {
+            posB = intWorld;
             newIntersectionData.position = intersection.getLocalIntersectPoint();
-            // Get the normal of the surface at the intersection point:
-            osg::Vec3 normal = intersection.getWorldIntersectNormal();
+            osg::Vec3 normal = intersection.getWorldIntersectNormal(); // Surface normal at intersection
             normal.normalize();
-            // Get the direction of the vector from posA to posB:
-            osg::Vec3 directionVector = posB - posA;
+            osg::Vec3 directionVector = posB - posA; // Direction to initial point at intersection
             directionVector.normalize();
-            // the angle of incidence is the inverse cosine of the dot product of the two vectors:
-            newIntersectionData.angleOfIncidence = acos(directionVector * normal);
-            // if the angle of incidence is greater than 90 degrees, fix it:
-            if (newIntersectionData.angleOfIncidence > osg::PI_2) {
+            newIntersectionData.angleOfIncidence = acos(directionVector * normal); // AOI between incoming vector and normal
+            if (newIntersectionData.angleOfIncidence > osg::PI_2) { // Fix AOI if greater than 90 deg
                 newIntersectionData.angleOfIncidence = osg::PI - newIntersectionData.angleOfIncidence;
             }
         }
-    } else {
-        posB = posA; // Otherwise set line segment to zero length
-        // Set the intersection data to its default value which indicates no intersection:
-        newIntersectionData.position = osg::Vec3(INFINITY, INFINITY, INFINITY);
-        newIntersectionData.angleOfIncidence = INFINITY;
     }
+    
     _intersectionData[segID] = newIntersectionData;
 }
 
@@ -110,10 +104,8 @@ void SensorVisibilityCallback::addSegment(PolyhedralCone *frameA, ReferenceFrame
     // Make sure this callback's data is not being used
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(mMutex);
 
-    _frameData.push_back(FrameData(new TransformAccumulator(_root, frameA), new TransformAccumulator(_root, frameB), posA, posB));
-
-    IntersectionData newIntersectionData{osg::Vec3(INFINITY, INFINITY, INFINITY), INFINITY};
-    _intersectionData.push_back(newIntersectionData);
+    _frameData.emplace_back(FrameData(new TransformAccumulator(_root, frameA), new TransformAccumulator(_root, frameB), posA, posB));
+    _intersectionData.emplace_back(IntersectionData());
 }
 
 int SensorVisibilityCallback::getSegmentID(PolyhedralCone *frameA, ReferenceFrame *frameB, const osg::Vec3d &posA, const osg::Vec3d &posB)
@@ -151,6 +143,9 @@ float SensorVisibilityCallback::getIntersectionAngle(const unsigned int &segID)
     return _intersectionData[segID].angleOfIncidence;
 }
 
-SensorVisibilityCallback::~SensorVisibilityCallback() {  }
+SensorVisibilityCallback::~SensorVisibilityCallback() { }
 
+SensorVisibilityCallback::IntersectionData::IntersectionData()
+    : position(NAN, NAN, NAN), angleOfIncidence(NAN)
+{ }
 } // !namespace OpenFrames
