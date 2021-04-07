@@ -74,11 +74,15 @@ namespace OpenFrames
       double mFrameTime; // Frame time (i.e. wall clock time)
       double mSimTime;   // Simulation time
 
-      // Mutex used to protect sensitive callback resources
-      OpenThreads::Mutex mMutex;
+      // Lock/unlock sensitive data for the callback
+      void lockData() { mMutex.lock(); }
+      void unlockData() { mMutex.unlock(); }
 
     protected:
       virtual ~Callback() {}
+        
+      // Mutex used to protect sensitive callback resources
+      OpenThreads::Mutex mMutex;
     };
 
     void setLineSegmentCallback(Callback *cb);

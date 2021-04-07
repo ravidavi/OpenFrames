@@ -177,6 +177,14 @@ def setButtonReleaseCallback(self, fcn):
 // WindowProxy::pauseAnimation waits for the animation state
 %thread OpenFrames::WindowProxy::pauseAnimation;
 
+// CustomLineSegments::Callback needs to be extracted since Python doesn't
+// support nested classes. Also rename it for a better Python experience.
+%feature("flatnested") OpenFrames::CustomLineSegments::Callback;
+%rename(CustomLineSegmentsCallback) OpenFrames::CustomLineSegments::Callback;
+
+// CustomLineSegments::Callback can be subclassed in Python
+%feature("director") OpenFrames::CustomLineSegments::Callback;
+
 %include "cpointer.i"
 %pointer_class(double, doublep);
 

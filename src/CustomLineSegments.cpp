@@ -53,7 +53,7 @@ public:
       mCallback->mSimTime = fs->getSimulationTime();
 
       // Make sure sensitive callback data is not changed
-      mCallback->mMutex.lock();
+      mCallback->lockData();
 
       // Resize arrays in preparation for updating data
       unsigned int numSegments = mCallback->getNumSegments();
@@ -76,7 +76,7 @@ public:
       }
 
       // Allow sensitive callback data to be changed
-      mCallback->mMutex.unlock();
+      mCallback->unlockData();
 
       // Indicate that arrays have been updated
       vertices->dirty();

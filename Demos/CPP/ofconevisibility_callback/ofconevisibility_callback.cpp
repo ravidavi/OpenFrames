@@ -43,7 +43,6 @@ int main()
   // Create an elliptic cone with specified semimajor/semiminor half-angles
   EllipticCone *ellipticCone = new EllipticCone("Elliptic Cone");
   {
-    ellipticCone->getGroup()->setNodeMask(0x1);
     ellipticCone->setConeColor(0.1, 0.5, 0.6, 0.5);
     ellipticCone->setConeLength(20.0);
     ellipticCone->setPrimaryAngles(osg::DegreesToRadians(45.0), osg::DegreesToRadians(20.0));
@@ -114,6 +113,7 @@ int main()
   lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(2, 0, 0)); // Segment between sensor and target
   lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(0, 2, 0)); // Segment between sensor and target
   lsCallback->addSegment(ellipticCone, target, osg::Vec3d(0, 0, 0), osg::Vec3d(0, 0, 2)); // Segment between sensor and target
+  lsCallback->ignoreReferenceFrame(ellipticCone);
 
   CustomLineSegments *cls = new CustomLineSegments("CustomLineSegment", 1, 1, 1, 1);
   cls->setLineSegmentCallback(lsCallback);

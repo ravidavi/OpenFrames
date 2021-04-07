@@ -16,6 +16,15 @@ SensorVisibilityCallback::SensorVisibilityCallback(OpenFrames::ReferenceFrame* r
     _iv.setTraversalMask(~0x1);
 }
 
+void SensorVisibilityCallback::ignoreReferenceFrame(OpenFrames::ReferenceFrame* frame) const
+{
+    if(frame)
+    {
+        osg::Node::NodeMask currMask = frame->getGroup()->getNodeMask();
+        frame->getGroup()->setNodeMask(currMask & ~getIntersectionMask());
+    }
+}
+    
 // Required: get number of segments
 unsigned int SensorVisibilityCallback::getNumSegments() const
 {

@@ -33,6 +33,15 @@ namespace OpenFrames
     public:
         SensorVisibilityCallback(OpenFrames::ReferenceFrame* root);
 
+        /// Set the node mask used to check a ReferenceFrame when computing intersections
+        void setIntersectionMask(osg::Node::NodeMask mask) { _iv.setTraversalMask(mask); }
+        osg::Node::NodeMask getIntersectionMask() const { return _iv.getTraversalMask(); }
+        
+        /// Ignore a ReferenceFrame and all of its children when computing intersections
+        void ignoreReferenceFrame(OpenFrames::ReferenceFrame* frame) const;
+        
+        /// Inherited
+        /// Get the number of segments to draw
         virtual unsigned int getNumSegments() const;
       
         /// Inherited
