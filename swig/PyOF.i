@@ -28,6 +28,7 @@
 #include "osg/Export"
 
 #include "osg/Vec3d"
+#include "osg/Vec3"
 #include "osg/Quat"
 
 #include "OpenThreads/Exports"
@@ -72,7 +73,6 @@
 #include "OpenFrames/VRUtils.hpp"
 #include "OpenFrames/WindowProxy.hpp"
 %}
-
 
 // Code for function callbacks
 %pythoncode
@@ -185,6 +185,11 @@ def setButtonReleaseCallback(self, fcn):
 // CustomLineSegments::Callback can be subclassed in Python
 %feature("director") OpenFrames::CustomLineSegments::Callback;
 
+// SensorVisibilityCallback::IntersectionData needs to be extracted since Python doesn't
+// support nested classes. Also rename it for a better Python experience.
+%feature("flatnested") OpenFrames::SensorVisibilityCallback::IntersectionData;
+%rename(SensorVisibilityIntersectionData) OpenFrames::SensorVisibilityCallback::IntersectionData;
+
 %include "cpointer.i"
 %pointer_class(double, doublep);
 
@@ -201,6 +206,18 @@ static double getOsgVec3d(const osg::Vec3d &vec, int i) {
     return vec[i];
 }
 
+static osg::Vec3f osgVec3f(float x, float y, float z) {
+    return osg::Vec3f(x, y, z);
+}
+
+static void setOsgVec3f(osg::Vec3 &vec, int i, float val) {
+    vec[i] = val;
+}
+
+static float getOsgVec3f(const osg::Vec3 &vec, int i) {
+    return vec[i];
+}
+    
 static osg::Quat osgQuat(double x, double y, double z, double w) {
     return osg::Quat(x, y, z, w);
 }
@@ -214,10 +231,10 @@ static double getOsgQuat(const osg::Quat &quat, int i) {
 }
 %}
 
-
+// Some classes return std::vector, so instantiate them here
 %include "std_vector.i"
 %template(AngleArray) std::vector<double>;
-
+%template(SensorVisibilityIntersectionDataVector) std::vector<OpenFrames::SensorVisibilityCallback::IntersectionData>;
 
 %ignore *::cloneType;
 %ignore *::clone;

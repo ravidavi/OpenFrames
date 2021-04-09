@@ -33,6 +33,19 @@ namespace OpenFrames
     public:
         SensorVisibilityCallback(OpenFrames::ReferenceFrame* root);
 
+        // Intersection data
+        struct IntersectionData
+        {
+            IntersectionData();
+            void reset();
+            
+            // All of these quantities are in the target frame's local coordinates
+            osg::Vec3d position;  // intersection point
+            osg::Vec3 normal;     // intersection normal vector
+            osg::Vec3d endpointSource;  // intersection line segment source
+            osg::Vec3d endpointTarget;  // intersection line segment target
+        } ;
+        
         /// Set the node mask used to check a ReferenceFrame when computing intersections
         void setIntersectionMask(osg::Node::NodeMask mask) { _iv.setTraversalMask(mask); }
         osg::Node::NodeMask getIntersectionMask() const { return _iv.getTraversalMask(); }
@@ -63,12 +76,9 @@ namespace OpenFrames
         /// Get the frame associated with the segment endpoints
         PolyhedralCone* getSegmentFrameA(const unsigned int &segID);
         ReferenceFrame* getSegmentFrameB(const unsigned int &segID);
-
-        /// Get the intersection point with the target frame
-        osg::Vec3 getIntersectionPosition(const unsigned int &segID);
-
-        /// Get the angle between the segment and the local normal at the intersection point
-        float getIntersectionAngle(const unsigned int &segID);
+        
+        /// Get the intersection data
+        std::vector<IntersectionData>& getIntersectionData() const { return _intersectionData; }
 
     protected:
         virtual ~SensorVisibilityCallback();
@@ -84,16 +94,12 @@ namespace OpenFrames
         
         // Intersection search distance
         double _minDist, _maxDist;
-
-        // Intersection data
-        struct IntersectionData
-        {
-            IntersectionData();
-            
-            osg::Vec3 position;         // position at which the line segment intersects with frameB in the local frame
-            float angleOfIncidence;     // angle of incidence (in radians) where the line segment intersects at frameB
-        } ;
+        
+        // Intersection data for each segment
         mutable std::vector<IntersectionData> _intersectionData;
+        void computeIntersectionData(const unsigned int& segID,
+                                     const osgUtil::RayIntersector::Intersection& intersection,
+                                     const osg::Vec3d& endpointWorld) const;
     };
 } // !namespace OpenFrames
 
