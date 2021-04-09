@@ -34,7 +34,7 @@ namespace OpenFrames
         SensorVisibilityCallback(OpenFrames::ReferenceFrame* root);
 
         // Intersection data
-        struct IntersectionData
+        struct OF_EXPORT IntersectionData
         {
             IntersectionData();
             void reset();
