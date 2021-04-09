@@ -21,6 +21,7 @@
 #ifndef _OF_UTILITIES_
 #define _OF_UTILITIES_
 
+#include <OpenFrames/Export.h>
 #include <OpenThreads/Condition>
 #include <OpenThreads/Mutex>
 #include <osg/Matrixd>
@@ -40,7 +41,7 @@ namespace OpenFrames {
   /** Implements a reader-writer mutex that is biased towards writers.
       Algorithm comes from https://github.com/angrave/SystemProgramming/wiki/Synchronization,-Part-7:-The-Reader-Writer-Problem
    */
-  class ReadWriteMutex
+  class OF_EXPORT ReadWriteMutex
   {
   public:
     ReadWriteMutex()
