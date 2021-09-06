@@ -94,6 +94,9 @@ void ReferenceFrame::_init( const std::string &name, const osg::Vec4& c )
 	_yAxis = new Vector(osg::Y_AXIS);
 	_zAxis = new Vector(osg::Z_AXIS);
   
+  // Setup default label font
+  if(OpenFrames::getDefaultFont().empty()) OpenFrames::setDefaultFont();
+    
 	// Create labels
 	_xLabel = new osgText::Text;
 	_yLabel = new osgText::Text;
