@@ -33,6 +33,7 @@
 #include <OpenFrames/Sphere.hpp>
 #include <OpenFrames/TrajectoryArtist.hpp>
 #include <OpenFrames/TrajectoryFollower.hpp>
+#include <OpenFrames/Utilities.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <OpenThreads/Thread>
 #include <osg/Notify>
@@ -109,6 +110,9 @@ class OF_Objects : public osg::Referenced
           // might use X11, so we need to init X11 threads
           XInitThreads();
 #endif
+      
+    // Set default font for OpenFrames objects
+    OpenFrames::setDefaultFont();
 
 	  static osg::ref_ptr<OF_Objects> _objsref = new OF_Objects;
 

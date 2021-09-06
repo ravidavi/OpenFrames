@@ -40,7 +40,7 @@ namespace OpenFrames {
   
   /** Manage the default font used by OpenFrames */
   std::string getDefaultFont();
-  bool setDefaultFont(std::string fontName);
+  bool setDefaultFont(std::string fontName = "");
   
   /** Implements a reader-writer mutex that is biased towards writers.
       Algorithm comes from https://github.com/angrave/SystemProgramming/wiki/Synchronization,-Part-7:-The-Reader-Writer-Problem
