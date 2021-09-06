@@ -19,6 +19,8 @@
  */
 
 #include <OpenFrames/Utilities.hpp>
+#include <osgDB/Registry>
+#include <osgText/Font>
 
 namespace OpenFrames
 {
@@ -89,6 +91,24 @@ namespace OpenFrames
     }
     
     return gc;
+  }
+  
+  /*******************************************************/
+  std::string getDefaultFont()
+  {
+    osg::ref_ptr<osgText::Font> defaultFont = osgText::Font::getDefaultFont();
+    return defaultFont->getFileName();
+  }
+  
+  bool setDefaultFont(std::string fontName)
+  {
+    if(fontName.empty()) fontName = "arial.ttf";
+    
+    osgText::Font* font = osgText::readFontFile(fontName);
+    if(font == nullptr) return false;
+    
+    osgDB::Registry::instance()->getObjectCache()->addEntryToObjectCache("DefaultFont", font);
+    return true;
   }
   
   /*******************************************************/

@@ -250,7 +250,6 @@ namespace OpenFrames
     _statsText->setColor(osg::Vec4(0.949, 0.427, 0.129, 1));
     _statsText->setCharacterSizeMode(osgText::Text::SCREEN_COORDS);
     _statsText->setCharacterSize(16.0);
-    _statsText->setFont("arial.ttf");
     _statsText->setFontResolution(16, 16);
     _statsText->setLineSpacing(0.25);
     _statsText->setAlignment(osgText::Text::RIGHT_TOP);

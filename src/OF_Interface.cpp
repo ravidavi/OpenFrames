@@ -735,7 +735,6 @@ osg::Geode* getOrCreateHUDTextGeode(unsigned int row, unsigned int col)
       
       // HUD text doesn't exist, so create and initialize it with defaults
       osg::ref_ptr<osgText::Text> hudText_BottomLeft = new osgText::Text;
-      hudText_BottomLeft->setFont("arial.ttf");
       hudText_BottomLeft->setColor(osg::Vec4(1, 1, 0, 1));
       hudText_BottomLeft->setCharacterSizeMode(osgText::Text::SCREEN_COORDS);
       hudText_BottomLeft->setCharacterSize(20.0);    // In screen coordinates (pixels)

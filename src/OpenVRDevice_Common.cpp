@@ -197,7 +197,6 @@ namespace OpenFrames{
       // Create text to show WorldUnits/Meter ratio
       osgText::Text *wumText = new osgText::Text();
       wumText->setFontResolution(30, 30);
-      wumText->setFont("arial.ttf");
       wumText->setCharacterSizeMode(osgText::Text::OBJECT_COORDS);
       wumText->setCharacterSize(0.1);
       wumText->setPosition(osg::Vec3(0.0, y_offset, 0.0));

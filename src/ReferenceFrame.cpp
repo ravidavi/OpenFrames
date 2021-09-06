@@ -118,9 +118,6 @@ void ReferenceFrame::_init( const std::string &name, const osg::Vec4& c )
   // Also sets the maximum height of the font when it grows with distance
   setLabelSize(20.0);
 
-  // Set label font
-  setLabelFont("arial.ttf");
-
   // Set label text
   _xLabel->setText("X");
   _yLabel->setText("Y");
