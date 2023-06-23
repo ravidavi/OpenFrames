@@ -2,6 +2,8 @@
  * Definitions for the SensorVisibilityCallback class
  */
 
+#include <limits>
+
 #include <OpenFrames/SensorVisibilityCallback.hpp>
 #include <iostream>
 

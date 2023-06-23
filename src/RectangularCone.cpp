@@ -17,7 +17,7 @@
 /** \file RectangularCone.cpp
  * RectangularCone class function definitions.
  */
-
+#include <limits>
 #include <OpenFrames/RectangularCone.hpp>
 
 namespace OpenFrames
