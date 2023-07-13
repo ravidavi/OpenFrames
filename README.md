@@ -5,7 +5,7 @@ An API that provides real-time interactive 3D graphics for scientific simulation
 
 -------------------------------------------------------------------------
 
-**Copyright 2020 Ravishankar Mathur**
+**Copyright 2023 Ravishankar Mathur**
 **OpenFrames** is distributed under the Apache v2 License. See the LICENSE file for details.
 
 -------------------------------------------------------------------------
