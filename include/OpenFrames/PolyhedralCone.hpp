@@ -24,6 +24,7 @@
 #include <OpenFrames/Export.h>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/PositionAttitudeTransform>
+#include <limits>
 
 namespace OpenFrames
 {

@@ -19,6 +19,7 @@
  */
 
 #include <OpenFrames/EllipticCone.hpp>
+#include <limits>
 
 namespace OpenFrames
 {

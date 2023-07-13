@@ -24,6 +24,7 @@
 #include <osg/Geometry>
 #include <osg/PolygonOffset>
 #include <osg/PositionAttitudeTransform>
+#include <limits>
 
 namespace OpenFrames
 {

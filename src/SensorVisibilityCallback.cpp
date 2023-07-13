@@ -4,6 +4,7 @@
 
 #include <OpenFrames/SensorVisibilityCallback.hpp>
 #include <iostream>
+#include <limits>
 
 namespace OpenFrames
 {

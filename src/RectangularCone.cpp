@@ -19,6 +19,7 @@
  */
 
 #include <OpenFrames/RectangularCone.hpp>
+#include <limits>
 
 namespace OpenFrames
 {
