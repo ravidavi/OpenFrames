@@ -21,10 +21,10 @@
 #ifndef _OF_POLYHEDRALCONE_
 #define _OF_POLYHEDRALCONE_
 
-#include <limits>
 #include <OpenFrames/Export.h>
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/PositionAttitudeTransform>
+#include <limits>
 
 namespace OpenFrames
 {

@@ -17,7 +17,6 @@
 /** \file PolyhedralCone.cpp
  * PolyhedralCone class function definitions.
  */
-#include <limits>
 
 #include <OpenFrames/PolyhedralCone.hpp>
 #include <osg/BlendFunc>
@@ -25,6 +24,7 @@
 #include <osg/Geometry>
 #include <osg/PolygonOffset>
 #include <osg/PositionAttitudeTransform>
+#include <limits>
 
 namespace OpenFrames
 {

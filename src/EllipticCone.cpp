@@ -18,8 +18,8 @@
  * EllipticCone class function definitions.
  */
 
-#include <limits>
 #include <OpenFrames/EllipticCone.hpp>
+#include <limits>
 
 namespace OpenFrames
 {
