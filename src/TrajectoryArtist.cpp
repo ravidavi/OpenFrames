@@ -39,10 +39,11 @@ static const char *OFTA_VertSource = {
   // Low part of current vertex position
   // High part comes in through vertex position input
   "in vec4 of_VertexLow;\n"
-  "in vec3 vertexPosition;\n" // Replacement for gl_Vertex
-  "in vec4 vertexColor;\n" // Replacement for gl_Color
-  "in vec2 texCoord0;\n"   // Replacement for gl_MultiTexCoord0
+  "in vec3 vertexPosition;\n" // Custom vertex position attribute
+  "in vec4 vertexColor;\n"    // Custom vertex color attribute
+  "in vec2 texCoord0;\n"      // Custom texture coordinate attribute
 
+  // Output variables for the fragment shader
   "out vec4 fragColor;\n"
   "out vec2 fragTexCoord;\n"
 
@@ -61,6 +62,8 @@ static const char *OFTA_VertSource = {
 
      // Vertex position with low and high parts
   "  gl_Position = osg_ProjectionMatrix * of_RTEModelViewMatrix * vec4(diffHigh + diffLow, 1.0);\n"
+
+     // Pass the color and texture coordinates to the fragment shader
   "  fragColor = vertexColor;\n"
   "  fragTexCoord = texCoord0;\n"
   "}\n"
