@@ -92,30 +92,43 @@ public:
 
 // Implement vertex shader to pass through vertex id
 static const char *CLS_VertSource = {
-  "#version 120\n"
-  "#extension GL_EXT_gpu_shader4 : enable\n" // Enables gl_VertexID in GLSL 120
+  "#version 330 core\n"
 
   "uniform mat4 osg_ModelViewProjectionMatrix;\n"
-  "varying float vertexLocation;\n"
+
+  // Input attributes
+  "in vec3 vertexPosition;\n" // Replacement for gl_Vertex
+  "in vec4 vertexColor;\n"    // Replacement for gl_Color
+
+  // Output variables
+  "out vec4 fragColor;\n"
+  "out float vertexLocation;\n"
 
   "void main(void)\n"
   "{\n"
-  // Position and color are just passed through, but vertex position is
-  // interpolated between successive pairs of vertices
-  "  gl_Position = osg_ModelViewProjectionMatrix*gl_Vertex;\n"
-  "  gl_FrontColor = gl_Color;\n"
-  "  vertexLocation = mod(gl_VertexID, 2);\n"
+  // Compute the position and pass through the color
+  "  gl_Position = osg_ModelViewProjectionMatrix * vec4(vertexPosition, 1.0);\n"
+  "  fragColor = vertexColor;\n"
+
+  // Use gl_VertexID to compute the vertex location (no extension needed)
+  "  vertexLocation = mod(float(gl_VertexID), 2.0);\n"
   "}\n"
 };
 
 // Implement frament shader to pass through color (basic shaded line)
 static const char *CLS_FragSource = {
-  "#version 120\n"
+  "#version 330 core\n"
+
+  // Input variable from vertex shader
+  "in vec4 fragColor;\n"
+
+  // Output color
+  "out vec4 outColor;\n"
 
   "void main(void)\n"
   "{\n"
-  // Pass through fragment color
-  "  gl_FragColor = gl_Color;\n"
+  // Pass through the fragment color
+  "  outColor = fragColor;\n"
   "}\n"
 };
 

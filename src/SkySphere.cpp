@@ -32,33 +32,46 @@ namespace OpenFrames{
 
 // Implement vertex shader to compute star position/size/color
 static const char *OFSkySphere_VertSource = {
-  "#version 120\n"
+  "#version 330 core\n"
   "uniform mat4 osg_ModelViewProjectionMatrix;\n"
+
+  // Input attributes
+  "in vec3 vertexPosition;\n" // Replacement for gl_Vertex
+  "in vec4 vertexColor;\n"    // Replacement for gl_Color
+
+  // Output variables
+  "out vec4 fragColor;\n"
+  "out float pointSize;\n"
 
   "void main(void)\n"
   "{\n"
-  // Position and color are just passed through, but point size is
+  // Position and color are passed through, and point size is
   // encoded in the alpha component of color
-  "  gl_Position = osg_ModelViewProjectionMatrix*gl_Vertex;\n"
-  "  gl_FrontColor = gl_Color;\n"
-  "  gl_PointSize = gl_Color.w;\n"
+  "  gl_Position = osg_ModelViewProjectionMatrix * vec4(vertexPosition, 1.0);\n"
+  "  fragColor = vertexColor;\n"
+  "  pointSize = vertexColor.w;\n"
   "}\n"
 };
 
+
 // Implement frament shader to render star according to its size and color
 static const char *OFSkySphere_FragSource = {
-  "#version 120\n"
+  "#version 330 core\n"
+  "in vec4 fragColor;\n"
+  "in float pointSize;\n"
+  "out vec4 outColor;\n"
+
   "vec2 v;\n"
   "float alpha;\n"
 
   // Cutoff radius where fragment alpha starts fading to zero
   "const float r_cutoff = 0.25;\n"
-  "const float x = -0.5/(r_cutoff - 0.5);\n"
-  "const float y = 0.5/(r_cutoff - 0.5);\n"
+  "const float x = -0.5 / (r_cutoff - 0.5);\n"
+  "const float y = 0.5 / (r_cutoff - 0.5);\n"
 
   "void main(void)\n"
   "{\n"
-  // gl_PointCoord has range (x,y) in [0, 1] each, with y-down
+  // gl_PointCoord has range (x, y) in [0, 1] each, with y-down
   // Move origin to point center, with extents [-0.5, 0.5]
   "  v = gl_PointCoord - vec2(0.5);\n"
 
@@ -69,10 +82,10 @@ static const char *OFSkySphere_FragSource = {
 
   // Modulate star color by fragment alpha so that star blends
   // nicely with background sky color
-  "  gl_FragColor.rgb = gl_Color.rgb * alpha;\n"
-  "  gl_FragColor.a = alpha;\n"
+  "  outColor = vec4(fragColor.rgb * alpha, alpha);\n"
   "}\n"
 };
+
 
 SkySphere::SkySphere(const std::string &name)
 : Sphere(name)

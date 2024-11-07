@@ -30,56 +30,78 @@ namespace OpenFrames
 
 // Implement vertex shader to compute tick mark position/color
 static const char *OFCoordinateAxes_VertSource = {
-	"#version 120\n"
-	"uniform mat4 osg_ModelViewProjectionMatrix;\n"
+  "#version 330 core\n"
+  "uniform mat4 osg_ModelViewProjectionMatrix;\n"
 
-	"void main(void)\n"
-	"{\n"
-	// Position, color, and texture are just passed through
-	"  gl_Position = osg_ModelViewProjectionMatrix*gl_Vertex;\n"
-	"  gl_FrontColor = gl_Color;\n"
-	"  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
-	"}\n"
+  // Input attributes
+  "in vec3 vertexPosition;\n" // Replacement for gl_Vertex
+  "in vec4 vertexColor;\n"    // Replacement for gl_Color
+  "in vec2 texCoord0;\n"      // Replacement for gl_MultiTexCoord0
+
+  // Output variables
+  "out vec4 fragColor;\n"
+  "out vec2 fragTexCoord;\n"
+
+  "void main(void)\n"
+  "{\n"
+  // Position, color, and texture are passed through
+  "  gl_Position = osg_ModelViewProjectionMatrix * vec4(vertexPosition, 1.0);\n"
+  "  fragColor = vertexColor;\n"
+  "  fragTexCoord = texCoord0;\n"
+  "}\n"
 };
 
 // Fragment shader that draws a texture on a PointSprite
 static const char *FragSource_Texture = {
-  "#version 120\n"
+  "#version 330 core\n"
   "uniform sampler2D tex;\n"
+
+  // Input variables from vertex shader
+  "in vec4 fragColor;\n"
+  "in vec2 fragTexCoord;\n"
+
+  // Output color
+  "out vec4 outColor;\n"
 
   "void main(void)\n"
   "{\n"
-     // Discard fragments with small alpha values
-  "  vec4 t2d = texture2D(tex, gl_TexCoord[0].st);\n"
-  "  if(t2d.a < 0.05)\n"
+  // Sample the texture
+  "  vec4 t2d = texture(tex, fragTexCoord);\n"
+  
+  // Discard fragments with small alpha values
+  "  if (t2d.a < 0.05)\n"
   "  {\n"
   "    discard;\n"
   "  }\n"
 
-     // Color the texture with user-specified color
-  "  gl_FragColor = t2d*gl_Color;\n"
+  // Color the texture with user-specified color
+  "  outColor = t2d * fragColor;\n"
   "}\n"
 };
 
 // Fragment shader that draws a solid disk on a PointSprite
 static const char *FragSource_Disk = {
-  "#version 120\n"
-  "vec2 v;\n"
+  "#version 330 core\n"
+  "in vec4 fragColor;\n"
+  "in vec2 gl_PointCoord;\n" // Use gl_PointCoord as an input variable
+
+  // Output color
+  "out vec4 outColor;\n"
 
   "void main(void)\n"
   "{\n"
-  // gl_PointCoord has range (x,y) in [0, 1] each, with y-down
+  // gl_PointCoord has range (x, y) in [0, 1] each, with y-down
   // Move origin to point center, with extents [-0.5, 0.5]
-  "  v = gl_PointCoord - vec2(0.5);\n"
+  "  vec2 v = gl_PointCoord - vec2(0.5);\n"
 
   // Throw away fragments outside the disk (radius > 0.5)
-  "  if(dot(v, v) > 0.25)\n"
+  "  if (dot(v, v) > 0.25)\n"
   "  {\n"
   "    discard;\n"
   "  }\n"
 
   // Remaining fragments get the user-specified color
-  "  gl_FragColor = gl_Color;\n"
+  "  outColor = fragColor;\n"
   "}\n"
 };
 
