@@ -105,7 +105,17 @@ TrajectoryArtist::TrajectoryArtist()
   _program->addBindAttribLocation("of_VertexLow", OF_VERTEXLOW);
 
   // Set the shader program for this Artist
-  getOrCreateStateSet()->setAttribute(_program);
+  //getOrCreateStateSet()->setAttribute(_program);
+  
+  // Set the shader program for this Artist
+  osg::StateSet* stateSet = getOrCreateStateSet();
+  stateSet->setAttribute(_program);
+
+  // Enable GL_POINT_SPRITE
+  stateSet->setMode(GL_POINT_SPRITE, osg::StateAttribute::ON);
+
+  // Enable GL_PROGRAM_POINT_SIZE to allow shaders to control point size
+  stateSet->setMode(GL_PROGRAM_POINT_SIZE, osg::StateAttribute::ON);  
 }
 
 // Not using the copy constructor
