@@ -26,7 +26,7 @@ namespace OpenFrames
 
 // Implement vertex shader for Rendering Relative to Eye using GPU
 static const char *OFTA_VertSource = {
-  "#version 120\n"
+  "#version 330 core\n"
   "uniform mat4 osg_ProjectionMatrix;\n"
 
   // ModelView matrix with zero translation component
@@ -37,8 +37,14 @@ static const char *OFTA_VertSource = {
   "uniform vec3 of_ModelViewEyeLow;\n"
 
   // Low part of current vertex position
-  // High part comes in through gl_Vertex
-  "attribute vec4 of_VertexLow;\n"
+  // High part comes in through vertex position input
+  "in vec4 of_VertexLow;\n"
+  "in vec3 vertexPosition;\n" // Replacement for gl_Vertex
+  "in vec4 vertexColor;\n" // Replacement for gl_Color
+  "in vec2 texCoord0;\n"   // Replacement for gl_MultiTexCoord0
+
+  "out vec4 fragColor;\n"
+  "out vec2 fragTexCoord;\n"
 
   "void main(void)\n"
   "{\n"
@@ -47,16 +53,16 @@ static const char *OFTA_VertSource = {
   "  vec3 e = t1 - of_VertexLow.xyz;\n"
 
      // High part of vertex - eye including numerical error
-  "  vec3 t2 = ((-of_ModelViewEyeLow - e) + (of_VertexLow.xyz - (t1 - e))) + gl_Vertex.xyz - of_ModelViewEyeHigh;\n"
+  "  vec3 t2 = ((-of_ModelViewEyeLow - e) + (of_VertexLow.xyz - (t1 - e))) + vertexPosition - of_ModelViewEyeHigh;\n"
 
      // Sum of low + high parts and associated numerical error
   "  vec3 diffHigh = t1 + t2;\n"
   "  vec3 diffLow = t2 - (diffHigh - t1);\n"
 
      // Vertex position with low and high parts
-  "  gl_Position = osg_ProjectionMatrix*of_RTEModelViewMatrix*vec4(diffHigh+diffLow, 1.0);\n"
-  "  gl_FrontColor = gl_Color;\n"
-  "  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+  "  gl_Position = osg_ProjectionMatrix * of_RTEModelViewMatrix * vec4(diffHigh + diffLow, 1.0);\n"
+  "  fragColor = vertexColor;\n"
+  "  fragTexCoord = texCoord0;\n"
   "}\n"
 };
 
