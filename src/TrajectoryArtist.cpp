@@ -86,7 +86,6 @@ static const char *OFTA_FragSource = {
 	  // Color the fragment with the passed-in fragColor
 	"  outColor = fragColor;\n"
 	"}\n"
-  "}\n"
 };
 
 TrajectoryArtist::TrajectoryArtist() 
