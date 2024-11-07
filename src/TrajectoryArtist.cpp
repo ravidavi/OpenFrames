@@ -69,15 +69,37 @@ static const char *OFTA_VertSource = {
   "}\n"
 };
 
+// Implement vertex shader for Rendering Relative to Eye using GPU
+static const char *OFTA_FragSource = {
+	"#version 330 core\n"
+
+	// Input variables from the vertex shader
+	"in vec4 fragColor;\n"
+	"in vec2 fragTexCoord;\n" // Replace usage of gl_PointCoord if necessary
+
+	// Output color
+	"out vec4 outColor;\n"
+
+	"void main(void)\n"
+	"{\n"
+	  // Use fragTexCoord or another mechanism for texture mapping
+	  // Color the fragment with the passed-in fragColor
+	"  outColor = fragColor;\n"
+	"}\n"
+  "}\n"
+};
+
 TrajectoryArtist::TrajectoryArtist() 
 {
   // Create vertex shader
   osg::Shader *vertShader = new osg::Shader(osg::Shader::VERTEX, OFTA_VertSource);
+  osg::Shader *fragShader = new osg::Shader(osg::Shader::FRAGMENT, OFTA_FragSource);
 
   // Create vertex program
   _program = new osg::Program;
   _program->setName("OFTrajectoryArtist_ShaderProgram");
   _program->addShader(vertShader);
+  _program->addShader(fragShader);
 
   // Create vertex attribute that stores low part of vertex
   // Used by Artists to implement Rendering RTE in GPU
