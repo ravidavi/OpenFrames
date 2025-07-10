@@ -4,6 +4,7 @@ Qt Widgets to integrate OpenFrames
 
 """
 
+from sys import platform
 from PyQt5.QtWidgets import QWidget, QGridLayout, QSizePolicy
 from PyQt5.QtGui import QWindow, QOpenGLContext
 from PyQt5.QtCore import Qt, QSize, QCoreApplication, QEventLoop
@@ -64,6 +65,12 @@ class OFWindow(QWindow):
 
         """
         
+        # macOS requires OpenGL context updates on the main thread
+        if platform == "darwin":
+            self.windowProxy.pauseAnimation(True)
+            self._gcCallback.updateAndReleaseContext()
+            self.windowProxy.pauseAnimation(False)
+
         # Enable rendering when window is exposed
         if self.isExposed():
             if self._autoPauseAnimation:
@@ -90,6 +97,12 @@ class OFWindow(QWindow):
 
         """
         
+        # macOS requires OpenGL context updates on the main thread
+        if platform == "darwin":
+            self.windowProxy.pauseAnimation(True)
+            self._gcCallback.updateAndReleaseContext()
+            self.windowProxy.pauseAnimation(False)
+            
         self.windowProxy.resizeWindow(0, 0, int(event.size().width()*self.devicePixelRatio()), int(event.size().height()*self.devicePixelRatio()))
 
     def mousePressEvent(self, event):
@@ -229,7 +242,6 @@ class OFQtGraphicsContextCallback(PyOF.GraphicsContextCallback):
                 return success
         if self._context is not None:
             success = self._context.makeCurrent(self._surface)
-            # err = glGetError()
             
         return success
     
@@ -245,6 +257,21 @@ class OFQtGraphicsContextCallback(PyOF.GraphicsContextCallback):
 
         """   
         return self.makeCurrent()
+        
+    def updateAndReleaseContext(self):
+        """
+        Updates _context when it becomes invalid. Must be called from the main thread.
+        
+        This version is intended for macOS, which requires context updates (NSOpenGLContext setView and update)
+        to be done on the main thread. Qt calls these functions from QOpenGLContext::makeCurrent() if
+        the context needs to be updated. So on macOS, this function must be called from the main thread if
+        the OpenGL context is updated (e.g. resized, exposed, etc.).
+        
+        See https://github.com/ravidavi/OpenFrames/issues/5
+        """
+        
+        self.makeCurrent()
+        self._context.doneCurrent()
 
 class OFWidget(QWidget):
     """
