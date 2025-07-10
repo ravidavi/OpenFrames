@@ -2,11 +2,33 @@
 """
 Launches a demonstration of OpenFrames managed within a PyQt5 framework
 
+Copyright (c) 2021 Emergent Space Technologies, Inc.
 """
 
+# OS-specific modifications before importing modules
+import os
 import sys
+import platform
+currpath = os.path.abspath(os.path.dirname(__file__))
+
+if platform.system() == 'Windows': # Windows
+    # Python 3.8 no longer searches the topmost (bin) directory
+    # when loading shared library dependencies, so we must add it explicitly
+    if sys.version_info[:2] >= (3,8):
+        os.add_dll_directory(currpath)
+else: # OSX/Linux
+    # Tell OSG where to find plugins
+    osglibpath = currpath + os.sep + ".." + os.sep + "lib"
+    os.environ['OSG_LIBRARY_PATH'] = osglibpath
+    
+    if platform.system() == 'Darwin':
+        # On OSX 10.15+, some fonts (e.g. Arial.ttf) are moved to the Supplemental folder
+        os.environ['OSG_FILE_PATH'] = str(os.environ.get('OSG_FILE_PATH')) + os.pathsep + "/System/Library/Fonts/Supplemental"
+
+# Import modules
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QSurfaceFormat
+from PyQt5.QtCore import Qt
 import OFInterfaces.PyQtOF as PyQtOF
 import OFInterfaces.PyOF as PyOF
 
@@ -17,19 +39,19 @@ class MyOFDemoWin1(PyQtOF.OFWindow):
 
     """
     def __init__(self):
-      """
-      Instantiate a window
-      """
-      super().__init__(1, 1) # 1x1 window
+        """
+        Instantiate a window
+        """
+        super().__init__(1, 1) # 1x1 window
 
-      # Create scene root
-      root = PyOF.CoordinateAxes("CoordinateAxes")
-      
-      # Create a manager to handle access to the scene
-      fm = PyOF.FrameManager(root);
-      
-      # Add the scene to the window
-      self.windowProxy.setScene(fm, 0, 0);
+        # Create scene root
+        root = PyOF.CoordinateAxes("CoordinateAxes")
+
+        # Create a manager to handle access to the scene
+        fm = PyOF.FrameManager(root);
+
+        # Add the scene to the window
+        self.windowProxy.setScene(fm, 0, 0);
 
 class MyOFDemoWin2(PyQtOF.OFWindow):
     """
@@ -37,19 +59,19 @@ class MyOFDemoWin2(PyQtOF.OFWindow):
     
     """
     def __init__(self):
-      """
-      Instantiate a window
-      """
-      super().__init__(1, 1) # 1x1 window
-      
-      # Create scene root
-      root = PyOF.Sphere("Sphere")
-      
-      # Create a manager to handle access to the scene
-      fm = PyOF.FrameManager(root);
-      
-      # Add the scene to the window
-      self.windowProxy.setScene(fm, 0, 0);
+        """
+        Instantiate a window
+        """
+        super().__init__(1, 1) # 1x1 window
+
+        # Create scene root
+        root = PyOF.Sphere("Sphere")
+
+        # Create a manager to handle access to the scene
+        fm = PyOF.FrameManager(root);
+
+        # Add the scene to the window
+        self.windowProxy.setScene(fm, 0, 0);
 
 class TabWindow(QWidget):
     """
@@ -79,6 +101,12 @@ class TabWindow(QWidget):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     
+    # macOS requires some OpenGL context management to be performed from the main thread
+    # which means multiple threads must be using the OpenGL context.
+    # See: https://codereview.qt-project.org/c/qt/qtbase/+/155170
+    if platform.system() == 'Darwin': # macOS
+        app.setAttribute(Qt.ApplicationAttribute.AA_DontCheckOpenGLContextThreadAffinity)
+
     # Set depth buffer and MSAA
     fmt = QSurfaceFormat()
     fmt.setDepthBufferSize(24)
