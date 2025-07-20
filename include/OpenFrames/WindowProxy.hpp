@@ -25,6 +25,7 @@
 #include <OpenFrames/RenderRectangle.hpp>
 #include <OpenFrames/FramerateLimiter.hpp>
 #include <OpenFrames/OpenVRDevice.hpp>
+#include <OpenThreads/Block>
 #include <OpenThreads/Thread>
 #include <osg/FrameStamp>
 #include <osg/Timer>
@@ -202,6 +203,9 @@ namespace OpenFrames
                 bool embedded = false, bool useVR = false);
     
     virtual void cancelCleanup();
+
+    /** Shut down the WindowProxy entirely. */
+    void shutdown();
     
     /** Set the window's name
      Only applies to non-embedded windows. For embedded windows, the window name
@@ -238,9 +242,6 @@ namespace OpenFrames
     
     /** Resize each RenderRectangle grid with the specified dimensions */
     void setupGrid(unsigned int width, unsigned int height);
-    
-    /** Shut down the WindowProxy entirely. */
-    void shutdown() { _viewer->setDone(true); }
     
     /** Time control */
     void setTime(double time);
@@ -465,13 +466,17 @@ namespace OpenFrames
     FramerateLimiter _frameThrottle; // Controls animation framerate
 
     /** Time control variables */
-    AnimationState _animationState; // Current animation state
-    bool _pauseAnimation;           // Indicate that animation should be paused
     bool _timePaused;
     osg::Timer_t _Tref;
     double _currTime, _offsetTime, _timeScale;
     double _minTime, _maxTime;
     osg::observer_ptr<WindowProxy> _timeSyncWinProxy;
+
+    /** Animation control variables */
+    AnimationState _animationState;  // Current animation state
+    bool _pauseAnimation;            // Indicate that animation should be paused
+    OpenThreads::Block _threadBlock; // Synchronization for the animation thread
+    OpenThreads::Block _mainBlock;   // Synchronization for the main thread
     
     bool _useVR; // Whether to use VR rendering
     osg::ref_ptr<OpenVRDevice> _ovrDevice; // OpenVR interface
