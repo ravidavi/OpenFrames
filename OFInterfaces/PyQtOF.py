@@ -5,7 +5,7 @@ Qt Widgets to integrate OpenFrames
 """
 
 from sys import platform
-from PyQt5.QtWidgets import QWidget, QGridLayout, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QDockWidget, QGridLayout, QSizePolicy, QLabel
 from PyQt5.QtGui import QWindow, QOpenGLContext
 from PyQt5.QtCore import Qt, QSize, QCoreApplication, QEventLoop
 from . import PyOF
@@ -16,6 +16,10 @@ DEFAULT_HEIGHT = 240
 class OFWindow(QWindow):
     """
     A QWindow for rendering of WindowProxy
+    
+    QWindow is preferred for rendering over a QWidget because there is more control over OpenGL. A QOpenGLWidget
+    limitations impose undesirable effects onto WindowProxy. To use QOpenGLWidget, WindowProxy would need to draw to
+    a QOffscreenSurface and blit the result onto the QOpenGLWidget at appropriate times.
 
     Attributes
     ----------
@@ -57,7 +61,16 @@ class OFWindow(QWindow):
             QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
             
         self._proxyStarted = False
-        
+            
+    def moveEvent(self, event):
+        # Called when this window is resized within a QDockWidget
+        # TODO: Is this superceded by QDockWidget:moveEvent?
+        print(f'OFWindow:moveEvent()')
+
+        # macOS requires OpenGL context updates on the main thread
+        if platform == "darwin":
+            self._gcCallback.updateAndReleaseContext()
+
     def exposeEvent(self, event):
         """
         Overrides QWindow.exposeEvent()
@@ -65,11 +78,11 @@ class OFWindow(QWindow):
 
         """
         
+        print(f'OFWindow:exposeEvent() {self.isExposed()}')
+        
         # macOS requires OpenGL context updates on the main thread
         if platform == "darwin":
-            self.windowProxy.pauseAnimation(True)
             self._gcCallback.updateAndReleaseContext()
-            self.windowProxy.pauseAnimation(False)
 
         # Enable rendering when window is exposed
         if self.isExposed():
@@ -97,11 +110,11 @@ class OFWindow(QWindow):
 
         """
         
+        print(f"OFWindow resized to: {event.size().width()}x{event.size().height()}")
+
         # macOS requires OpenGL context updates on the main thread
         if platform == "darwin":
-            self.windowProxy.pauseAnimation(True)
             self._gcCallback.updateAndReleaseContext()
-            self.windowProxy.pauseAnimation(False)
             
         self.windowProxy.resizeWindow(0, 0, int(event.size().width()*self.devicePixelRatio()), int(event.size().height()*self.devicePixelRatio()))
 
@@ -270,16 +283,14 @@ class OFQtGraphicsContextCallback(PyOF.GraphicsContextCallback):
         See https://github.com/ravidavi/OpenFrames/issues/5
         """
         
+        self._surface.windowProxy.pauseAnimation(True)
         self.makeCurrent()
         self._context.doneCurrent()
+        self._surface.windowProxy.pauseAnimation(False)
 
 class OFWidget(QWidget):
     """
-    Encapsulates a QWindow into a widget
-
-    QWindow is preferred for rendering over a QWidget because there is more control over OpenGL. A QOpenGLWidget
-    limitations impose undesirable effects onto WindowProxy. To use QOpenGLWidget, WindowProxy would need to draw to
-    a QOffscreenSurface and blit the result onto the QOpenGLWidget at appropriate times.
+    Encapsulates a QWindow into a QWidget
 
     Attributes
     ----------
@@ -346,3 +357,85 @@ class OFWidget(QWidget):
         
     def stopRendering(self):
         self.ofwindow.stopRendering()
+
+class OFDockWidget(QDockWidget):
+    """
+    Encapsulates a QWindow into a QDockWidget
+
+    Attributes
+    ----------
+    _sizeHint : QSize
+        The hint that this widget provides to Qt for sizing
+
+    """
+    def __init__(self, parent=None, window_type=OFWindow):
+        super().__init__()
+        self._sizeHint = QSize(DEFAULT_WIDTH*self.devicePixelRatio(), DEFAULT_HEIGHT*self.devicePixelRatio())
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setMinimumSize(100, 100)
+        
+        #self.ofwidget = OFWidget(window_type)
+        #self.setWidget(self.ofwidget)
+        #self.setWidget(QLabel("OpenGL Here"))
+        
+        self.ofwindow = window_type()
+        ofcontainerwidget = QWidget.createWindowContainer(self.ofwindow)
+        self.setWidget(ofcontainerwidget)
+        
+        # Connect the topLevelChanged signal
+        #self.topLevelChanged.connect(self.handle_top_level_changed)
+
+
+    def sizeHint(self):
+        """
+        Overrides QWidget.sizeHint() to provide the user set size hint
+
+        Returns
+        -------
+        QSize
+            Size hint to Qt
+
+        """
+        return self._sizeHint
+
+    def setSizeHint(self, width, height):
+        """
+        TODO: Why is this here? It doesn't seem to do anything.
+        Set the preferred size for this widget
+
+        The default size policy is QSizePolicy.Expanding. Therefore, Qt tries to make this widget as large as possible.
+        Under this policy, Qt is allowed to shrink the widget below this size if necessary.
+
+        Parameters
+        ----------
+        width : int
+            The desired width
+        height : int
+            The desired height
+
+        References
+        ----------
+        [1] https://doc.qt.io/qt-5/qsizepolicy.html#Policy-enum
+
+        """
+        self._sizeHint.setWidth(width*self.devicePixelRatio())
+        self._sizeHint.setHeight(height*self.devicePixelRatio())
+ 
+    def closeEvent(self, event):
+        print("*** OFDockWidget closeEvent")
+        self.stopRendering()
+        
+    def stopRendering(self):
+        self.ofwindow.stopRendering()
+        
+    def handle_top_level_changed(self, is_floating):
+        if is_floating:
+            print("*** OFDockWidget is now floating.")
+        else:
+            print("*** OFDockWidget is now docked.")
+
+    def moveEvent(self, event):
+        # Called when this widget goes from floating to docked
+        # TODO: This is called much more often, need to find more elegant approach to handling docking
+        self.ofwindow._gcCallback.updateAndReleaseContext()
+        print(f'OFDockWidget:moveEvent()')

@@ -32,6 +32,88 @@ from PyQt5.QtCore import Qt
 import OFInterfaces.PyQtOF as PyQtOF
 import OFInterfaces.PyOF as PyOF
 
+from PyQt5.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PyQt5.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PyQt5.QtWidgets import (QApplication, QDockWidget, QMainWindow, QMenuBar,
+    QSizePolicy, QStatusBar, QWidget)
+
+class Ui_MainWindow(object):
+    def setupUi(self, MainWindow):
+        if not MainWindow.objectName():
+            MainWindow.setObjectName(u"MainWindow")
+        MainWindow.resize(800, 600)
+        
+        self.centralwidget = QWidget(MainWindow)
+        self.centralwidget.setObjectName(u"centralwidget")
+        MainWindow.setCentralWidget(self.centralwidget)
+        
+        self.menubar = QMenuBar(MainWindow)
+        self.menubar.setObjectName(u"menubar")
+        self.menubar.setGeometry(QRect(0, 0, 800, 21))
+        MainWindow.setMenuBar(self.menubar)
+        
+        self.statusbar = QStatusBar(MainWindow)
+        self.statusbar.setObjectName(u"statusbar")
+        MainWindow.setStatusBar(self.statusbar)
+        
+        self.dockWidget = QDockWidget(MainWindow)
+        self.dockWidget.setObjectName(u"dockWidget")
+        self.dockWidgetContents = QWidget()
+        self.dockWidgetContents.setObjectName(u"dockWidgetContents")
+        self.dockWidget.setWidget(self.dockWidgetContents)
+        MainWindow.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.dockWidget)
+        
+        self.dockWidget_2 = QDockWidget(MainWindow)
+        self.dockWidget_2.setObjectName(u"dockWidget_2")
+        self.dockWidgetContents_2 = QWidget()
+        self.dockWidgetContents_2.setObjectName(u"dockWidgetContents_2")
+        self.dockWidget_2.setWidget(self.dockWidgetContents_2)
+        MainWindow.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dockWidget_2)
+        
+        self.dockWidget_3 = QDockWidget(MainWindow)
+        self.dockWidget_3.setObjectName(u"dockWidget_3")
+        self.dockWidgetContents_3 = QWidget()
+        self.dockWidgetContents_3.setObjectName(u"dockWidgetContents_3")
+        self.dockWidget_3.setWidget(self.dockWidgetContents_3)
+        MainWindow.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, self.dockWidget_3)
+
+        self.retranslateUi(MainWindow)
+
+        QMetaObject.connectSlotsByName(MainWindow)
+    # setupUi
+
+    def retranslateUi(self, MainWindow):
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+    # retranslateUi
+
+class MacMainWindow(QMainWindow, Ui_MainWindow):
+    """
+    Reusable widget used to display a list of bodies and add/delete to a "selected" list.
+
+    """
+
+    def __init__(self):
+        """
+        Constructor. Calls APIs to get list of available and selected bodies.
+
+        @param id: client using the widget.
+        """
+        QMainWindow.__init__(self)
+        self.setupUi(self)
+        self.ofDockWidget = PyQtOF.OFDockWidget(window_type=MyOFDemoWin2)
+        self.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, self.ofDockWidget)
+
+    def applyFont(self):
+        pass
+        
+    def closeEvent(self, event):
+        self.ofDockWidget.stopRendering()
+        
 class MyOFDemoWin1(PyQtOF.OFWindow):
     """
     Inherits PyQtOF.Window for a simple window showing only a Coordinate Axes
@@ -113,15 +195,19 @@ if __name__ == '__main__':
     fmt.setSamples(4)
     QSurfaceFormat.setDefaultFormat(fmt)
     
-    # Create first window
-    ex1 = TabWindow()
-    ex1.show()
+    # Create main window with docked widgets
+    exMainWindow = MacMainWindow()
+    exMainWindow.show()
+
+    # Create tab window
+    #exTabWindow = TabWindow()
+    #exTabWindow.show()
     
-    # Create second window
-    ex2 = PyQtOF.OFWidget(MyOFDemoWin2)
-    ex2.setWindowTitle('PyQt5 OpenFrames Window 2')
-    ex2.setGeometry(100, 100, 1024, 768)
-    ex2.show()
+    # Create standalone window
+    #exStandaloneWindow = PyQtOF.OFWidget(MyOFDemoWin2)
+    #exStandaloneWindow.setWindowTitle('PyQt5 OpenFrames Window 2')
+    #exStandaloneWindow.setGeometry(100, 100, 1024, 768)
+    #exStandaloneWindow.show()
     
     # Start Qt application
     ret = app.exec_()
