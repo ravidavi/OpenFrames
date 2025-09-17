@@ -591,6 +591,13 @@ namespace OpenFrames
     OSG_NOTICE<< "WindowProxy::cancelCleanup()" << std::endl;
     shutdown();
   }
+
+  void WindowProxy::shutdown()
+  { 
+    // Indicate thread should stop, and unblock in case it is waiting on the pause state
+    _viewer->setDone(true);
+    _threadBlock.release();
+  }
   
   void WindowProxy::setWindowName(const std::string& name)
   {
@@ -937,9 +944,13 @@ namespace OpenFrames
   {
     if(pause == _pauseAnimation) return;
     _pauseAnimation = pause;
+
+    if(!_pauseAnimation) _threadBlock.release(); // Unpause thread if needed
     
     // As long as animation is active, wait until animation state matches the desired state
-    while(isAnimating() && ((_animationState == PAUSED) != _pauseAnimation)) OpenThreads::Thread::YieldCurrentThread();
+    while(isAnimating() && ((_animationState == PAUSED) != _pauseAnimation)) _mainBlock.block();
+
+    _mainBlock.reset(); // Allow future blocks to occur
   }
   
   /** Add or remove RenderRectangles to the grid to make it the right size. */
@@ -1083,12 +1094,24 @@ namespace OpenFrames
     {
       if(_pauseAnimation)
       {
-        _animationState = PAUSED;
-        OpenThreads::Thread::YieldCurrentThread();
+        // Set animation state and inform main thread that we are paused
+        if(_animationState != PAUSED)
+        {
+          _animationState = PAUSED;
+          _mainBlock.release();
+        }
+
+        _threadBlock.block(); // Wait for unpause
       }
       else
       {
-        _animationState = ANIMATING;
+        // Set animation state and inform main thread that we are unpaused
+        if(_animationState != ANIMATING)
+        {
+          _animationState = ANIMATING;
+          _threadBlock.reset();
+          _mainBlock.release();
+        }
 
         // Pause to achieve desired framerate
         _frameThrottle.frame();
@@ -1107,7 +1130,10 @@ namespace OpenFrames
     // Shutdown OpenVR if needed
     if (_useVR) _ovrDevice->shutdownVR();
     
-    _animationState = SUCCESS; // Indicate that animation is complete
+    // Indicate that animation is complete and unblock main thread if it's waiting
+    _animationState = SUCCESS;
+    _threadBlock.reset();
+    _mainBlock.release();
   }
   
   /** Handle one frame of animation, including event handling */
