@@ -391,6 +391,22 @@ class Trajectory;
      * \return Integer character size (maximum size for axes labels)
      */
     unsigned int getLabelSize() const { return _nameLabel->getCharacterHeight(); }
+
+    /**
+     * Set the text alignment for labels
+     *
+     * The default alignment from osgText is LEFT_BASE_LINE
+     *
+     * \param alignment Text alignment type from osgText::Text
+     */
+    void setLabelAlignment(osgText::Text::AlignmentType alignment);
+
+    /**
+     * Get the alignment for labels
+     *
+     * \return Text alignment type from osgText::Text
+     */
+    osgText::Text::AlignmentType getLabelAlignment() const { return _nameLabel->getAlignment(); }
     
     /*
      * \brief Add a ReferenceFrame as a child to this one.

@@ -430,6 +430,17 @@ void ReferenceFrame::showAxesLabels(unsigned int labels)
     _nameLabel->setFontResolution(size, size);
     _nameLabel->setCharacterSize(size);
   }
+
+  void ReferenceFrame::setLabelAlignment(osgText::Text::AlignmentType alignment)
+  {
+    // Set alignment for axes labels
+    _xLabel->setAlignment(alignment);
+    _yLabel->setAlignment(alignment);
+    _zLabel->setAlignment(alignment);
+
+    // Set alignment for name label
+    _nameLabel->setAlignment(alignment);
+  }
   
 bool ReferenceFrame::addChild( ReferenceFrame* child )
 {
