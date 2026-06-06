@@ -4,9 +4,9 @@ Qt Widgets for implementing OpenFrames
 
 """
 
-from PyQt5.QtWidgets import QWidget, QGridLayout, QSizePolicy
-from PyQt5.QtGui import QWindow, QOpenGLContext
-from PyQt5.QtCore import Qt, QSize, QCoreApplication, QEventLoop
+from qtpy.QtWidgets import QWidget, QGridLayout, QSizePolicy
+from qtpy.QtGui import QWindow, QOpenGLContext
+from qtpy.QtCore import Qt, QSize, QCoreApplication, QEventLoop
 from .PyOFInterfaceC import *
 
 
@@ -204,7 +204,7 @@ class Window(QWindow):
 
         Parameters
         ----------
-        event : PyQt5.QtGui.QKeyEvent.QKeyEvent
+        event : qtpy.QtGui.QKeyEvent.QKeyEvent
             The key event to map
 
         Returns
