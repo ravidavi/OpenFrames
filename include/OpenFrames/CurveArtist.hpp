@@ -67,6 +67,7 @@ namespace OpenFrames
     void setColor(float r, float g, float b);
     void setWidth(float width);
     void setPattern(GLint factor, GLushort pattern);
+    bool setShader(const std::string &fname);
 
     /** Data was cleared from or added to the trajectory. Inherited
         from TrajectoryArtist */
@@ -88,6 +89,7 @@ namespace OpenFrames
     osg::ref_ptr<osg::LineWidth> _lineWidth;
     osg::ref_ptr<osg::LineStipple>  _linePattern;
     osg::ref_ptr<osg::Vec4Array> _lineColors;
+    osg::ref_ptr<osg::Shader> _fragShader; // Line fragment shader
 
     mutable bool _dataValid; // If trajectory supports required data
     mutable bool _dataZero; // If we are just drawing at the origin

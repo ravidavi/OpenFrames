@@ -21,6 +21,10 @@
 #include <OpenFrames/CurveArtist.hpp>
 #include <OpenFrames/DoubleSingleUtils.hpp>
 #include <osg/Geometry>
+#include <osg/Shader>
+#include <osg/Program>
+#include <osgDB/FileUtils>
+#include <osgDB/ReadFile>
 #include <climits>
 
 namespace OpenFrames
@@ -107,6 +111,10 @@ public:
       _vertexHigh->dirty();
       _vertexLow->dirty();
     }
+
+    // Keep of_NumVertices uniform in sync so traveling-pulse shaders know the line length
+    osg::Uniform* numVertsUniform = _ca->getOrCreateStateSet()->getUniform("of_NumVertices");
+    if(numVertsUniform) numVertsUniform->set((float)_drawArrays->getCount());
 
     // Continue traversing as needed
     return traverse(object, data);
@@ -205,6 +213,12 @@ CurveArtist::CurveArtist(const Trajectory *traj)
 	stateset->setAttribute(_lineWidth.get());
 	stateset->setAttributeAndModes(_linePattern.get());
 
+  // Initialize shader for custom line effects (optional, added to program on demand)
+  _fragShader = new osg::Shader(osg::Shader::FRAGMENT);
+
+  // Uniform holding total vertex count; used by traveling-pulse shaders
+  stateset->addUniform(new osg::Uniform("of_NumVertices", 0.0f));
+
   // Initialize colors
   // Currently we use one color for the whole trajectory, but this can be
   // changed later for per-vertex colors
@@ -294,6 +308,35 @@ void CurveArtist::setPattern( GLint factor, GLushort pattern )
 {
 	_linePattern->setFactor(factor);
 	_linePattern->setPattern(pattern);
+}
+
+bool CurveArtist::setShader(const std::string &fname)
+{
+  // Remove shader if empty filename
+  if(fname.length() == 0)
+  {
+    _program->removeShader(_fragShader);
+    return true;
+  }
+
+  // Load shader source from file using the non-deprecated osgDB API
+  osg::ref_ptr<osg::Shader> tmpShader = osgDB::readRefShaderFile(osg::Shader::FRAGMENT, fname);
+  if(!tmpShader.valid())
+  {
+    OSG_WARN << "OpenFrames::CurveArtist ERROR: Shader file \'" << fname << "\' not properly loaded!" << std::endl;
+    return false;
+  }
+  _fragShader->setShaderSource(tmpShader->getShaderSource());
+
+  // Re-attach shader to program if it was previously removed
+  bool attached = false;
+  for(unsigned int i = 0; i < _program->getNumShaders(); ++i)
+  {
+    if(_program->getShader(i) == _fragShader.get()) { attached = true; break; }
+  }
+  if(!attached) _program->addShader(_fragShader);
+
+  return true;
 }
 
 void CurveArtist::dataCleared(const Trajectory* traj)

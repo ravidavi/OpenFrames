@@ -27,6 +27,7 @@ namespace OpenFrames
 // Implement vertex shader for Rendering Relative to Eye using GPU
 static const char *OFTA_VertSource = {
   "#version 120\n"
+  "#extension GL_EXT_gpu_shader4 : enable\n" // Enables gl_VertexID
   "uniform mat4 osg_ProjectionMatrix;\n"
 
   // ModelView matrix with zero translation component
@@ -39,6 +40,13 @@ static const char *OFTA_VertSource = {
   // Low part of current vertex position
   // High part comes in through gl_Vertex
   "attribute vec4 of_VertexLow;\n"
+
+  // Vertex location along line (0 or 1 for alternating vertices)
+  // Used by custom shaders like Line_Pulse.frag
+  "varying float vertexLocation;\n"
+
+  // Raw vertex index, used with of_NumVertices uniform for full-line position
+  "varying float vertexRawID;\n"
 
   "void main(void)\n"
   "{\n"
@@ -57,6 +65,10 @@ static const char *OFTA_VertSource = {
   "  gl_Position = osg_ProjectionMatrix*of_RTEModelViewMatrix*vec4(diffHigh+diffLow, 1.0);\n"
   "  gl_FrontColor = gl_Color;\n"
   "  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+
+     // Compute vertex location for line shaders (0 or 1 for alternating vertices)
+  "  vertexLocation = mod(float(gl_VertexID), 2.0);\n"
+  "  vertexRawID = float(gl_VertexID);\n"
   "}\n"
 };
 
