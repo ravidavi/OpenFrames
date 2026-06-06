@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Launches a demonstration of OpenFrames managed within a PyQt5 framework
+Launches a demonstration of OpenFrames managed within a qtpy framework
 
 Copyright (c) 2021 Emergent Space Technologies, Inc.
 """
@@ -26,20 +26,20 @@ else: # OSX/Linux
         os.environ['OSG_FILE_PATH'] = str(os.environ.get('OSG_FILE_PATH')) + os.pathsep + "/System/Library/Fonts/Supplemental"
 
 # Import modules
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QSurfaceFormat
-from PyQt5.QtCore import Qt
+from qtpy.QtWidgets import *
+from qtpy.QtGui import QSurfaceFormat
+from qtpy.QtCore import Qt
 import OFInterfaces.PyQtOF as PyQtOF
 import OFInterfaces.PyOF as PyOF
 
-from PyQt5.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+from qtpy.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
     QMetaObject, QObject, QPoint, QRect,
     QSize, QTime, QUrl, Qt)
-from PyQt5.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+from qtpy.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PyQt5.QtWidgets import (QApplication, QDockWidget, QMainWindow, QMenuBar,
+from qtpy.QtWidgets import (QApplication, QDockWidget, QMainWindow, QMenuBar,
     QSizePolicy, QStatusBar, QWidget)
 
 class Ui_MainWindow(object):
@@ -168,7 +168,7 @@ class TabWindow(QWidget):
         label = QLabel("Widget in a Tab.")
 
         self.ofwidget = PyQtOF.OFWidget(MyOFDemoWin1)
-        self.ofwidget.setWindowTitle('PyQt5 OpenFrames Window 1')
+        self.ofwidget.setWindowTitle('qtpy OpenFrames Window 1')
         self.ofwidget.setGeometry(50, 50, 1024, 768)
 
         tabwidget = QTabWidget()
@@ -205,7 +205,7 @@ if __name__ == '__main__':
     
     # Create standalone window
     #exStandaloneWindow = PyQtOF.OFWidget(MyOFDemoWin2)
-    #exStandaloneWindow.setWindowTitle('PyQt5 OpenFrames Window 2')
+    #exStandaloneWindow.setWindowTitle('qtpy OpenFrames Window 2')
     #exStandaloneWindow.setGeometry(100, 100, 1024, 768)
     #exStandaloneWindow.show()
     

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Launches a demonstration of OpenFrames managed within a PyQt5 framework
+Launches a demonstration of OpenFrames managed within a qtpy framework
 
 """
 
 import sys
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtGui import QSurfaceFormat
+from qtpy.QtWidgets import QApplication
+from qtpy.QtGui import QSurfaceFormat
 import OFInterfaces.PyQtOFInterfaceC as PyQtOF
 from OFInterfaces.PyOFInterfaceC import *
 
@@ -75,13 +75,13 @@ if __name__ == '__main__':
     
     # Create first window
     ex1 = PyQtOF.Widget(MyOFDemoWin1)
-    ex1.setWindowTitle('PyQt5 OpenFrames Window 1')
+    ex1.setWindowTitle('qtpy OpenFrames Window 1')
     ex1.setGeometry(50, 50, 1024, 768)
     ex1.show()
     
     # Create second window
     ex2 = PyQtOF.Widget(MyOFDemoWin2)
-    ex2.setWindowTitle('PyQt5 OpenFrames Window 2')
+    ex2.setWindowTitle('qtpy OpenFrames Window 2')
     ex2.setGeometry(100, 100, 1024, 768)
     ex2.show()
     
