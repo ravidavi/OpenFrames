@@ -1,0 +1,653 @@
+////////////////////////////////////////////////////////////////////////////////
+/// @page SETUP OpenFrames Setup and Installation
+///
+/// - Installation
+///     -# Install OpenSceneGraph
+///         - \subpage INSTALL_OSG_CENTOS
+///         - \subpage INSTALL_OSG_MAC
+///         - \subpage INSTALL_OSG_UBUNTU
+///         - \subpage INSTALL_OSG_WIN
+///     -# Install OpenFrames
+///         - \subpage INSTALL_OF_CENTOS
+///         - \subpage INSTALL_OF_MAC
+///         - \subpage INSTALL_OF_UBUNTU
+///         - \subpage INSTALL_OF_WIN
+/// - \subpage TESTING
+////////////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @page INSTALL_OSG_UBUNTU Installing OpenSceneGraph on Ubuntu 16.04
+/// **This page under construction**
+/// # Building OpenSceneGraph
+/// [OpenSceneGraph](http://www.openscenegraph.org) provides the underlying scene graph management capabilities for OpenFrames. This page outlines the process of downloading and building the OpenSceneGraph libraries.
+/// 
+/// **NOTE:** This guide currently applies to Ubuntu 16.04.  It is possible to install from repo using the command apt install openscenegraph, but it will get you an older version of openscenegraph.
+/// 
+/// Ubuntu 16.04 Requirements:
+/// 
+/// * [CMake](http://cmake.org) to generate build systems on a variety of operating systems. Used version 3.5.1 as tested.
+///     * sudo apt install cmake
+///     * sudo apt install cmake-curses-gui
+/// * [X11](http://x.org) release 7.7 as tested.
+/// * [Mesa3d](www.mesa3d.org/install.html) -- required OpenGL libraries -- version 11.2.0 from apt repo as tested
+///     * sudo apt install mesa*
+///     * sudo apt install freeglut3
+///     * sudo apt install freeglut3-dev 
+/// * GCC (version 5.3.1 as tested). sudo apt install gcc and dependencies.   
+/// * [Qt 5](https://www.qt.io/download-open-source/) (version 5.7.1 as tested).
+///     * Download .run installer
+///     * chmod +x <.run file> at terminal
+///     * ./\<run file\> (from terminal, follow instructions and take not of Qt install path to be referrenced as \[QT_ROOT\]
+///   
+/// 
+/// ## Download OpenSceneGraph
+/// 1. OSG is hosted on GitHub.  Use your choice of git client to clone the repo from (https://github.com/openscenegraph/OpenSceneGraph.git).  Additional instructions can be found in [OpenSceneGraph Git repository](http://www.openscenegraph.org/index.php/download-section/code-repositories/31-git-mirror).
+/// 2. Make sure you are on the master branch (selected by default when you clone)
+/// 3. As of this writing checkout the branch corresponding to the tag OpenSceneGraph-3.5.4 (aae78b8a8)
+/// 
+/// Note: The root OSG folder will be referred to as \[OSG_FOLDER\] in this page
+/// 
+/// 
+/// ## Setup OpenSceneGraph Build System
+/// In Terminal:
+/// 
+/// 1. cd \[OSG_FOLDER\]
+/// 2. mkdir build
+/// 3. mkdir install
+/// 4. cd build
+/// 5. cmake ..
+/// 6. ccmake .    (terminal based cmake that displays information in a textual based interface)
+///     * `CMAKE_INSTALL_PREFIX` = `\[OSG_FOLDER\]/install`
+///     * `BUILD_OSG_EXAMPLES` = `ON` (optional)
+///     * press \[t\] to toggle advanced mode
+///     * certify that OPENGL_INCLUDE_DIR, OPENGL_gl_LIBRARY, OPENGL_glu_LIBRARY were found (as a result of mesa and freeglut install)
+///     * go to QT_INCLLUDE_DIR and edit entry to match '\[QT_ROOT\]/5.7/gcc_64/include'
+///     * go to QT_QMAKE_EXECUTABLE and edit entry to match '\[QT_ROOT\]/5.7/gcc_64/bin'
+///     * press \[c\] to configure
+///     * press \[g\] to generate
+///     * quit
+/// 
+/// ## Build OpenSceneGraph
+/// In Terminal:
+/// 
+/// 1. cd  `[OSG_FOLDER]/build` if not already there from previous steps
+/// 2. Type `make`
+/// 3. Type `make install` to install the compiled OpenSceneGraph into the `[OSG_FOLDER]/install` folder
+/// 4. Confirm that the `osgversion` executable is in `[OSG_FOLDER]/install/bin`
+/// 
+/// ## Test OpenSceneGraph
+/// In Terminal:
+/// 
+/// -# Add the following to your .bash_profile (or equivalent) login file:
+/// ~~~
+///     export OSG_ROOT=[OSG_FOLDER]/install
+///     export PATH=$PATH:$OSG_ROOT/bin
+///     export LD_LIBRARY_PATH=`[OSG_FOLDER]/install/lib64` 
+/// ~~~
+/// -# Open a new Terminal window (so the above changes take effect), and type `osgversion`. It should tell you the version of OSG that you have installed.
+/// 
+/// OpenSceneGraph is now built and installed, and ready for use with OpenFrames.
+/// 
+/// Related: \ref INSTALL_OF_UBUNTU
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @page INSTALL_OSG_WIN Installing OpenSceneGraph on Windows 
+/// **This page under construction**
+/// # Building OpenSceneGraph
+/// [OpenSceneGraph](http://www.openscenegraph.org) provides the underlying scene graph management capabilities for OpenFrames. This page outlines the process of downloading and building the OpenSceneGraph libraries.
+/// 
+/// **NOTE:** These instructions where tested under Windows 7
+/// 
+/// Windows Requirements:
+/// 
+/// * [CMake](http://cmake.org) to generate platform specific build system (used 3.5.2 as tested)
+/// * [Microsoft Visual Studio](https://www.visuastudio.com/downloads) to run build and install processes (used VS 2013 Community edition ver 12.0.40629.00 Update 5 as tested) 
+/// 
+/// Note: MVS is freely available, however, one must register with Microsoft and login to the account within MVS to activate the free license
+///
+/// Choice of Git Client such as:
+///  * [SourceTree](https://www.atlassian.com/software/sourcetree) - a GUI git and mercurial client
+///  * [Git for Windows](https://git-for-windows.github.io) - a command line linux style shell and with git support or GUI based (runs over included MINGW)
+/// 
+/// ## Download OpenSceneGraph
+/// 1. OSG is hosted on GitHub.  Use your choice of git client to clone the repo from (https://github.com/openscenegraph/OpenSceneGraph.git).  Additional instructions can be found in [OpenSceneGraph Git repository](http://www.openscenegraph.org/index.php/download-section/code-repositories/31-git-mirror).
+/// 2. Make sure you are on the master branch (selected by default when you clone)
+/// 3. As of this writing checkout the branch corresponding to the tag OpenSceneGraph-3.5.4 (aae78b8a8)
+/// 
+/// Note: The root OSG folder will be referred to as \[OSG_FOLDER\] in this page
+/// 
+/// ## Setup OpenSceneGraph Build System
+/// In CMake:
+/// 
+/// 1. Specify \[OSG_FOLDER\] as the Source Code location.
+/// 2. Specify \[OSG_FOLDER\]/build as the Build Binaries location
+/// 3. Press the "Configure" button
+///     * Say "ok" if you are asked to create the 'build' folder
+///     * Verify the default generator choice (Visual Studio 12 2013 in our case) or choose a different one 
+///     * Check "Use default native compiler"
+///     * Click "finish"
+/// 
+/// The configure process sets up build variables that can be modified before generating the actual build system. The variable list can be organized by clicking the "Grouped" button. Set the following variable:
+/// 
+/// * `CMAKE_INSTALL_PREFIX` = `[OSG_FOLDER]\install`
+/// * `BUILD_OSG_EXAMPLES` checked off if you want examples built. Adds to the build time. Set to false by default (OPTIONAL)
+/// 
+/// Finally, create the build system:
+/// 
+/// 1. Press the "Configure" button again to enable the variable changes you just made
+/// 2. Press the "Generate" button to create the build system
+/// 3. Exit CMake
+/// 
+/// ## Build OpenSceneGraph
+/// In Visual Studio:
+/// 
+/// 1. File->Open Project and navigate to `[OSG_FOLDER]\build` folder
+/// 2. The Solution Explorer window will have ALL_BUILD selected
+/// 3. By default the Debug build solution may be selected. Choose the Release build solution and perform build (Build->Build Solution)
+/// 4. Once the build is complete perform the installation: 
+///     * Within Solution Explorer window, go to CMakePredefinedTargets, 
+///     * right-click INSTALL,  left-click build 
+/// 5. Confirm that the `osgversion` executable is in `[OSG_FOLDER]\install\bin`
+/// 
+/// ## Test OpenSceneGraph
+/// In System Properties:
+/// 
+/// 1. Select the "Advanced" tab
+/// 2. Click on "Environment Variables" button
+/// 3. Scrolldown to Path under "System Variables"
+/// 4. Select Path and click Edit
+/// 5. Add `;[OSG_FOLDER]\install\bin;[OSG_FOLDER]\install\include;[OSG_FOLDER]\install\lib` at the end of the Path
+/// 6. Click OK to close the editor dialog
+/// 7. Click OK to close the Environement Variables dialog 
+/// 8. Open a new terminal (so the above changes take effect), and type `osgversion`. It should tell you the version of OSG that you have installed.
+/// 
+/// OpenSceneGraph is now built and installed, and ready for use with OpenFrames.
+/// 
+/// 
+/// Related: \ref INSTALL_OF_WIN
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @page INSTALL_OSG_MAC Installing OpenSceneGraph on Mac 
+/// **This page under construction**
+/// # Building OpenSceneGraph
+/// [OpenSceneGraph](http://www.openscenegraph.org) provides the underlying scene graph management capabilities for OpenFrames. This page outlines the process of downloading and building the OpenSceneGraph libraries.
+/// 
+/// **NOTE:** This guide currently applies to Mac OSX, but will be updated in the future with Windows/Linux instructions.
+/// 
+/// Mac Requirements:
+/// 
+/// * [CMake](http://cmake.org) to generate build systems on Mac OSX, Windows, and Linux
+/// * [XQuartz](http://www.xquartz.org) v2.7.9 or greater
+/// * XCode v7.2 or greater. Available for free through the Mac App Store
+/// 
+/// ## Download OpenSceneGraph
+/// 1. Get the [OpenSceneGraph Git repository](http://www.openscenegraph.org/index.php/download-section/code-repositories/31-git-mirror).
+/// 2. Make sure you are on the master branch (selected by default when you clone)
+/// 3. The root OSG folder will be referred to as \[OSG_FOLDER\] in this page
+/// 
+/// The OSG repository requires a patch to build with X11 on OSX. **NOTE: Applying this patch is not necessary starting with commit e9d6737 (dated August 10 2016).**
+/// 
+/// 1. Download the [OSG OSX/X11 patch](http://sourceforge.net/p/openframes/wiki/Building%20OpenSceneGraph/attachment/osg_osx_patch.diff)
+/// 2. Apply the patch via "git apply osg_osx_patch.diff", or in SourceTree Actions->Apply Patch
+/// 
+/// ## Setup OpenSceneGraph Build System
+/// In CMake:
+/// 
+/// 1. Specify \[OSG_FOLDER\] as the Source Code location.
+/// 2. Specify \[OSG_FOLDER\]/X11-build as the Build Binaries location
+/// 3. Press the "Configure" button
+///     * Say "ok" if you are asked to create the X11-build folder
+///     * Select "unix makfiles" as the build system
+/// 
+/// The configure process sets up build variables that can be modified before generating the actual build system. The variable list can be organized by clicking the "Grouped" button. Set the following variables:
+/// 
+/// * `CMAKE_INSTALL_PREFIX` = `[OSG_FOLDER]/X11-install`
+/// * `OSG_WINDOWING_SYSTEM` = `X11`
+/// 
+/// Finally, create the build system:
+/// 
+/// 1. Press the "Configure" button again to enable the variable changes you just made
+/// 2. Press the "Generate" button to create the build system
+/// 3. Exit CMake
+/// 
+/// ## Build OpenSceneGraph
+/// In Terminal:
+/// 
+/// 1. Go to the `[OSG_FOLDER]/X11-build` folder
+/// 2. Type `make`, or `make -jN` where N is the number of cores your computer has
+/// 3. Type `make install` to install the compiled OpenSceneGraph into the `[OSG_FOLDER]/X11-install` folder
+/// 4. Confirm that the `osgversion` executable is in `[OSG_FOLDER]/X11-install/bin`
+/// 
+/// ## Test OpenSceneGraph
+/// In Terminal:
+/// 
+/// -# Add the following to your .bash_profile (or equivalent) login file:
+/// ~~~
+///     export OSG_ROOT=/path/to/OSG/X11-install
+///     export PATH=$PATH:$OSG_ROOT/bin:$OSG_ROOT/share/OpenSceneGraph/bin
+///     export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$OSG_ROOT/lib
+///     export DYLD_BIND_AT_LAUNCH
+/// ~~~
+/// -# Open a new Terminal window (so the above changes take effect), and type `osgversion`. It should tell you the version of OSG that you have installed.
+/// 
+/// OpenSceneGraph is now built and installed, and ready for use with OpenFrames.
+/// 
+/// Related: \ref INSTALL_OF_MAC
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @page INSTALL_OSG_CENTOS Installing OpenSceneGraph on Centos 7 
+/// **This page under construction**
+/// # Building OpenSceneGraph
+/// [OpenSceneGraph](http://www.openscenegraph.org) provides the underlying scene graph management capabilities for OpenFrames. This page outlines the process of downloading and building the OpenSceneGraph libraries.
+/// 
+/// **NOTE:** This guide currently applies to Centos7.
+/// 
+/// Centos 7 Requirements:
+/// 
+/// * [CMake](http://cmake.org) to generate build systems on a variety of operating systems. Used version 3.7.1 as tested.
+///     * Download and unpack [cmake-3.7.1.tar.gz](https://cmake.org/files/v3.7/cmake-3.7.1.tar.gz)
+///     * cd cmake-3.7.1
+///     * ./bootstrap && make && sudo make install  (installs in /usr/local)
+/// * [X11](http://x.org) release 7.7 as tested.
+/// * [Mesa3d](www.mesa3d.org/install.html) -- required OpenGL libraries -- version 11.2.2 from yum repo as tested
+///     * Quick yum based install: sudo yum install mesa-.x86_64. 
+/// * GCC (version 4.8.5 as tested). sudo yum install gcc-c++ and dependencies.   
+///   
+/// 
+/// ## Download OpenSceneGraph
+/// 1. OSG is hosted on GitHub.  Use your choice of git client to clone the repo from (https://github.com/openscenegraph/OpenSceneGraph.git).  Additional instructions can be found in [OpenSceneGraph Git repository](http://www.openscenegraph.org/index.php/download-section/code-repositories/31-git-mirror).
+/// 2. Make sure you are on the master branch (selected by default when you clone)
+/// 3. As of this writing checkout the branch corresponding to the tag OpenSceneGraph-3.5.4 (aae78b8a8)
+/// 
+/// Note: The root OSG folder will be referred to as \[OSG_FOLDER\] in this page
+/// 
+/// 
+/// ## Setup OpenSceneGraph Build System
+/// In Terminal:
+/// 
+/// 1. cd \[OSG_FOLDER\]
+/// 2. mkdir build
+/// 3. mkdir install
+/// 4. cd build
+/// 5. cmake ..
+/// 6. ccmake .    (terminal based cmake that displays information in a textual based interface)
+///     * `CMAKE_INSTALL_PREFIX` = `[OSG_FOLDER]/install`
+///     * `BUILD_OSG_EXAMPLES` = `ON` (optional)
+///     * press \[c\] to configure
+///     * quit
+/// 
+/// ## Build OpenSceneGraph
+/// In Terminal:
+/// 
+/// 1. cd  `[OSG_FOLDER]/build` if not already there from previous steps
+/// 2. Type `make`
+/// 3. Type `make install` to install the compiled OpenSceneGraph into the `[OSG_FOLDER]/install` folder
+/// 4. Confirm that the `osgversion` executable is in `[OSG_FOLDER]/install/bin`
+/// 
+/// ## Test OpenSceneGraph
+/// In Terminal:
+/// 
+/// -# Add the following to your .bash_profile (or equivalent) login file:
+/// ~~~
+///     export OSG_ROOT=[OSG_FOLDER]/install
+///     export PATH=$PATH:$OSG_ROOT/bin
+///     export LD_LIBRARY_PATH=`[OSG_FOLDER]/install/lib64` 
+/// ~~~
+/// -# Open a new Terminal window (so the above changes take effect), and type `osgversion`. It should tell you the version of OSG that you have installed.
+/// 
+/// OpenSceneGraph is now built and installed, and ready for use with OpenFrames.
+/// 
+/// Related: \ref INSTALL_OF_CENTOS
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @page INSTALL_OF_UBUNTU Installing OpenFrames on Ubuntu 16.04
+/// 
+/// **This page under construction**
+/// 
+/// # Building OpenFrames
+/// **NOTE:** These instructions were tested under Ubuntu 16.04
+/// 
+/// ## Requirements
+/// 
+/// Ubuntu 16.04 Requirements:
+/// 
+/// * [CMake](http://cmake.org) to generate build systems on a variety of operating systems. Used version 3.7.1 as tested.
+///     * Download and unpack [cmake-3.7.1.tar.gz](https://cmake.org/files/v3.7/cmake-3.7.1.tar.gz)
+///     * if you have an older version of cmake remove it:
+///         * sudo apt remove cmake
+///     * sudo apt install ncurses*  (required by cmake to create ccmake)
+///     * cd cmake-3.7.1
+///     * ./bootstrap && make && sudo make install  (installs in /usr/local)
+/// * GCC (version 5.3.1 as tested). sudo apt install gcc and dependencies.   
+/// * Choice of Git Client 
+/// * [OpenSceneGraph](http://www.openscenegraph.org): See the \ref INSTALL_OSG_UBUNTU page. Used version 3.5.4 as tested
+/// * (Optional if you want to build the Winteracter demo) [Winteracter Open Motif](http://www.winteracter.com/macmotif.htm). Download the latest static library for your architecture (32 or 64-bit) and place it in a convenient location. It is recommended to place it in the Winteracter lib directory (e.g. `lib.ifi64`) next to the existing Winteracter libraries.
+/// 
+/// ## Download OpenFrames
+/// 1. Get the [OpenFrames Git repository](https://sourceforge.net/p/openframes/code/ci/develop/tree/).
+/// 2. The root OpenFrames folder will be referred to as \[OF_FOLDER\] in this page
+/// 
+/// ## Setup OpenFrames Build System
+/// In Terminal:
+/// 
+/// 1. cd \[OF_FOLDER\]
+/// 2. mkdir build
+/// 3. mkdir install
+/// 4. cd build
+/// 5. cmake ..
+/// 6. ccmake -D OSG_DIR:PATH=`[OSG_FOLDER]\install` -D CMAKE_CXX_STANDARD=11  .    (terminal based cmake that displays information in a textual based interface)
+///     * `CMAKE_INSTALL_PREFIX` = `[OF_FOLDER]/install`
+///     * press \[c\] to configure
+///     * if any XXX_LIBRARY file path is not found edit the entry (may require advanced mode edit):
+///         * `XXX_LIBRARY`= `[OSG_FOLDER]/install/lib64/<filename>.so` see reference below.
+///         * press \[c\] to configure
+///     * press \[q\] to quit
+/// 7. (OPTIONAL) ccmake -D WINTER_ROOT:PATH=`Path to your Winteracter` .    (terminal based cmake that displays information in a textual based interface)
+///     * press \[c\] to configure
+///     * press \[g\] to generate
+///     * press \[q\] to quit
+/// 8. cmake .. 
+/// 
+/// If you get a CMake warning "Could NOT find wxWidgets...)", will not build wxWidgets demo it is ok!
+/// 
+/// Reference library names for missing XXX_LIBRARY entries: <br/>
+/// `OSG_LIBRARY = libosg.so` <br/>
+/// `OPENTHREADS_LIBRARY = libOpenThreads.so` <br/>
+/// `OSGDB_LIBRARY = libosgDB.so` <br/>
+/// `OSGGA_LIBRARY = libosgGA.so` <br/>
+/// `OSGPARTICLE_LIBRARY = libosgParticle.so` <br/>
+/// `OSGTEXT_LIBRARY = libosgText.so` <br/>
+/// `OSGUTIL_LIBRARY = libosgUtil.so` <br/>
+/// `OSGVIEWER_LIBRARY = libosgViewer.so` <br/>
+/// 
+/// 
+/// The configure process sets up build variables that can be modified before generating the actual build system. The variable list can be organized by clicking the "Grouped" button. Set the following variables:
+/// 
+/// ## Build OpenFrames
+/// In Terminal:
+/// 
+/// 1. cd  `[OF_FOLDER]\build` 
+/// 2. make
+/// 3. make install
+/// 4. Confirm that the `test1` executable is in `[OF_FOLDER]\install\bin`
+/// 
+/// 
+/// ## Test OpenFrames
+/// In Terminal:
+/// 1. make sure that LD_LIBRARY_PATH locates the libraries for OSG and OF
+///     * export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:\[OF_FOLDER\]\\install\\lib:\[OSG_FOLDER\]\\install\\lib64
+/// 2.  cd \[OF_FOLDER\]\\install\\bin
+/// 3.  ./test1
+/// 
+/// OpenFrames is now built and installed.
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @page INSTALL_OF_WIN Installing OpenFrames on Windows
+/// 
+/// **This page under construction**
+/// 
+/// # Building OpenFrames
+/// **NOTE:** These instructions were tested under Windows 7
+/// 
+/// ## Requirements
+/// 
+/// * [CMake](http://cmake.org) to generate platform specific build system (used 3.5.2 as tested)
+/// * [Microsoft Visual Studio](https://www.visuastudio.com/downloads) to run build and install processes (used VS 2013 Community edition ver 12.0.40629.00 Update 5 as tested) 
+/// Note: MVS is freely available, however, one must register with Microsoft and login to the account within MVS to activate the free license
+/// Choice of Git Client such as:
+/// * [SourceTree](https://www.atlassian.com/software/sourcetree) - a GUI git and mercurial client
+/// * [Git for Windows](https://git-for-windows.github.io) - a command line linux style shell and with git support or GUI based (runs over included MINGW) 
+/// * [OpenSceneGraph](http://www.openscenegraph.org): See the \ref INSTALL_OSG_UBUNTU page
+/// * (Optional if you want to build the Winteracter demo) [Winteracter Open Motif](http://www.winteracter.com/macmotif.htm). Download the latest static library for your architecture (32 or 64-bit) and place it in a convenient location. It is recommended to place it in the Winteracter lib directory (e.g. `lib.ifi64`) next to the existing Winteracter libraries.
+/// 
+/// ## Download OpenFrames
+/// 1. Get the [OpenFrames Git repository](https://sourceforge.net/p/openframes/code/ci/develop/tree/).
+/// 2. The root OpenFrames folder will be referred to as \[OF_FOLDER\] in this page
+/// 
+/// ## Setup OpenFrames Build System
+/// In CMake:
+/// 
+/// -# Specify \[OF_FOLDER\] as the Source Code location.
+/// -# Specify \[OF_FOLDER\]\\build as the Build Binaries location
+/// -# Click "Add Entry", and specify the following:
+///     * `Name` = `OSG_DIR`
+///     * `Type` = `PATH`
+///     * `Value` = Path to your `[OSG_FOLDER]\install` directory
+///     * `Description` = empty
+/// -# (Optional if you want to build the Winteracter example) Click "Add Entry", and specify the following:
+///     * `Name` = `WINTER_ROOT`
+///     * `Type` = `PATH`
+///     * `Value` = Path to your Winteracter `\wint` directory, e.g. `C:\Users\xyz\Documents\wint`
+///     * `Description` = empty
+/// -# Press the "Configure" button
+///     * Say "ok" if you are asked to create the 'build' folder
+///     * Verify the default generator choice (Visual Studio 12 2013 in our case) or choose a different one 
+///     * Check "Use default native compiler"
+///     * Click "finish"
+/// 
+/// If you get a CMake error "OpenSceneGraph NOT FOUND", make sure you specified OSG_DIR correctly (Step 3 above). <br/>
+/// If you get a CMake warning "Open Motif NOT FOUND", see below to set the path to libXm if you want to build the Winteracter demo.
+/// 
+/// The configure process sets up build variables that can be modified before generating the actual build system. The variable list can be organized by clicking the "Grouped" button. Set the following variables:
+/// 
+/// * `CMAKE_INSTALL_PREFIX` = `[OF_FOLDER]\install`
+/// * Select `OF_FORTRAN_MODULE` to build the Fortran interface and Winteracter example
+/// * Optional: Use `CMAKE_LIBRARY_PATH` to specify the directory containing Open Motif (libXm) if you are building the Winteracter example. Only needed if you did NOT place libXm next to the installed Winteracter libraries. (see Requirements above)
+/// 
+/// Finally, create the build system:
+/// 
+/// 1. Press the "Configure" button again to enable the variable changes you just made
+/// 2. Press the "Generate" button to create the build system
+/// 3. Exit CMake
+/// 
+/// ## Build OpenFrames
+/// In Visual Studio:
+/// 
+/// 1. File->Open Project and navigate to `[OF_FOLDER]\build` folder
+/// 2. The Solution Explorer window will have ALL_BUILD selected
+/// 3. By default the Debug build solution may be selected. Choose the Release build solution and perform build (Build->Build Solution)
+/// 4. Once the build is complete perform the installation: 
+///     * Within Solution Explorer window, go to CMakePredefinedTargets, 
+///     * right-click INSTALL,  left-click build 
+/// 5. Confirm that the `test1` executable is in `[OF_FOLDER]\install\bin`
+/// 
+/// 
+/// ## Test OpenFrames
+/// In System Properties:
+/// 
+/// 1. Select the "Advanced" tab
+/// 2. Click on "Environment Variables" button
+/// 3. Scrolldown to Path under "System Variables"
+/// 4. Select Path and click Edit
+/// 5. Add `;[OF_FOLDER]\install` at the end of the Path
+/// 6. Click OK to close the editor dialog
+/// 7. Click OK to close the Environement Variables dialog 
+/// 8. Open a new terminal (so the above changes take effect), change directory to `[OF_FOLDER]\install\bin` and type `test1`. It should bring up a split window with the example.
+/// 
+/// OpenFrames is now built and installed.
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @page INSTALL_OF_MAC Installing OpenFrames on Mac
+/// 
+/// **This page under construction**
+/// 
+/// # Building OpenFrames
+/// **NOTE:** This guide currently applies to Mac OSX, but will be updated in the future with Windows/Linux instructions.
+/// 
+/// ## Requirements
+/// 
+/// * [CMake](http://cmake.org) to generate build systems on Mac OSX, Windows, and Linux
+/// * [XQuartz](http://www.xquartz.org) v2.7.9 or greater
+/// * XCode v7.2 or greater. Available for free through the Mac App Store
+/// * [OpenSceneGraph](http://www.openscenegraph.org): See the \ref INSTALL_OSG_MAC page
+/// * (Optional if you want to build the Winteracter demo) [Winteracter Open Motif](http://www.winteracter.com/macmotif.htm). Download the latest static library for your architecture (32 or 64-bit) and place it in a convenient location. It is recommended to place it in the Winteracter lib directory (e.g. `lib.ifi64`) next to the existing Winteracter libraries.
+/// 
+/// ## Download OpenFrames
+/// 1. Get the [OpenFrames Git repository](https://sourceforge.net/p/openframes/code/ci/develop/tree/).
+/// 2. The root OpenFrames folder will be referred to as \[OF_FOLDER\] in this page
+/// 
+/// ## Setup OpenFrames Build System
+/// In CMake:
+/// 
+/// -# Specify \[OF_FOLDER\] as the Source Code location.
+/// -# Specify \[OF_FOLDER\]/X11-build as the Build Binaries location
+/// -# Click "Add Entry", and specify the following:
+///     * `Name` = `OSG_DIR`
+///     * `Type` = `PATH`
+///     * `Value` = Path to your `[OSG_FOLDER]/X11-install` directory
+///     * `Description` = empty
+/// -# (Optional if you want to build the Winteracter example) Click "Add Entry", and specify the following:
+///     * `Name` = `WINTER_ROOT`
+///     * `Type` = `PATH`
+///     * `Value` = Path to your Winteracter `/wint` directory, e.g. `/Users/xyz/Documents/wint`
+///     * `Description` = empty
+/// -# Press the "Configure" button
+///     * Say "Yes" if you are asked to create the X11-build folder
+///     * Select "unix makfiles" as the build system
+/// 
+/// If you get a CMake error "OpenSceneGraph NOT FOUND", make sure you specified OSG_DIR correctly (Step 3 above). <br/>
+/// If you get a CMake warning "Open Motif NOT FOUND", see below to set the path to libXm if you want to build the Winteracter demo.
+/// 
+/// The configure process sets up build variables that can be modified before generating the actual build system. The variable list can be organized by clicking the "Grouped" button. Set the following variables:
+/// 
+/// * `CMAKE_INSTALL_PREFIX` = `[OF_FOLDER]/OpenFrames-Darwin-install`
+/// * Select `OF_FORTRAN_MODULE` to build the Fortran interface and Winteracter example
+/// * Optional: Use `CMAKE_LIBRARY_PATH` to specify the directory containing Open Motif (libXm) if you are building the Winteracter example. Only needed if you did NOT place libXm next to the installed Winteracter libraries. (see Requirements above)
+/// 
+/// Finally, create the build system:
+/// 
+/// 1. Press the "Configure" button again to enable the variable changes you just made
+/// 2. Press the "Generate" button to create the build system
+/// 3. Exit CMake
+/// 
+/// ## Build OpenFrames
+/// In Terminal:
+/// 
+/// 1. Go to the `[OF_FOLDER]/X11-build` folder
+/// 2. Type `make`, or `make -jN` where N is the number of cores your computer has
+/// 3. Type `make install` to install the compiled OpenFrames into the `[OF_FOLDER]/OpenFrames-Darwin-install` folder
+/// 4. Confirm that the `test1` executable is in `[OF_FOLDER]/X11-Darwin-install/bin`
+/// 
+/// ## Test OpenFrames
+/// In Terminal:
+/// 
+/// -# Add the following to your .bash_profile (or equivalent) login file:
+/// ~~~
+///     export OF_ROOT=/path/to/OpenFrames-Darwin-install
+///     export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$OF_ROOT/lib
+/// ~~~
+/// -# Open a new Terminal window (so the above changes take effect), go to the `OpenFrames-Darwin-install/bin` folder, and type `./test1`. XQuartz will launch (if not already running), and an OpenFrames example should run.
+/// 
+/// OpenFrames is now built and installed.
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @page INSTALL_OF_CENTOS Installing OpenFrames on Centos 7
+/// 
+/// **This page under construction**
+/// 
+/// # Building OpenFrames
+/// **NOTE:** These instructions were tested under Centos 7
+/// 
+/// ## Requirements
+/// 
+/// Centos 7 Requirements:
+/// 
+/// * [CMake](http://cmake.org) to generate build systems on a variety of operating systems. Used version 3.7.1 as tested.
+///     * Download and unpack [cmake-3.7.1.tar.gz](https://cmake.org/files/v3.7/cmake-3.7.1.tar.gz)
+///     * cd cmake-3.7.1
+///     * ./bootstrap && make && sudo make install  (installs in /usr/local)
+/// * GCC (version 4.8.5 as tested). sudo yum install gcc-c++ and dependencies.   
+/// * Choice of Git Client 
+/// * [OpenSceneGraph](http://www.openscenegraph.org): See the \ref INSTALL_OSG_CENTOS page. Used version 3.5.4 as tested
+/// * (Optional if you want to build the Winteracter demo) [Winteracter Open Motif](http://www.winteracter.com/macmotif.htm). Download the latest static library for your architecture (32 or 64-bit) and place it in a convenient location. It is recommended to place it in the Winteracter lib directory (e.g. `lib.ifi64`) next to the existing Winteracter libraries.
+/// 
+/// ## Download OpenFrames
+/// 1. Get the [OpenFrames Git repository](https://sourceforge.net/p/openframes/code/ci/develop/tree/).
+/// 2. The root OpenFrames folder will be referred to as \[OF_FOLDER\] in this page
+/// 
+/// ## Setup OpenFrames Build System
+/// In Terminal:
+/// 
+/// 1. cd \[OF_FOLDER\]
+/// 2. mkdir build
+/// 3. mkdir install
+/// 4. cd build
+/// 5. cmake ..
+/// 6. ccmake -D OSG_DIR:PATH=`[OSG_FOLDER]\\install` -D CMAKE_CXX_STANDARD=11  .    (terminal based cmake that displays information in a textual based interface)
+///     * `CMAKE_INSTALL_PREFIX` = `[OF_FOLDER]/install`
+///     * press \[c\] to configure
+///     * press \[q\] to quit
+/// 7. (OPTIONAL) ccmake -D WINTER_ROOT:PATH=`Path to your Winteracter` .    (terminal based cmake that displays information in a textual based interface)
+///     * press \[c\] to configure
+///     * press \[q\] to quit
+/// 8. cmake .. 
+/// 
+/// If you get a CMake warning "Could NOT find wxWidgets...)", will not build wxWidgets demo it is ok!
+/// 
+/// The configure process sets up build variables that can be modified before generating the actual build system. The variable list can be organized by clicking the "Grouped" button. Set the following variables:
+/// 
+/// ## Build OpenFrames
+/// In Terminal:
+/// 
+/// 1. cd  `[OF_FOLDER]\build` 
+/// 2. make
+/// 3. make install
+/// 4. Confirm that the `test1` executable is in `[OF_FOLDER]\install\bin`
+/// 
+/// 
+/// ## Test OpenFrames
+/// In Terminal:
+/// 
+/// 1. make sure that LD_LIBRARY_PATH locates the libraries for OSG and OF
+///     * export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:\[OF_FOLDER\]\\install\\lib:\[OSG_FOLDER\]\\install\\lib64
+/// 2.  cd \[OF_FOLDER\]\\install\\bin
+/// 3.  ./test1
+/// 
+/// OpenFrames is now built and installed.
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @page TESTING Testing OpenFrames
+/// To test OpenFrames, run the various test programs in the [OpenFramesInstallPath]/bin/ directory. You can mess with the associated source code in the OpenFrames/Demos/CPP Test/ directory.
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+/// @page NOTES OpenFrames Notes
+///
+/// - \subpage ACRONYMS
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+/// @page ACRONYMS List of Acronyms
+///
+/// <table border="0">
+/// <tr><td>@anchor API <b>API</b></td><td>Application Programming Interface </td></tr>
+/// <tr><td>@anchor OSG <b>OSG</b></td><td>OpenSceneGraph</td></tr>
+/// </table>
+////////////////////////////////////////////////////////////////////////////////

@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,6 +13,10 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ***********************************/
+
+/** \file OF_Interface.cpp
+ * Definitions for the OF_Interface class.
+ */
 
 #include <OpenFrames/OF_Interface.h>
 #include <OpenFrames/CoordinateAxes.hpp>
@@ -28,8 +32,11 @@
 #include <OpenFrames/SegmentArtist.hpp>
 #include <OpenFrames/Sphere.hpp>
 #include <OpenFrames/TrajectoryArtist.hpp>
+#include <OpenFrames/TrajectoryFollower.hpp>
 #include <OpenFrames/WindowProxy.hpp>
 #include <OpenThreads/Thread>
+#include <osg/Notify>
+#include <osgDB/Registry>
 #include <map>
 #include <string>
 #include <iostream>
@@ -53,36 +60,48 @@ typedef std::map<std::string, osg::ref_ptr<Trajectory> > TrajectoryMap;
 typedef std::map<std::string, osg::ref_ptr<TrajectoryArtist> > ArtistMap;
 typedef std::map<std::string, osg::ref_ptr<View> > ViewMap;
 
-/** This class keeps track of all OpenFrames objects created using this
+/**
+ * \class OF_Objects
+ *
+ * \brief This class tracks OpenFrames objects created with this interface.
+ *
+ * This class keeps track of all OpenFrames objects created using this
  * interface. It is implemented as a singleton becuase it handles ALL
- * OpenFrames objects and must not have multiple instances. */
+ * OpenFrames objects and must not have multiple instances.
+ */
 class OF_Objects : public osg::Referenced
 {
   public:
 	// The 'current' object of any type is the one acted upon by functions
 	// that operate on that type. e.g. all ReferenceFrame functions
 	// will act on _currFrame, all View functions on _currView, etc...
-	ReferenceFrame *_currFrame;
-	WindowProxy *_currWinProxy;
-	Trajectory *_currTraj;
-	FrameManager *_currFM;
-	TrajectoryArtist *_currArtist;
-	View *_currView;
+	ReferenceFrame *_currFrame; ///< Current active ReferenceFrame
+    WindowProxy *_currWinProxy; ///< Current active WindowProxy
+    Trajectory *_currTraj; ///< Current active Trajectory
+    FrameManager *_currFM; ///< Current active FrameManager
+    TrajectoryArtist *_currArtist; ///< Current active TrajectoryArtist
+    View *_currView; ///< Current active View
 
-	WindowMap _winMap;  // Map of ID -> WindowProxy
-	FrameMap _frameMap; // Map of Name -> ReferenceFrame
-	FMMap _fmMap;     // Map of ID -> FrameManager
-	TrajectoryMap _trajMap; // Map of ID -> Trajectory
-	ArtistMap _artistMap; // Map of ID -> TrajectoryArtist
-	ViewMap _viewMap; // Map of ID -> View
+	WindowMap _winMap;  ///< Map of ID -> WindowProxy
+	FrameMap _frameMap; ///< Map of Name -> ReferenceFrame
+	FMMap _fmMap;     ///< Map of ID -> FrameManager
+	TrajectoryMap _trajMap; ///< Map of ID -> Trajectory
+	ArtistMap _artistMap; ///< Map of ID -> TrajectoryArtist
+	ViewMap _viewMap; ///< Map of ID -> View
 
-	osg::ref_ptr<TimeManagementVisitor> _tmv;
-
-	// Value returned (if any) by last function call
+	/**
+	 * Value returned (if any) by last function call. 0 means
+	 * everything is ok, non-zero means error of some kind.
+	 */
 	int _intVal;
 
-	// Get an instance of the singleton
-	// If this is the first call, then the object will be created
+    /**
+	* \brief Get an instance of the singleton
+    *
+	* If this is the first call, then the object will be created
+    *
+	* \return Instance of the singleton
+    **/
 	static OF_Objects* instance()
 	{
 #ifdef OF_USE_X11
@@ -104,6 +123,9 @@ class OF_Objects : public osg::Referenced
 	  return _objsref.get();
 	}
 
+    /**
+    * \brief Clean up all OpenFrames objects.
+    **/
 	void cleanup()
 	{
 	  // Shut down each WindowProxy's thread
@@ -149,7 +171,6 @@ class OF_Objects : public osg::Referenced
 	  _currFM(NULL), _currArtist(NULL), _currView(NULL), _intVal(0),
 	  _needsCleanup(true)
 	{
-	  _tmv = new TimeManagementVisitor;
 	}
 
 	~OF_Objects()
@@ -168,6 +189,7 @@ void OF_FCN(of_initialize)()
 	_objs = OF_Objects::instance();
     _objs->_intVal = 0;
 }
+
 
 void OF_FCN(of_cleanup)()
 {
@@ -188,6 +210,12 @@ void OF_FCN(of_getreturnedvalue)(int *val)
 	*val = _objs->_intVal;
 }
 
+OF_EXPORT void OF_FCN(of_adddatafilepath)(OF_CHARARG(newpath))
+{
+  std::string temp(OF_STRING(newpath)); // Convert to std::string
+  osgDB::Registry::instance()->getDataFilePathList().push_front(temp);
+}
+    
 /***********************************************
 	Window Functions
 ***********************************************/
@@ -208,13 +236,26 @@ void OF_FCN(ofwin_activate)(unsigned int *id)
 	}
 }
 
+void OF_FCN(ofwin_getid)(unsigned int *retid)
+{
+    if(_objs->_currWinProxy)
+    {
+      *retid = _objs->_currWinProxy->getID();
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = -2;
+    }
+}
+
 void OF_FCN(ofwin_createproxy)(int *x, int *y,
                             unsigned int *width, unsigned int *height,
                             unsigned int *nrow, unsigned int *ncol,
-                            bool *embedded, unsigned int *id)
+                            bool *embedded, unsigned int *id,
+                            bool *useVR)
 {
 	// Create the new WindowProxy with the given ID
-	WindowProxy* wp = new WindowProxy(*x, *y, *width, *height, *nrow, *ncol, *embedded);
+	WindowProxy* wp = new WindowProxy(*x, *y, *width, *height, *nrow, *ncol, *embedded, *useVR);
 	wp->setID(*id);
 
 	// If a WindowProxy already exists with the same id, stop its thread
@@ -229,6 +270,19 @@ void OF_FCN(ofwin_createproxy)(int *x, int *y,
 	_objs->_winMap[*id] = wp;
     _objs->_currWinProxy = wp;
     _objs->_intVal = 0;
+}
+
+void OF_FCN(ofwin_setwindowname)(OF_CHARARG(winname))
+{
+  if(_objs->_currWinProxy)
+  {
+    std::string temp(OF_STRING(winname));
+    _objs->_currWinProxy->setWindowName(temp);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
 }
 
 OF_EXPORT void OF_FCN(ofwin_setgridsize)(int *nrow, int *ncol)
@@ -293,36 +347,54 @@ OF_EXPORT void OF_FCN(ofwin_setbuttonreleasecallback)(void (*fcn)(BUTTON_SIG))
 
 void OF_FCN(ofwin_start)()
 {
-	if(_objs->_currWinProxy) 
-	{
-	  FramerateLimiter waitLimiter;
-	  waitLimiter.setDesiredFramerate(5.0); // FPS at which to check
-
-	  // Tell WindowProxy to start animating, then wait until it actually starts
-	  _objs->_intVal = _objs->_currWinProxy->startThread();
-	  while(!_objs->_currWinProxy->isAnimating()) 
-	  {
-	    waitLimiter.frame();
-	  }
+  if(_objs->_currWinProxy)
+  {
+    FramerateLimiter waitLimiter(5.0); // Framerate at which to check for animation
+    
+    // Tell WindowProxy to start animating, then wait until it actually starts
+    _objs->_intVal = _objs->_currWinProxy->startThread();
+    if(_objs->_intVal != 0) return;
+    
+    while(!_objs->_currWinProxy->isAnimating() &&
+          !_objs->_currWinProxy->doneAnimating())
+    {
+      waitLimiter.frame();
     }
-    else {
-      _objs->_intVal = -2;
-    }
+    
+    // Check for animation error
+    if(_objs->_currWinProxy->getAnimationState() == WindowProxy::FAILED)
+      _objs->_intVal = -1;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
 }
 
 void OF_FCN(ofwin_stop)()
 {
-	if(_objs->_currWinProxy) 
-	{
-	  FramerateLimiter waitLimiter;
-	  waitLimiter.setDesiredFramerate(5.0); // FPS at which to check
+  if(_objs->_currWinProxy)
+  {
+    FramerateLimiter waitLimiter(5.0); // Framerate at which to check for animation
+    
+    // Tell WindowProxy to stop animating, then wait until it actually stops
+    _objs->_currWinProxy->shutdown();
+    while(_objs->_currWinProxy->isRunning())
+    {
+      waitLimiter.frame();
+    }
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
 
-	  // Tell WindowProxy to stop animating, then wait until it actually stops
+void OF_FCN(ofwin_signalstop)()
+{
+	if(_objs->_currWinProxy)
+	{
+	  // Signal WindowProxy to stop animating
 	  _objs->_currWinProxy->shutdown();
-	  while(_objs->_currWinProxy->isRunning()) 
-	  {
-	    waitLimiter.frame();
-	  }
       _objs->_intVal = 0;
     }
     else {
@@ -375,6 +447,81 @@ OF_EXPORT void OF_FCN(ofwin_isrunning)(unsigned int *state)
     }
 }
 
+OF_EXPORT void OF_FCN(ofwin_settime)(double *time)
+{
+  if(_objs->_currWinProxy)
+  {
+    _objs->_currWinProxy->setTime(*time);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+OF_EXPORT void OF_FCN(ofwin_gettime)(double *time)
+{
+  if(_objs->_currWinProxy)
+  {
+    *time = _objs->_currWinProxy->getTime();
+    _objs->_intVal = 0;
+  }
+  else {
+    *time = DBL_MAX;
+    _objs->_intVal = -2;
+  }
+}
+
+OF_EXPORT void OF_FCN(ofwin_pausetime)(bool *pause)
+{
+  if(_objs->_currWinProxy)
+  {
+    _objs->_currWinProxy->pauseTime(*pause);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+OF_EXPORT void OF_FCN(ofwin_istimepaused)(bool *pause)
+{
+  if(_objs->_currWinProxy)
+  {
+    *pause = _objs->_currWinProxy->isTimePaused();
+    _objs->_intVal = 0;
+  }
+  else {
+    *pause = false;
+    _objs->_intVal = -2;
+  }
+}
+
+OF_EXPORT void OF_FCN(ofwin_settimescale)(double *tscale)
+{
+  if(_objs->_currWinProxy)
+  {
+    _objs->_currWinProxy->setTimeScale(*tscale);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+OF_EXPORT void OF_FCN(ofwin_gettimescale)(double *tscale)
+{
+  if(_objs->_currWinProxy)
+  {
+    *tscale = _objs->_currWinProxy->getTimeScale();
+    _objs->_intVal = 0;
+  }
+  else {
+    *tscale = DBL_MAX;
+    _objs->_intVal = -2;
+  }
+}
+
 void OF_FCN(ofwin_setscene)(unsigned int *row, unsigned int *col)
 {
 	if(_objs->_currWinProxy) {
@@ -384,6 +531,86 @@ void OF_FCN(ofwin_setscene)(unsigned int *row, unsigned int *col)
     else {
       _objs->_intVal = -2;
     }
+}
+
+void OF_FCN(ofwin_setlightambient)(unsigned int *row, unsigned int *col,
+                                   float *r, float *g, float *b)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      osg::Light* globalLight = rr->getSceneView()->getLight();
+      globalLight->setAmbient(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(ofwin_setlightdiffuse)(unsigned int *row, unsigned int *col,
+                                   float *r, float *g, float *b)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      osg::Light* globalLight = rr->getSceneView()->getLight();
+      globalLight->setDiffuse(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
+void OF_FCN(ofwin_setlightspecular)(unsigned int *row, unsigned int *col,
+                                    float *r, float *g, float *b)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      osg::Light* globalLight = rr->getSceneView()->getLight();
+      globalLight->setSpecular(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(ofwin_setlightposition)(unsigned int *row, unsigned int *col,
+                                    float *x, float *y, float *z, float *w)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      osg::Light* globalLight = rr->getSceneView()->getLight();
+      globalLight->setPosition(osg::Vec4(*x, *y, *z, *w));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
 }
 
 void OF_FCN(ofwin_setstereo)(unsigned int *row, unsigned int *col, bool *enable,
@@ -417,23 +644,28 @@ void OF_FCN(ofwin_setstereo)(unsigned int *row, unsigned int *col, bool *enable,
     }
 }
 
-void OF_FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col, 
-                                   float *r, float *g, float *b)
+void OF_FCN(ofwin_setbackgroundcolor)(unsigned int *row, unsigned int *col,
+                                      float *r, float *g, float *b)
 {
-	if(_objs->_currWinProxy)
-	{
-	  RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
-      if (rr) { 
-        rr->setBackgroundColor(*r, *g, *b);
-        _objs->_intVal = 0;
-      }
-      else {
-        _objs->_intVal = 1;
-      }
-	}
-    else {
-      _objs->_intVal = -2;
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(*row, *col);
+    if (rr) {
+      rr->setBackgroundColor(*r, *g, *b);
+      _objs->_intVal = 0;
     }
+    else if((*row == _objs->_currWinProxy->getNumRows()) && (*col == _objs->_currWinProxy->getNumCols()))
+    {
+      _objs->_currWinProxy->setWindowBackgroundColor(osg::Vec3(*r, *g, *b));
+      _objs->_intVal = 0;
+    }
+    else {
+      _objs->_intVal = 1;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+  }
 }
 
 void OF_FCN(ofwin_setbackgroundtexture)(unsigned int *row, unsigned int *col, OF_CHARARG(fname))
@@ -476,6 +708,134 @@ void OF_FCN(ofwin_setbackgroundstardata)(unsigned int *row, unsigned int *col, f
     else {
       _objs->_intVal = -2;
     }
+}
+
+/** Internal function to find the osg::Geode for the HUD text */
+osg::Geode* getOrCreateHUDTextGeode(unsigned int row, unsigned int col)
+{
+  if(_objs->_currWinProxy)
+  {
+    RenderRectangle *rr = _objs->_currWinProxy->getGridPosition(row, col);
+    if(rr)
+    {
+      const std::string hudGeodeName = "HUDTextGeode";
+      
+      // Search all HUD children
+      int numChildren = rr->getHUD()->getNumChildren();
+      for(int i = 0; i < numChildren; ++i)
+      {
+        // If child is a HUD text Geode, then return it
+        osg::Geode* geode = rr->getHUD()->getChild(i)->asGeode();
+        if(geode && (geode->getName() == hudGeodeName))
+        {
+          _objs->_intVal = 0;
+          return geode;
+        }
+      }
+      
+      // HUD text doesn't exist, so create and initialize it with defaults
+      osg::ref_ptr<osgText::Text> hudText_BottomLeft = new osgText::Text;
+      hudText_BottomLeft->setFont("arial.ttf");
+      hudText_BottomLeft->setColor(osg::Vec4(1, 1, 0, 1));
+      hudText_BottomLeft->setCharacterSizeMode(osgText::Text::SCREEN_COORDS);
+      hudText_BottomLeft->setCharacterSize(20.0);    // In screen coordinates (pixels)
+      hudText_BottomLeft->setFontResolution(40, 40); // In texels (texture pixels)
+      hudText_BottomLeft->setLineSpacing(0.25);
+      
+      // Position HUD text
+      // Screen coordinates go from (0,0) bottom-left to (1,1) top-right
+      hudText_BottomLeft->setAlignment(osgText::Text::LEFT_BOTTOM);
+      hudText_BottomLeft->setPosition(osg::Vec3(0.0, 0.0, 0.0));
+      
+      // Some graphics drivers have a bug where text can't be properly changed.
+      // Get around this by initializing text using all likely characters.
+      std::string dummyText("the quick brown fox jumps over the lazy dog");
+      dummyText += "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG";
+      dummyText += "1234567890";
+      dummyText += "[]{}()<>,.;:+-*/_";
+      hudText_BottomLeft->setText(dummyText);
+      
+      // Attach HUD text
+      osg::Geode* geode = new osg::Geode;
+      geode->setName(hudGeodeName);
+      geode->addDrawable(hudText_BottomLeft);
+      rr->getHUD()->addChild(geode);
+      
+      _objs->_intVal = 0;
+      return geode;
+    }
+    else {
+      _objs->_intVal = -1;
+      return NULL;
+    }
+  }
+  else {
+    _objs->_intVal = -2;
+    return NULL;
+  }
+}
+
+OF_EXPORT void OF_FCN(ofwin_enablehudtext)(unsigned int *row, unsigned int *col, bool *enable)
+{
+  // Get the HUD text osg::Geode
+  osg::Geode* hudTextGeode = getOrCreateHUDTextGeode(*row, *col);
+  if(!hudTextGeode) return; // Error creating HUD text
+  
+  // Set HUD text visibility
+  if(*enable) hudTextGeode->setNodeMask(0xffffffff);
+  else hudTextGeode->setNodeMask(0x0);
+}
+
+OF_EXPORT void OF_FCN(ofwin_sethudtextfont)(unsigned int *row, unsigned int *col, OF_CHARARG(fname))
+{
+  // Get the HUD text osg::Geode
+  osg::Geode* hudTextGeode = getOrCreateHUDTextGeode(*row, *col);
+  if(!hudTextGeode) return; // Error creating HUD text
+
+  // Convert given character string and length to a proper C string
+  std::string temp(OF_STRING(fname));
+
+  // First child of hud geode will be an osgText::Text by design
+  osgText::Text* hudText = static_cast<osgText::Text*>(hudTextGeode->getDrawable(0));
+  hudText->setFont(temp);
+}
+
+OF_EXPORT void OF_FCN(ofwin_sethudtextparameters)(unsigned int *row, unsigned int *col, float *r, float *g, float *b, float *charSize)
+{
+  // Get the HUD text osg::Geode
+  osg::Geode* hudTextGeode = getOrCreateHUDTextGeode(*row, *col);
+  if(!hudTextGeode) return; // Error creating HUD text
+  
+  // First child of hud geode will be an osgText::Text by design
+  osgText::Text* hudText = static_cast<osgText::Text*>(hudTextGeode->getDrawable(0));
+  hudText->setColor(osg::Vec4(*r, *g, *b, 1.0));
+  hudText->setCharacterSize(*charSize);
+}
+
+OF_EXPORT void OF_FCN(ofwin_sethudtextposition)(unsigned int *row, unsigned int *col, float *x, float *y, unsigned int *alignment)
+{
+  // Get the HUD text osg::Geode
+  osg::Geode* hudTextGeode = getOrCreateHUDTextGeode(*row, *col);
+  if(!hudTextGeode) return; // Error creating HUD text
+  
+  // First child of hud geode will be an osgText::Text by design
+  osgText::Text* hudText = static_cast<osgText::Text*>(hudTextGeode->getDrawable(0));
+  hudText->setPosition(osg::Vec3(*x, *y, 0.0));
+  hudText->setAlignment((osgText::Text::AlignmentType)*alignment);
+}
+
+OF_EXPORT void OF_FCN(ofwin_sethudtext)(unsigned int *row, unsigned int *col, OF_CHARARG(text))
+{
+  // Get the HUD text osg::Geode
+  osg::Geode* hudTextGeode = getOrCreateHUDTextGeode(*row, *col);
+  if(!hudTextGeode) return; // Error creating HUD text
+  
+  // Convert given character string and length to a proper C string
+  std::string temp(OF_STRING(text));
+  
+  // First child of hud geode will be an osgText::Text by design
+  osgText::Text* hudText = static_cast<osgText::Text*>(hudTextGeode->getDrawable(0));
+  hudText->setText(temp);
 }
 
 void OF_FCN(ofwin_setswapbuffersfunction)(void (*fcn)(unsigned int *winID))
@@ -533,6 +893,17 @@ void OF_FCN(ofwin_keypress)(unsigned int *key)
     }
 }
 
+  void OF_FCN(ofwin_keyrelease)(unsigned int *key)
+{
+  if (_objs->_currWinProxy) {
+    _objs->_currWinProxy->keyRelease(*key);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
 void OF_FCN(ofwin_buttonpress)(float *x, float *y, unsigned int *button)
 {
 	if (_objs->_currWinProxy) {
@@ -543,7 +914,7 @@ void OF_FCN(ofwin_buttonpress)(float *x, float *y, unsigned int *button)
       _objs->_intVal = -2;
     }
 }
-	
+
 void OF_FCN(ofwin_buttonrelease)(float *x, float *y, unsigned int *button)
 {
 	if (_objs->_currWinProxy) {
@@ -569,7 +940,7 @@ void OF_FCN(ofwin_mousemotion)(float *x, float *y)
 void OF_FCN(ofwin_setdesiredframerate)(double *fps)
 {
 	if (_objs->_currWinProxy) {
-	  _objs->_currWinProxy->setDesiredFramerate(*fps);
+	  _objs->_currWinProxy->getFramerateLimiter()->setDesiredFramerate(*fps);
       _objs->_intVal = 0;
     }
     else {
@@ -657,6 +1028,53 @@ void OF_FCN(ofwin_selectview)(unsigned int *row, unsigned int *col)
     }
 }
 
+#if defined(IFORT_CALLS)
+OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(const char *fname,
+                                                  const char *fext,
+                                                  unsigned int fnamelen,
+                                                  unsigned int fextlen)
+#else
+OF_EXPORT void OF_FCN(ofwin_setwindowcapturefile)(OF_CHARARG(fname),
+                                                  OF_CHARARG(fext))
+#endif
+{
+  if(_objs->_currWinProxy)
+  {
+    // Convert given character string and length to a proper C string
+    std::string fnamestr(OF_STRING(fname));
+    std::string fextstr(OF_STRING(fext));
+    _objs->_currWinProxy->setWindowCaptureFile(fnamestr, fextstr);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+OF_EXPORT void OF_FCN(ofwin_capturewindow)()
+{
+  if(_objs->_currWinProxy)
+  {
+    _objs->_currWinProxy->captureWindow();
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+OF_EXPORT void OF_FCN(ofwin_setwindowcapturekey)(int *key)
+{
+  if(_objs->_currWinProxy)
+  {
+    _objs->_currWinProxy->setWindowCaptureKey(*key);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
 /*******************************************
 	FrameManager Functions
 *******************************************/
@@ -698,7 +1116,7 @@ void OF_FCN(offm_setframe)()
 void OF_FCN(offm_lock)()
 {
 	if (_objs->_currFM) {
-	  _objs->_intVal = _objs->_currFM->lock();
+    _objs->_intVal = _objs->_currFM->lock(FrameManager::HIGH_PRIORITY);
       _objs->_intVal = 0;
     }
 	else 
@@ -710,7 +1128,7 @@ void OF_FCN(offm_lock)()
 void OF_FCN(offm_unlock)()
 {
     if (_objs->_currFM) {
-	  _objs->_intVal = _objs->_currFM->unlock();
+      _objs->_intVal = _objs->_currFM->unlock(FrameManager::HIGH_PRIORITY);
       _objs->_intVal = 0;
     }
 	else 
@@ -961,6 +1379,33 @@ void OF_FCN(offrame_setaxeslabels)(OF_CHARARG(xlabel),
     }
 }
 
+void OF_FCN(offrame_setlabelfont)(OF_CHARARG(font))
+{
+  if(_objs->_currFrame)
+  {
+    // Convert given character string and length to a proper C string
+    std::string temp(OF_STRING(font));
+    _objs->_currFrame->setLabelFont(temp);
+    if(_objs->_currFrame->getLabelFontName() == "default") _objs->_intVal = -1;
+    else _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(offrame_setlabelsize)(unsigned int *size)
+{
+  if(_objs->_currFrame)
+  {
+    _objs->_currFrame->setLabelSize(*size);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+    
 void OF_FCN(offrame_movexaxis)(double pos[], double *length, double *headRatio, double *bodyRadius, double *headRadius)
 {
 	if(_objs->_currFrame)
@@ -997,6 +1442,84 @@ void OF_FCN(offrame_movezaxis)(double pos[], double *length, double *headRatio, 
     }
 }
 
+void OF_FCN(offrame_setlightsourceenabled)(bool *enabled)
+{
+  if(_objs->_currFrame)
+  {
+    _objs->_currFrame->setLightSourceEnabled(*enabled);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(offrame_getlightsourceenabled)(bool *enabled)
+{
+  if(_objs->_currFrame)
+  {
+    *enabled = _objs->_currFrame->getLightSourceEnabled();
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+  
+void OF_FCN(offrame_setlightambient)(float *r, float *g, float *b)
+{
+  if(_objs->_currFrame)
+  {
+    osg::LightSource* lightSource = _objs->_currFrame->getLightSource();
+    if(lightSource)
+    {
+      osg::Light* light = lightSource->getLight();
+      light->setAmbient(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else _objs->_intVal = -1;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(offrame_setlightdiffuse)(float *r, float *g, float *b)
+{
+  if(_objs->_currFrame)
+  {
+    osg::LightSource* lightSource = _objs->_currFrame->getLightSource();
+    if(lightSource)
+    {
+      osg::Light* light = lightSource->getLight();
+      light->setDiffuse(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else _objs->_intVal = -1;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+  
+void OF_FCN(offrame_setlightspecular)(float *r, float *g, float *b)
+{
+  if(_objs->_currFrame)
+  {
+    osg::LightSource* lightSource = _objs->_currFrame->getLightSource();
+    if(lightSource)
+    {
+      osg::Light* light = lightSource->getLight();
+      light->setSpecular(osg::Vec4(*r, *g, *b, 1.0));
+      _objs->_intVal = 0;
+    }
+    else _objs->_intVal = -1;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
 void OF_FCN(offrame_followtrajectory)(OF_CHARARG(name))
 {
 	if(_objs->_currFrame)
@@ -1029,7 +1552,7 @@ void OF_FCN(offrame_followtrajectory)(OF_CHARARG(name))
 	  }
 	  else // Otherwise just update the existing TrajectoryFollower
 	  {
-	    tf->setFollowTrajectory(traj);
+	    tf->setTrajectory(traj);
 	  }
       _objs->_intVal = 0;
     }
@@ -1096,24 +1619,18 @@ OF_EXPORT void OF_FCN(offrame_managetime)(bool *affectChildren, bool *reset,
                                        bool *changeOffsetTime, double *offsetTime,
                                        bool *changeTimeScale, double *timeScale)
 {
-	if(_objs->_currFrame)
-	{
-	  // Set traversal mode
-	  if(*affectChildren) _objs->_tmv->setTraversalMode(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
-	  else _objs->_tmv->setTraversalMode(osg::NodeVisitor::TRAVERSE_NONE);
-
-	  // Set pause state, offset time, and time scale
-	  _objs->_tmv->setReset(*reset);
-	  _objs->_tmv->setPauseState(*changePauseState, *pauseState);
-	  _objs->_tmv->setOffsetTime(*changeOffsetTime, *offsetTime);
-	  _objs->_tmv->setTimeScale(*changeTimeScale, *timeScale);
-
-	  // Send the visitor to the frame to do it's thing
-	  _objs->_currFrame->getTransform()->accept(*(_objs->_tmv.get()));
-
-	  _objs->_intVal = 0;
-	}
-	else _objs->_intVal = -2;
+  static bool deprecatewarning = true;
+  
+  if(deprecatewarning)
+  {
+    OSG_WARN << "OpenFrames::offrame_managetime DEPRECATION WARNING: function will be removed in the future. Please use WindowProxy time management functions instead." << std::endl;
+    deprecatewarning = false; // Only warn once
+  }
+  
+  if(*reset) OSG_WARN << "OpenFrames::offrame_managetime WARNING: function no longer supports reset input. Please set time via WindowProxy time management functions instead." << std::endl;
+  if(*changePauseState) OF_FCN(ofwin_pausetime)(pauseState);
+  if(*changeOffsetTime) OF_FCN(ofwin_settime)(offsetTime);
+  if(*changeTimeScale) OF_FCN(ofwin_settimescale)(timeScale);
 }
 
 void OF_FCN(offrame_printframestring)()
@@ -1172,6 +1689,21 @@ void OF_FCN(ofsphere_settexturemap)(OF_CHARARG(fname))
     _objs->_intVal = 0;
 }
 
+void OF_FCN(ofsphere_setnighttexturemap)(OF_CHARARG(fname))
+{
+  // Make sure that the currently active ReferenceFrame is a Sphere
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if (sphere == NULL) {
+    _objs->_intVal = 1;
+    return;
+  }
+
+  // Convert given character string and length to a proper C string
+  std::string temp(OF_STRING(fname));
+  sphere->setNightTextureMap(temp);
+  _objs->_intVal = 0;
+}
+
 void OF_FCN(ofsphere_setautolod)(bool *lod)
 {
 	Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
@@ -1183,6 +1715,140 @@ void OF_FCN(ofsphere_setautolod)(bool *lod)
     else {
       _objs->_intVal = -2;
     }
+}
+
+void OF_FCN(ofsphere_setsphereposition)(double *x, double *y, double *z)
+{
+  // Make sure that the currently active ReferenceFrame is a Sphere
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if (sphere == NULL) {
+    _objs->_intVal = 1;
+    return;
+  }
+  
+  sphere->setSpherePosition(*x, *y, *z);
+  _objs->_intVal = 0;
+}
+
+void OF_FCN(ofsphere_setsphereattitude)(double *rx, double *ry, double *rz, double *angle)
+{
+  // Make sure that the currently active ReferenceFrame is a Sphere
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if (sphere == NULL) {
+    _objs->_intVal = 1;
+    return;
+  }
+  
+  sphere->setSphereAttitude(osg::Vec4(*rx, *ry, *rz, *angle));
+  _objs->_intVal = 0;
+}
+
+void OF_FCN(ofsphere_setspherescale)(double *sx, double *sy, double *sz)
+{
+  // Make sure that the currently active ReferenceFrame is a Sphere
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if (sphere == NULL) {
+    _objs->_intVal = 1;
+    return;
+  }
+  
+  sphere->setSphereScale(*sx, *sy, *sz);
+  _objs->_intVal = 0;
+}
+
+void OF_FCN(ofsphere_setmaterialambient)(float *r, float *g, float *b)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(*r, *g, *b, 1.0));
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+  
+void OF_FCN(ofsphere_setmaterialdiffuse)(float *r, float *g, float *b)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(*r, *g, *b, 1.0));
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(ofsphere_setmaterialspecular)(float *r, float *g, float *b)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(*r, *g, *b, 1.0));
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(ofsphere_setmaterialemission)(float *r, float *g, float *b)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4(*r, *g, *b, 1.0));
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(ofsphere_setmaterialshininess)(float *shininess)
+{
+  Sphere *sphere = dynamic_cast<Sphere*>(_objs->_currFrame);
+  if(sphere)
+  {
+    osg::Material* mat = sphere->getMaterial();
+    if(!mat)
+    {
+      mat = new osg::Material;
+      sphere->setMaterial(mat);
+    }
+    mat->setShininess(osg::Material::FRONT_AND_BACK, *shininess);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
 }
 
 /*******************************************
@@ -1411,6 +2077,22 @@ void OF_FCN(ofcoordaxes_setaxislength)(double *len)
 	else _objs->_intVal = -2;
 }
 
+void OF_FCN(ofcoordaxes_setaxiswidth)(float *width)
+{
+	CoordinateAxes *ca = dynamic_cast<CoordinateAxes*>(_objs->_currFrame);
+	if (ca)
+	{
+		// Set width and set error code to everything-ok value.
+		ca->setAxisWidth(*width);
+		_objs->_intVal = 0;
+	}
+	else
+	{
+		// Set error code to indicate problem.
+		_objs->_intVal = -2;
+	}
+}
+
 void OF_FCN(ofcoordaxes_setdrawaxes)(unsigned int *axes)
 {
 	CoordinateAxes *ca = dynamic_cast<CoordinateAxes*>(_objs->_currFrame);
@@ -1481,12 +2163,12 @@ void OF_FCN(oflatlongrid_create)(OF_CHARARG(name))
     _objs->_intVal = 0;
 }
 
-void OF_FCN(oflatlongrid_setparameters)(double *radius, double *latSpace, double *lonSpace)
+void OF_FCN(oflatlongrid_setparameters)(double *radiusX, double *radiusY, double *radiusZ, double *latSpace, double *lonSpace)
 {
 	LatLonGrid *llg = dynamic_cast<LatLonGrid*>(_objs->_currFrame);
 	if(llg) 
 	{
-	  llg->setParameters(*radius, *latSpace, *lonSpace);
+	  llg->setParameters(*radiusX, *radiusY, *radiusZ, *latSpace, *lonSpace);
 	  _objs->_intVal = 0;
 	}
 	else _objs->_intVal = -2;
@@ -1687,7 +2369,7 @@ void OF_FCN(oftraj_clear)()
 void OF_FCN(oftraj_informartists)()
 {
 	if (_objs->_currTraj) {
-	  _objs->_currTraj->informArtists();
+	  _objs->_currTraj->informSubscribers();
       _objs->_intVal = 0;
     }
     else {
@@ -1698,7 +2380,7 @@ void OF_FCN(oftraj_informartists)()
 void OF_FCN(oftraj_autoinformartists)(bool *autoinform)
 {
 	if (_objs->_currTraj) {
-	  _objs->_currTraj->autoInformArtists(*autoinform);
+	  _objs->_currTraj->autoInformSubscribers(*autoinform);
       _objs->_intVal = 0;
     }
     else {
@@ -1727,7 +2409,7 @@ void OF_FCN(oftrajartist_activate)(OF_CHARARG(name))
 	  _objs->_intVal = 0;
 	}
 }
-	
+
 void OF_FCN(oftrajartist_settrajectory)()
 {
     if (_objs->_currArtist) {
@@ -1760,7 +2442,7 @@ void OF_FCN(ofcurveartist_create)(OF_CHARARG(name))
 }
 
 void OF_FCN(ofcurveartist_setxdata)(int *src, unsigned int *element,
-                                 unsigned int *opt, double *scale)
+                                    unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
@@ -1808,7 +2490,7 @@ void OF_FCN(ofcurveartist_setydata)(int *src, unsigned int *element,
 }
 
 void OF_FCN(ofcurveartist_setzdata)(int *src, unsigned int *element,
-                                 unsigned int *opt, double *scale)
+                                    unsigned int *opt, double *scale)
 {
 	// Make sure source is within range (see Trajectory::SourceType enum)
 	if(*src < 0 || *src > 3) 
@@ -2048,6 +2730,7 @@ void OF_FCN(ofsegmentartist_setcolor)(float *r, float *g, float *b)
       _objs->_intVal = -2;
     }
 }
+
 
 void OF_FCN(ofsegmentartist_setwidth)(float *width)
 {
@@ -2315,17 +2998,6 @@ void OF_FCN(ofview_setperspective)(double *fov, double *ratio)
     }
 }
 
-void OF_FCN(ofview_setaspectmultiplier)(double *mult)
-{
-	if (_objs->_currView) {
-	  _objs->_currView->setAspectMultiplier(*mult);
-	  _objs->_intVal = 0;
-    }
-    else {
-      _objs->_intVal = -2;
-    }
-}
-
 #if defined(IFORT_CALLS)
 void OF_FCN(ofview_setviewframe)(const char *root, const char *frame, 
                                  unsigned int rootlen, 
@@ -2452,6 +3124,35 @@ void OF_FCN(ofview_setdefaultviewdistance)(double *distance)
     }
 }
 
+void OF_FCN(ofview_gettrackball)(double eye[], double center[], double up[])
+{
+  if (_objs->_currView) {
+    osg::Vec3d vEye, vCenter, vUp;
+    _objs->_currView->getTrackball()->getTransformation(vEye, vCenter, vUp);
+    eye[0] = vEye[0]; eye[1] = vEye[1]; eye[2] = vEye[2];
+    center[0] = vCenter[0]; center[1] = vCenter[1]; center[2] = vCenter[2];
+    up[0] = vUp[0]; up[1] = vUp[1]; up[2] = vUp[2];
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
+void OF_FCN(ofview_settrackball)(double eye[], double center[], double up[])
+{
+  if (_objs->_currView) {
+    osg::Vec3d vEye(eye[0], eye[1], eye[2]);
+    osg::Vec3d vCenter(center[0], center[1], center[2]);
+    osg::Vec3d vUp(up[0], up[1], up[2]);
+    _objs->_currView->getTrackball()->setTransformation(vEye, vCenter, vUp);
+    _objs->_intVal = 0;
+  }
+  else {
+    _objs->_intVal = -2;
+  }
+}
+
 void OF_FCN(ofview_isvalid)(bool *valid)
 {
 	if(_objs->_currView) 
@@ -2469,7 +3170,7 @@ void OF_FCN(ofview_isvalid)(bool *valid)
 void OF_FCN(ofview_reset)()
 {
 	if (_objs->_currView) {
-      _objs->_currView->resetTrackball();
+      _objs->_currView->resetView();
       _objs->_intVal = 0;
     }
     else {

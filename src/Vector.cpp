@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,6 +13,10 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ***********************************/
+
+/** \file Vector.cpp
+ * Vector-class function definitions.
+ */
 
 #include <OpenFrames/Vector.hpp>
 #include <osg/ShapeDrawable>
@@ -36,11 +40,13 @@ Vector::Vector( const osg::Vec3d& vec )
 	  // Reduce the detail for the vector (don't need high detail) and
 	  // leave out the face of the cylinder that connects to the cone.
 	osg::TessellationHints* hints = new osg::TessellationHints;
-	hints->setDetailRatio(0.2f);  // Don't need high detail for a vector
+	hints->setDetailRatio(1.0f);
 	hints->setCreateTop(false);
 
 	  // Create an actual drawable entity out of the vector
 	_vec = new osg::ShapeDrawable(shape, hints);
+  _vec->setUseDisplayList(false);
+  _vec->setUseVertexBufferObjects(true);
 
 	// Enable transparency and color blending
 	osg::StateSet *ss = _vec->getOrCreateStateSet();
@@ -100,7 +106,7 @@ void Vector::setRadius( const double &body, const double &head )
 	// vector's lengths have changed. But we do need to indicate
 	// that the drawable has changed.
 	_vec->dirtyBound();
-	_vec->dirtyDisplayList();
+  _vec->build();
 }
 
 void Vector::getRadius( double &body, double &head ) const
@@ -144,7 +150,7 @@ void Vector::reposition()
 
 	  // Indicate that the drawable has changed somehow
 	_vec->dirtyBound();
-	_vec->dirtyDisplayList();
+  _vec->build();
 }
 
 } // !namespace OpenFrames

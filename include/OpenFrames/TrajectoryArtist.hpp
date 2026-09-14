@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,81 +14,62 @@
    limitations under the License.
 ***********************************/
 
+/** \file TrajectoryArtist.hpp
+ * Declaration of TrajectoryArtist class.
+ */
+
 #ifndef _OF_TRAJECTORYARTIST_
 #define _OF_TRAJECTORYARTIST_
 
 #include <OpenFrames/Export.h>
 #include <OpenFrames/Trajectory.hpp>
-#include <osg/Drawable>
+#include <osg/Geode>
 #include <osg/ref_ptr>
 #include <vector>
 
 namespace OpenFrames
 {
-
-/***********************************************************
- * Ravi Mathur
- * OpenFrames API, class TrajectoryArtist
- * This abstract class provides the framework that is used to interpret
- * and draw a given Trajectory object.  What is actually drawn is left
- * to deriving classes; this class just stores the Trajectory and line
- * styles that should be used for drawing.
-***********************************************************/
-class OF_EXPORT TrajectoryArtist : public osg::Drawable
-{
+  /**
+   * \class TrajectoryArtist
+   *
+   * \brief Abstract class for Trajectory objects.
+   *
+   * This abstract class provides the framework that is used to interpret
+   * and draw a given Trajectory object. What is actually drawn is left
+   * to deriving classes; this base class just stores the Trajectory that
+   * should be used for drawing.
+   */
+  class OF_EXPORT TrajectoryArtist : public osg::Geode, public OpenFrames::TrajectorySubscriber
+  {
   public:
-	TrajectoryArtist();
+    // Vertex attribute index for low part of double-precision vertex
+    // Used for GPU-based rendering relative to the eye (RTE)
+    static const unsigned int OF_VERTEXLOW = 1; 
 
-	// Copy constructor
-	TrajectoryArtist( const TrajectoryArtist &ta,
-	               const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY );
+    TrajectoryArtist();
 
-	/** Standard OSG Node methods */
-	virtual bool isSameKindAs(const Object* obj) const { return dynamic_cast<const TrajectoryArtist*>(obj) != NULL; }
-	virtual const char* libraryName() const { return "OpenFrames"; }
-	virtual const char* className() const { return "TrajectoryArtist"; }
+    // Copy constructor
+    TrajectoryArtist(const TrajectoryArtist &ta,
+      const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
 
-	/** Set the trajectory to be drawn. */
-	virtual void setTrajectory(const Trajectory *traj);
-	inline const Trajectory* getTrajectory() const {return _traj.get();}
+    /** Set the trajectory to be drawn. */
+    virtual void setTrajectory(const Trajectory *traj);
+    inline const Trajectory* getTrajectory() const { return _traj.get(); }
 
-	/** Called by the trajectory when its data is cleared. Must be
-	    implemented by derived classes. */
-	virtual void dataCleared() = 0;
+    /** Called by the trajectory when its data is cleared. Must be
+        implemented by derived classes. */
+    virtual void dataCleared(const Trajectory* traj) = 0;
 
-	/** Called by the trajectory when data is added to it. Must be
-	    implemented by derived classes. */
-	virtual void dataAdded() = 0;
-
-        /** Set current simulation time. This is used by specific artists in
-            different ways, e.g. only draw a portion of the Trajectory. */
-        virtual void setCurrentTime(double t) { _currTime = t; }
-
-        /** Set the range of data points to draw, relative to the current
-            simulation time. */
-        virtual void setDrawRange(double start, double end)
-        {
-          _rangeStart = start;
-          _rangeEnd = end;
-        }
+    /** Called by the trajectory when data is added to it. Must be
+        implemented by derived classes. */
+    virtual void dataAdded(const Trajectory* traj) = 0;
 
   protected:
-	virtual ~TrajectoryArtist();
+    virtual ~TrajectoryArtist();
 
-	/** Inherited from osg::Drawable */
-	virtual osg::BoundingBox computeBoundingBox() const;
-
-        /** Convert double vector to two float vectors and submit
-            to OpenGL using rendering relative to the eye. */
-        void RTE_glVertex(osg::Vec3d &point, osg::GLExtensions &glext) const;
-
-	osg::ref_ptr<const Trajectory> _traj; // Trajectory to be drawn
-
-        osg::ref_ptr<osg::Program> _program; // GLSL program
-
-        double _currTime;     // Current time for time-based drawing
-        double _rangeStart, _rangeEnd; // Data range to draw
-};
+    osg::ref_ptr<const Trajectory> _traj; // Trajectory to be drawn
+    osg::ref_ptr<osg::Program> _program; // GLSL program
+  };
 
 }
 

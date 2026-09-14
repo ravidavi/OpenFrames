@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,10 +14,12 @@
    limitations under the License.
 ***********************************/
 
+/** \file FrameTransform.cpp
+ * Definitions for the FrameTransform class.
+ */
+
 #include <OpenFrames/FrameTransform.hpp>
 #include <osgUtil/CullVisitor>
-#include <iostream>
-#include <climits>
 
 namespace OpenFrames
 {
@@ -47,6 +49,12 @@ void FrameTransform::setPosition(const double &x, const double &y, const double 
 	dirtyBound();
 }
 
+void FrameTransform::setPosition(const osg::Vec3d &pos)
+{
+  _position = pos;
+  dirtyBound();
+}
+
 void FrameTransform::getPosition(double &x, double &y, double &z) const
 {
 	if(_disabled) x = y = z = 0.0;
@@ -58,6 +66,18 @@ void FrameTransform::getPosition(double &x, double &y, double &z) const
 	}
 }
 
+void FrameTransform::getPosition(osg::Vec3d &pos) const
+{
+  if (_disabled) pos.set(0.0, 0.0, 0.0);
+  else pos = _position;
+}
+
+const osg::Vec3d& FrameTransform::getPosition() const
+{
+  if(_disabled) return osg::Vec3d();
+  else return _position;
+}
+
 void FrameTransform::setAttitude(const double &rx, const double &ry,
 				const double &rz, const double &angle)
 {
@@ -66,6 +86,12 @@ void FrameTransform::setAttitude(const double &rx, const double &ry,
 	_attitude._v[2] = rz;
 	_attitude._v[3] = angle;
 	dirtyBound();
+}
+
+void FrameTransform::setAttitude(const osg::Quat &att)
+{
+  _attitude = att;
+  dirtyBound();
 }
 
 void FrameTransform::getAttitude(double &rx, double &ry, double &rz, double &angle) const
@@ -82,6 +108,12 @@ void FrameTransform::getAttitude(double &rx, double &ry, double &rz, double &ang
 	  rz = _attitude._v[2];
 	  angle = _attitude._v[3];
 	}
+}
+
+void FrameTransform::getAttitude(osg::Quat &att) const
+{
+  if (_disabled) att.set(0.0, 0.0, 0.0, 1.0);
+  else att = _attitude;
 }
 
 void FrameTransform::setScale(const double &sx, const double &sy, const double &sz)
@@ -212,424 +244,5 @@ bool FrameTransform::computeWorldToLocalMatrix(osg::Matrix& matrix, osg::NodeVis
 
 	return true;
 }
-
-TrajectoryFollower::TrajectoryFollower(Trajectory *traj)
-{
-	setFollowTrajectory(traj);
-
-	unsigned int dof = _follow.valid()?_follow->getDOF():0;
-	Trajectory::DataSource dataPoint;
-
-	if(dof >= 1) 
-	{
-	  dataPoint._src = Trajectory::POSOPT;
-	  dataPoint._element = 0;
-	}
-	else dataPoint._src = Trajectory::ZERO;
-	setXData(dataPoint);
-
-	if(dof >= 2)
-	{
-	  dataPoint._src = Trajectory::POSOPT;
-	  dataPoint._element = 1;
-	}
-	else dataPoint._src = Trajectory::ZERO;
-	setYData(dataPoint);
-
-	if(dof >= 3)
-	{
-	  dataPoint._src = Trajectory::POSOPT;
-	  dataPoint._element = 2;
-	}
-	else dataPoint._src = Trajectory::ZERO;
-	setZData(dataPoint);
-
-	_mode = LOOP;
-	_data = POSITION + ATTITUDE;
-
-	_offsetTime = 0.0;
-	_timeScale = 1.0;
-	_paused = false;
-	_needsUpdate = false;
-	_deltaTime = _pauseTime = 0.0;
-	_latestTime = DBL_MAX;
-}
-
-TrajectoryFollower::~TrajectoryFollower() {}
-
-void TrajectoryFollower::setFollowTrajectory(Trajectory *traj)
-{
-	if(_follow == traj) return; // Already following specified trajectory
-	_dataValid = traj?traj->verifyData(_dataSource):false;
-	_follow = traj;
-	_needsUpdate = true;
-}
-
-bool TrajectoryFollower::setXData(const Trajectory::DataSource &src)
-{
-	if(_dataSource[0] == src) return _dataValid; // No changes to be made
-
-	_dataSource[0] = src; // Set new source
-	_dataValid = _follow.valid()?_follow->verifyData(_dataSource):false;
-	_needsUpdate = true;
-
-	return _dataValid;
-}
-
-bool TrajectoryFollower::setYData(const Trajectory::DataSource &src)
-{
-	if(_dataSource[1] == src) return _dataValid;
-
-	_dataSource[1] = src; // Set new source
-	_dataValid = _follow.valid()?_follow->verifyData(_dataSource):false;
-	_needsUpdate = true;
-
-	return _dataValid;
-}
-
-bool TrajectoryFollower::setZData(const Trajectory::DataSource &src)
-{
-	if(_dataSource[2] == src) return _dataValid;
-
-	_dataSource[2] = src; // Set new source
-	_dataValid = _follow.valid()?_follow->verifyData(_dataSource):false;
-	_needsUpdate = true;
-
-	return _dataValid;
-}
-
-void TrajectoryFollower::setTimeScale(double timeScale)
-{
-	if(_timeScale != timeScale)
-	{
-	  // Compute new time offset to account for change of time scale
-	  if(_paused) _deltaTime += _pauseTime*(_timeScale - timeScale);
-	  else _deltaTime += _latestTime*(_timeScale - timeScale);
-
-	  _timeScale = timeScale;
-	}
-
-	_needsUpdate = true;
-}
-
-void TrajectoryFollower::setPaused(bool pause)
-{
-	if(_paused != pause)
-	{
-	  _paused = pause;
-
-	  if(_paused) _pauseTime = _latestTime;
-	  else _deltaTime += _timeScale*(_pauseTime - _latestTime);
-	}
-
-	_needsUpdate = true;
-}
-
-void TrajectoryFollower::setOffsetTime(double offsetTime)
-{
-	_offsetTime = offsetTime;
-	_needsUpdate = true;
-}
-
-void TrajectoryFollower::reset()
-{
-	// Reset parameters such that the newly computed time will be the user specified time offset
-	_deltaTime = -_timeScale*_latestTime;
-	_pauseTime = _latestTime;
-	_needsUpdate = true;
-}
-
-void TrajectoryFollower::operator()(osg::Node *node, osg::NodeVisitor *nv)
-{
-	if(!_follow.valid()) return; // Make sure trajectory is defined
-
-	double refTime = nv->getFrameStamp()->getReferenceTime();
-
-	if(_latestTime != refTime)
-	{ 
-	  if(_latestTime == DBL_MAX) // First call, so we need to initialize variables
-	  {
-	    _latestTime = refTime; // Store the current time
-	    reset(); // Initialize times
-	  }
-	  else _latestTime = refTime; // Just store the current time
-
-	  if(!_paused || _needsUpdate)
-	  {
-	    // Compute current simulation time as t = _offset + _delta + _tscale*_time
-	    double time = _offsetTime + _deltaTime;
-	    if(_paused) time += _timeScale*_pauseTime;
-	    else time += _timeScale*_latestTime;
-
-	    // Apply new position/attitude to the FrameTransform
-	    FrameTransform *ft = dynamic_cast<FrameTransform*>(node);
-            if(ft)
-            {
-              // Prevent trajectory data from being modified while we are
-              // using it in computations.
-              _follow->lockData();
-
-              if(_dataValid && (_data & POSITION)) 
-              {
-                _updatePosition(time);
-                ft->setPosition(_v1[0], _v1[1], _v1[2]);
-              }
-
-              if(_data & ATTITUDE) 
-              {
-                _updateAttitude(time);
-                ft->setAttitude(_a1[0], _a1[1], _a1[2], _a1[3]);
-              }
-
-              _follow->unlockData(); // Free up the trajectory data
-            }
-
-	    _needsUpdate = false; // Reset update flag
-	  }
-	}
-
-	// Call nested callbacks and traverse rest of scene graph
-	osg::NodeCallback::traverse(node, nv);
-}
-
-void TrajectoryFollower::_updatePosition(double time)
-{
-	int val, index = 0;
-	bool dointerp = false;
-
-	// Get list of times for the followed Trajectory
-	const Trajectory::DataArray& times = _follow->getTimeList();
-
-	// Number of position points supported by Trajectory
-	unsigned int numPoints = _follow->getNumPoints(_dataSource);
-	if(numPoints == UINT_MAX) numPoints = 1;
-	else if(numPoints == 0)
-	{
-	  _v1.set(0.0, 0.0, 0.0);
-	  return;
-	}
-
-	// Find requested time in the Trajectory
-	val = _follow->getTimeIndex(time, index);
-
-	if(val >= 0) dointerp = true; // Time not out of range
-	else if(val == -1) // Time out of range
-	{
-	  if(_mode == LIMIT) // Set frame to either end of the trajectory
-	  {
-	    if(index < 0) // Requested time is before times in trajectory
-	    {
-	      _follow->getPoint(0, _dataSource, _v1._v);
-	    }
-	    else // Requested time is after times in trajectory
-	    {
-	      _follow->getPoint(numPoints-1, _dataSource, _v1._v);
-	    }
-	  }
-	  else if(_mode == LOOP) // Loop indefinitely
-	  {
-	    double near, far;
-
-	    // Determine which side of the trajectory's times we are on
-	    if(index < 0) { near = times[0]; far = times[numPoints-1]; }
-	    else { near = times[numPoints-1]; far = times[0]; }
-
-	    // All points are at the same time, so just use the first point
-	    if(fabs(near-far) <= 1.0e-12)
-	    {
-	      _follow->getPoint(0, _dataSource, _v1._v);
-	    }
-	    else // Shift time such that it lies within range of the trajectory
-	    {
-	      time = time + ((int)ceil(fabs((near-time)/(far-near))))*(far-near);
-	      val = _follow->getTimeIndex(time, index);
-	      if(val >= 0) dointerp = true; // Interpolate time
-	      else if(val == -1) 
-	      {
-		std::cerr<< "FrameTransform::_updatePosition() error: Shifted time is still not within Trajectory's range!" << std::endl;
-	      }
-	      else if(val == -2)
-	      {
-		std::cerr<< "FrameTransform::_updatePosition() error: Shifted time cannot be found within a finite number of iterations!" << std::endl;
-	      }
-	      else
-	      {
-		std::cerr<< "FrameTransform::_updatePosition() error: Unhandled return value after shifting time!" << std::endl;
-	      }
-	    }
-	  }
-	}
-	else if(val == -2) // Error in search (endless iterations)
-	{
-	  std::cerr<< "FrameTransform::_updatePosition() error: Requested time not found in a reasonable number of iterations!" << std::endl;
-	}
-	else // Unhandled return value from getTimeIndex()
-	{
-	  std::cerr<< "FrameTransform::_updatePosition() error: Unhandled return value!" << std::endl;
-	}
-
-	// Interpolate to find position at adjusted time
-	if(dointerp && (index < (int)numPoints))
-	{
-	  // Get the first position used for interpolation
-	  _follow->getPoint(index, _dataSource, _v1._v);
-
-	  // Interpolate only if requested time is fully inside time range and
-	  // the two interpolation times are not equal.
-	  if((index+1 < (int)numPoints) && (times[index] != times[index+1]))
-	  {
-	    double frac = (time - times[index])/(times[index+1] - times[index]);
-
-	    // Get the second position used for interpolation
-	    _follow->getPoint(index+1, _dataSource, _v2._v);
-	    _v1 = _v1 + (_v2-_v1)*frac; // Linear interpolation
-	  }
-	}
-}
-
-void TrajectoryFollower::_updateAttitude(double time)
-{
-	int val, index = 0;
-	bool dointerp = false;
-
-	// Get list of times for the followed Trajectory
-	const Trajectory::DataArray& times = _follow->getTimeList();
-
-	// Number of attitude points supported by Trajectory
-	unsigned int numPoints = _follow->getNumAtt();
-	if(numPoints == 0)
-	{
-	  _a1.set(0.0, 0.0, 0.0, 1.0);
-	  return;
-	}
-
-	// Find requested time in the Trajectory
-	val = _follow->getTimeIndex(time, index);
-
-	if(val >= 0) dointerp = true; // Time not out of range
-	else if(val == -1) // Time out of range
-	{
-	  if(_mode == LIMIT) // Set frame to either end of the trajectory
-	  {
-	    if(index < 0) // Requested time is before times in trajectory
-	    {
-	      _follow->getAttitude(0, _a1[0], _a1[1], _a1[2], _a1[3]);
-	    }
-	    else // Requested time is after times in trajectory
-	    {
-	      _follow->getAttitude(numPoints-1, _a1[0], _a1[1], _a1[2], _a1[3]);
-	    }
-	  }
-	  else if(_mode == LOOP) // Loop indefinitely
-	  {
-	    double near, far;
-
-	    // Determine which side of the trajectory's times we are on
-	    if(index < 0) { near = times[0]; far = times[numPoints-1]; }
-	    else { near = times[numPoints-1]; far = times[0]; }
-
-	    // All points are at the same time, so just use the first point
-	    if(fabs(near-far) <= 1.0e-12)
-	    {
-	      _follow->getAttitude(0, _a1[0], _a1[1], _a1[2], _a1[3]);
-	    }
-	    else // Shift time such that it lies within range of the trajectory
-	    {
-	      time = time + ((int)ceil(fabs((near-time)/(far-near))))*(far-near);
-	      val = _follow->getTimeIndex(time, index);
-	      if(val >= 0) dointerp = true; // Interpolate time
-	      else if(val == -1) 
-	      {
-		std::cerr<< "FrameTransform::_updateAttitude() error: Shifted time is still not within Trajectory's range!" << std::endl;
-	      }
-	      else if(val == -2)
-	      {
-		std::cerr<< "FrameTransform::_updateAttitude() error: Shifted time cannot be found within a finite number of iterations!" << std::endl;
-	      }
-	      else
-	      {
-		std::cerr<< "FrameTransform::_updateAttitude() error: Unhandled return value after shifting time!" << std::endl;
-	      }
-	    }
-	  }
-	}
-	else if(val == -2) // Error in search (endless iterations)
-	{
-	  std::cerr<< "FrameTransform::_updateAttitude() error: Requested time not found in a reasonable number of iterations!" << std::endl;
-	}
-	else // Unhandled return value from getTimeIndex()
-	{
-	  std::cerr<< "FrameTransform::_updateAttitude() error: Unhandled return value!" << std::endl;
-	}
-
-	// Interpolate to find attitude at adjusted time
-	if(dointerp && (index < (int)numPoints))
-	{
-	  // Get the first attitude used for interpolation
-	  _follow->getAttitude(index, _a1[0], _a1[1], _a1[2], _a1[3]);
-
-	  // Interpolate only if requested time is fully inside time range and
-	  // the two interpolation times are not equal.
-	  if((index+1 < (int)numPoints) && (times[index] != times[index+1]))
-	  {
-	    double frac = (time - times[index])/(times[index+1] - times[index]);
-
-	    // Get the second attitude used for interpolation
-	    _follow->getAttitude(index+1, _a2[0], _a2[1], _a2[2], _a2[3]);
-	    _a1.slerp(frac, _a1, _a2); // Spherical interpolation for attitude
-	  }
-	}
-}
-
-TimeManagementVisitor::TimeManagementVisitor()
-{
-	setTraversalMode(TRAVERSE_ALL_CHILDREN);
-
-	_pauseState = false;
-	_changePauseState = _changeOffsetTime = _changeTimeScale = false;
-	_offsetTime = 0.0;
-	_timeScale = 1.0;
-	_reset = false;
-}
-
-TimeManagementVisitor::~TimeManagementVisitor() {}
-
-void TimeManagementVisitor::setPauseState(bool changePauseState, bool pauseState) 
-{ 
-	_changePauseState = changePauseState;
-	_pauseState = pauseState; 
-}
-
-void TimeManagementVisitor::setOffsetTime(bool changeOffsetTime, double offsetTime)
-{
-	_changeOffsetTime = changeOffsetTime;
-	_offsetTime = offsetTime;
-}
-
-void TimeManagementVisitor::setTimeScale(bool changeTimeScale, double timeScale)
-{
-	_changeTimeScale = changeTimeScale;
-	_timeScale = timeScale;
-}
-
-void TimeManagementVisitor::apply(osg::Transform &node)
-{
-	// Make sure current node is a FrameTransform
-	FrameTransform *ft = dynamic_cast<FrameTransform*>(&node);
-	if(ft)
-	{
-	  // Make sure FrameTransform has a TrajectoryFollower callback
-	  TrajectoryFollower *tf = dynamic_cast<TrajectoryFollower*>(ft->getUpdateCallback());
-	  if(tf) 
-	  {
-	    if(_changePauseState) tf->setPaused(_pauseState);
-	    if(_changeOffsetTime) tf->setOffsetTime(_offsetTime);
-	    if(_changeTimeScale) tf->setTimeScale(_timeScale);
-	    if(_reset) tf->reset();
-	  }
-	}
-
-	// Traverse & pause children if needed
-	osg::NodeVisitor::traverse(node);
-}
+  
 } // !namespace OpenFrames

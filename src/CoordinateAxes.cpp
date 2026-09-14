@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,6 +13,10 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ***********************************/
+
+/** \file CoordinateAxes.cpp
+ * Implementation of CoordinateAxes' member functions.
+ */
 
 #include <OpenFrames/CoordinateAxes.hpp>
 #include <osg/BlendFunc>
@@ -94,6 +98,25 @@ CoordinateAxes::CoordinateAxes(const std::string &name, float r, float g,
 
 CoordinateAxes::~CoordinateAxes() {}
 
+void CoordinateAxes::showContents(bool showContents)
+{
+	if (showContents)
+	{
+	  _axesGeode->setNodeMask(0xffffffff);
+	  _tickGeode->setNodeMask(0xffffffff);
+	}
+	else
+	{
+	  _axesGeode->setNodeMask(0x0);
+	  _tickGeode->setNodeMask(0x0);
+	}
+}
+
+bool CoordinateAxes::getContentsShown() const
+{
+	return (_axesGeode->getNodeMask() != 0x0 || _tickGeode->getNodeMask() != 0x0);
+}
+
 void CoordinateAxes::setAxisLength(double len)
 {
 	if((len != _axisLength) && (len >= 0.0))
@@ -117,6 +140,19 @@ void CoordinateAxes::setDrawAxes(unsigned int axes)
 	  _createAxes();
 	}
 }
+
+  void CoordinateAxes::setAxisWidth(float width)
+  {
+    if ( width > 1.0 )
+    {
+      _lineWidth->setWidth( width );
+    }
+  }
+
+  float CoordinateAxes::getAxisWidth() const
+  {
+    return _lineWidth->getWidth();
+  }
 
 void CoordinateAxes::setTickSpacing(double major_sp, double minor_sp)
 {
@@ -251,11 +287,7 @@ void CoordinateAxes::setColor( const osg::Vec4 &color )
 	// Set new color
 	ReferenceFrame::setColor(color);
 	(*_colors)[0] = color;
-
-	// Inform geometries that something has changed
-	_axesGeom->dirtyDisplayList();
-	_majorTickGeom->dirtyDisplayList();
-	_minorTickGeom->dirtyDisplayList();
+  _colors->dirty();
 }
 
 void CoordinateAxes::_init()
@@ -276,6 +308,19 @@ void CoordinateAxes::_init()
 	_axesGeom = new osg::Geometry;
 	_majorTickGeom = new osg::Geometry;
 	_minorTickGeom = new osg::Geometry;
+  
+  // Use VBOs
+  _axesGeom->setUseDisplayList(false);
+  _axesGeom->setUseVertexBufferObjects(true);
+  _majorTickGeom->setUseDisplayList(false);
+  _majorTickGeom->setUseVertexBufferObjects(true);
+  _minorTickGeom->setUseDisplayList(false);
+  _minorTickGeom->setUseVertexBufferObjects(true);
+
+  // Set initial width of the axis lines and activate that attrib.
+  _lineWidth = new osg::LineWidth;
+  _lineWidth->setWidth( 1.0 );
+  _axesGeom->getOrCreateStateSet()->setAttribute( _lineWidth, osg::StateAttribute::ON );
 
         // Add the Point parameter to allow major/minor tick mark resizing
         // Note that major/minor Geoms need separate StateSets since they
@@ -437,6 +482,9 @@ void CoordinateAxes::_createAxes()
 
 	// Tell the minor tick mark geometry to draw data as points
 	_minorTickGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS, start, _vertices->size() - start));
+  
+  // Indicate that data has changed and should be re-rendered
+  _vertices->dirty();
 }
 
 void CoordinateAxes::resetTickShader()

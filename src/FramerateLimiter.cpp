@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,75 +14,53 @@
    limitations under the License.
 ***********************************/
 
-#include <OpenFrames/FramerateLimiter.hpp>
-#include <math.h>
+/** \file FramerateLimiter.cpp
+ * Definitions for the FramerateLimiter class.
+ */
 
-#ifdef WIN32
-  #include <windows.h>
-  #define FACTOR 1.0e3
-  #define MINSLEEP 1
-  #define SLEEP_FCN Sleep
-#else
-  #include <unistd.h>
-  #define FACTOR 1.0e6
-  #define MINSLEEP 1000
-  #define SLEEP_FCN usleep
-#endif
+#include <OpenFrames/FramerateLimiter.hpp>
+#include <OpenThreads/Thread>
   
 namespace OpenFrames{
 
-/** Constructor, defaults to 30fps */
-FramerateLimiter::FramerateLimiter()
-  	: _timer(*osg::Timer::instance())
+/** Constructor */
+FramerateLimiter::FramerateLimiter(double fps)
+  	: _timer(*osg::Timer::instance()),
+    _startTick(0), _endTick(0), _prevStartTick(0)
 {
-	setDesiredFramerate(30.0);
+	setDesiredFramerate(fps);
 }
 
 void FramerateLimiter::setDesiredFramerate(double fps)
 {
-	_desired_spf = 1.0/fps; // Desired seconds per frame
+  if (fps > 0.0)
+    _desiredSPF = 1.0 / fps; // Desired seconds per frame
 
-	// Number of frames before checking statistics
-	_max_frames = (unsigned int)ceil(fps/10.0);
-	if(_max_frames == 0) _max_frames = 1;
-	_max_frames_inv = 1.0/(double)_max_frames;
+  else
+    _desiredSPF = 0.0; // Indicate unlimited framerate
 
-	reset(); // Initialize everything
+  _currSPF = _desiredSPF;
 }
 
-/** This indicates the start of a new frame.  If the new frame is also the first frame of a new group, then compute the statistics for the previous group and update the sleep time for the new group. */
+/** Indicates the start of a new frame */
 void FramerateLimiter::frame()
 {
-	  // Collect statistics for the previous set of frames
-	if(_framecount == _max_frames)
-	{
-	    // Calculate the average spf for the previous set of frames
-	  _curr_spf = _timer.delta_s(_ref_time, _timer.tick())*_max_frames_inv;
+  // This frame begins after the previous frame's workload ends
+  _endTick = _timer.tick();
 
-	    // Compute the extra amount of time that each frame (on average)
-	    // should take up in order to reach the desired fps.
-	  _sleeptime += (int)(FACTOR * (_desired_spf-_curr_spf));
+  // Compute time taken by workload
+  double workTime = _timer.delta_s(_startTick, _endTick);
 
-	    // If the sleep time is very small (or negative), then it's not
-	    // worth sleeping because the function call could take up more
-	    // time than we want to sleep for.
-	  if(_sleeptime < MINSLEEP) _sleeptime = 0;
+  // Sleep until the next workload should begin
+  double sleepTime = _desiredSPF - workTime;
+  if (sleepTime > 0.0) OpenThreads::Thread::microSleep((unsigned int)(sleepTime*1.0e6));
 
-	    // Reset the framecount and reference time to prepare for the
-	    // next batch of frames to average.
-	  _framecount = 0;
-	  _ref_time = _timer.tick();
-	}
-	
-	++_framecount;
-	if(_sleeptime > 0) SLEEP_FCN(_sleeptime);
-}
+  // Get next workload start time
+  _startTick = _timer.tick();
 
-void FramerateLimiter::reset()
-{
-	_framecount = _max_frames;
-	_sleeptime = 0;
-	_ref_time = _timer.tick();
+  // Update statistics (considered part of next workload)
+  _currSPF = _timer.delta_s(_prevStartTick, _startTick);
+  _prevStartTick = _startTick;
 }
 
 } // !namespace OpenFrames

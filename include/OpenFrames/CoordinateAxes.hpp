@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file CoordinateAxes.hpp
+ * Declaration of CoordinateAxes class.
+ */
+
 #ifndef _OF_COORDINATEAXES_
 #define _OF_COORDINATEAXES_
 
@@ -21,21 +25,28 @@
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <osg/Geometry>
 #include <osg/ref_ptr>
+#include <osg/LineWidth>
 
 namespace OpenFrames
 {
-
-/**********************************************************
- * Ravi Mathur
- * OpenFrames API, class CoordinateAxes
- * A type of ReferenceFrame that displays its X, Y, and Z axes with adjustable
- * tick marks and labels.
-**********************************************************/
-class OF_EXPORT CoordinateAxes : public ReferenceFrame
-{
+  /**
+   * \class CoordinateAxes
+   *
+   * \brief A type of ReferenceFrame that displays X, Y, and Z axes.
+   *
+   * This class is a type of ReferenceFrame that displays its X, Y and Z axes
+   * with adjustable tick marks and labels.
+   */
+  class OF_EXPORT CoordinateAxes : public ReferenceFrame
+  {
   public:
 	CoordinateAxes( const std::string &name );
 	CoordinateAxes( const std::string &name, float r, float g, float b, float a = 1.0 );
+
+	// Show/hide this frame's contents, e.g. everything a frame shows (excluding axes, labels, and children)
+	// Inherited from ReferenceFrame
+	virtual void showContents(bool showContents);
+	virtual bool getContentsShown() const;
 
 	/** Set/get axis length */
 	void setAxisLength(double len);
@@ -44,6 +55,10 @@ class OF_EXPORT CoordinateAxes : public ReferenceFrame
 	/** Set which axes to draw using ReferenceFrame::AxesType */
 	void setDrawAxes(unsigned int axes);
 	inline unsigned int getDrawAxes() const { return _drawAxes; }
+
+	/** Set/get width of axes. */
+	void setAxisWidth(float width);
+	float getAxisWidth() const;
 	
 	/** Set/get tick spacing */
 	void setTickSpacing(double major_sp, double minor_sp);
@@ -62,6 +77,9 @@ class OF_EXPORT CoordinateAxes : public ReferenceFrame
 	virtual void setColor( const osg::Vec4 &color );
 	using ReferenceFrame::setColor;
 
+  /// Inherited
+  virtual std::string frameInfo() const { return "CoordinateAxes"; }
+
   protected:
 	virtual ~CoordinateAxes();
 
@@ -75,6 +93,7 @@ class OF_EXPORT CoordinateAxes : public ReferenceFrame
 	double _axisLength; // Length of each axis
 	double _majorTickSpacing, _minorTickSpacing; // Tick mark spacing
 	unsigned int _drawAxes; // Which axes to draw
+	osg::ref_ptr<osg::LineWidth> _lineWidth;  // Width of axis lines.
 
 	osg::ref_ptr<osg::Geode> _axesGeode; // Node to hold axes geometry
 	osg::ref_ptr<osg::Geode> _tickGeode; // Node to hold tick geometry
@@ -87,7 +106,7 @@ class OF_EXPORT CoordinateAxes : public ReferenceFrame
 	osg::ref_ptr<osg::Vec4Array> _colors;   // Colors for each line
 
         osg::ref_ptr<osg::Shader> _fragShader; // Tick mark fragment shader
-};
+  };
 
 } // !namespace OpenFrames
 

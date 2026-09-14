@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,6 +13,10 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ***********************************/
+
+/** \file RadialPlane.cpp
+ * RadialPlane-class function definitions.
+ */
 
 #include <OpenFrames/RadialPlane.hpp>
 #include <osg/Geometry>
@@ -40,6 +44,25 @@ RadialPlane::RadialPlane(const std::string &name, float r, float g,
 }
 
 RadialPlane::~RadialPlane() {}
+
+void RadialPlane::showContents(bool showContents)
+{
+	if (showContents)
+	{
+	  _planeGeode->setNodeMask(0xffffffff);
+	  _linesGeode->setNodeMask(0xffffffff);
+	}
+	else
+	{
+	  _planeGeode->setNodeMask(0x0);
+	  _linesGeode->setNodeMask(0x0);
+	}
+}
+
+bool RadialPlane::getContentsShown() const
+{
+	return (_planeGeode->getNodeMask() != 0x0 || _linesGeode->getNodeMask() != 0x0);
+}
 
 void RadialPlane::init()
 {
@@ -83,6 +106,12 @@ void RadialPlane::init()
 	// will be created and set up on the fly.
 	_linesGeom = new osg::Geometry;
 	_lonGeom = new osg::Geometry;
+  
+  // Use VBOs
+  _linesGeom->setUseDisplayList(false);
+  _linesGeom->setUseVertexBufferObjects(true);
+  _lonGeom->setUseDisplayList(false);
+  _lonGeom->setUseVertexBufferObjects(true);
 
 	// Make the 0 degree longitude line thicker
 	osg::StateSet *ss = _lonGeom->getOrCreateStateSet();
@@ -161,13 +190,7 @@ void RadialPlane::setPlaneColor(const osg::Vec4 &color)
 {
 	// Set color of the radial plane
 	(*_planeColor)[0] = color;
-
-	// Tell each plane cell that it has changed
-	unsigned int numDrawables = _planeGeode->getNumDrawables();
-	for(unsigned int i = 0; i < numDrawables; ++i)
-	{
-	  _planeGeode->getDrawable(i)->dirtyDisplayList();
-	}
+  _planeColor->dirty();
 }
 
 void RadialPlane::setPlaneColor(float r, float g, float b, float a)
@@ -179,10 +202,7 @@ void RadialPlane::setLineColor(const osg::Vec4 &color)
 {
 	// Set color of the longitude lines & radial circles
 	(*_lineColor)[0] = color;
-
-	// Indicate that the lines have been changed
-	_linesGeom->dirtyDisplayList();
-	_lonGeom->dirtyDisplayList();
+  _lineColor->dirty();
 }
 
 void RadialPlane::setLineColor(float r, float g, float b, float a)
@@ -363,6 +383,10 @@ void RadialPlane::createPlane()
 	    _linesGeom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, start, _lineVertices->size() - start));
 	  }
 	}
+  
+  // Indicate that data has changed and should be re-rendered
+  _lineVertices->dirty();
+  _planeVertices->dirty();
 }
 
 void RadialPlane::addCell(const osg::Vec2d v[], unsigned int nV)
@@ -378,6 +402,8 @@ void RadialPlane::addCell(const osg::Vec2d v[], unsigned int nV)
 
 	// Create geometry for this cell
 	osg::Geometry *currCell = new osg::Geometry();
+  currCell->setUseDisplayList(false);
+  currCell->setUseVertexBufferObjects(true);
 	currCell->setVertexArray(_planeVertices.get());
 	currCell->setColorArray(_planeColor.get());
 	currCell->setColorBinding(osg::Geometry::BIND_OVERALL);

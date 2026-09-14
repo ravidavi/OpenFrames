@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,14 +14,15 @@
    limitations under the License.
 ***********************************/
 
+/** \file TrajectoryArtist.cpp
+ * TrajectoryArtist-class function definitions.
+ */
+
 #include <OpenFrames/TrajectoryArtist.hpp>
 #include <OpenFrames/DoubleSingleUtils.hpp>
 
 namespace OpenFrames
 {
-
-// Vertex shader object used by all Trajectory Artists
-static osg::ref_ptr<osg::Shader> OFTA_VertShader;
 
 // Implement vertex shader for Rendering Relative to Eye using GPU
 static const char *OFTA_VertSource = {
@@ -62,25 +63,20 @@ static const char *OFTA_VertSource = {
 TrajectoryArtist::TrajectoryArtist() 
 : _currTime(0.0), _rangeStart(DBL_MIN), _rangeEnd(DBL_MAX)
 {
-        // Create vertex shader if it doesn't already exist
-        if(OFTA_VertShader == NULL)
-        {
-          OFTA_VertShader = new osg::Shader(osg::Shader::VERTEX, OFTA_VertSource);
-        }
+  // Create vertex shader
+  osg::Shader *vertShader = new osg::Shader(osg::Shader::VERTEX, OFTA_VertSource);
 
-        // Create vertex program
-        _program = new osg::Program;
-        _program->setName("OFTrajectoryArtist_ShaderProgram");
+  // Create vertex program
+  _program = new osg::Program;
+  _program->setName("OFTrajectoryArtist_ShaderProgram");
+  _program->addShader(vertShader);
 
-        // Add the vertex shader
-        _program->addShader(OFTA_VertShader);
+  // Create vertex attribute that stores low part of vertex
+  // Used by Artists to implement Rendering RTE in GPU
+  _program->addBindAttribLocation("of_VertexLow", OF_VERTEXLOW);
 
-        // Create vertex attribute that stores low part of vertex
-        // Used by Artists to implement Rendering RTE in GPU
-        _program->addBindAttribLocation("of_VertexLow", 1);
-
-        // Set the shader program for this Artist
-        getOrCreateStateSet()->setAttribute(_program);
+  // Set the shader program for this Artist
+  getOrCreateStateSet()->setAttribute(_program);
 }
 
 // Not using the copy constructor
@@ -89,7 +85,7 @@ TrajectoryArtist::TrajectoryArtist( const TrajectoryArtist &ta, const osg::CopyO
 
 TrajectoryArtist::~TrajectoryArtist()
 {
-	if(_traj.valid()) _traj->removeArtist(this); 
+	if(_traj.valid()) _traj->removeSubscriber(this);
 }
 
 void TrajectoryArtist::setTrajectory(const Trajectory *traj)
@@ -97,30 +93,11 @@ void TrajectoryArtist::setTrajectory(const Trajectory *traj)
 	if(_traj == traj) return;
 
 	// Unregister from the old trajectory
-	if(_traj.valid()) _traj->removeArtist(this);
+	if(_traj.valid()) _traj->removeSubscriber(this);
 
 	// Register with the new trajectory
 	_traj = traj;
-	if(_traj.valid()) _traj->addArtist(this);
-}
-
-osg::BoundingBox TrajectoryArtist::computeBoundingBox() const
-{
-	_boundingBox.init();
-	return _boundingBox;
-}
-
-void TrajectoryArtist::RTE_glVertex(osg::Vec3d &point, osg::GLExtensions &glext) const
-{
-        osg::Vec3f high, low;
-
-        // Split input point into high and low portions
-        OpenFrames::DS_Split(point, high, low);
-
-        // Submit to OpenGL
-        // Note that vertex attribute must be specified BEFORE glVertex
-        glext.glVertexAttrib3fv(1, low._v);
-        glVertex3fv(high._v);
+	if(_traj.valid()) _traj->addSubscriber(this);
 }
 
 } //!namespace OpenFrames

@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file DescendantTracker.cpp
+ * Definitions for the DescendantTracker class.
+ */
+
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/DescendantTracker.hpp>
 
@@ -21,7 +25,8 @@
 #include <iostream>
 #endif
 
-namespace OpenFrames {
+namespace OpenFrames
+{
 
 DescendantTracker::DescendantTracker() 
 	: _tracking(false)

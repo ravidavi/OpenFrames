@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file ReferenceFrame.cpp
+ * ReferenceFrame-class function definitions.
+ */
+
 #include <OpenFrames/ReferenceFrame.hpp>
 #include <OpenFrames/FrameTransform.hpp>
 #include <OpenFrames/DescendantTracker.hpp>
@@ -22,13 +26,19 @@
 #include <osg/Geode>
 #include <osg/PolygonMode>
 #include <osg/ShapeDrawable>
+#include <osgDB/FileNameUtils>
 #include <osgText/Text>
 
 #ifdef _OF_VERBOSE_
 #include <iostream>
 #endif
 
-namespace OpenFrames{
+namespace OpenFrames
+{
+
+  // Convenience constants for enabling/disabling nodes 
+  const osg::Node::NodeMask enabled = 0xffffffff;
+  const osg::Node::NodeMask disabled = 0x0;
 
 ReferenceFrame::ReferenceFrame( const std::string &name ) 
 {
@@ -74,7 +84,7 @@ ReferenceFrame::~ReferenceFrame()
 #endif
 }
 
-void ReferenceFrame::_init( const std::string &n, const osg::Vec4& c )
+void ReferenceFrame::_init( const std::string &name, const osg::Vec4& c )
 {
 	  // Create the transform for this frame
 	_xform = new FrameTransform; 
@@ -83,57 +93,60 @@ void ReferenceFrame::_init( const std::string &n, const osg::Vec4& c )
 	_xAxis = new Vector(osg::X_AXIS);
 	_yAxis = new Vector(osg::Y_AXIS);
 	_zAxis = new Vector(osg::Z_AXIS);
-
-	float fontResolution = 30.0; // Resolution to use for all fonts
-
-	// Create x, y, and z axis labels
+  
+	// Create labels
 	_xLabel = new osgText::Text;
 	_yLabel = new osgText::Text;
 	_zLabel = new osgText::Text;
-
-	// Set the actual label text
-	_xLabel->setText("X");
-	_yLabel->setText("Y");
-	_zLabel->setText("Z");
+  _nameLabel = new osgText::Text;
 
 	// Make sure the labels will always be facing the screen
 	_xLabel->setAxisAlignment(osgText::Text::SCREEN);
 	_yLabel->setAxisAlignment(osgText::Text::SCREEN);
 	_zLabel->setAxisAlignment(osgText::Text::SCREEN);
+  _nameLabel->setAxisAlignment(osgText::Text::SCREEN);
 
-	// Text size will get smaller as the text gets further away, but will be limited to a maximum
-	// size (defined by fontResolution) when the text is close up.
+	// X/Y/Z label text size grows as the text gets closer, but is limited to a maximum size (fontResolution)
 	_xLabel->setCharacterSizeMode(osgText::Text::OBJECT_COORDS_WITH_MAXIMUM_SCREEN_SIZE_CAPPED_BY_FONT_HEIGHT);
 	_yLabel->setCharacterSizeMode(osgText::Text::OBJECT_COORDS_WITH_MAXIMUM_SCREEN_SIZE_CAPPED_BY_FONT_HEIGHT);
 	_zLabel->setCharacterSizeMode(osgText::Text::OBJECT_COORDS_WITH_MAXIMUM_SCREEN_SIZE_CAPPED_BY_FONT_HEIGHT);
+  
+  // Name label text is constant size regardless of distance from viewer
+  _nameLabel->setCharacterSizeMode(osgText::Text::SCREEN_COORDS);
 
-	// This sets how "smooth" the text looks ... larger resolution looks nicer, but takes up more memory
-	_xLabel->setFontResolution(fontResolution, fontResolution);
-	_yLabel->setFontResolution(fontResolution, fontResolution);
-	_zLabel->setFontResolution(fontResolution, fontResolution);
+  // Sets how "smooth" the text looks ... larger resolution looks nicer, but takes up more memory
+  // Also sets the maximum height of the font when it grows with distance
+  setLabelSize(20.0);
 
-	// Set the text's font
-	_xLabel->setFont("arial.ttf");
-	_yLabel->setFont("arial.ttf");
-	_zLabel->setFont("arial.ttf");
+  // Set label font
+  setLabelFont("arial.ttf");
 
-	// Create the name label
-	_nameLabel = new osgText::Text;
-	_nameLabel->setAutoRotateToScreen(true);
-	_nameLabel->setCharacterSizeMode(osgText::Text::SCREEN_COORDS); // Constant font size regarless of distance from viewer
-	_nameLabel->setFontResolution(fontResolution, fontResolution);
-	_nameLabel->setCharacterSize(30.0);
-	_nameLabel->setFont("arial.ttf");
+  // Set label text
+  _xLabel->setText("X");
+  _yLabel->setText("Y");
+  _zLabel->setText("Z");
+  _nameLabel->setText(name);
 
-	// Create group to which axes & labels will be added
+	// Create groups to which axes & labels will be added
 	_axes = new osg::Geode;
+    _labels = new osg::Geode;
 	_xform->addChild(_axes.get());
+    _xform->addChild(_labels.get());
 
-	setName(n); // Set the name of this ReferenceFrame
+    // Add axes and labels to their groups
+    _axes->addDrawable(_xAxis->getVector());
+    _axes->addDrawable(_yAxis->getVector());
+    _axes->addDrawable(_zAxis->getVector());
+    _labels->addDrawable(_xLabel);
+    _labels->addDrawable(_yLabel);
+    _labels->addDrawable(_zLabel);
+    _labels->addDrawable(_nameLabel);
+
+	setName(name); // Set the name of this ReferenceFrame
 
 	setColor(c); // Set the axes' color
 
-	// Appropriately position the axes
+	// Appropriately position the axes and labels
 	moveXAxis(osg::Vec3d(), 1.0); // At the origin, with a length of 1.0
 	moveYAxis(osg::Vec3d(), 1.0);
 	moveZAxis(osg::Vec3d(), 1.0);
@@ -143,20 +156,45 @@ void ReferenceFrame::_init( const std::string &n, const osg::Vec4& c )
 	showAxesLabels(X_AXIS | Y_AXIS | Z_AXIS); // Show all axes labels
 	showNameLabel(true); // Show the frame's name label
 
-	// Disable culling on the axes
+	// Disable culling on the axes and labels
 	_axes->setCullingActive(false);
+    _labels->setCullingActive(false);
 
 	// Rescale axes normals in case we have scales in the scene
 	_axes->getOrCreateStateSet()->setMode( GL_RESCALE_NORMAL, osg::StateAttribute::ON );
+
+    // Disable lighting for labels
+    _labels->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 }
 
-void ReferenceFrame::setName( const std::string& name )
-{
-	_name = name;
-	_nameLabel->setText(name);
-	_axes->setName(_name + " axes");
-	_xform->setName(_name + " transform");
-}
+  void ReferenceFrame::_resetTextGlyphs()
+  {
+    // Some graphics drivers have a bug where text can't be properly changed.
+    // Get around this by initializing text using all likely characters.
+    std::string dummyText("the quick brown fox jumps over the lazy dog"); // Lowercase
+    dummyText += "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; // Uppercase
+    dummyText += "1234567890";   // Numbers
+    dummyText += "~@#$%^&*_|\\"; // Symbols
+    dummyText += "[]{}()<>";     // Brackets
+    dummyText += ",.!?;:";       // Punctuation
+    dummyText += "+-*/=";        // Math
+    dummyText += "`'\"";         // Quotes
+    
+    // Recompute glyphs
+    _xLabel->setText(dummyText);
+    _yLabel->setText(dummyText);
+    _zLabel->setText(dummyText);
+    _nameLabel->setText(dummyText);
+  }
+  
+  void ReferenceFrame::setName( const std::string& name )
+  {
+    _name = name;
+    _nameLabel->setText(name);
+    _axes->setName(_name + " axes");
+    _labels->setName(_name + " labels");
+    _xform->setName(_name + " transform");
+  }
 
 void ReferenceFrame::setColor( const osg::Vec4 &color )
 {
@@ -169,225 +207,254 @@ void ReferenceFrame::setColor( const osg::Vec4 &color )
 	_nameLabel->setColor(color);
 }
 
-void ReferenceFrame::setColor( float r, float g, float b, float a )
-{
-	setColor(osg::Vec4(r, g, b, a));
-}
+  void ReferenceFrame::setColor( float r, float g, float b, float a )
+  {
+    setColor(osg::Vec4(r, g, b, a));
+  }
 
-const osg::Vec4& ReferenceFrame::getColor() const
-{
-	return _xAxis->getVector()->getColor();
-}
+  const osg::Vec4& ReferenceFrame::getColor() const
+  {
+    return _xAxis->getVector()->getColor();
+  }
 
-void ReferenceFrame::getColor(float &r, float &g, float &b, float &a) const
-{
-	const osg::Vec4& c = getColor();
-	r = c[0];
-	g = c[1];
-	b = c[2];
-	a = c[3];
-}
+  void ReferenceFrame::getColor(float &r, float &g, float &b, float &a) const
+ {
+     const osg::Vec4& c = getColor();
+     r = c[0];
+     g = c[1];
+     b = c[2];
+     a = c[3];
+  }
 
-osg::Group* ReferenceFrame::getGroup()
-{
-	return (osg::Group*)_xform.get();
-}
+  osg::Group* ReferenceFrame::getGroup() const
+  {
+    if(_shadowedSceneRoot == nullptr) return (osg::Group*)_xform.get();
+    else return (osg::Group*)_shadowedSceneRoot.get();
+  }
 
 const osg::BoundingSphere& ReferenceFrame::getBound() const
 {
 	_bound.init();
-	if(_axes->containsDrawable(_xAxis->getVector()))
+    if (_xAxis->getVector()->getNodeMask() != 0x0)
 	  _bound.expandBy(_xAxis->getVector()->getBound());
-	if(_axes->containsDrawable(_yAxis->getVector()))
+    if (_yAxis->getVector()->getNodeMask() != 0x0)
 	  _bound.expandBy(_yAxis->getVector()->getBound());
-	if(_axes->containsDrawable(_zAxis->getVector()))
+    if (_zAxis->getVector()->getNodeMask() != 0x0)
 	  _bound.expandBy(_zAxis->getVector()->getBound());
 
 	return _bound;
 }
 
-/** Show/hide the frame's x,y,z axes vectors */
-void ReferenceFrame::showAxes(unsigned int axes)
-{ 
-	bool xexists = _axes->containsDrawable(_xAxis->getVector());
-	bool yexists = _axes->containsDrawable(_yAxis->getVector());
-	bool zexists = _axes->containsDrawable(_zAxis->getVector());
+  void ReferenceFrame::showAxes(unsigned int axes)
+  { 
+    // Disable entire axes geode if there's nothing to show
+    if (axes == NO_AXES) _axes->setNodeMask(disabled);
+    else _axes->setNodeMask(enabled);
 
-	if((axes & X_AXIS) && !xexists) // Need to add x-axis
-	{
-		_axes->addDrawable(_xAxis->getVector());
-		xexists = true; // Reuse this variable to tell if x-labels need to be repositioned
-	}
-	else if(!(axes & X_AXIS) && xexists) // Need to remove x-axis
-	{
-		_axes->removeDrawable(_xAxis->getVector());
-		xexists = true;
-	}
-	else xexists = false;
+    if (axes & X_AXIS) // Need to enable x-axis
+      _xAxis->getVector()->setNodeMask(enabled);
+    else
+      _xAxis->getVector()->setNodeMask(disabled);
 
-	if((axes & Y_AXIS) && !yexists) // Need to add y-axis
-	{
-		_axes->addDrawable(_yAxis->getVector());
-		yexists = true; // Reuse this variable to tell if y-labels need to be repositioned
-	}
-	else if(!(axes & Y_AXIS) && yexists) // Need to remove y-axis
-	{
-		_axes->removeDrawable(_yAxis->getVector());
-		yexists = true;
-	}
-	else yexists = false;
+    if (axes & Y_AXIS) // Need to enable y-axis
+      _yAxis->getVector()->setNodeMask(enabled);
+    else
+      _yAxis->getVector()->setNodeMask(disabled);
 
-	if((axes & Z_AXIS) && !zexists) // Need to add z-axis
-	{
-		_axes->addDrawable(_zAxis->getVector());
-		zexists = true; // Reuse this variable to tell if y-labels need to be repositioned
-	}
-	else if(!(axes & Z_AXIS) && zexists) // Need to remove z-axis
-	{
-		_axes->removeDrawable(_zAxis->getVector());
-		zexists = true;
-	}
-	else zexists = false;
-
-	// Reposition axes labels if needed
-	if(xexists)
-	  moveXAxis(_xAxis->getBasePosition(), _xAxis->getTotalLength());
-	if(yexists)
-	  moveYAxis(_yAxis->getBasePosition(), _yAxis->getTotalLength());
-	if(zexists)
-	  moveZAxis(_zAxis->getBasePosition(), _zAxis->getTotalLength());
-}
+    if (axes & Z_AXIS) // Need to enable z-axis
+      _zAxis->getVector()->setNodeMask(enabled);
+    else
+      _zAxis->getVector()->setNodeMask(disabled);
+	
+    // Reposition axes labels
+    moveXAxis(_xAxis->getBasePosition(), _xAxis->getTotalLength());
+    moveYAxis(_yAxis->getBasePosition(), _yAxis->getTotalLength());
+    moveZAxis(_zAxis->getBasePosition(), _zAxis->getTotalLength());
+  }
 
 void ReferenceFrame::showAxesLabels(unsigned int labels)
 {
-	bool xexists = _axes->containsDrawable(_xLabel.get());
-	bool yexists = _axes->containsDrawable(_yLabel.get());
-	bool zexists = _axes->containsDrawable(_zLabel.get());
+  // Disable entire label geode if there's nothing to show
+  if ((labels == NO_AXES) && (_nameLabel->getNodeMask() == disabled)) _labels->setNodeMask(disabled);
+  else _labels->setNodeMask(enabled);
 
-	// Check if we need to add/remove x-axis label
-	if((labels & X_AXIS) && !xexists) _axes->addDrawable(_xLabel.get());
-	else if(!(labels & X_AXIS) && xexists) _axes->removeDrawable(_xLabel.get());
+  // Enable x-label
+  if (labels & X_AXIS) _xLabel->setNodeMask(enabled);
+  else _xLabel->setNodeMask(disabled);
 
-	// Check if we need to add/remove y-axis label
-	if((labels & Y_AXIS) && !yexists) _axes->addDrawable(_yLabel.get());
-	else if(!(labels & Y_AXIS) && yexists) _axes->removeDrawable(_yLabel.get());
+  // Enable y-label
+  if (labels & Y_AXIS) _yLabel->setNodeMask(enabled);
+  else _yLabel->setNodeMask(disabled);
 
-	if((labels & Z_AXIS) && !zexists) // Need to add z-axis label
-	{
-		_axes->addDrawable(_zLabel.get());
-		zexists = true; // Reuse this variable to tell if z-labels need to be repositioned
-	}
-	else if(!(labels & Z_AXIS) && zexists) // Need to remove z-axis label
-	{
-		_axes->removeDrawable(_zLabel.get());
-		zexists = true;
-	}
-	else zexists = false;
+  // Enable z-label
+  if (labels & Z_AXIS) _zLabel->setNodeMask(enabled);
+  else _zLabel->setNodeMask(disabled);
 
-	// Reposition z-axis labels if needed
-	if(zexists)
-	{
-	  double bodyLen, headLen, bodyRadius, headRadius;
-	  _zAxis->getLength(bodyLen, headLen);
-	  _zAxis->getRadius(bodyRadius, headRadius);
-	  double totalLen = bodyLen + headLen;
-	  moveZAxis(_zAxis->getBasePosition(), totalLen, headLen/totalLen, bodyRadius, headRadius);
-	}
+  // Reposition z-axis label
+  double bodyLen, headLen, bodyRadius, headRadius;
+  _zAxis->getLength(bodyLen, headLen);
+  _zAxis->getRadius(bodyRadius, headRadius);
+  double totalLen = bodyLen + headLen;
+  moveZAxis(_zAxis->getBasePosition(), totalLen, headLen/totalLen, bodyRadius, headRadius);
 }
 
-void ReferenceFrame::showNameLabel(bool show)
-{
-	// Check if the name label is already being drawn
-	bool exists = _axes->containsDrawable(_nameLabel.get());
+  void ReferenceFrame::showNameLabel(bool show)
+  {
+    // Disable entire label geode if there's nothing to show
+    if (!show && ((_xLabel->getNodeMask() | _yLabel->getNodeMask() | _zLabel->getNodeMask()) == disabled))
+        _labels->setNodeMask(disabled);
+    else
+        _labels->setNodeMask(enabled);
 
-	// Add the name label to the list of objects to be drawn
-	if(show && !exists) _axes->addDrawable(_nameLabel.get());
+    // Enable name label
+    if (show) _nameLabel->setNodeMask(enabled);
+    else _nameLabel->setNodeMask(disabled);
+  }
 
-	// Remove the name label from the list of objects to be drawn
-	else if(!show && exists) _axes->removeDrawable(_nameLabel.get());
-}
+  void ReferenceFrame::moveXAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
+  {
+    bool xexists = (_xAxis->getVector()->getNodeMask() == enabled);
 
-void ReferenceFrame::moveXAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
-{
-	bool xexists = _axes->containsDrawable(_xAxis->getVector());
+    if (headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
+    if (bodyRadius <= 0.0) bodyRadius = 0.05*len;
+    if (headRadius <= 0.0) headRadius = 0.1*len;
 
-	if(headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
-	if(bodyRadius <= 0.0) bodyRadius = 0.05*len;
-	if(headRadius <= 0.0) headRadius = 0.1*len;
+    _xAxis->setBasePosition(base);
+    _xAxis->setLength((1.0-headRatio)*len, headRatio*len);
+    _xAxis->setRadius(bodyRadius, headRadius);
 
-	_xAxis->setBasePosition(base);
-	_xAxis->setLength((1.0-headRatio)*len, headRatio*len);
-	_xAxis->setRadius(bodyRadius, headRadius);
+    _xLabel->setCharacterSize(0.4*len);
+    if (xexists) _xLabel->setPosition(base + osg::Vec3d(len, 0, 0));
+    else _xLabel->setPosition(base);
+  }
 
-	_xLabel->setCharacterSize(0.4*len);
-	if(xexists) _xLabel->setPosition(base + osg::Vec3d(len, 0, 0));
-	else _xLabel->setPosition(base);
-}
-	
-void ReferenceFrame::moveYAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
-{
-	bool yexists = _axes->containsDrawable(_yAxis->getVector());
+  void ReferenceFrame::moveYAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
+  {
+    bool yexists = (_yAxis->getVector()->getNodeMask() == enabled);
 
-	if(headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
-	if(bodyRadius <= 0.0) bodyRadius = 0.05*len;
-	if(headRadius <= 0.0) headRadius = 0.1*len;
+    if (headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
+    if (bodyRadius <= 0.0) bodyRadius = 0.05*len;
+    if (headRadius <= 0.0) headRadius = 0.1*len;
 
-	_yAxis->setBasePosition(base);
-	_yAxis->setLength((1.0-headRatio)*len, headRatio*len);
-	_yAxis->setRadius(bodyRadius, headRadius);
+    _yAxis->setBasePosition(base);
+    _yAxis->setLength((1.0-headRatio)*len, headRatio*len);
+    _yAxis->setRadius(bodyRadius, headRadius);
 
-	_yLabel->setCharacterSize(0.4*len);
-	if(yexists) _yLabel->setPosition(base + osg::Vec3d(0, len, 0));
-	else _yLabel->setPosition(base);
-}
-	
-void ReferenceFrame::moveZAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
-{
-	bool zaxisexists = _axes->containsDrawable(_zAxis->getVector());
-	bool zlabelexists = _axes->containsDrawable(_zLabel.get());
+    _yLabel->setCharacterSize(0.4*len);
+    if (yexists) _yLabel->setPosition(base + osg::Vec3d(0, len, 0));
+    else _yLabel->setPosition(base);
+  }
 
-	if(headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
-	if(bodyRadius <= 0.0) bodyRadius = 0.05*len;
-	if(headRadius <= 0.0) headRadius = 0.1*len;
+  void ReferenceFrame::moveZAxis(osg::Vec3d base, double len, double headRatio, double bodyRadius, double headRadius) const
+  {
+    bool zaxisexists = (_zAxis->getVector()->getNodeMask() == enabled);
+    bool zlabelexists = (_zLabel->getNodeMask() == enabled);
 
-	_zAxis->setBasePosition(base);
-	_zAxis->setLength((1.0-headRatio)*len, headRatio*len);
-	_zAxis->setRadius(bodyRadius, headRadius);
+    if (headRatio <= 0.0 || headRatio >= 1.0) headRatio = 0.3;
+    if (bodyRadius <= 0.0) bodyRadius = 0.05*len;
+    if (headRadius <= 0.0) headRadius = 0.1*len;
 
-	_zLabel->setCharacterSize(0.4*len);
-	if(zaxisexists)
-	{
-	  _zLabel->setPosition(base + osg::Vec3d(0, 0, len));
-	  if(zlabelexists)
-	    _nameLabel->setPosition(base + osg::Vec3d(0, 0, 1.5*len));
-	  else
-	    _nameLabel->setPosition(base + osg::Vec3d(0, 0, len));
-	}
-	else 
-	{
-	  _zLabel->setPosition(base);
-	  if(zlabelexists)
-	    _nameLabel->setPosition(base + osg::Vec3d(0, 0, 0.5*len));
-	  else
-	    _nameLabel->setPosition(base);
-	}
-}
+    _zAxis->setBasePosition(base);
+    _zAxis->setLength((1.0 - headRatio)*len, headRatio*len);
+    _zAxis->setRadius(bodyRadius, headRadius);
 
-/** Add a ReferenceFrame as a child to this one.  This effectively adds the osg 
-  structure of that frame as a child to this frame's transform */
+    _zLabel->setCharacterSize(0.4*len);
+    if (zaxisexists)
+    {
+      _zLabel->setPosition(base + osg::Vec3d(0, 0, len));
+      if (zlabelexists)
+        _nameLabel->setPosition(base + osg::Vec3d(0, 0, 1.5*len));
+      else
+        _nameLabel->setPosition(base + osg::Vec3d(0, 0, len));
+    }
+    else
+    {
+      _zLabel->setPosition(base);
+      if (zlabelexists)
+        _nameLabel->setPosition(base + osg::Vec3d(0, 0, 0.5*len));
+      else
+        _nameLabel->setPosition(base);
+    }
+  }
+
+  void ReferenceFrame::setLabelFont(const std::string &font)
+  {
+    // Save current label text
+    std::string prevXLabel = _xLabel->getText().createUTF8EncodedString();
+    std::string prevYLabel = _yLabel->getText().createUTF8EncodedString();
+    std::string prevZLabel = _zLabel->getText().createUTF8EncodedString();
+    std::string prevNameLabel = _nameLabel->getText().createUTF8EncodedString();
+
+    // Empty out text in preparation for new font
+    _xLabel->setText("");
+    _yLabel->setText("");
+    _zLabel->setText("");
+    _nameLabel->setText("");
+
+    // Set the new font
+    _xLabel->setFont(font);
+    _yLabel->setFont(font);
+    _zLabel->setFont(font);
+    _nameLabel->setFont(font);
+    
+    // Initialize text with all printable characters to support older graphics drivers
+    _resetTextGlyphs();
+    
+    // Restore label text
+    _xLabel->setText(prevXLabel);
+    _yLabel->setText(prevYLabel);
+    _zLabel->setText(prevZLabel);
+    _nameLabel->setText(prevNameLabel);
+  }
+  
+  std::string ReferenceFrame::getLabelFontName() const
+  {
+    return osgDB::getSimpleFileName(getLabelFontPath());
+  }
+  
+  std::string ReferenceFrame::getLabelFontPath() const
+  {
+    const osgText::Font* font = _xLabel->getFont();
+    std::string fontFile = font ? font->getFileName() : "default";
+    return fontFile;
+  }
+  
+  void ReferenceFrame::setLabelSize(unsigned int size)
+  {
+    // Set size for axes labels (treated as maximum size)
+    _xLabel->setFontResolution(size, size);
+    _yLabel->setFontResolution(size, size);
+    _zLabel->setFontResolution(size, size);
+    
+    // Set size for name label (treated as fixed size)
+    _nameLabel->setFontResolution(size, size);
+    _nameLabel->setCharacterSize(size);
+  }
+
+  void ReferenceFrame::setLabelAlignment(osgText::Text::AlignmentType alignment)
+  {
+    // Set alignment for axes labels
+    _xLabel->setAlignment(alignment);
+    _yLabel->setAlignment(alignment);
+    _zLabel->setAlignment(alignment);
+
+    // Set alignment for name label
+    _nameLabel->setAlignment(alignment);
+  }
+  
 bool ReferenceFrame::addChild( ReferenceFrame* child )
 {
 	  // Make sure we're not trying to add ourselves as a child
 	  // Also make sure child is not NULL
-	if(child == this || !child) return false;
+	if ((child == this) || (child == nullptr)) return false;
 
 	  // Make sure child does not already exist
-	if(getChildIndex(child) != -1) return true;
+	if (getChildIndex(child) != -1) return true;
 
 	  // Check to see if we are a descendant of the child.
 	  // This case would cause a loop in the tree structure.
 	osg::ref_ptr<DescendantTracker> dt = new DescendantTracker(child);
-	if(dt->trackDescendant(this)) 
+	if (dt->trackDescendant(this)) 
 	{
 #ifdef _OF_VERBOSE_
 	  std::cout<< "ReferenceFrame ERROR: Trying to add child "
@@ -422,9 +489,6 @@ bool ReferenceFrame::addChild( ReferenceFrame* child )
 	return true;
 }
 
-/**
-  Remove a ReferenceFrame from the children of this one.  This effectively
-  removes the osg structure of that frame from this frame's transform */
 bool ReferenceFrame::removeChild( ReferenceFrame* child )
 {
 	int index = getChildIndex(child);
@@ -450,75 +514,135 @@ bool ReferenceFrame::removeChild( ReferenceFrame* child )
 
 	return true;
 }
-
-/** Create a formatted string containing names of all child frames */
-void ReferenceFrame::createFrameString( std::string& str, std::string prefix ) const
+  
+/***************************************/
+void ReferenceFrame::setLightSourceEnabled(bool enable)
 {
-	str += prefix + _name + " (" + frameInfo() + ")\n";
-	if( prefix[prefix.size() - 1] == '>')
-	  prefix[prefix.size() - 1] = '-';
-	prefix += "|-->";
-
-	int num__children = _children.size();
-	for( int i = 0; i < num__children; ++i )
-	  _children[i]->createFrameString( str, prefix );
+  // Find existing LightSource
+  osg::LightSource* lightSource = getLightSource();
+  if(lightSource)
+  {
+    // Light source already exists, so just enable/disable it as needed
+    if(enable) lightSource->setNodeMask(0xffffffff);
+    else lightSource->setNodeMask(0x0);
+  }
+  
+  // Create light source if it doesn't exist but should be enabled
+  else if(enable)
+  {
+    // Create new LightSource at center of this frame
+    lightSource = new osg::LightSource;
+    lightSource->getLight()->setPosition(osg::Vec4(0.0, 0.0, 0.0, 1.0));
+    _xform->addChild(lightSource);
+  }
 }
+
+/***************************************/
+bool ReferenceFrame::getLightSourceEnabled() const
+{
+  // Find existing LightSource
+  osg::LightSource* lightSource = getLightSource();
+  if(lightSource) return (lightSource->getNodeMask() != 0x0);
+  else return false;
+}
+  
+/***************************************/
+osg::LightSource* ReferenceFrame::getLightSource() const
+{
+  // Find existing LightSource
+  for(unsigned int i = 0; i < _xform->getNumChildren(); ++i)
+  {
+    osg::LightSource* lightSource = dynamic_cast<osg::LightSource*>(_xform->getChild(i));
+    if(lightSource) return lightSource;
+  }
+  return NULL; // Light source doesn't exist
+}
+  
+  void ReferenceFrame::setShadowedSceneRoot(bool isRoot)
+  {
+    if(!isRoot) _shadowedSceneRoot = nullptr;
+    else if(_shadowedSceneRoot == nullptr)
+    {
+      _shadowedSceneRoot = new osgShadow::ShadowedScene;
+      _shadowedSceneRoot->addChild(_xform);
+    }
+  }
+  
+  osgShadow::ShadowedScene* ReferenceFrame::getShadowedSceneRoot() const
+  {
+    return _shadowedSceneRoot;
+  }
+
+  void ReferenceFrame::createFrameString( std::string& str, std::string prefix ) const
+  {
+    str += prefix + _name + " (" + frameInfo() + ")\n";
+    if( prefix[prefix.size() - 1] == '>')
+      prefix[prefix.size() - 1] = '-';
+    prefix += "|-->";
+
+    int num__children = _children.size();
+    for( int i = 0; i < num__children; ++i )
+      _children[i]->createFrameString( str, prefix );
+  }
 
 std::string ReferenceFrame::frameInfo() const
 {
 	return "ReferenceFrame";
 }
 
-/** Add/remove a frame as a parent of this one */
-void ReferenceFrame::addParent( ReferenceFrame* frame )
-{
-	if( getParentIndex(frame) == -1 ) _parents.push_back(frame);
-}
+    void ReferenceFrame::addParent( ReferenceFrame* frame )
+    {
+      if ( getParentIndex(frame) == -1 ) _parents.push_back(frame);
+    }
 
-void ReferenceFrame::removeParent( ReferenceFrame* frame )
-{
-	int index = getParentIndex(frame);
-	if( index != -1 ) _parents.erase(_parents.begin() + index);
-}
+    void ReferenceFrame::removeParent( ReferenceFrame* frame )
+    {
+      int index = getParentIndex(frame);
+      if ( index != -1 ) _parents.erase(_parents.begin() + index);
+    }
 
-/** Add/remove a tracker for this frame */
-void ReferenceFrame::addTracker( FrameTracker* t )
-{
-	if( getTrackerIndex(t) == -1 ) _trackers.push_back(t);
-}
+    void ReferenceFrame::addTracker( FrameTracker* t )
+    {
+      if ( getTrackerIndex(t) == -1 ) _trackers.push_back(t);
+    }
 
-void ReferenceFrame::removeTracker( FrameTracker* t )
-{
-	int index = getTrackerIndex(t);
-	if( index != -1 ) _trackers.erase(_trackers.begin() + index);
-}
+    void ReferenceFrame::removeTracker( FrameTracker* t )
+    {
+      int index = getTrackerIndex(t);
+      if ( index != -1 ) _trackers.erase(_trackers.begin() + index);
+    }
 
-/** Find the index of the requested child, parent or tracker.  If the requested object does not exist, then return -1 */
-int ReferenceFrame::getChildIndex( const ReferenceFrame* frame ) const
-{
-	int num__children = _children.size();
-	for( int i = 0; i < num__children; ++i )
-	  if( _children[i] == frame ) return i;
-	
-	return -1;
-}
+    int ReferenceFrame::getChildIndex( const ReferenceFrame* frame ) const
+    {
+      int num__children = _children.size();
+      for( int i = 0; i < num__children; ++i )
+      if( _children[i] == frame ) return i;
 
-int ReferenceFrame::getParentIndex( const ReferenceFrame* frame ) const
-{
-	int num_parents = _parents.size();
-	for( int i = 0; i < num_parents; ++i )
-	  if( _parents[i] == frame ) return i;
-	
-	return -1;
-}
+      return -1;
+    }
 
-int ReferenceFrame::getTrackerIndex( const FrameTracker* frame ) const
-{
-	int num_trackers = _trackers.size();
-	for( int i = 0; i < num_trackers; ++i )
-	  if( _trackers[i] == frame ) return i;
-	
-	return -1;
-}
+    int ReferenceFrame::getParentIndex(const ReferenceFrame* frame) const
+    {
+      int num_parents = _parents.size();
+      for (int i=0; i<num_parents; ++i)
+      {
+        if (_parents[i] == frame)
+          return i;
+      }
+
+      return -1;
+    }
+
+    int ReferenceFrame::getTrackerIndex( const FrameTracker* frame ) const
+    {
+      int num_trackers = _trackers.size();
+      for (int i=0; i<num_trackers; ++i)
+      {
+        if (_trackers[i] == frame)
+          return i;
+      }
+
+      return -1;
+    }
 
 } // !namespace OpenFrames

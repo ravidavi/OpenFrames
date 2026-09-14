@@ -1,4 +1,4 @@
-!  Copyright 2013 Ravishankar Mathur
+!  Copyright 2023 Ravishankar Mathur
 !
 !  Licensed under the Apache License, Version 2.0 (the "License")
 !  you may not use this file except in compliance with the License.
@@ -90,6 +90,12 @@
 	INTEGER, INTENT(OUT) :: val
 	END SUBROUTINE
 
+! Add a path to the start of the OSG search path list
+  SUBROUTINE of_adddatafilepath(newpath)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: of_adddatafilepath
+  CHARACTER(LEN=*), INTENT(IN) :: newpath
+  END SUBROUTINE
+
 ! WindowProxy functions
 
 	SUBROUTINE ofwin_activate(id)
@@ -97,12 +103,17 @@
 	INTEGER, INTENT(IN) :: id
 	END SUBROUTINE
 	
-	SUBROUTINE ofwin_createproxy(x, y, width, height, nrow, ncol, embedded, id)
+	SUBROUTINE ofwin_createproxy(x, y, width, height, nrow, ncol, embedded, id, useVR)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_createproxy
 	INTEGER, INTENT(IN) :: x, y, width, height, nrow, ncol, id
-	LOGICAL, INTENT(IN) :: embedded
+	LOGICAL, INTENT(IN) :: embedded, useVR
 	END SUBROUTINE
 	
+	SUBROUTINE ofwin_setwindowname(winname)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setwindowname
+	CHARACTER(LEN=*), INTENT(IN) :: winname
+	END SUBROUTINE
+
 	SUBROUTINE ofwin_setgridsize(nrow, ncol)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setgridsize
 	INTEGER, INTENT(IN) :: nrow, ncol
@@ -155,6 +166,60 @@
 	INTEGER, INTENT(IN) :: row, col
 	END SUBROUTINE
 
+  SUBROUTINE ofwin_settime(time)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_settime
+  REAL(8), INTENT(IN) :: time
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_gettime(time)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_gettime
+  REAL(8), INTENT(OUT) :: time
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_pausetime(pause)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_pausetime
+  LOGICAL, INTENT(IN) :: pause
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_istimepaused(ispaused)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_istimepaused
+  LOGICAL, INTENT(OUT) :: ispaused
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_settimescale(tscale)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_settimescale
+  REAL(8), INTENT(IN) :: tscale
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_gettimescale(tscale)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_gettimescale
+  REAL(8), INTENT(OUT) :: tscale
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_setlightambient(row, col, r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setlightambient
+  INTEGER, INTENT(IN) :: row, col
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_setlightdiffuse(row, col, r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setlightdiffuse
+  INTEGER, INTENT(IN) :: row, col
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_setlightspecular(row, col, r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setlightspecular
+  INTEGER, INTENT(IN) :: row, col
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_setlightposition(row, col, x, y, z, w)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setlightposition
+  INTEGER, INTENT(IN) :: row, col
+  REAL, INTENT(IN) :: x, y, z, w
+  END SUBROUTINE
+
 	SUBROUTINE ofwin_setstereo(row, col, enable, eyeseparation, width, height, distance)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setstereo
 	INTEGER, INTENT(IN) :: row, col
@@ -180,6 +245,36 @@
         REAL, INTENT(IN) :: minmag, maxmag
 	CHARACTER(LEN=*), INTENT(IN) :: fname
 	END SUBROUTINE
+
+  SUBROUTINE ofwin_enablehudtext(row, col, enable)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_enablehudtext
+  INTEGER, INTENT(IN) :: row, col
+  LOGICAL, INTENT(IN) :: enable
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_sethudtextfont(row, col, fname)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_sethudtextfont
+  INTEGER, INTENT(IN) :: row, col
+  CHARACTER(LEN=*), INTENT(IN) :: fname
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_sethudtextparameters(row, col, r, g, b, charSize)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_sethudtextparameters
+  INTEGER, INTENT(IN) :: row, col
+  REAL, INTENT(IN) :: r, g, b, charSize
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_sethudtextposition(row, col, x, y, alignment)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_sethudtextposition
+  INTEGER, INTENT(IN) :: row, col, alignment
+  REAL, INTENT(IN) :: x, y
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_sethudtext(row, col, text)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_sethudtext
+  INTEGER, INTENT(IN) :: row, col
+  CHARACTER(LEN=*), INTENT(IN) :: text
+  END SUBROUTINE
 
 	SUBROUTINE ofwin_setdesiredframerate(fps)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setdesiredframerate
@@ -231,6 +326,11 @@
 	INTEGER, INTENT(IN) :: key
 	END SUBROUTINE
 
+   SUBROUTINE ofwin_keyrelease(key)
+   !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_keyrelease
+   INTEGER, INTENT(IN) :: key
+   END SUBROUTINE
+
 	SUBROUTINE ofwin_buttonpress(x, y, button)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_buttonpress
 	REAL, INTENT(IN) :: x, y
@@ -247,6 +347,20 @@
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_mousemotion
 	REAL, INTENT(IN) :: x, y
 	END SUBROUTINE
+
+  SUBROUTINE ofwin_capturewindow()
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_capturewindow
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_setwindowcapturefile(fname, fext)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setwindowcapturefile
+  CHARACTER(LEN=*), INTENT(IN) :: fname, fext
+  END SUBROUTINE
+
+  SUBROUTINE ofwin_setwindowcapturekey(key)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofwin_setwindowcapturekey
+  INTEGER, INTENT(IN) :: key
+  END SUBROUTINE
 
 ! FrameManager functions
 
@@ -353,6 +467,16 @@
 	CHARACTER(LEN=*), INTENT(IN) :: xlabel, ylabel, zlabel
 	END SUBROUTINE
 
+	SUBROUTINE offrame_setlabelfont(font)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_setlabelfont
+	CHARACTER(LEN=*), INTENT(IN) :: font
+	END SUBROUTINE
+
+	SUBROUTINE offrame_setlabelsize(size)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_setlabelsize
+	INTEGER, INTENT(IN) :: size
+	END SUBROUTINE
+
 	SUBROUTINE offrame_movexaxis(pos, length, headRatio, bodyRadius, headRadius)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_movexaxis
 	REAL(8), INTENT(IN) :: pos(3), length, headRatio, bodyRadius, headRadius
@@ -367,6 +491,31 @@
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_movezaxis
 	REAL(8), INTENT(IN) :: pos(3), length, headRatio, bodyRadius, headRadius
 	END SUBROUTINE
+
+  SUBROUTINE offrame_setlightsourceenabled(enabled)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_setlightsourceenabled
+  LOGICAL, INTENT(IN) :: enabled
+  END SUBROUTINE
+
+  SUBROUTINE offrame_getlightsourceenabled(enabled)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_getlightsourceenabled
+  LOGICAL, INTENT(OUT) :: enabled
+  END SUBROUTINE
+
+  SUBROUTINE offrame_setlightambient(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_setlightambient
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE offrame_setlightdiffuse(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_setlightdiffuse
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE offrame_setlightspecular(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_setlightspecular
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
 
 	SUBROUTINE offrame_followtrajectory(name)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: offrame_followtrajectory
@@ -384,6 +533,7 @@
 	REAL(8), INTENT(IN) :: scale(3)
 	END SUBROUTINE
 
+  ! offrame_managetime DEPRECATED: use ofwin_*time functions instead
 	SUBROUTINE offrame_managetime(affectChildren, reset, &
 	                              changePauseState, pauseState, &
 	                              changeOffsetTime, offsetTime, &
@@ -409,11 +559,6 @@
 	CHARACTER(LEN=*), INTENT(IN) :: name
 	END SUBROUTINE
 
-	SUBROUTINE ofsphere_setcenter(x, y, z)
-	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setcenter
-	REAL(8), INTENT(IN) :: x, y, z
-	END SUBROUTINE
-
 	SUBROUTINE ofsphere_setradius(radius)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setradius
 	REAL(8), INTENT(IN) :: radius
@@ -424,10 +569,55 @@
 	CHARACTER(LEN=*), INTENT(IN) :: fname
 	END SUBROUTINE
 
+	SUBROUTINE ofsphere_setnighttexturemap(fname)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setnighttexturemap
+	CHARACTER(LEN=*), INTENT(IN) :: fname
+	END SUBROUTINE
+
 	SUBROUTINE ofsphere_setautolod(lod)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setautolod
 	LOGICAL, INTENT(IN) :: lod
 	END SUBROUTINE
+
+  SUBROUTINE ofsphere_setsphereposition(x, y, z)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setsphereposition
+  REAL(8), INTENT(IN) :: x, y, z
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setsphereattitude(rx, ry, rz, angle)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setsphereattitude
+  REAL(8), INTENT(IN) :: rx, ry, rz, angle
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setspherescale(sx, sy, sz)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setspherescale
+  REAL(8), INTENT(IN) :: sx, sy, sz
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setmaterialambient(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setmaterialambient
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setmaterialdiffuse(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setmaterialdiffuse
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setmaterialspecular(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setmaterialspecular
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setmaterialemission(r, g, b)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setmaterialemission
+  REAL, INTENT(IN) :: r, g, b
+  END SUBROUTINE
+
+  SUBROUTINE ofsphere_setmaterialshininess(shininess)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofsphere_setmaterialshininess
+  REAL, INTENT(IN) :: shininess
+  END SUBROUTINE
 
 ! Model Functions
 ! A Model is a type of ReferenceFrame, so all the above ReferenceFrame
@@ -518,6 +708,11 @@
 	REAL(8), INTENT(IN) :: len
 	END SUBROUTINE
 
+	SUBROUTINE ofcoordaxes_setaxiswidth(width)
+	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofcoordaxes_setaxiswidth
+	REAL, INTENT(IN) :: width
+	END SUBROUTINE
+
 	SUBROUTINE ofcoordaxes_setdrawaxes(axes)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofcoordaxes_setdrawaxes
 	INTEGER, INTENT(IN) :: axes
@@ -550,9 +745,9 @@
 	CHARACTER(LEN=*), INTENT(IN) :: name
 	END SUBROUTINE
 
-	SUBROUTINE oflatlongrid_setparameters(radius, latSpace, lonSpace)
+	SUBROUTINE oflatlongrid_setparameters(radiusX, radiusY, radiusZ, latSpace, lonSpace)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: oflatlongrid_setparameters
-	REAL(8), INTENT(IN) :: radius, latSpace, lonSpace
+	REAL(8), INTENT(IN) :: radiusX, radiusY, radiusZ, latSpace, lonSpace
 	END SUBROUTINE
 
 ! RadialPlane functions
@@ -864,11 +1059,6 @@
 	REAL(8), INTENT(IN) :: fov, ratio
 	END SUBROUTINE
 
-	SUBROUTINE ofview_setaspectmultiplier(mult)
-	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_setaspectmultiplier
-	REAL(8), INTENT(IN) :: mult
-	END SUBROUTINE
-
 	SUBROUTINE ofview_setviewframe(root, frame)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_setviewframe
 	CHARACTER(*), INTENT(IN) :: root, frame
@@ -884,6 +1074,16 @@
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_setdefaultviewdistance
 	REAL(8), INTENT(IN) :: distance
 	END SUBROUTINE
+
+  SUBROUTINE ofview_gettrackball(eye, center, up)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_gettrackball
+  REAL(8), INTENT(OUT) :: eye(3), center(3), up(3)
+  END SUBROUTINE
+
+  SUBROUTINE ofview_settrackball(eye, center, up)
+  !DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_settrackball
+  REAL(8), INTENT(IN) :: eye(3), center(3), up(3)
+  END SUBROUTINE
 
 	SUBROUTINE ofview_isvalid(valid)
 	!DEC$ ATTRIBUTES DLLIMPORT,C,REFERENCE :: ofview_isvalid

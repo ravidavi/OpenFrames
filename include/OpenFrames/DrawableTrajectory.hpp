@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file DrawableTrajectory.hpp
+ * Declaration of DrawableTrajectory class.
+ */
+
 #ifndef _OF_DRAWABLETRAJECTORY_
 #define _OF_DRAWABLETRAJECTORY_
 
@@ -24,18 +28,24 @@
 
 namespace OpenFrames
 {
-
-/******************************************
- * Ravi Mathur
- * OpenFrames API, class DrawableTrajectory
- * This class provides a ReferenceFrame that a TrajectoryArtist can hook on to
- * in order to be able to draw its Trajectory.
-******************************************/
-class OF_EXPORT DrawableTrajectory : public ReferenceFrame
-{
+  /**
+   * \class DrawableTrajectory
+   *
+   * \brief This class provides a ReferenceFrame for TrajectoryArtists.
+   *
+   * This class provides a ReferenceFrame that a TrajectoryArtist can hook onto
+   * in order to be able to draw its Trajectory.
+   */
+  class OF_EXPORT DrawableTrajectory : public ReferenceFrame
+  {
   public:
 	DrawableTrajectory( const std::string &name );
 	DrawableTrajectory( const std::string &name, float r, float g, float b, float a  = 1.0);
+
+	// Show/hide this frame's contents, e.g. everything a frame shows (excluding axes, labels, and children)
+	// Inherited from ReferenceFrame
+	virtual void showContents(bool showContents);
+	virtual bool getContentsShown() const;
 
 	/** Manage internal list of TrajectoryArtists. */
 	void addArtist(TrajectoryArtist *artist);
@@ -53,8 +63,8 @@ class OF_EXPORT DrawableTrajectory : public ReferenceFrame
 
 	void _init();
 
-	osg::ref_ptr<osg::Geode> _geode; // Node to hold the artists
-};
+    osg::ref_ptr<osg::Group> _artists; // Group to hold all artists
+  };
 
 } //!namespace OpenFrames
 

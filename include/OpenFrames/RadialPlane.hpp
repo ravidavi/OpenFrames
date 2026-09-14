@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,6 +14,10 @@
    limitations under the License.
 ***********************************/
 
+/** \file RadialPlane.hpp
+ * Declaration of RadialPlane class.
+ */
+
 #ifndef _OF_RADIALPLANE_
 #define _OF_RADIALPLANE_
 
@@ -22,18 +26,24 @@
 
 namespace OpenFrames
 {
-
-/**********************************************************
- * Ravi Mathur
- * OpenFrames API, class RadialPlane
- * A type of ReferenceFrame that draws a radial x-y plane
- * with adjustable radial circles and longitude lines.
-**********************************************************/
-class OF_EXPORT RadialPlane : public ReferenceFrame
-{
+  /**
+   * \class RadialPlane
+   *
+   * \brief ReferenceFrame for drawing radial plane.
+   *
+   * A type of ReferenceFrame that draws a radial x-y plane with
+   * adjustable radial circles and longitude lines.
+   */
+  class OF_EXPORT RadialPlane : public ReferenceFrame
+  {
   public:
 	RadialPlane( const std::string &name );
 	RadialPlane( const std::string &name, float r, float g, float b, float a = 1.0 );
+
+	// Show/hide this frame's contents, e.g. everything a frame shows (excluding axes, labels, and children)
+	// Inherited from ReferenceFrame
+	virtual void showContents(bool showContents);
+	virtual bool getContentsShown() const;
 
 	/** Set/get the spacing between radial circles. */
 	void setParameters(const double &radius, const double &radSpace, const double &lonSpace);
@@ -42,13 +52,18 @@ class OF_EXPORT RadialPlane : public ReferenceFrame
 	/** Set the color of the plane */
 	void setPlaneColor(const osg::Vec4 &color);
 	void setPlaneColor(float r, float g, float b, float a = 1.0);
+  const osg::Vec4& getPlaneColor() const { return (*_planeColor)[0]; }
 
 	/** Set the color of the radial/longitudinal lines on the plane */
 	void setLineColor(const osg::Vec4 &color);
 	void setLineColor(float r, float g, float b, float a = 1.0);
+  const osg::Vec4& getLineColor() const { return (*_lineColor)[0]; }
 
         /** Inherited from ReferenceFrame. */
 	virtual const osg::BoundingSphere& getBound() const;
+
+  /// Inherited
+  virtual std::string frameInfo() const { return "RadialPlane"; }
 
   protected:
 	virtual ~RadialPlane();
@@ -76,12 +91,9 @@ class OF_EXPORT RadialPlane : public ReferenceFrame
 	osg::ref_ptr<osg::Vec4Array> _lineColor;
 	osg::ref_ptr<osg::Vec4Array> _planeColor;
 
-	// Array defining normals
-	osg::ref_ptr<osg::Vec3Array> _normals;
-
 	// Level of Detail for cells that make up the plane tesselation
 	unsigned int _planeLOD;
-};
+  };
 
 } // !namespace OpenFrames
 

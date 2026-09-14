@@ -6,7 +6,7 @@
 // Use GLSL 1.20 (OpenGL 2.1)
 #version 120
 
-uniform float osg_SimulationTime;
+uniform float osg_FrameTime;
 vec2 v;
 float dist2;
 float rad2;
@@ -24,7 +24,7 @@ void main(void)
   dist2 = dot(v,v);
 
   // Compute current radius
-  rad2 = rad2_range.x + (rad2_range.y - rad2_range.x)*abs(sin(PI*osg_SimulationTime));
+  rad2 = rad2_range.x + (rad2_range.y - rad2_range.x)*abs(sin(PI*osg_FrameTime));
 
   // Discard fragments not on the circle border
   if((dist2 > rad2) || (dist2 < (rad2 - thickness)))

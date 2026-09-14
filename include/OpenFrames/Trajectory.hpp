@@ -1,5 +1,5 @@
 /***********************************
-   Copyright 2013 Ravishankar Mathur
+   Copyright 2023 Ravishankar Mathur
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,31 +14,39 @@
    limitations under the License.
 ***********************************/
 
+/** \file Trajectory.hpp
+ * Declaration of Trajectory class.
+ */
+
 #ifndef _OF_TRAJECTORY_
 #define _OF_TRAJECTORY_
 
 #include <OpenFrames/Export.h>
+#include <OpenFrames/Utilities.hpp>
 #include <osg/Referenced>
-#include <OpenThreads/ReadWriteMutex>
 #include <vector>
 
-namespace OpenFrames {
-
-class TrajectoryArtist; // The class which draws a Trajectory
-
-/************************************
- * Ravi Mathur  
- * OpenFrames API, class Trajectory
- * A Trajectory holds a collection of times, positions, attitudes, and any number of optional data vectors.  Data is inserted at the end of the trajectory, and no sorting is done during insertion.  This is left to deriving classes.
-***********************************/
-class OF_EXPORT Trajectory : public osg::Referenced
+namespace OpenFrames
 {
+  class TrajectorySubscriber; // Forward-declare trajectory subscriber
+
+  /**
+   * \class Trajectory
+   *
+   * \brief Holds a collection of data vectors.
+   *
+   * A Trajectory holds a collection of times, positions, attitudes and any number of
+   * optional data vectors. Data is inserted at the end of the trajectory, and no
+   * sorting is done during insertion. This is left to deriving classes.
+   */
+  class OF_EXPORT Trajectory : public osg::Referenced
+  {
   public:
 	/** Type of each data element in the trajectory.  Make sure to change
 	    return value of getGLDataType() if you change this! */
 	typedef double DataType;
 	typedef std::vector<DataType> DataArray;
-	typedef std::vector<TrajectoryArtist*> ArtistArray;
+  typedef std::vector<TrajectorySubscriber*> SubscriberArray;
 
 	/** SourceType is used to specify where the data for the x/y/z component
 	    of every point is to be taken from. */
@@ -83,6 +91,13 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	/** Initialize with degrees of freedom, an id, and how many 
 	    optionals are at each point of the trajectory. */
 	Trajectory(unsigned int dof = 3, unsigned int nopt = 0 );
+  
+  /** Reserve enough memory for specified number of points. This helps
+   avoid unnecessary memory reallocations while adding points.
+   NOTE: Regardless of this setting, any number of points can be added
+   to a Trajectory. Properly reserving based on estimated upper-bound
+   number of points helps in memory management, but is not required. */
+  void reserveMemory(unsigned int numPoints, bool usePos = true, bool useAtt = true);
 
 	/** Get lists. */
 	inline const DataArray& getTimeList() const { return _time; }
@@ -113,11 +128,11 @@ class OF_EXPORT Trajectory : public osg::Referenced
 
 	/** Find the lower bounding index (in the time list) for the given time.
 	    Returns -2 if the requested time could not be found after a
-	    reasonable number of iterations. In this case, the returned value
-	    for index is invalid.
+	    reasonable number of iterations. In this case, index is the
+            last value computed before quitting the search.
 	    Returns -1 if the requested time is out of the time list's bounds:
-	      index = -1: Requested time before earliest time in list
-	      index = numTimes: Requested time after earliest time in list
+	      index = -1: Requested time before first time 
+	      index = numTimes: Requested time after last time 
 	    Returns 0 if the requested time is at the list's bounds:
 	      index = 0: Requested time is at start of time list
 	      index = numTimes-1: Requested time is at end of time list
@@ -130,6 +145,15 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	inline bool isEmpty() const { return _time.empty(); }
 	inline unsigned int getNumTimes() const { return _time.size(); }
 	virtual bool getTimeRange( DataType &begin, DataType &end ) const;
+
+        /** Get the "distance" from given time to this trajectory's time
+            range. Possible return values:
+             = DBL_MAX: No times in trajectory
+             > 0.0: Out of range, either after or before time range
+             = 0.0: At start or end of time range
+             < 0.0: Between start and end of time range
+        */
+        double getTimeDistance(const DataType &t) const;
 
 	/** Add a point with the given time to the end of the time list. */
 	virtual bool addTime( const DataType &t );
@@ -180,19 +204,24 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	    data using the given sources.  If each of the source's components
 	    is ZERO, then this function returns UINT_MAX. */
 	virtual unsigned int getNumPoints(const DataSource source[]) const;
-		
-	/** Register an artist with this trajectory.  The artist will be notified
-	    whenever a position, optional, or attitude is added to the trajectory. */
-	virtual void addArtist(TrajectoryArtist *artist) const;
-	virtual void removeArtist(TrajectoryArtist *artist) const;
 
-	virtual void informArtists();
-	inline void autoInformArtists(bool autoinform) { _autoInformArtists = autoinform; }
-
+  /** Register a subscriber with this trajectory. The subscriber will be notified
+      whenever the trajectory changes. */
+  virtual void addSubscriber(TrajectorySubscriber* subscriber) const;
+  virtual void removeSubscriber(TrajectorySubscriber* subscriber) const;
+  virtual void informSubscribers();
+  inline void autoInformSubscribers(bool autoinform) { _autoInformSubscribers = autoinform; }
+  
+  enum DataLockType
+  {
+    READ_LOCK,
+    WRITE_LOCK
+  };
+  
 	/** Synchronization routines which prevent Trajectory's data from being
 	    moved around in memory while the data is being read. */
-	virtual void lockData() const;   // Block the data from being changed
-	virtual void unlockData() const; // Allow the data to be changed
+	virtual void lockData(DataLockType lockType = READ_LOCK) const;   // Block the data from being changed
+	virtual void unlockData(DataLockType lockType = READ_LOCK) const; // Allow the data to be changed
 
   protected:
 	virtual ~Trajectory();
@@ -200,9 +229,10 @@ class OF_EXPORT Trajectory : public osg::Referenced
 	DataArray _time;   // Times
 	DataArray _posopt; // Positions & optionals
 	DataArray _att;    // Attitudes
-
-	mutable ArtistArray _artists; // Artists currently drawing this Trajectory
-	bool _autoInformArtists;
+  
+  mutable SubscriberArray _subscribers; // Subscribers of this Trajectory
+  bool _autoInformSubscribers; // Whether subscribers should be informed whenever data is modified
+  bool _dataCleared; // Whether data has recently been cleared
 
 	unsigned int _nopt; // Number of optionals for each time.
 	unsigned int _base; // Number of data elements taken up by each
@@ -214,11 +244,27 @@ class OF_EXPORT Trajectory : public osg::Referenced
 
 	unsigned int _dof; // Degrees of freedom for position and optionals
 
-	// Synchronization variables
-	mutable OpenThreads::ReadWriteMutex _readWriteMutex;
-	bool _safeReadWrite;
-};
+  // Enable reader-writer synchronization on the Trajectory
+  mutable ReadWriteMutex _readWriteMutex;
+  };
 
+  /**
+   * \class TrajectorySubscriber
+   *
+   * \brief Abstract base class that is informed of changes to Trajectory objects.
+   */
+  class TrajectorySubscriber
+  {
+  public:
+    /** Called by a trajectory when its data is cleared. Must be
+        implemented by derived classes. */
+    virtual void dataCleared(const Trajectory *traj) = 0;
+  
+    /** Called by a trajectory when data is added to it. Must be
+        implemented by derived classes. */
+    virtual void dataAdded(const Trajectory *traj) = 0;
+  };
+  
 } // !namespace OpenFrames
 
 #endif // !define _OF_TRAJECTORY_
